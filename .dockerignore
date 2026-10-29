@@ -1,0 +1,11 @@
+.git
+bin
+data
+**/node_modules
+web/dist
+web/.features-gen
+web/playwright-report
+web/test-results
+.claude
+*.md
+!README.md

@@ -1,0 +1,16 @@
+# Local production-like run: `task docker:up`, then open http://localhost:8080
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - app-data:/data
+    healthcheck:
+      # distroless has no shell/curl; rely on the platform's HTTP checks in the cloud.
+      disable: true
+    restart: unless-stopped
+
+volumes:
+  app-data:

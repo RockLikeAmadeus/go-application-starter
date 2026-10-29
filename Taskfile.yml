@@ -1,0 +1,142 @@
+# https://taskfile.dev — run `task` to list tasks.
+version: "3"
+
+vars:
+  BIN: bin
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo dev
+  LDFLAGS: -s -w -X github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli.Version={{.VERSION}}
+
+tasks:
+  default:
+    cmds:
+      - task --list
+    silent: true
+
+  # ---------------------------------------------------------------- setup
+  setup:
+    desc: Install all dependencies and git hooks (run once after cloning)
+    cmds:
+      - go mod download
+      - pnpm --dir web install
+      - pnpm --dir web exec playwright install --with-deps chromium
+      - cmd: lefthook install
+        ignore_error: true
+
+  # ---------------------------------------------------------------- codegen
+  gen:
+    desc: Regenerate Go server/client and TypeScript types from api/openapi.yaml
+    cmds:
+      - go tool oapi-codegen -config api/oapi-codegen.server.yaml api/openapi.yaml
+      - go tool oapi-codegen -config api/oapi-codegen.client.yaml api/openapi.yaml
+      - pnpm --dir web gen:api
+
+  gen:check:
+    desc: Fail if generated code is out of date with the OpenAPI spec
+    cmds:
+      - task: gen
+      - git diff --exit-code -- internal/adapters/httpapi/openapi internal/adapters/httpclient/apiclient web/src/api/schema.gen.ts
+
+  # ---------------------------------------------------------------- dev
+  dev:
+    desc: Run the API (:8080) and Vite dev server (:5173) together
+    deps: [run:server, web:dev]
+
+  run:server:
+    desc: Run the API server (API-only; the UI comes from Vite in dev)
+    cmds:
+      - go run ./cmd/server
+
+  run:cli:
+    desc: "Run the CLI, e.g. task run:cli -- item list"
+    cmds:
+      - go run ./cmd/starter {{.CLI_ARGS}}
+
+  run:tui:
+    desc: Run the terminal UI
+    interactive: true
+    cmds:
+      - go run ./cmd/starter tui {{.CLI_ARGS}}
+
+  web:dev:
+    cmds:
+      - pnpm --dir web dev
+
+  # ---------------------------------------------------------------- build
+  build:
+    desc: Build the web UI and Go binaries (server embeds the UI) into ./bin
+    deps: [web:build]
+    cmds:
+      - go build -tags embedweb -ldflags "{{.LDFLAGS}}" -o {{.BIN}}/server ./cmd/server
+      - go build -ldflags "{{.LDFLAGS}}" -o {{.BIN}}/starter ./cmd/starter
+
+  web:build:
+    cmds:
+      - pnpm --dir web build
+    sources: [web/src/**/*, web/index.html, web/package.json, web/vite.config.ts]
+    generates: [web/dist/index.html]
+
+  # ---------------------------------------------------------------- quality
+  lint:
+    desc: Lint Go and TypeScript
+    cmds:
+      - golangci-lint run ./...
+      - pnpm --dir web lint
+      - pnpm --dir web typecheck
+      - pnpm --dir web format:check
+
+  fmt:
+    desc: Format Go and TypeScript
+    cmds:
+      - golangci-lint fmt ./...
+      - pnpm --dir web format
+
+  # ---------------------------------------------------------------- tests
+  test:
+    desc: Unit tests (Go + web) — the TDD inner loop
+    cmds:
+      - task: test:go
+      - task: test:web
+
+  test:go:
+    cmds:
+      - go test -race ./internal/... {{.CLI_ARGS}}
+
+  test:web:
+    cmds:
+      - pnpm --dir web test
+
+  accept:
+    desc: "Godog acceptance tests — the BDD outer loop (e.g. task accept -- --godog.tags=@wip)"
+    cmds:
+      - go test ./test/acceptance/ -count=1 {{.CLI_ARGS}}
+
+  e2e:
+    desc: Browser BDD tests (playwright-bdd) against the real server with the embedded UI
+    deps: [web:build]
+    cmds:
+      - pnpm --dir web e2e {{.CLI_ARGS}}
+
+  check:
+    desc: Everything CI runs, in order
+    cmds:
+      - task: gen:check
+      - task: lint
+      - task: test
+      - task: accept
+      - task: e2e
+
+  # ---------------------------------------------------------------- docker
+  docker:build:
+    desc: Build the production image
+    cmds:
+      - docker build --build-arg VERSION={{.VERSION}} -t starter:{{.VERSION}} -t starter:latest .
+
+  docker:up:
+    desc: Run the app in Docker on http://localhost:8080 (data in a named volume)
+    cmds:
+      - docker compose up --build
+
+  clean:
+    cmds:
+      - rm -rf {{.BIN}} web/dist web/.features-gen web/playwright-report web/test-results

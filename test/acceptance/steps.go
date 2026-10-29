@@ -1,0 +1,152 @@
+package acceptance
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"slices"
+	"time"
+
+	"github.com/cucumber/godog"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+)
+
+// world holds the state of a single scenario.
+type world struct {
+	*harness
+	lastErr error
+}
+
+func initializeScenario(d driver) func(*godog.ScenarioContext) {
+	return func(sc *godog.ScenarioContext) {
+		w := &world{}
+
+		sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
+			h, err := d.start()
+			w.harness = h
+			return ctx, err
+		})
+		sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
+			if w.harness != nil {
+				w.cleanup()
+			}
+			return ctx, err
+		})
+
+		sc.Step(`^an item named "([^"]*)"$`, w.anItemNamed)
+		sc.Step(`^I create an item named "([^"]*)"$`, w.anItemNamed)
+		sc.Step(`^I try to create an item named "([^"]*)"$`, w.iTryToCreateAnItemNamed)
+		sc.Step(`^I rename "([^"]*)" to "([^"]*)"$`, w.iRename)
+		sc.Step(`^I delete "([^"]*)"$`, w.iDelete)
+		sc.Step(`^I try to delete an item that does not exist$`, w.iTryToDeleteAMissingItem)
+		sc.Step(`^the items are:$`, w.theItemsAre)
+		sc.Step(`^there are no items$`, w.thereAreNoItems)
+		sc.Step(`^I am told the "([^"]*)" is invalid$`, w.iAmToldTheFieldIsInvalid)
+		sc.Step(`^I am told the item was not found$`, w.iAmToldNotFound)
+	}
+}
+
+func (w *world) anItemNamed(ctx context.Context, name string) error {
+	// Advance the clock so creation order is unambiguous.
+	w.clock.Advance(time.Second)
+	_, err := w.items.CreateItem(ctx, name)
+	return err
+}
+
+func (w *world) iTryToCreateAnItemNamed(ctx context.Context, name string) error {
+	_, w.lastErr = w.items.CreateItem(ctx, name)
+	return nil
+}
+
+func (w *world) iRename(ctx context.Context, from, to string) error {
+	item, err := w.findByName(ctx, from)
+	if err != nil {
+		return err
+	}
+	w.clock.Advance(time.Second)
+	_, err = w.items.RenameItem(ctx, item.ID, to)
+	return err
+}
+
+func (w *world) iDelete(ctx context.Context, name string) error {
+	item, err := w.findByName(ctx, name)
+	if err != nil {
+		return err
+	}
+	return w.items.DeleteItem(ctx, item.ID)
+}
+
+func (w *world) iTryToDeleteAMissingItem(ctx context.Context) error {
+	w.lastErr = w.items.DeleteItem(ctx, "does-not-exist")
+	return nil
+}
+
+func (w *world) theItemsAre(ctx context.Context, table *godog.Table) error {
+	var want []string
+	for _, row := range table.Rows {
+		want = append(want, row.Cells[0].Value)
+	}
+	got, err := w.names(ctx)
+	if err != nil {
+		return err
+	}
+	if !slices.Equal(got, want) {
+		return fmt.Errorf("items = %q, want %q", got, want)
+	}
+	return nil
+}
+
+func (w *world) thereAreNoItems(ctx context.Context) error {
+	got, err := w.names(ctx)
+	if err != nil {
+		return err
+	}
+	if len(got) != 0 {
+		return fmt.Errorf("expected no items, got %q", got)
+	}
+	return nil
+}
+
+func (w *world) iAmToldTheFieldIsInvalid(field string) error {
+	var verr *domain.ValidationError
+	if !errors.As(w.lastErr, &verr) {
+		return fmt.Errorf("expected a validation error, got %w", w.lastErr)
+	}
+	if verr.Field != field {
+		return fmt.Errorf("validation error on %q, want %q", verr.Field, field)
+	}
+	return nil
+}
+
+func (w *world) iAmToldNotFound() error {
+	if !errors.Is(w.lastErr, domain.ErrNotFound) {
+		return fmt.Errorf("expected not found, got %w", w.lastErr)
+	}
+	return nil
+}
+
+func (w *world) names(ctx context.Context) ([]string, error) {
+	items, err := w.items.ListItems(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(items))
+	for _, it := range items {
+		names = append(names, it.Name)
+	}
+	return names, nil
+}
+
+func (w *world) findByName(ctx context.Context, name string) (domain.Item, error) {
+	items, err := w.items.ListItems(ctx)
+	if err != nil {
+		return domain.Item{}, err
+	}
+	for _, it := range items {
+		if it.Name == name {
+			return it, nil
+		}
+	}
+	return domain.Item{}, fmt.Errorf("no item named %q", name)
+}

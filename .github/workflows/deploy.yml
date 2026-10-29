@@ -1,0 +1,44 @@
+# Deploys the image that CI built and pushed to GHCR.
+#   push to main  -> staging
+#   tag v*        -> production (gate it with required reviewers on the
+#                    "production" environment in repo settings)
+#
+# This is the only Fly.io-specific workflow; swap it out to target another
+# platform. Requires the FLY_API_TOKEN secret (see README).
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      (github.event.workflow_run.head_branch == 'main' || startsWith(github.event.workflow_run.head_branch, 'v'))
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.workflow_run.head_branch == 'main' && 'staging' || 'production' }}
+    concurrency:
+      group: deploy-${{ github.event.workflow_run.head_branch == 'main' && 'staging' || 'production' }}
+      cancel-in-progress: false
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      FLY_CONFIG: ${{ github.event.workflow_run.head_branch == 'main' && 'fly.staging.toml' || 'fly.production.toml' }}
+      IMAGE: ghcr.io/${{ github.repository }}:sha-${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy
+        run: flyctl deploy --config "$FLY_CONFIG" --image "$IMAGE" --ha=false --strategy immediate
+      - name: Smoke test
+        run: |
+          host=$(flyctl status --config "$FLY_CONFIG" --json | jq -r '.Hostname')
+          curl --fail --retry 10 --retry-delay 3 --retry-all-errors "https://$host/readyz"

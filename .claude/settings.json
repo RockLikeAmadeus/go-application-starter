@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(task:*)",
+      "Bash(go test:*)",
+      "Bash(go build:*)",
+      "Bash(go vet:*)",
+      "Bash(go run:*)",
+      "Bash(go tool:*)",
+      "Bash(go mod tidy)",
+      "Bash(go list:*)",
+      "Bash(golangci-lint:*)",
+      "Bash(pnpm --dir web:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm format:*)",
+      "Bash(pnpm e2e:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(flyctl:*)",
+      "Bash(fly:*)",
+      "Bash(docker:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Edit(**/*.gen.go)",
+      "Edit(**/*.gen.ts)",
+      "Write(**/*.gen.go)",
+      "Write(**/*.gen.ts)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

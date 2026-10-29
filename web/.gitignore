@@ -1,0 +1,7 @@
+node_modules
+dist
+.features-gen
+playwright-report
+test-results
+blob-report
+*.tsbuildinfo

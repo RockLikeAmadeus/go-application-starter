@@ -1,0 +1,123 @@
+// Package storagetest is the contract test suite every ports.ItemRepository
+// implementation must pass. Adding a new storage adapter (SQL, NoSQL, ...)
+// should start by calling RunItemRepositoryContract from its own tests.
+package storagetest
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
+)
+
+// Factory returns a fresh, empty repository for each subtest.
+type Factory func(t *testing.T) ports.ItemRepository
+
+var base = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+func item(id, name string, offset time.Duration) domain.Item {
+	return domain.Item{ID: id, Name: name, CreatedAt: base.Add(offset), UpdatedAt: base.Add(offset)}
+}
+
+func RunItemRepositoryContract(t *testing.T, newRepo Factory) {
+	ctx := context.Background()
+
+	t.Run("FindByID returns saved item", func(t *testing.T) {
+		repo := newRepo(t)
+		want := item("a", "Alpha", 0)
+		mustSave(t, repo, want)
+
+		got, err := repo.FindByID(ctx, "a")
+		if err != nil {
+			t.Fatalf("FindByID: %v", err)
+		}
+		assertItemEqual(t, got, want)
+	})
+
+	t.Run("FindByID missing returns ErrNotFound", func(t *testing.T) {
+		repo := newRepo(t)
+		if _, err := repo.FindByID(ctx, "missing"); !errors.Is(err, domain.ErrNotFound) {
+			t.Fatalf("err = %v, want ErrNotFound", err)
+		}
+	})
+
+	t.Run("Save replaces existing item", func(t *testing.T) {
+		repo := newRepo(t)
+		mustSave(t, repo, item("a", "Alpha", 0))
+		updated := item("a", "Alpha 2", 0)
+		updated.UpdatedAt = base.Add(time.Hour)
+		mustSave(t, repo, updated)
+
+		got, _ := repo.FindByID(ctx, "a")
+		assertItemEqual(t, got, updated)
+		all, _ := repo.FindAll(ctx)
+		if len(all) != 1 {
+			t.Errorf("FindAll len = %d, want 1", len(all))
+		}
+	})
+
+	t.Run("FindAll orders by CreatedAt then ID", func(t *testing.T) {
+		repo := newRepo(t)
+		mustSave(t, repo, item("c", "C", 2*time.Second))
+		mustSave(t, repo, item("b", "B", time.Second))
+		mustSave(t, repo, item("a", "A", time.Second))
+
+		all, err := repo.FindAll(ctx)
+		if err != nil {
+			t.Fatalf("FindAll: %v", err)
+		}
+		var ids []string
+		for _, it := range all {
+			ids = append(ids, it.ID)
+		}
+		if len(ids) != 3 || ids[0] != "a" || ids[1] != "b" || ids[2] != "c" {
+			t.Errorf("order = %v, want [a b c]", ids)
+		}
+	})
+
+	t.Run("FindAll on empty repository returns empty slice", func(t *testing.T) {
+		repo := newRepo(t)
+		all, err := repo.FindAll(ctx)
+		if err != nil || len(all) != 0 {
+			t.Fatalf("FindAll = %v, %v; want empty", all, err)
+		}
+	})
+
+	t.Run("Delete removes item", func(t *testing.T) {
+		repo := newRepo(t)
+		mustSave(t, repo, item("a", "A", 0))
+		if err := repo.Delete(ctx, "a"); err != nil {
+			t.Fatalf("Delete: %v", err)
+		}
+		if _, err := repo.FindByID(ctx, "a"); !errors.Is(err, domain.ErrNotFound) {
+			t.Errorf("FindByID after delete err = %v, want ErrNotFound", err)
+		}
+	})
+
+	t.Run("Delete missing returns ErrNotFound", func(t *testing.T) {
+		repo := newRepo(t)
+		if err := repo.Delete(ctx, "missing"); !errors.Is(err, domain.ErrNotFound) {
+			t.Fatalf("err = %v, want ErrNotFound", err)
+		}
+	})
+}
+
+func mustSave(t *testing.T, repo ports.ItemRepository, it domain.Item) {
+	t.Helper()
+	if err := repo.Save(context.Background(), it); err != nil {
+		t.Fatalf("Save(%s): %v", it.ID, err)
+	}
+}
+
+// assertItemEqual compares timestamps with Equal so adapters may round-trip
+// through formats that drop the monotonic clock or change the location.
+func assertItemEqual(t *testing.T, got, want domain.Item) {
+	t.Helper()
+	if got.ID != want.ID || got.Name != want.Name ||
+		!got.CreatedAt.Equal(want.CreatedAt) || !got.UpdatedAt.Equal(want.UpdatedAt) {
+		t.Errorf("got %+v, want %+v", got, want)
+	}
+}

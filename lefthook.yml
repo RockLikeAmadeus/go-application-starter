@@ -1,0 +1,20 @@
+# Git hooks (https://lefthook.dev). Installed by `task setup`.
+pre-commit:
+  parallel: true
+  commands:
+    go-fmt:
+      glob: "*.go"
+      run: gofmt -l {staged_files} | (! grep .) || (echo "run: task fmt" && exit 1)
+    web-format:
+      root: web/
+      glob: "*.{ts,tsx,js,json,css,md}"
+      run: pnpm exec prettier --check {staged_files}
+    web-lint:
+      root: web/
+      glob: "*.{ts,tsx}"
+      run: pnpm exec eslint {staged_files}
+
+pre-push:
+  commands:
+    unit-tests:
+      run: task test

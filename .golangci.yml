@@ -1,0 +1,61 @@
+version: "2"
+
+linters:
+  enable:
+    - depguard
+    - errorlint
+    - misspell
+    - revive
+    - unconvert
+    - usestdlibvars
+  settings:
+    depguard:
+      rules:
+        # The hexagon's dependency rule: the core knows nothing about adapters,
+        # the composition root, or concrete frameworks.
+        core:
+          files:
+            - "**/internal/core/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/RockLikeAmadeus/go-application-starter/internal/adapters
+              desc: core must not import adapters; depend on a port instead
+            - pkg: github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap
+              desc: core must not import the composition root
+            - pkg: github.com/RockLikeAmadeus/go-application-starter/internal/config
+              desc: core must not read configuration
+            - pkg: net/http
+              desc: transport concerns belong in an adapter
+            - pkg: database/sql
+              desc: persistence belongs in a storage adapter
+            - pkg: os
+              desc: I/O belongs in an adapter
+        # Domain is the innermost ring: it may not even see ports.
+        domain:
+          files:
+            - "**/internal/core/domain/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/RockLikeAmadeus/go-application-starter/internal/core/ports
+              desc: domain must not depend on ports
+            - pkg: github.com/RockLikeAmadeus/go-application-starter/internal/core/app
+              desc: domain must not depend on use cases
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+  exclusions:
+    generated: strict
+    presets:
+      - std-error-handling
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/RockLikeAmadeus/go-application-starter
