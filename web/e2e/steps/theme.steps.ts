@@ -36,7 +36,5 @@ Then(/^the app uses the (dark|light) theme$/, async ({ page }, theme: string) =>
   await expect(page.getByRole("switch", { name: "Dark mode" })).toBeChecked({
     checked: theme === "dark",
   });
-  await expect
-    .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme))
-    .toBe(theme);
+  await expect(page.locator("html")).toHaveCSS("color-scheme", theme);
 });
