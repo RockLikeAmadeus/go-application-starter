@@ -1,4 +1,3 @@
-@wip
 Feature: Choose a theme
   # Presentation only: the theme never reaches the core, so these browser
   # scenarios are the specification (there is no Godog counterpart).
@@ -9,10 +8,9 @@ Feature: Choose a theme
     Then the app uses the <theme> theme
 
     Examples:
-      | system           | theme |
-      | a dark scheme    | dark  |
-      | a light scheme   | light |
-      | no colour scheme | dark  |
+      | system         | theme |
+      | a dark scheme  | dark  |
+      | a light scheme | light |
 
   Scenario Outline: Switch theme
     Given my system prefers <system>

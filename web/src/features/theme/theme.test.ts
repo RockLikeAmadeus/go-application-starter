@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyTheme, readStoredTheme, resolveTheme } from "./theme";
+import { applyTheme, readStoredTheme, resolveTheme, writeStoredTheme } from "./theme";
 
 describe("resolveTheme", () => {
   it("is dark with no stored choice and no system preference", () => {
@@ -36,6 +36,32 @@ describe("readStoredTheme", () => {
   it("returns null when storage holds an unknown value", () => {
     const storage = { getItem: () => "purple" };
     expect(readStoredTheme(storage)).toBeNull();
+  });
+});
+
+describe("writeStoredTheme", () => {
+  it("saves a choice that readStoredTheme returns", () => {
+    const saved = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => saved.get(key) ?? null,
+      setItem: (key: string, value: string) => void saved.set(key, value),
+    };
+
+    writeStoredTheme("light", storage);
+    expect(readStoredTheme(storage)).toBe("light");
+
+    writeStoredTheme("dark", storage);
+    expect(readStoredTheme(storage)).toBe("dark");
+  });
+
+  it("does nothing when storage is unavailable", () => {
+    // Browsers throw like this when site data is blocked.
+    const storage = {
+      setItem: () => {
+        throw new DOMException("The operation is insecure.", "SecurityError");
+      },
+    };
+    expect(() => writeStoredTheme("light", storage)).not.toThrow();
   });
 });
 

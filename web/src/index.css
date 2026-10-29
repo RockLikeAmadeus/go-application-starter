@@ -1,1 +1,4 @@
 @import "tailwindcss";
+
+/* dark: styles follow the theme the user chose (see features/theme), not the OS. */
+@custom-variant dark (&:where(.dark, .dark *));

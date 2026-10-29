@@ -44,12 +44,11 @@ Users can switch the web app between a dark and a light theme, so it suits their
 
 **Rules**
 - A user's chosen theme is remembered in their browser and wins over everything else.
-- With no chosen theme, the app follows the system's colour-scheme preference.
-- With neither a choice nor a system preference, the app uses the dark theme.
+- With no chosen theme, the app follows the system's colour-scheme preference. Browsers report "no preference" as light, so first-time visitors whose system isn't set to dark see the light theme.
 
 **Examples**
-- First visit, system prefers light → light theme.
-- First visit, no system preference → dark theme.
+- First visit, system prefers dark → dark theme.
+- First visit, system prefers light (or has no setting) → light theme.
 - System prefers dark, user switches to light and comes back later → light theme.
 
 **Specification:** [`web/e2e/features/theme.feature`](web/e2e/features/theme.feature). This is a presentation concern with no core behaviour, so there are no Godog scenarios.

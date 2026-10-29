@@ -25,7 +25,7 @@ export function ItemsPage() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="New item name"
-          className="flex-1 rounded-md border border-slate-300 px-3 py-2 focus:outline-2 focus:outline-violet-500"
+          className="flex-1 rounded-md border border-slate-300 px-3 py-2 focus:outline-2 focus:outline-violet-500 dark:border-slate-700 dark:bg-slate-900"
         />
         <button
           type="submit"
@@ -37,13 +37,15 @@ export function ItemsPage() {
       </form>
       {createItem.error && <ErrorMessage error={createItem.error} />}
 
-      {items.isPending && <p className="text-slate-500">Loading…</p>}
+      {items.isPending && <p className="text-slate-500 dark:text-slate-400">Loading…</p>}
       {items.error && <ErrorMessage error={items.error} />}
-      {items.data?.length === 0 && <p className="text-slate-500">No items yet.</p>}
+      {items.data?.length === 0 && (
+        <p className="text-slate-500 dark:text-slate-400">No items yet.</p>
+      )}
       {items.data && items.data.length > 0 && (
         <ul
           aria-label="Items"
-          className="divide-y divide-slate-200 rounded-md border border-slate-200 bg-white"
+          className="divide-y divide-slate-200 rounded-md border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900"
         >
           {items.data.map((item) => (
             <ItemRow key={item.id} item={item} />
@@ -73,16 +75,19 @@ function ItemRow({ item }: { item: Item }) {
             aria-label={`New name for ${item.name}`}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="flex-1 rounded-md border border-slate-300 px-2 py-1"
+            className="flex-1 rounded-md border border-slate-300 px-2 py-1 dark:border-slate-700 dark:bg-slate-800"
             autoFocus
           />
-          <button type="submit" className="text-sm font-medium text-violet-700">
+          <button
+            type="submit"
+            className="text-sm font-medium text-violet-700 dark:text-violet-400"
+          >
             Save
           </button>
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="text-sm text-slate-500"
+            className="text-sm text-slate-500 dark:text-slate-400"
           >
             Cancel
           </button>
@@ -97,7 +102,7 @@ function ItemRow({ item }: { item: Item }) {
               setEditing(true);
             }}
             aria-label={`Rename ${item.name}`}
-            className="text-sm text-slate-600 hover:text-violet-700"
+            className="text-sm text-slate-600 hover:text-violet-700 dark:text-slate-300 dark:hover:text-violet-400"
           >
             Rename
           </button>
@@ -105,7 +110,7 @@ function ItemRow({ item }: { item: Item }) {
             type="button"
             onClick={() => deleteItem.mutate(item.id)}
             aria-label={`Delete ${item.name}`}
-            className="text-sm text-red-600 hover:text-red-800"
+            className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
           >
             Delete
           </button>
@@ -118,7 +123,7 @@ function ItemRow({ item }: { item: Item }) {
 
 function ErrorMessage({ error }: { error: Error }) {
   return (
-    <p role="alert" className="text-sm text-red-600">
+    <p role="alert" className="text-sm text-red-600 dark:text-red-400">
       {error.message}
     </p>
   );

@@ -7,18 +7,9 @@ const { Given, When, Then } = createBdd();
 // stored choice. The theme is observed through the root's computed
 // color-scheme, which is what the browser itself uses for native controls.
 
-const schemes = {
-  "a dark scheme": "dark",
-  "a light scheme": "light",
-  "no colour scheme": "no-preference",
-} as const;
-
-Given(
-  /^my system prefers (a dark scheme|a light scheme|no colour scheme)$/,
-  async ({ page }, system: keyof typeof schemes) => {
-    await page.emulateMedia({ colorScheme: schemes[system] });
-  },
-);
+Given(/^my system prefers a (dark|light) scheme$/, async ({ page }, scheme: "dark" | "light") => {
+  await page.emulateMedia({ colorScheme: scheme });
+});
 
 When("I open the app for the first time", async ({ page }) => {
   await page.goto("/");
