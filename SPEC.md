@@ -45,6 +45,7 @@ Users can create, list, rename and delete items.
 | Data | _e.g. data survives restarts; backups via volume snapshots_ |
 | Security | _e.g. no auth yet; see "Out of scope"_ |
 | Accessibility | Web UI is keyboard navigable, and controls have accessible names (also used by tests) |
+| TUI navigation | Every list or selectable view supports Vim keys alongside the arrow keys: `j` down, `k` up |
 
 ## 6. Out of scope (for now)
 

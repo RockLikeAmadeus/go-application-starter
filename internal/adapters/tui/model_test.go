@@ -129,3 +129,36 @@ func TestValidationErrorIsShown(t *testing.T) {
 		t.Errorf("view missing validation error:\n%s", view(m))
 	}
 }
+
+func TestVimKeysMoveSelection(t *testing.T) {
+	core := newCore()
+	_, _ = core.CreateItem(context.Background(), "First")
+	_, _ = core.CreateItem(context.Background(), "Second")
+	m := tea.Model(New(core))
+	m = send(t, m, m.Init()())
+
+	m = send(t, m, key("j"))
+	if !strings.Contains(view(m), "> Second") {
+		t.Errorf("j did not select the next item:\n%s", view(m))
+	}
+
+	m = send(t, m, key("k"))
+	if !strings.Contains(view(m), "> First") {
+		t.Errorf("k did not select the previous item:\n%s", view(m))
+	}
+}
+
+func TestVimKeysAreTypedWhileEditing(t *testing.T) {
+	core := newCore()
+	m := tea.Model(New(core))
+	m = send(t, m, m.Init()())
+
+	m = send(t, m, key("a"))
+	m = typeText(t, m, "jk")
+	send(t, m, key("enter"))
+
+	items, _ := core.ListItems(context.Background())
+	if len(items) != 1 || items[0].Name != "jk" {
+		t.Errorf("core items = %+v", items)
+	}
+}

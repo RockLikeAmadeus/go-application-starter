@@ -59,6 +59,11 @@ web/e2e                          playwright-bdd browser journeys
 
 `api/openapi.yaml` is the source of truth. Edit it, then run `task gen`. **Never hand-edit `*.gen.go` or `*.gen.ts`.** CI fails if generated code drifts.
 
+## TUI conventions
+
+- Vim navigation is required (see SPEC.md §5). Every list or selectable view binds `j`/`k` alongside `down`/`up`, as `internal/adapters/tui/model.go` does. Bind them only while browsing, never while a text input has focus, so users can still type those letters.
+- Cover the `j`/`k` bindings in `model_test.go` for each new view.
+
 ## Testing conventions
 
 - Go: standard `testing`, table tests where useful, black-box `_test` packages by default. No assertion library.
