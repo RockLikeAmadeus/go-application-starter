@@ -21,6 +21,7 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | Term | Meaning |
 |---|---|
 | **Item** | A named thing the user wants to track. Placeholder entity for the walking skeleton. |
+| **Theme** | The colour scheme of the web app: **dark** or **light**. |
 
 ## 4. Capabilities
 
@@ -36,6 +37,22 @@ Users can create, list, rename and delete items.
 **Specification:** [`features/items.feature`](features/items.feature) · UI journeys: [`web/e2e/features/items.feature`](web/e2e/features/items.feature)
 
 <!-- /feature adds new capability sections below this line -->
+
+### 4.2 Choose a theme _(web only)_
+
+Users can switch the web app between a dark and a light theme, so it suits their eyes and surroundings.
+
+**Rules**
+- A user's chosen theme is remembered in their browser and wins over everything else.
+- With no chosen theme, the app follows the system's colour-scheme preference.
+- With neither a choice nor a system preference, the app uses the dark theme.
+
+**Examples**
+- First visit, system prefers light → light theme.
+- First visit, no system preference → dark theme.
+- System prefers dark, user switches to light and comes back later → light theme.
+
+**Specification:** [`web/e2e/features/theme.feature`](web/e2e/features/theme.feature). This is a presentation concern with no core behaviour, so there are no Godog scenarios.
 
 ## 5. Non-functional requirements
 
