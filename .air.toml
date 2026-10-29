@@ -1,0 +1,18 @@
+# Air rebuilds and restarts the API server when Go code changes (`task dev`).
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/server ./cmd/server"
+  entrypoint = ["./tmp/server"]
+  include_ext = ["go"]
+  # The web UI hot-reloads through Vite; tests and data don't need a restart.
+  exclude_dir = ["web", "tmp", "bin", "data", "test", "features", "docs", ".task"]
+  exclude_regex = ["_test\\.go$"]
+  # Let the server shut down cleanly so the jsonfile adapter releases its lock.
+  send_interrupt = true
+  kill_delay = "2s"
+  delay = 200
+
+[misc]
+  clean_on_exit = true

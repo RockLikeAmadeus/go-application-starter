@@ -27,8 +27,8 @@ tasks:
   gen:
     desc: Regenerate Go server/client and TypeScript types from api/openapi.yaml
     cmds:
-      - go tool oapi-codegen -config api/oapi-codegen.server.yaml api/openapi.yaml
-      - go tool oapi-codegen -config api/oapi-codegen.client.yaml api/openapi.yaml
+      - go tool -modfile=tools/go.mod oapi-codegen -config api/oapi-codegen.server.yaml api/openapi.yaml
+      - go tool -modfile=tools/go.mod oapi-codegen -config api/oapi-codegen.client.yaml api/openapi.yaml
       - pnpm --dir web gen:api
 
   gen:check:
@@ -39,8 +39,13 @@ tasks:
 
   # ---------------------------------------------------------------- dev
   dev:
-    desc: Run the API (:8080) and Vite dev server (:5173) together
-    deps: [run:server, web:dev]
+    desc: Run the API (:8080) and Vite dev server (:5173) together, reloading on changes
+    deps: [dev:server, web:dev]
+
+  dev:server:
+    desc: Run the API server, rebuilding and restarting it when Go code changes
+    cmds:
+      - go tool -modfile=tools/go.mod air
 
   run:server:
     desc: Run the API server (API-only; the UI comes from Vite in dev)

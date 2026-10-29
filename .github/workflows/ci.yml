@@ -63,6 +63,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: web/package.json
@@ -72,8 +75,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
       - run: pnpm --dir web install --frozen-lockfile
-      - run: go tool oapi-codegen -config api/oapi-codegen.server.yaml api/openapi.yaml
-      - run: go tool oapi-codegen -config api/oapi-codegen.client.yaml api/openapi.yaml
+      - run: go tool -modfile=tools/go.mod oapi-codegen -config api/oapi-codegen.server.yaml api/openapi.yaml
+      - run: go tool -modfile=tools/go.mod oapi-codegen -config api/oapi-codegen.client.yaml api/openapi.yaml
       - run: pnpm --dir web gen:api
       - name: Fail if anything changed
         run: git diff --exit-code

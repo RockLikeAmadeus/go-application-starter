@@ -27,7 +27,7 @@ Never skip a step or merge steps unless I ask. Never write production code witho
 | Lint / format | `task lint` · `task fmt` |
 | Regenerate API code | `task gen` (after editing `api/openapi.yaml`) |
 | Everything CI runs | `task check` |
-| Run locally | `task dev` (API on :8080 + Vite on :5173) · `task run:cli -- item list` · `task run:tui` |
+| Run locally | `task dev` (API on :8080, restarted by Air on Go changes + Vite on :5173 with HMR) · `task run:cli -- item list` · `task run:tui` |
 
 ## Architecture
 
@@ -76,4 +76,5 @@ web/e2e                          playwright-bdd browser journeys
 
 - The jsonfile adapter locks its data directory. Running the server and an embedded CLI against the same `./data` fails fast with "data directory is locked". Use `--server http://localhost:8080` for the CLI instead.
 - The server embeds the SPA only when built with `-tags embedweb` after `pnpm build` (`task build` does both). Otherwise `/` shows a hint page.
+- Dev-only Go tools (oapi-codegen for `task gen`, Air for `task dev`) live in `tools/go.mod` so their dependencies stay out of the app's `go.mod`. Add one with `cd tools && go get -tool <pkg>@<version>`, and run it with `go tool -modfile=tools/go.mod <name>`.
 - Node ≥ 24 is required (see `.nvmrc`). TypeScript is pinned to 6.0.x until typescript-eslint supports 7.

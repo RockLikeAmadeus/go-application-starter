@@ -1,6 +1,7 @@
 # Build output
 /bin/
 /dist/
+/tmp/
 
 # Local data from the jsonfile adapter
 /data/
