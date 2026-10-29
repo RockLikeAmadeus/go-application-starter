@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readStoredTheme, resolveTheme } from "./theme";
+import { applyTheme, readStoredTheme, resolveTheme } from "./theme";
 
 describe("resolveTheme", () => {
   it("is dark with no stored choice and no system preference", () => {
@@ -31,5 +31,32 @@ describe("readStoredTheme", () => {
       },
     };
     expect(readStoredTheme(storage)).toBeNull();
+  });
+
+  it("returns null when storage holds an unknown value", () => {
+    const storage = { getItem: () => "purple" };
+    expect(readStoredTheme(storage)).toBeNull();
+  });
+});
+
+describe("applyTheme", () => {
+  it("sets the root element's color-scheme to the theme", () => {
+    const root = document.createElement("html");
+
+    applyTheme("light", root);
+    expect(root.style.colorScheme).toBe("light");
+
+    applyTheme("dark", root);
+    expect(root.style.colorScheme).toBe("dark");
+  });
+
+  it("marks the root element with the dark class only for the dark theme", () => {
+    const root = document.createElement("html");
+
+    applyTheme("dark", root);
+    expect(root).toHaveClass("dark");
+
+    applyTheme("light", root);
+    expect(root).not.toHaveClass("dark");
   });
 });
