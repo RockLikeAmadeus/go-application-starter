@@ -32,7 +32,7 @@ SPEC.md §4.6, [`features/desktop.feature`](../../features/desktop.feature), [AD
 - Checked by hand on Linux: create, rename and delete; the data persists after a restart; no listening socket; no offline notice, and saving works with the network off.
 - Follow-ups in TODO.md: desktop remote mode, and packaging (including trying macOS and Windows).
 
-### 4. Wails mobile app, Android, local-only (`/feature mobile app`)
+### 4. Wails mobile app, Android, local-only — in progress ([`docs/wip/mobile-app.md`](../wip/mobile-app.md))
 The app runs on an Android phone with its data on the phone, and works offline. See the spike below for what was proven and why each piece exists.
 
 - **Spec:** a SPEC.md §4.7 "Use the mobile app", like §4.6. It covers local data on the phone, offline use, and one copy per phone. Add an "Android phone" row to §2.

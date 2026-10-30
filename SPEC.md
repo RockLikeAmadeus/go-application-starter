@@ -14,6 +14,7 @@ _One paragraph: who the users are, what problem this solves, and what success lo
 | _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Embedded or `--server` mode |
 | _e.g. Integrations_ | REST API (`api/openapi.yaml`) | |
 | _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | The web app in its own window, with its data on the computer (§4.6) |
+| _e.g. Single user on an Android phone_ | Mobile app (Android) | The web app as a phone app, with its data on the phone (§4.7) |
 
 ## 3. Glossary (ubiquitous language)
 
@@ -24,7 +25,8 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Theme** | The colour scheme of the web app: **dark** or **light**. Independent of the style. |
 | **Style** | A named look for the web app: its layout, fonts, shape and density. Independent of the theme; every style works in dark and light. |
 | **Desktop app** | The web app packaged as a program for the user's computer. It keeps its own data and needs no server. |
-| **Data folder** | The folder on the user's computer where the desktop app keeps its data. |
+| **Data folder** | The folder where the desktop app or the mobile app keeps its data: on the user's computer, or in the app's private storage on the phone. |
+| **Mobile app** | The web app packaged as an app for the user's phone (Android for now). It keeps its own data on the phone and needs no server. |
 
 <!-- sample:start -->
 The sample capability (§4.1) adds one term:
@@ -139,6 +141,24 @@ Users can run the app as a program on their own computer, so they can use it wit
 - User opens the app with the network off → the app works and shows no offline notice.
 
 **Specification:** [`features/desktop.feature`](features/desktop.feature). The desktop app also runs every other feature's scenarios. Opening no network port and showing no offline notice are checked by unit tests and by hand.
+
+### 4.7 Use the mobile app
+
+Users can install the app on their Android phone and use it without a server, an account or a connection.
+
+**Rules**
+- The mobile app shows the same app as the web app on a phone (§4.4), with the same styles and themes.
+- It keeps the user's data in its data folder, in the app's private storage on the phone. It needs no server and no connection.
+- Data is still there after the app is closed and opened again.
+- In local-only mode, it never says it is offline, because it doesn't need a connection.
+- Removing the app from the phone removes its data.
+- Android only for now; iPhone comes later.
+
+**Examples**
+- User adds "Widget", closes the app and opens it again → "Widget" is still there.
+- User turns on airplane mode and adds "Widget" → it is saved, and the app shows no offline notice.
+
+**Specification:** [`features/mobile.feature`](features/mobile.feature). The mobile app also runs every other feature's scenarios, except the desktop app's. Showing no offline notice is checked by unit tests and by hand.
 
 ## 5. Non-functional requirements
 
