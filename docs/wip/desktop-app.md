@@ -129,7 +129,13 @@
      - The feature's narrative says "keep my data", its comment and SPEC §4.6 say "every other feature's scenarios" instead of naming `items.feature`, so nothing dangles after removal.
      - Without the sample, the "data folder is created" check and the reopen guard go too. A new project gets them back when its own domain arrives. The "second copy" scenario stays.
    - After: `task test:init`, `task test:rename`, `task accept`, `task test` and `task lint` are all green.
-12. [ ] CLAUDE.md: architecture lines (`cmd/desktop`, `internal/adapters/desktop`), Commands rows, Gotchas (build deps; the desktop app locks its data folder like the server).
+12. [x] CLAUDE.md: architecture lines (`cmd/desktop`, `internal/adapters/desktop`), Commands rows, Gotchas (build deps; the desktop app locks its data folder like the server).
+   - CLAUDE.md:
+     - "What this is" has a sentence on the Wails desktop app (ADR 4).
+     - Commands: `task run:desktop` in "Run locally", and a new "Build" row for `task build` and `task build:desktop`.
+     - Architecture: lines for `cmd/desktop` and `internal/adapters/desktop`. The Godog line now names the desktop driver, and says `@desktop` scenarios run only there.
+     - Gotchas: the data-folder lock note covers the desktop app. A new Gotcha covers `LocalData` → `/api/v1/connection` → `useConnectionRequired`/`useLocalDataOnline` (new offline behaviour must respect it), and `/sw.js` being a 404 in the desktop app. The GTK 4 Gotcha came with item 9.
+     - The README and `docs/` have no matching architecture list, so nothing else changed.
 13. [ ] Manual check: `task run:desktop`; create, rename and delete an item; restart and see it persist; `ss -ltnp` shows no port; network off shows no offline notice.
 14. [ ] Remove `@wip`, add follow-ups (remote mode, packaging) to TODO.md, mark step 3 done in the parent plan, delete this file. `task check` green.
 

@@ -4,7 +4,7 @@ Guidance for Claude Code in this repository. Product intent lives in `SPEC.md`; 
 
 ## What this is
 
-A walking skeleton for a multi-front-end application. It uses a hexagonal (ports and adapters) Go core with four driving adapters (REST API, React SPA via the API, Cobra CLI, Bubble Tea TUI) and swappable storage.
+A walking skeleton for a multi-front-end application. It uses a hexagonal (ports and adapters) Go core with four driving adapters (REST API, React SPA via the API, Cobra CLI, Bubble Tea TUI) and swappable storage. A Wails desktop app runs the same SPA and REST API in-process, in a native window (ADR 4).
 <!-- sample:start -->
 
 The sample domain is `Item`; replace it when starting a real product.
@@ -48,22 +48,25 @@ Never stage, commit, push or pull unless I explicitly ask. That includes `git ad
 | Everything CI runs | `task check` |
 | Regenerate the app icons | `pnpm --dir web icons` (after editing `web/public/icon.svg`; commit the PNGs) |
 | Rename the project | `task rename -- --name "New Name" [--module …] [--dry-run]` (see `docs/rename.md`) |
-| Run locally | `task dev` (API on :8080, restarted by Air on Go changes + Vite on :5173 with HMR, opened in your browser) · `task run:cli -- --help` · `task run:tui` |
+| Run locally | `task dev` (API on :8080, restarted by Air on Go changes + Vite on :5173 with HMR, opened in your browser) · `task run:cli -- --help` · `task run:tui` · `task run:desktop` |
+| Build | `task build` (`bin/server` with the SPA embedded, `bin/starter`) · `task build:desktop` (`bin/starter-desktop`; needs the desktop build deps, see Gotchas) |
 
 ## Architecture
 
 ```
 cmd/server, cmd/starter          entrypoints, which only call bootstrap + an adapter
+cmd/desktop                      Wails v3 window around desktop.Open's handler (build tag `desktop`)
 internal/core/domain             entities, value rules, domain errors (stdlib only)
 internal/core/ports              interfaces: driving (…Service) + driven (…Repository, Clock, IDGenerator)
 internal/core/app                use cases implementing driving ports (orchestration only)
 internal/adapters/httpapi        REST server (generated strict interface from OpenAPI) + SPA serving
 internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --server mode
 internal/adapters/cli, tui       Cobra / Bubble Tea + Lip Gloss
+internal/adapters/desktop        desktop app wiring with no Wails import: data folder, storage, in-process handler
 internal/adapters/storage/*      memory, jsonfile, + storagetest contract suite
 internal/bootstrap               composition root: the only place that picks adapters
 web/                             Vite + React + TS + Tailwind + TanStack Query
-features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile and http drivers
+features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, http and desktop drivers (`@desktop` scenarios run only on desktop)
 web/e2e                          playwright-bdd browser journeys
 ```
 
@@ -110,10 +113,11 @@ web/e2e                          playwright-bdd browser journeys
 
 ## Gotchas
 
-- The jsonfile adapter locks its data directory. Running the server and an embedded CLI against the same `./data` fails fast with "data directory is locked". Use `--server http://localhost:8080` for the CLI instead.
+- The jsonfile adapter locks its data directory. Running the server and an embedded CLI against the same `./data` fails fast with "data directory is locked". Use `--server http://localhost:8080` for the CLI instead. The desktop app locks its data folder the same way, so a second copy, or the CLI pointed at that folder, fails fast.
 - The server embeds the SPA only when built with `-tags embedweb` after `pnpm build` (`task build` does both). Otherwise `/` shows a hint page.
 - Dev-only Go tools (oapi-codegen for `task gen`, Air for `task dev`) live in `tools/go.mod` so their dependencies stay out of the app's `go.mod`. Add one with `cd tools && go get -tool <pkg>@<version>`, and run it with `go tool -modfile=tools/go.mod <name>`.
 - The desktop app (`cmd/desktop`, build tag `desktop`) uses Wails v3. On Linux it needs GTK 4 and WebKitGTK 6.0: `sudo apt install libgtk-4-dev libwebkitgtk-6.0-dev` in a real terminal. Without them, the build fails with "Package 'gtk4' … not found". Wails' older GTK 3 stack (`-tags gtk3`) is dropped in Wails v3.1, so don't rely on it. Plain `go build ./...` and `task check` skip `cmd/desktop`, so they don't need these packages.
+- The desktop app keeps its data on the computer (`httpapi.Options.LocalData`), so `GET /api/v1/connection` answers `{"required": false}`. The SPA then hides the offline notice and keeps TanStack Query online (`useConnectionRequired`, `useLocalDataOnline`). New offline behaviour in the SPA must respect that answer. The desktop handler answers `/sw.js` with 404, so the service worker never runs there.
 - Playwright's WebKit (the `iphone` e2e project) needs system libraries that need sudo. `task setup` installs them with `--with-deps`. If it was skipped, run `sudo pnpm --dir web exec playwright install-deps webkit` in a real terminal: Claude Code's `!` can't answer sudo's password prompt.
 - The SPA is an installable web app (`VitePWA` in `web/vite.config.ts`, SPEC.md §4.5). Its service worker precaches only the built app and must never cache `/api`: data always comes from the server. Offline, page loads get the cached app. That includes any path the Go server serves outside `/api`, so add new server routes (like `/healthz` and `/readyz`) to `navigateFallbackDenylist`. A deploy reaches an open or installed app the next time it's opened. The service worker is off under `task dev`; test it with `task e2e` or a built server (see `docs/installable-app.md`).
 - Node ≥ 24 is required (see `.nvmrc`). TypeScript is pinned to 6.0.x until typescript-eslint supports 7.
