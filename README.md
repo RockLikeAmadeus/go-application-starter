@@ -31,6 +31,7 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
 | lefthook (optional) | | `go install github.com/evilmartians/lefthook@latest` |
 | Docker (optional) | | for `task docker:*` |
 | Desktop build deps (optional) | | only for the desktop app (`task run:desktop`, `task build:desktop`). Linux (Ubuntu/Debian): `sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev`. macOS: `xcode-select --install`. Windows: nothing extra expected (Wails uses no cgo there, and the WebView2 runtime ships with Windows 10 and 11; not yet tried) |
+| Android tools (optional) | JDK 17+, Android SDK 35, NDK 26 | only for the mobile app (`task mobile:android:*`). A JDK (`sudo apt install openjdk-21-jdk-headless`), then the SDK command-line tools and `sdkmanager` packages listed in [docs/mobile.md](docs/mobile.md), plus an emulator or a phone with USB debugging |
 
 Then:
 
@@ -46,12 +47,14 @@ task dev                         # API on :8080 + Vite on :5173, opened in your 
 task run:cli -- --help           # CLI, embedded core, data in ./data (add --server http://localhost:8080 to use a running server)
 task run:tui                     # terminal UI (also accepts --server)
 task run:desktop                 # desktop app in a native window, data in your settings folder (needs the desktop build deps)
+task mobile:android:run          # Android app on the emulator or a phone, data on the device (needs the Android tools, see docs/mobile.md)
 task test                        # unit tests (Go + web)
 task accept                      # Godog acceptance tests
 task e2e                         # browser tests against the real server binary
 task gen                         # regenerate code after editing api/openapi.yaml
 task build                       # ./bin/server (with UI embedded) and ./bin/starter
 task build:desktop               # ./bin/starter-desktop (needs the desktop build deps)
+task mobile:android:build        # ./bin/starter.apk, a debug build for phones and the emulator (needs the Android tools)
 ./bin/server                     # the built app on :8080, installable from Chrome (see docs/installable-app.md)
 task docker:up                   # production image locally on :8080
 task rename -- --name "New Name" # rebrand the project; --dry-run previews it (see docs/rename.md)
@@ -72,7 +75,7 @@ Repeat red → green → refactor until `task accept` is green, then drop the `@
 
 ### Two layers of Gherkin
 
-- `features/*.feature` (**Godog**) holds the business rules in domain language. Each scenario runs against three drivers (in-memory core, jsonfile storage, and the full HTTP server+client), all in-process and fast.
+- `features/*.feature` (**Godog**) holds the business rules in domain language. Each scenario runs against up to five drivers (in-memory core, jsonfile storage, the full HTTP server+client, the desktop app's wiring, and the mobile app's wiring across its bridge), all in-process and fast.
 - `web/e2e/features/*.feature` (**playwright-bdd**) holds a thin set of browser journeys proving the UI → API → core wiring.
 
 Keep the business rules in the first layer. Browser tests are slow and fragile, so they only prove the wiring.
