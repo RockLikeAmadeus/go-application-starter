@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"golang.org/x/tools/imports"
+
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
 // Run makes the template in dir into a new project, as asked by args (the
@@ -27,7 +29,7 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 	if err != nil {
 		return nil, err
 	}
-	if err := CheckClean(porcelain); err != nil {
+	if err := project.CheckClean(porcelain); err != nil {
 		return nil, err
 	}
 	if opts.RemoveSample {
@@ -67,7 +69,7 @@ var regenerate = [][]string{
 
 // renameFile transforms one file's content (see transform) and moves it to its
 // new path, keeping its permissions. Directories the move empties are removed.
-func renameFile(dir, rel string, n Names, removeSample bool) error {
+func renameFile(dir, rel string, n project.Names, removeSample bool) error {
 	old := filepath.Join(dir, filepath.FromSlash(rel))
 	info, err := os.Stat(old)
 	if err != nil {
@@ -102,11 +104,11 @@ func renameFile(dir, rel string, n Names, removeSample bool) error {
 var goimports = &imports.Options{Comments: true, TabIndent: true, TabWidth: 8}
 
 // transform gives a file's new content: template blocks (and, if asked, sample
-// blocks) removed and the template's names replaced. Files ShouldRewrite skips
+// blocks) removed and the template's names replaced. Files project.ShouldRewrite skips
 // come back unchanged. Go files that lost sample blocks are tidied as goimports
 // would, so the sample's code can be fenced without fencing its imports.
-func transform(rel string, content []byte, n Names, removeSample bool) ([]byte, error) {
-	if !ShouldRewrite(rel, content) {
+func transform(rel string, content []byte, n project.Names, removeSample bool) ([]byte, error) {
+	if !project.ShouldRewrite(rel, content) {
 		return content, nil
 	}
 	text, err := RemoveBlocks(string(content), templateTag)

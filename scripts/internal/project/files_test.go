@@ -1,13 +1,13 @@
-package main_test
+package project_test
 
 import (
 	"testing"
 
-	initproject "github.com/RockLikeAmadeus/go-application-starter/scripts/initproject"
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
 func TestShouldRewrite(t *testing.T) {
-	text := []byte("module github.com/RockLikeAmadeus/go-application-starter\n")
+	text := []byte("module example.com/acme/tasks\n")
 	png := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
 	tests := []struct {
 		path    string
@@ -22,7 +22,7 @@ func TestShouldRewrite(t *testing.T) {
 		{"web/pnpm-lock.yaml", text, false},
 	}
 	for _, tt := range tests {
-		if got := initproject.ShouldRewrite(tt.path, tt.content); got != tt.want {
+		if got := project.ShouldRewrite(tt.path, tt.content); got != tt.want {
 			t.Errorf("ShouldRewrite(%q) = %v, want %v", tt.path, got, tt.want)
 		}
 	}

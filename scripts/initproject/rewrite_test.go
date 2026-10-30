@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	initproject "github.com/RockLikeAmadeus/go-application-starter/scripts/initproject"
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
-var acme = initproject.Names{
+var acme = project.Names{
 	Module:    "example.com/acme/tasks",
 	Brand:     "Acme Tasks",
 	Slug:      "acme-tasks",

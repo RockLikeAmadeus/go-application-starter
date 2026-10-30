@@ -1,9 +1,9 @@
-package main_test
+package project_test
 
 import (
 	"testing"
 
-	initproject "github.com/RockLikeAmadeus/go-application-starter/scripts/initproject"
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
 func TestSlug(t *testing.T) {
@@ -19,7 +19,7 @@ func TestSlug(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := initproject.Slug(tt.name)
+			got, err := project.Slug(tt.name)
 			if tt.wantErr != "" {
 				if err == nil || err.Error() != tt.wantErr {
 					t.Fatalf("Slug(%q) error = %v, want %q", tt.name, err, tt.wantErr)
@@ -42,7 +42,7 @@ func TestEnvPrefix(t *testing.T) {
 		"acme-tasks":   "ACME_TASKS_",
 		"acme-tasks-2": "ACME_TASKS_2_",
 	} {
-		if got := initproject.EnvPrefix(slug); got != want {
+		if got := project.EnvPrefix(slug); got != want {
 			t.Errorf("EnvPrefix(%q) = %q, want %q", slug, got, want)
 		}
 	}

@@ -1,4 +1,4 @@
-package main_test
+package project_test
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	initproject "github.com/RockLikeAmadeus/go-application-starter/scripts/initproject"
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
 func TestFollowUpSkipsPnpmWhenItIsNotInstalled(t *testing.T) {
@@ -29,7 +29,7 @@ func TestFollowUpSkipsPnpmWhenItIsNotInstalled(t *testing.T) {
 			installed := func(name string) bool { return name != "pnpm" || tt.hasPnpm }
 			var out bytes.Buffer
 
-			if err := initproject.FollowUp([][]string{tidy, genWeb}, run, installed, &out); err != nil {
+			if err := project.FollowUp([][]string{tidy, genWeb}, run, installed, &out); err != nil {
 				t.Fatalf("FollowUp error = %v", err)
 			}
 
@@ -49,7 +49,7 @@ func TestFollowUpTurnsAFailingWebRegenerationIntoAHint(t *testing.T) {
 	installed := func(string) bool { return true }
 	var out bytes.Buffer
 
-	if err := initproject.FollowUp([][]string{genWeb}, run, installed, &out); err != nil {
+	if err := project.FollowUp([][]string{genWeb}, run, installed, &out); err != nil {
 		t.Fatalf("FollowUp error = %v, want the failure reported as a hint", err)
 	}
 
@@ -67,7 +67,7 @@ func TestFollowUpNamesAFailedCommandOnlyOnce(t *testing.T) {
 	installed := func(string) bool { return true }
 	var out bytes.Buffer
 
-	if err := initproject.FollowUp([][]string{genWeb}, run, installed, &out); err != nil {
+	if err := project.FollowUp([][]string{genWeb}, run, installed, &out); err != nil {
 		t.Fatalf("FollowUp error = %v", err)
 	}
 

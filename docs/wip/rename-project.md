@@ -21,7 +21,10 @@ Temporary: delete this file in the change that removes the `@wip` tags.
 
 ## Task list
 
-1. [ ] **Refactor** (no behaviour change): move `Slug`, `EnvPrefix`, `Names`, `ShouldRewrite`, `CheckClean`, `FollowUp` and git listing from `scripts/initproject` into `scripts/internal/project`, with their tests. Init stays green.
+1. [x] **Refactor** (no behaviour change): move `Slug`, `EnvPrefix`, `Names`, `ShouldRewrite`, `CheckClean`, `FollowUp` and git listing from `scripts/initproject` into `scripts/internal/project`, with their tests. Init stays green.
+   - Done. The command plumbing (`Execute`, `Installed`) moved too, as `Git`/`GitFiles`.
+   - `NewNames(Options)` stays in init for now, because it takes init's `Options`.
+   - `task test:go` and CI's unit step now also run `./scripts/internal/...`, outside the template block.
 2. [ ] `Names` gains `App`, and `Rewrite(text, from, to)` replaces one project's names with another's, including a deploy app name that differs from the slug.
 3. [ ] `Rewrite` leaves an unchanged module path intact even when it contains the old slug.
 4. [ ] `Rewrite` quotes regexp metacharacters in the brand and slug.

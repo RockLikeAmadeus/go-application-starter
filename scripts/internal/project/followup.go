@@ -1,4 +1,4 @@
-package main
+package project
 
 import (
 	"fmt"
@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-// optional is the program whose commands may fail without failing the set-up:
+// optional is the program whose commands may fail without failing the run:
 // regenerating the web client needs a working Node toolchain, which a fresh
 // clone may not have yet.
 const optional = "pnpm"
 
-// FollowUp runs the commands Run returned, in order, stopping at the first
+// FollowUp runs a tool's follow-up commands, in order, stopping at the first
 // failure. A command whose program is not installed, or an optional command
 // that fails, is skipped with a note on out, so the web toolchain never blocks
-// the rest of the set-up.
+// the rest of the run.
 func FollowUp(cmds [][]string, run func([]string) error, installed func(string) bool, out io.Writer) error {
 	for _, cmd := range cmds {
 		if !installed(cmd[0]) {

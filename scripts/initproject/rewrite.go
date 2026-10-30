@@ -3,6 +3,8 @@ package main
 import (
 	"regexp"
 	"strings"
+
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
 // The template's own names, which Rewrite replaces.
@@ -21,20 +23,12 @@ var (
 	templateCommand = regexp.MustCompile(`\bstarter\b`)
 )
 
-// Names are the new project's names, derived from the user's Options.
-type Names struct {
-	Module    string // Go module path
-	Brand     string // brand name people see, e.g. "Acme Tasks"
-	Slug      string // machine name, e.g. "acme-tasks"; see Slug
-	EnvPrefix string // environment variable prefix, e.g. "ACME_TASKS_"; see EnvPrefix
-}
-
 // Rewrite replaces the template's names in a file's text with the new project's.
 //
 // The compound names go first. At each position the replacer tries the pairs in
 // order, so the module path wins over the app name it contains. The bare words
 // "Starter" and "starter" go last, once the compound names are gone.
-func Rewrite(text string, n Names) string {
+func Rewrite(text string, n project.Names) string {
 	text = strings.NewReplacer(
 		templateModule, n.Module,
 		templateApp, n.Slug,
@@ -48,7 +42,7 @@ func Rewrite(text string, n Names) string {
 // RenamePath gives a file's new path: the command-line tool moves from
 // cmd/starter to cmd/<slug>, so its binary is named after the project.
 // Every other path is unchanged.
-func RenamePath(path string, n Names) string {
+func RenamePath(path string, n project.Names) string {
 	if rest, ok := strings.CutPrefix(path, templateCmdDir); ok {
 		return "cmd/" + n.Slug + "/" + rest
 	}

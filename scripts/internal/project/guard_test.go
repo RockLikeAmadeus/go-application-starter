@@ -1,10 +1,10 @@
-package main_test
+package project_test
 
 import (
 	"strings"
 	"testing"
 
-	initproject "github.com/RockLikeAmadeus/go-application-starter/scripts/initproject"
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
 func TestCheckClean(t *testing.T) {
@@ -19,7 +19,7 @@ func TestCheckClean(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			err := initproject.CheckClean(tt.porcelain)
+			err := project.CheckClean(tt.porcelain)
 			if !tt.wantErr {
 				if err != nil {
 					t.Fatalf("CheckClean(%q) = %v, want nil", tt.porcelain, err)

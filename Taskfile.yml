@@ -112,7 +112,7 @@ tasks:
 
   test:go:
     cmds:
-      - go test -race ./internal/... {{.CLI_ARGS}}
+      - go test -race ./internal/... ./scripts/internal/... {{.CLI_ARGS}}
       # template:start
       - go test -race ./scripts/initproject/ {{.CLI_ARGS}}
       # template:end
