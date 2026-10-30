@@ -29,12 +29,15 @@
    - Green: returns the lookup's error unwrapped.
    - Refactor: the lookup error is wrapped as `find the data folder: %w`, so a startup failure says what it was doing. The tests use two helpers, `envOf(map)` for `os.Getenv` and `configDirAt(dir)` for `os.UserConfigDir`. Left: a table test. The error case asserts differently, so a table would need branching; three short tests read better.
    - Item 11: confirm with the dry run that the folder name and SPEC.md §4.6's `~/.config/starter` are rewritten.
-3. [ ] `desktop.Open(env)`: serves `GET /api/v1/items` (empty list) from jsonfile storage in the data folder, and the data is still there after `Close` and a second `Open`.
+3. [x] `desktop.Open(env)`: serves `GET /api/v1/items` (empty list) from jsonfile storage in the data folder, and the data is still there after `Close` and a second `Open`.
    - Red: `TestOpenServesAnEmptyItemListFromTheDataFolder` in `open_test.go` (200, `{"items":[]}`, data folder created). Stub in `open.go`: `Open(getenv) (*App, error)`, `App{Handler http.Handler}`, `(*App).Close() error`. The stub's handler is `http.NotFoundHandler()`, not nil, so the red is a 404 and not a panic. Persistence after reopening is the next red.
    - Green: `Open` = `DataDir(getenv, os.UserConfigDir)` → `bootstrap.NewEmbedded(config.Config{Storage: jsonfile, DataDir: dir})` → `httpapi.NewHandler(Options{Items})`; `Close` closes the bootstrap app. `Items` is inside sample markers, as in `cmd/server`.
    - Not yet wired (no test demands them): `WebAssets: web.Assets()` (needed by item 8; the window shows the hint page without it) and a `Logger` (httpapi falls back to `slog.Default()`).
    - Refactor: the wired `bootstrap.App` (local and field) is now `core`, so it no longer reads as the desktop `App` itself. `Open`'s doc names `STARTER_DATA_DIR` and the settings-folder fallback. Left: the test's JSON decoding inline; it's the only HTTP test in the package so far, so a helper waits for the reopen test.
+   - Red (didn't go red): `TestOpenKeepsItemsAfterClosingAndReopening` passed on first run, because the previous green already wired real jsonfile storage and a real `Close`. Kept as a guard. It fails as it should when `Close` is made a no-op ("data directory is locked by another process" on the second `Open`); that mutation was reverted.
+   - Refactor: `open_test.go` now uses two helpers, `createItem(t, h, name)` (expects 201) and `itemNames(t, h)` (expects 200, returns the names). Each test now reads as open → act → check names. The empty-list test keeps its 200 check inside `itemNames`. Left: an `openAt(t, env)` helper. The two tests open differently (one cleans up, one closes mid-test), so it would save little.
 4. [ ] `desktop.Open(env)`: a second `Open` on a folder that's in use fails with `jsonfile.ErrLocked`.
+   - Expect this to pass on first run too: `bootstrap.NewEmbedded` returns jsonfile's error unwrapped. Write it as a guard (verify it with the same no-op mutation, inverted), or skip to item 5, whose "second copy" scenario covers it end to end.
 5. [ ] Acceptance: add the `desktop` driver (temp data folder, `httptest` + `httpclient`) and `@desktop` tag routing; bind the three desktop steps (thin: close/reopen, open a second copy, assert `ErrLocked`). `task accept` goes green on all four drivers.
 6. [ ] Web: in the desktop shell, `OfflineNotice` never shows, even with `navigator.onLine` false. (Settle the shell detection first; see Decisions.)
 7. [ ] Web: the service worker isn't registered in the desktop shell, if the check at item 6 shows it misbehaves there.
@@ -47,3 +50,4 @@
 14. [ ] Remove `@wip`, add follow-ups (remote mode, packaging) to TODO.md, mark step 3 done in the parent plan, delete this file. `task check` green.
 
 ## Changes to the plan
+- Item 3: the reopen test passed on first run (behaviour came with the first green's real wiring). Kept as a guard after checking it fails when `Close` doesn't release storage. Item 4 is expected to behave the same.
