@@ -2,11 +2,11 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io"
 
 	"github.com/spf13/pflag"
-	"golang.org/x/mod/module"
+
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
 // Options are what the user asked init to do.
@@ -34,8 +34,8 @@ func ParseArgs(args []string) (Options, error) {
 	if o.Name == "" {
 		return Options{}, errors.New("--name is required")
 	}
-	if err := module.CheckPath(o.Module); err != nil {
-		return Options{}, fmt.Errorf("invalid module path: %w", err)
+	if err := project.CheckModule(o.Module); err != nil {
+		return Options{}, err
 	}
 	return o, nil
 }

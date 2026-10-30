@@ -103,7 +103,14 @@ Temporary: delete this file in the change that removes the `@wip` tags.
       - `Slug`'s doc comment explains the refusal.
       - `docs/rename.md` and `docs/template.md` list it among the invalid inputs.
     - Deliberately left: an example row in the rename feature's "refuse invalid input" outline. That adds an acceptance check, so it belongs with item 14's wiring, or a `/feature` touch-up if you want it.
-9. [ ] Rename's `ParseArgs`: `--name` is required, `--module` is optional and checked, `--dry-run` is accepted, unknown flags are refused.
+9. [x] Rename's `ParseArgs`: `--name` is required, `--module` is optional and checked, `--dry-run` is accepted, unknown flags are refused.
+   - **Red:** `TestParseArgs` in `scripts/rename/args_test.go`, a table test that mirrors init's. It fails on every row: `ParseArgs` is a stub that returns zero `Options` and no error.
+     - Compile-only stubs: `scripts/rename/args.go` (`Options{Module, Name, DryRun}`, stub `ParseArgs`) and `scripts/rename/main.go` (an empty `func main`, which a `main` package needs to build). Item 14 fills in `main.go`.
+   - Green: `ParseArgs` in `scripts/rename/args.go`, a near copy of init's using pflag. `--name` is required, and `--module` is checked with `module.CheckPath` only when it's given. `task test:go` passes, but it doesn't run `./scripts/rename/` yet; item 14 adds that. No `@wip` scenario can pass yet, since `main.go` is still empty.
+   - Refactor: the module path check and its "invalid module path" wrapping are now `project.CheckModule` (`scripts/internal/project/module.go`), used by both tools' `ParseArgs`. It's covered by both `TestParseArgs` tables, so it has no test of its own.
+   - Deliberately left:
+     - The two flag sets stay separate: they differ in flags and in which are required.
+     - The flag help texts aren't printed anywhere, in either tool, because output is discarded. Leave them unless `main.go` (item 14) shows usage.
 10. [ ] Rename's `NewNames` keeps the current module when `--module` is omitted, and refuses with "nothing to rename" when the new names equal the current ones.
 11. [ ] Rename's `Run` with `--dry-run` reports changed files, lines and path moves, writes nothing, and needs no clean tree.
 12. [ ] Rename's `Run` does the rename: clean-tree guard, every tracked file except `project.json`, then writes the record.
