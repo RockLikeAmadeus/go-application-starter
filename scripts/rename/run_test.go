@@ -13,10 +13,7 @@ import (
 )
 
 func TestRunWithDryRunReportsTheChangesAndWritesNothing(t *testing.T) {
-	dir := t.TempDir()
-	if err := project.WriteRecord(dir, acme); err != nil {
-		t.Fatal(err)
-	}
+	dir := newAcmeProject(t)
 	files := map[string]string{
 		"README.md":        "# Acme\n\nUnrelated line.\n",
 		"cmd/acme/main.go": "package main\n",
@@ -55,10 +52,7 @@ func TestRunWithDryRunReportsTheChangesAndWritesNothing(t *testing.T) {
 }
 
 func TestRunRenamesTheProject(t *testing.T) {
-	dir := t.TempDir()
-	if err := project.WriteRecord(dir, acme); err != nil {
-		t.Fatal(err)
-	}
+	dir := newAcmeProject(t)
 	writeFile(t, dir, "README.md", "# Acme\n\nSet ACME_STORAGE to choose storage.\n")
 	writeFile(t, dir, "cmd/acme/main.go", "// Command acme runs Acme.\npackage main\n")
 
@@ -80,5 +74,42 @@ func TestRunRenamesTheProject(t *testing.T) {
 	want := project.Names{Module: acme.Module, Brand: "Zenith", Slug: "zenith", App: "zenith", EnvPrefix: "ZENITH_"}
 	if got, err := project.ReadRecord(dir); err != nil || got != want {
 		t.Errorf("record = %+v, %v; want %+v", got, err, want)
+	}
+}
+
+func TestRunRefusesUncommittedChangesAndChangesNothing(t *testing.T) {
+	dir := newAcmeProject(t)
+	writeFile(t, dir, "README.md", "# Acme\n")
+
+	_, err := rename.Run(dir, []string{"README.md", project.RecordFile},
+		[]string{"--name", "Zenith"}, " M README.md\n", io.Discard)
+
+	if err == nil || !strings.Contains(err.Error(), "commit or stash your changes first") {
+		t.Errorf("Run error = %v, want one mentioning %q", err, "commit or stash your changes first")
+	}
+	if got := readFile(t, dir, "README.md"); got != "# Acme\n" {
+		t.Errorf("README.md = %q, want it unchanged", got)
+	}
+	if got, err := project.ReadRecord(dir); err != nil || got != acme {
+		t.Errorf("record = %+v, %v; want it unchanged", got, err)
+	}
+}
+
+func TestRunWithDryRunListsOnlyFilesARealRunRewrites(t *testing.T) {
+	dir := newAcmeProject(t)
+	writeFile(t, dir, "go.sum", "example.com/acme/tasks v1.0.0 h1:abc=\n")
+	var out bytes.Buffer
+
+	_, err := rename.Run(dir, []string{"go.sum", project.RecordFile},
+		[]string{"--name", "Zenith", "--module", "example.com/zenith/notes", "--dry-run"}, "", &out)
+	if err != nil {
+		t.Fatalf("Run error = %v", err)
+	}
+
+	// go.sum is a lock file, and the record is written rather than rewritten.
+	for _, skipped := range []string{"go.sum", project.RecordFile} {
+		if strings.Contains(out.String(), skipped) {
+			t.Errorf("output lists %s:\n%s", skipped, out.String())
+		}
 	}
 }

@@ -8,9 +8,6 @@ import (
 	rename "github.com/RockLikeAmadeus/go-application-starter/scripts/rename"
 )
 
-// acme is the names of the project being renamed.
-var acme = project.Names{Module: "example.com/acme/tasks", Brand: "Acme", Slug: "acme", App: "acme", EnvPrefix: "ACME_"}
-
 func TestNewNamesKeepsTheCurrentModuleWhenNoneIsGiven(t *testing.T) {
 	got, err := rename.NewNames(rename.Options{Name: "Zenith Notes"}, acme)
 	if err != nil {

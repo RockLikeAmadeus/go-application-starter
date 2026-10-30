@@ -141,7 +141,7 @@ Temporary: delete this file in the change that removes the `@wip` tags.
     - Deliberately left:
       - The skips (`project.json`, `ShouldRewrite`) and honouring `--dry-run` are behaviour, so they wait for item 12's tests. A dry run must list exactly what a real run changes.
       - The `- ` / `+ ` format stays as the test pins it.
-12. [ ] Rename's `Run` does the rename: clean-tree guard, every tracked file except `project.json`, then writes the record.
+12. [x] Rename's `Run` does the rename: clean-tree guard, every tracked file except `project.json`, then writes the record.
     - Split into one `/red` each: (a) the rename itself, (b) the clean-tree guard, (c) skipping `project.json` and files `ShouldRewrite` rejects, in both the real run and the dry run.
     - **Red (rename):** `TestRunRenamesTheProject` in `scripts/rename/run_test.go`. Renaming "Acme" to "Zenith" (no `--dry-run`, clean tree) must rewrite `README.md` (brand and env prefix), move `cmd/acme/main.go` to `cmd/zenith/main.go` with its text renamed, remove `cmd/acme`, and record the new names. It fails: `Run` only previews, so `README.md` is unchanged and `cmd/zenith/main.go` doesn't exist.
     - Green (rename): without `--dry-run`, `Run` passes every listed file to `project.RenameFile` with a pass-through `keep` extra, then calls `project.WriteRecord`. With `--dry-run`, it previews as before. `project.json` is still renamed as text first and then overwritten, which is harmless until (c).
@@ -149,6 +149,18 @@ Temporary: delete this file in the change that removes the `@wip` tags.
     - Deliberately left:
       - The pass-through `keep` closure stays. Letting `RenameFile` take nil would change `project`'s behaviour, and one line of closure isn't worth a `/red`. That supersedes item 7's note that the rename tool needs nil allowed.
       - The two `Run` tests each write the `acme` record first; with only two, a helper isn't worth it yet.
+    - **Red (clean tree):** `TestRunRefusesUncommittedChangesAndChangesNothing` in `scripts/rename/run_test.go`. With porcelain ` M README.md`, a real rename to "Zenith" must fail with "commit or stash your changes first" and leave `README.md` and the record unchanged. It fails: `Run` renames anyway.
+    - Green (clean tree): after the dry-run branch, `Run` calls `project.CheckClean(porcelain)` before `renameAll`.
+    - Refactor: the three `Run` tests start from `newAcmeProject(t)` in `scripts/rename/helpers_test.go`, which makes a temp dir holding the `acme` record. The `acme` fixture moved there from `names_test.go`, since both test files use it.
+    - Deliberately left: `Run` itself, which reads cleanly as checks, then a preview or a guarded rename.
+    - **Red (skips):** `TestRunWithDryRunListsOnlyFilesARealRunRewrites` in `scripts/rename/run_test.go`. A dry run to "Zenith" with a new module must not list `go.sum` (a lock file `ShouldRewrite` rejects) or `project.json` (written, not rewritten). It fails: the preview lists both, with their changed lines.
+      - Only the dry run is tested. A real run already leaves both right: `RenameFile` skips what `ShouldRewrite` rejects, and `WriteRecord` overwrites whatever the text rewrite made of `project.json`. Skipping the record in `renameAll` too is a refactor, like init's.
+    - Green (skips): `previewAll` skips `project.RecordFile`, and `preview` lists a file's changed lines only when `ShouldRewrite` accepts it (its move is still listed).
+    - Refactor:
+      - `renameAll` skips `project.RecordFile` too, as init's loop does, so the preview and the real run touch the same files. `WriteRecord` writes it afresh.
+      - `preview` asks `ShouldRewrite` before rewriting.
+      - The doc comments say `previewAll` mirrors `renameAll`, and that the record is written, not renamed.
+    - Deliberately left: the record skip appears in both loops. Filtering `files` once in `Run` would mean copying the caller's slice, which costs more than the two lines it saves.
 13. [ ] Rename's `Run` returns `go mod tidy` as a follow-up only when the module changed.
 14. [ ] Wiring and docs:
     - `scripts/rename/main.go`;

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
 // writeFile creates dir/rel (a slash-separated path) with content, making any
@@ -27,4 +29,17 @@ func readFile(t *testing.T, dir, rel string) string {
 		t.Fatal(err)
 	}
 	return string(b)
+}
+
+// acme is the names of the project being renamed.
+var acme = project.Names{Module: "example.com/acme/tasks", Brand: "Acme", Slug: "acme", App: "acme", EnvPrefix: "ACME_"}
+
+// newAcmeProject returns a temporary directory whose record names it acme.
+func newAcmeProject(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	if err := project.WriteRecord(dir, acme); err != nil {
+		t.Fatal(err)
+	}
+	return dir
 }

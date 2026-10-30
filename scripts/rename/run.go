@@ -29,12 +29,19 @@ func Run(dir string, files []string, args []string, porcelain string, out io.Wri
 	if opts.DryRun {
 		return nil, previewAll(out, dir, files, old, n)
 	}
+	if err := project.CheckClean(porcelain); err != nil {
+		return nil, err
+	}
 	return nil, renameAll(dir, files, old, n)
 }
 
-// previewAll lists on out what renaming files would do, without changing them.
+// previewAll lists on out what renameAll would do to files, without changing
+// them.
 func previewAll(out io.Writer, dir string, files []string, old, n project.Names) error {
 	for _, rel := range files {
+		if rel == project.RecordFile {
+			continue
+		}
 		if err := preview(out, dir, rel, old, n); err != nil {
 			return err
 		}
@@ -42,10 +49,14 @@ func previewAll(out io.Writer, dir string, files []string, old, n project.Names)
 	return nil
 }
 
-// renameAll gives files the new names, then records them.
+// renameAll gives files the new names, then records them. The record is
+// written afresh, not renamed.
 func renameAll(dir string, files []string, old, n project.Names) error {
 	keep := func(_, text string) (string, error) { return text, nil }
 	for _, rel := range files {
+		if rel == project.RecordFile {
+			continue
+		}
 		if err := project.RenameFile(dir, rel, old, n, keep); err != nil {
 			return err
 		}
@@ -60,9 +71,11 @@ func preview(out io.Writer, dir, rel string, old, n project.Names) error {
 	if err != nil {
 		return err
 	}
-	if text := project.Rewrite(string(content), old, n); text != string(content) {
-		fmt.Fprintln(out, rel)
-		printChangedLines(out, string(content), text)
+	if project.ShouldRewrite(rel, content) {
+		if text := project.Rewrite(string(content), old, n); text != string(content) {
+			fmt.Fprintln(out, rel)
+			printChangedLines(out, string(content), text)
+		}
 	}
 	if newRel := project.RenamePath(rel, old, n); newRel != rel {
 		fmt.Fprintln(out, rel+" -> "+newRel)
