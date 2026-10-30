@@ -81,6 +81,25 @@ Users can switch the web app between styles, so it suits how they like to work: 
 
 **Specification:** [`web/e2e/features/style.feature`](web/e2e/features/style.feature). Like the theme, this is presentation only, so there are no Godog scenarios.
 
+### 4.4 Use on a phone _(web only)_
+
+Users can use the web app comfortably on a phone, so they aren't tied to a desktop browser. This also lays the groundwork for the installable and mobile apps.
+
+**Rules**
+- On a phone-sized screen, the app's navigation and Appearance controls are tucked away behind a menu, so the page content gets the full width.
+- The menu starts closed. Opening it shows the navigation and the Appearance controls.
+- The menu closes when the user goes somewhere from it, presses Escape, or taps outside it.
+- At phone width, pages never need sideways scrolling, in every style and both themes.
+- On a wide screen, the navigation is always visible and there is no menu.
+
+**Examples**
+- Phone, first visit → the content fills the screen and a menu button is shown; the navigation is hidden.
+- Phone, user opens the menu and switches to Soft → Soft style; the menu stays open until dismissed.
+- Phone, Terminal style, dark theme → no sideways scrolling.
+- Laptop → the sidebar is shown and there is no menu button.
+
+**Specification:** [`web/e2e/features/phone.feature`](web/e2e/features/phone.feature). Presentation only, so there are no Godog scenarios. Scenarios tagged `@phone` run on an emulated Android phone (Chromium) and an emulated iPhone (WebKit). The rest run on desktop Chromium.
+
 ## 5. Non-functional requirements
 
 | Area | Requirement |

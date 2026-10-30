@@ -19,7 +19,7 @@ tasks:
     cmds:
       - go mod download
       - pnpm --dir web install
-      - pnpm --dir web exec playwright install --with-deps chromium
+      - pnpm --dir web exec playwright install --with-deps chromium webkit
       - cmd: lefthook install
         ignore_error: true
 

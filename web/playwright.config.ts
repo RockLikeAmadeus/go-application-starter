@@ -26,7 +26,13 @@ export default defineConfig({
     baseURL,
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // @phone scenarios run only on the emulated phones; everything else runs on
+  // desktop Chromium. WebKit on an iPhone is the closest we get to Safari on Linux.
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, grepInvert: /@phone/ },
+    { name: "phone", use: { ...devices["Pixel 7"] }, grep: /@phone/ },
+    { name: "iphone", use: { ...devices["iPhone 15"] }, grep: /@phone/ },
+  ],
   // Skip starting a server when pointing at an existing deployment (smoke tests).
   webServer: process.env.E2E_BASE_URL
     ? undefined
