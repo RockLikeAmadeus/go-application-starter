@@ -83,6 +83,11 @@ func spaHandler(assets fs.FS) http.Handler {
 		if _, err := fs.Stat(assets, name); errors.Is(err, fs.ErrNotExist) {
 			r.URL.Path = "/"
 		}
+		// No MIME table Go reads knows the web app manifest (nor does the
+		// distroless image), so the file server would sniff it as text/plain.
+		if path.Ext(name) == ".webmanifest" {
+			w.Header().Set("Content-Type", "application/manifest+json")
+		}
 		fileServer.ServeHTTP(w, r)
 	})
 }
