@@ -64,6 +64,12 @@ web/e2e                          playwright-bdd browser journeys
 - Vim navigation is required (see SPEC.md §5). Every list or selectable view binds `j`/`k` alongside `down`/`up`, as `internal/adapters/tui/model.go` does. Bind them only while browsing, never while a text input has focus, so users can still type those letters.
 - Cover the `j`/`k` bindings in `model_test.go` for each new view.
 
+## Web styles
+
+- A **style** (SPEC.md §4.3) is a named look for the SPA: layout, fonts, shape and density. It is separate from the dark/light **theme**, and every style must work in both.
+- Styles and the shared colour palette live in `web/src/styles/`. The active style is the `data-style` attribute on `<html>`.
+- `web/design-inspiration/` holds the reference palette (`.hex`) and mockups for the starter's styles. A new project replaces it with its own. Colours come from the palette, not the mockups.
+
 ## Testing conventions
 
 - Go: standard `testing`, table tests where useful, black-box `_test` packages by default. No assertion library.

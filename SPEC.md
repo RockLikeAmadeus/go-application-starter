@@ -21,7 +21,8 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | Term | Meaning |
 |---|---|
 | **Item** | A named thing the user wants to track. Placeholder entity for the walking skeleton. |
-| **Theme** | The colour scheme of the web app: **dark** or **light**. |
+| **Theme** | The colour scheme of the web app: **dark** or **light**. Independent of the style. |
+| **Style** | A named look for the web app: its layout, fonts, shape and density. Independent of the theme; every style works in dark and light. |
 
 ## 4. Capabilities
 
@@ -52,6 +53,24 @@ Users can switch the web app between a dark and a light theme, so it suits their
 - System prefers dark, user switches to light and comes back later → light theme.
 
 **Specification:** [`web/e2e/features/theme.feature`](web/e2e/features/theme.feature). This is a presentation concern with no core behaviour, so there are no Godog scenarios.
+
+### 4.3 Choose a style _(web only)_
+
+Users can switch the web app between styles, so it suits how they like to work: compact and dense, or roomy and soft.
+
+**Rules**
+- The app offers a fixed list of styles. The starter offers **Crisp**, **Terminal** and **Soft**.
+- A first visit uses the first style in the list.
+- A user's chosen style is remembered in their browser and wins on later visits. A remembered style the app no longer offers falls back to the first style.
+- Style and theme are independent: changing one never changes the other.
+- Every style uses the product's single colour palette.
+
+**Examples**
+- First visit → Crisp.
+- User switches to Terminal and comes back later → Terminal.
+- In the dark theme, user switches to Soft → Soft style, still dark.
+
+**Specification:** [`web/e2e/features/style.feature`](web/e2e/features/style.feature). Like the theme, this is presentation only, so there are no Godog scenarios.
 
 ## 5. Non-functional requirements
 
