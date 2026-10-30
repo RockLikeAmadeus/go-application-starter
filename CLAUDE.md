@@ -24,6 +24,13 @@ The sample domain is `Item`; replace it when starting a real product.
 - `/green` leaves a **For refactor:** note under its item, listing the refactoring it spotted. `/refactor` starts from that note and replaces it with what it did.
 - Delete the file in the same change that removes the `@wip` tags.
 
+`TODO.md` is the backlog. When an item needs more than one `/feature`, its plan lives in `docs/plans/<item-slug>.md`, which is also tracked and temporary:
+- The plan holds the item's decisions, an ordered list of steps (each one a `/feature`) with their status, and a log of plan changes. The TODO item links to it.
+- When resuming the item, read the plan first, then the current step's `docs/wip/` file, if one exists.
+- When a step's feature finishes, mark the step done in the plan, with a one-line summary and links, and log any plan changes.
+- Delete the plan in the same change that ticks the TODO item. Move any follow-ups still open into `TODO.md` first.
+- A plan made in plan mode lives outside the repo, so copy it into `docs/plans/` before starting the first step.
+
 Never skip a step or merge steps unless I ask. Never write production code without a failing test that demands it.
 
 Never stage, commit, push or pull unless I explicitly ask. That includes `git add`, `git mv` and `git rm`, which stage changes. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
