@@ -116,7 +116,8 @@
      - A 10 s run with `STARTER_DATA_DIR` in the scratchpad loaded `/`, its assets, `/api/v1/connection` and `/api/v1/items` in-process, with no `/sw.js` request.
      - `go build ./...`, `go vet ./...` and `task lint` pass.
      - The port check in that run was flawed (`pgrep` matched three processes), so redo it in item 13.
-10. [ ] `docs/adr/0004-native-shells.md`. Include the "Keep remote mode open" decision (local-only or cloud, no sync), then repoint TODO.md's link to it, which points at this file today.
+10. [x] `docs/adr/0004-native-shells.md`. Include the "Keep remote mode open" decision (local-only or cloud, no sync), then repoint TODO.md's link to it, which points at this file today.
+   - Written: it covers the desktop decisions (Wails in-process, `internal/adapters/desktop` without Wails, local-only with remote mode kept open, no sync, the connection endpoint over sniffing `window._wails`, no service worker, and the rejected options including a local port) and mobile's remote-only plan, as the parent plan asked. Status is "accepted (desktop built; mobile planned)"; step 4 updates the mobile part if it changes. TODO.md's link now points to the ADR's "Local-only for now, remote mode kept open". The ADR doesn't link to this file, which will be deleted.
 11. [ ] Rename/init: the window title and `bin/starter-desktop` follow the rename. Check with `task rename -- --name "Acme Tasks" --dry-run`, then `task test:rename` and `task test:init`.
 12. [ ] CLAUDE.md: architecture lines (`cmd/desktop`, `internal/adapters/desktop`), Commands rows, Gotchas (build deps; the desktop app locks its data folder like the server).
 13. [ ] Manual check: `task run:desktop`; create, rename and delete an item; restart and see it persist; `ss -ltnp` shows no port; network off shows no offline notice.
