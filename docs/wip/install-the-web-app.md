@@ -66,6 +66,10 @@ Run: `task e2e -- --project chromium --grep @wip` (`task e2e` rebuilds the SPA f
      - The paragraph has no styling: no palette colour or size. Probably wait for task 6, where it gets a place in `Layout` and its look can be judged in context. Styling doesn't change what the test sees.
      - The message is an inline string inside JSX. Fine while it's the only one.
 5. [ ] `OfflineNotice` shows the message when an `offline` event fires, and clears it when an `online` event fires.
+   - 5a Red (offline event): `OfflineNotice.test.tsx` › "says the app is offline as soon as the connection drops" fails. It renders online, flips the `navigator.onLine` stub to `false`, and dispatches `offline` on `window` inside `act`. The `status` region exists but is empty: nothing re-renders the component on the event. Task 4's **For refactor:** notes are still open; they fit task 6.
+   - 5a Green: `OfflineNotice` reads `navigator.onLine` through `useSyncExternalStore`. A module-level `subscribe` listens only for `offline` on `window`, since the `online` event isn't demanded yet (5b). Web suite: 44 pass; lint clean.
+   - **For refactor:** the online/offline subscription is generic (it knows nothing about the notice). Once 5b adds `online`, moving it into a `useOnline()` hook (`features/offline/useOnline.ts`) would let the component read as markup only and give other code (e.g. a future "retry" button) the same source. Wait for 5b: with one event the hook would be thinner than its name.
+   - 5b (still to do): the `online` event clears it.
 6. [ ] `Layout` renders the offline notice. Then:
    - run the `@wip` scenarios, and the full `task e2e` (the service worker must not break the other 51);
    - remove the `@wip` tags;
