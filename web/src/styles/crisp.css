@@ -1,0 +1,13 @@
+/* Crisp: clean sans-serif, light borders, small radius. Also the default. */
+@import "@fontsource-variable/inter";
+
+:root,
+:root[data-style="crisp"] {
+  --style-font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --style-font-label: var(--style-font-sans);
+  --style-label-case: none;
+  --style-label-tracking: normal;
+  --style-radius-panel: 0.5rem;
+  --style-radius-control: 0.375rem;
+  --style-row-py: 0.75rem;
+}

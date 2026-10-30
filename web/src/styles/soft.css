@@ -1,0 +1,12 @@
+/* Soft: rounded geometric sans, pill controls, roomy rows. */
+@import "@fontsource-variable/plus-jakarta-sans";
+
+:root[data-style="soft"] {
+  --style-font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --style-font-label: var(--style-font-sans);
+  --style-label-case: none;
+  --style-label-tracking: normal;
+  --style-radius-panel: 1.5rem;
+  --style-radius-control: 9999px;
+  --style-row-py: 0.9rem;
+}

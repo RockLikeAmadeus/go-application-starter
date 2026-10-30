@@ -1,4 +1,29 @@
 @import "tailwindcss";
+@import "./styles/palette.css";
+@import "./styles/crisp.css";
+@import "./styles/terminal.css";
+@import "./styles/soft.css";
 
 /* dark: styles follow the theme the user chose (see features/theme), not the OS. */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Style variants (see features/style), for the few places markup differs per style. */
+@custom-variant crisp (&:where([data-style="crisp"] *));
+@custom-variant terminal (&:where([data-style="terminal"] *));
+@custom-variant soft (&:where([data-style="soft"] *));
+
+/* Style tokens, set by the files in ./styles, as utilities: font-sans, rounded-panel, py-row, … */
+@theme inline {
+  --font-sans: var(--style-font-sans);
+  --font-label: var(--style-font-label);
+  --radius-panel: var(--style-radius-panel);
+  --radius-control: var(--style-radius-control);
+  --spacing-row: var(--style-row-py);
+}
+
+/* Headings, buttons and table headers: upper-case and monospaced in some styles. */
+@utility type-label {
+  font-family: var(--style-font-label);
+  text-transform: var(--style-label-case);
+  letter-spacing: var(--style-label-tracking);
+}

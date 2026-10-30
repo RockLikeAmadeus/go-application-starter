@@ -68,6 +68,9 @@ web/e2e                          playwright-bdd browser journeys
 
 - A **style** (SPEC.md §4.3) is a named look for the SPA: layout, fonts, shape and density. It is separate from the dark/light **theme**, and every style must work in both.
 - Styles and the shared colour palette live in `web/src/styles/`. The active style is the `data-style` attribute on `<html>`.
+- Colours: use only the semantic utilities from `palette.css` (`bg-panel`, `text-muted`, `border-line`, `bg-sidebar`, …). Tailwind's default colours are switched off, so `slate-500` and friends won't compile to anything.
+- Style tokens: `font-sans`, `rounded-panel`, `rounded-control`, `py-row` and the `type-label` utility (headings, buttons, table headers) change per style. Reach for the `crisp:`, `terminal:` and `soft:` variants only where markup really must differ.
+- To add a style: add it to `styles` in `web/src/features/style/style.ts`, create `web/src/styles/<id>.css` setting the `--style-*` variables under `:root[data-style="<id>"]` (self-host fonts with `@fontsource`), and import it in `web/src/index.css`.
 - `web/design-inspiration/` holds the reference palette (`.hex`) and mockups for the starter's styles. A new project replaces it with its own. Colours come from the palette, not the mockups.
 
 ## Testing conventions

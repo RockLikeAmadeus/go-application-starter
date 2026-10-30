@@ -1,4 +1,3 @@
-@wip
 Feature: Choose a style
   # Presentation only: the style never reaches the core, so these browser
   # scenarios are the specification (there is no Godog counterpart).

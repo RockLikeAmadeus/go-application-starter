@@ -1,0 +1,106 @@
+/*
+ * The product's colour palette, from web/design-inspiration/color palette.hex
+ * (darkest to lightest), and the semantic colours every style uses in the
+ * light and dark themes. A new project swaps the hex values here.
+ *
+ * Tailwind's default colours are removed so components can only use these.
+ */
+@theme static {
+  --color-*: initial;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --color-ink: #392c31;
+  --color-plum: #4a3c4a;
+  --color-smoke: #5a555a;
+  --color-graphite: #62696a;
+  --color-sage: #73817b;
+  --color-pewter: #83898b;
+  --color-lichen: #83918b;
+  --color-heather: #a49da4;
+  --color-rose: #c5b2bd;
+  --color-blush: #d5becd;
+  --color-mist: #ded6de;
+  --color-frost: #e6eaee;
+}
+
+/* Semantic colours, as utilities: bg-panel, text-muted, border-line, … */
+@theme inline {
+  --color-bg: var(--ui-bg);
+  --color-panel: var(--ui-panel);
+  --color-sunken: var(--ui-sunken);
+  --color-line: var(--ui-line);
+  --color-fg: var(--ui-fg);
+  --color-muted: var(--ui-muted);
+  --color-accent: var(--ui-accent);
+  --color-accent-fg: var(--ui-accent-fg);
+  --color-danger: var(--ui-danger);
+  --color-focus: var(--ui-focus);
+  --color-sidebar: var(--ui-sidebar);
+  --color-sidebar-fg: var(--ui-sidebar-fg);
+  --color-sidebar-muted: var(--ui-sidebar-muted);
+  --color-sidebar-line: var(--ui-sidebar-line);
+  --color-sidebar-active: var(--ui-sidebar-active);
+  --color-sidebar-active-fg: var(--ui-sidebar-active-fg);
+  --color-sidebar-accent: var(--ui-sidebar-accent);
+}
+
+:root {
+  --ui-bg: var(--color-frost);
+  --ui-panel: color-mix(in oklab, var(--color-frost) 25%, white);
+  --ui-sunken: color-mix(in oklab, var(--color-mist) 45%, white);
+  --ui-line: var(--color-mist);
+  --ui-fg: var(--color-ink);
+  --ui-muted: var(--color-graphite);
+  --ui-accent: var(--color-plum);
+  --ui-accent-fg: var(--color-frost);
+  /* Not in the palette: a muted red that sits with the plums. */
+  --ui-danger: #a03c4b;
+  --ui-focus: var(--color-sage);
+
+  /* The sidebar matches the panels unless a style says otherwise. */
+  --ui-sidebar: var(--ui-panel);
+  --ui-sidebar-fg: var(--ui-fg);
+  --ui-sidebar-muted: var(--color-smoke);
+  --ui-sidebar-line: var(--ui-line);
+  --ui-sidebar-active: var(--color-mist);
+  --ui-sidebar-active-fg: var(--ui-fg);
+  --ui-sidebar-accent: var(--color-plum);
+}
+
+:root.dark {
+  --ui-bg: color-mix(in oklab, var(--color-ink) 75%, black);
+  --ui-panel: color-mix(in oklab, var(--color-ink) 90%, black);
+  --ui-sunken: var(--color-ink);
+  --ui-line: color-mix(in oklab, var(--color-plum) 80%, black);
+  --ui-fg: var(--color-frost);
+  --ui-muted: var(--color-heather);
+  --ui-accent: var(--color-blush);
+  --ui-accent-fg: var(--color-ink);
+  --ui-danger: #e3a1aa;
+  --ui-focus: var(--color-rose);
+
+  --ui-sidebar-muted: var(--color-heather);
+  --ui-sidebar-active: var(--color-plum);
+  --ui-sidebar-accent: var(--color-blush);
+}
+
+/* A dark sidebar, used by styles that want one in both themes. */
+:root[data-style="terminal"],
+:root[data-style="soft"] {
+  --ui-sidebar: var(--color-ink);
+  --ui-sidebar-fg: var(--color-frost);
+  --ui-sidebar-muted: var(--color-heather);
+  --ui-sidebar-line: var(--color-plum);
+  --ui-sidebar-active: var(--color-plum);
+  --ui-sidebar-active-fg: var(--color-frost);
+  --ui-sidebar-accent: var(--color-blush);
+}
+
+:root.dark[data-style="terminal"],
+:root.dark[data-style="soft"] {
+  --ui-sidebar: color-mix(in oklab, var(--color-ink) 50%, black);
+  --ui-sidebar-line: var(--ui-line);
+}
