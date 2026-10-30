@@ -2,12 +2,14 @@ package desktop_test
 
 import (
 	"encoding/json"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/desktop"
 )
@@ -27,7 +29,7 @@ func TestOpenServesAnEmptyItemListFromTheDataFolder(t *testing.T) {
 func TestOpenKeepsItemsAfterClosingAndReopening(t *testing.T) {
 	env := envOf(map[string]string{"STARTER_DATA_DIR": t.TempDir()})
 
-	first, err := desktop.Open(env)
+	first, err := desktop.Open(env, nil)
 	if err != nil {
 		t.Fatalf("first Open: %v", err)
 	}
@@ -36,7 +38,7 @@ func TestOpenKeepsItemsAfterClosingAndReopening(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 
-	second, err := desktop.Open(env)
+	second, err := desktop.Open(env, nil)
 	if err != nil {
 		t.Fatalf("second Open: %v", err)
 	}
@@ -93,6 +95,18 @@ func TestOpenReportsNoConnectionIsRequired(t *testing.T) {
 	}
 }
 
+func TestOpenServesTheWebApp(t *testing.T) {
+	webApp := fstest.MapFS{"index.html": {Data: []byte("<title>Starter</title>")}}
+	app := openWith(t, t.TempDir(), webApp)
+
+	rec := httptest.NewRecorder()
+	app.Handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if got := rec.Body.String(); got != "<title>Starter</title>" {
+		t.Errorf("GET /: body = %q, want the web app's index.html", got)
+	}
+}
+
 // The desktop app's files are built into it, so it needs no service worker
 // (see withoutServiceWorker for why it would do harm).
 func TestOpenServesNoServiceWorker(t *testing.T) {
@@ -106,10 +120,18 @@ func TestOpenServesNoServiceWorker(t *testing.T) {
 	}
 }
 
-// openAt opens the desktop app on dataDir and closes it when the test ends.
+// openAt opens the desktop app on dataDir, without the web app, and closes it
+// when the test ends.
 func openAt(t *testing.T, dataDir string) *desktop.App {
 	t.Helper()
-	app, err := desktop.Open(envOf(map[string]string{"STARTER_DATA_DIR": dataDir}))
+	return openWith(t, dataDir, nil)
+}
+
+// openWith opens the desktop app on dataDir, serving webApp, and closes it
+// when the test ends.
+func openWith(t *testing.T, dataDir string, webApp fs.FS) *desktop.App {
+	t.Helper()
+	app, err := desktop.Open(envOf(map[string]string{"STARTER_DATA_DIR": dataDir}), webApp)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}

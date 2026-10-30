@@ -1,6 +1,7 @@
 package desktop
 
 import (
+	"io/fs"
 	"net/http"
 	"os"
 
@@ -19,7 +20,8 @@ type App struct {
 // Open opens the desktop app's data folder (see DataDir: STARTER_DATA_DIR,
 // else the user's settings folder) and wires the core behind the server's
 // HTTP handler. getenv reads the environment (os.Getenv in production).
-func Open(getenv func(string) string) (*App, error) {
+// webAssets is the built web app (web.Assets() in production).
+func Open(getenv func(string) string, webAssets fs.FS) (*App, error) {
 	dir, err := DataDir(getenv, os.UserConfigDir)
 	if err != nil {
 		return nil, err
@@ -33,6 +35,7 @@ func Open(getenv func(string) string) (*App, error) {
 		Items: core.Items,
 		// sample:end
 		LocalData: true,
+		WebAssets: webAssets,
 	})
 	return &App{
 		Handler: withoutServiceWorker(api),
