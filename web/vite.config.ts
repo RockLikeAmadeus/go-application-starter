@@ -17,6 +17,9 @@ const pwa = VitePWA({
     // must always reach the server (the app never shows a stored copy of
     // data), and so must the health probes.
     navigateFallbackDenylist: [/^\/api\//, /^\/healthz$/, /^\/readyz$/],
+    // The Wails runtime is only for the Android app, which runs no service
+    // worker, so browsers shouldn't download it when they install the app.
+    globIgnores: ["**/wails-runtime-*.js"],
   },
   manifest: {
     name: "Starter",
@@ -43,6 +46,15 @@ const pwa = VitePWA({
 // In production the Go server serves the built files directly.
 export default defineConfig({
   plugins: [react(), tailwindcss(), pwa],
+  build: {
+    rolldownOptions: {
+      output: {
+        // A fixed name for the Wails runtime's chunk, so the service worker
+        // can leave it out (see globIgnores).
+        codeSplitting: { groups: [{ name: "wails-runtime", test: /@wailsio[\\/]runtime/ }] },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {
