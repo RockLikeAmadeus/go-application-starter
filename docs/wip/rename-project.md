@@ -142,6 +142,13 @@ Temporary: delete this file in the change that removes the `@wip` tags.
       - The skips (`project.json`, `ShouldRewrite`) and honouring `--dry-run` are behaviour, so they wait for item 12's tests. A dry run must list exactly what a real run changes.
       - The `- ` / `+ ` format stays as the test pins it.
 12. [ ] Rename's `Run` does the rename: clean-tree guard, every tracked file except `project.json`, then writes the record.
+    - Split into one `/red` each: (a) the rename itself, (b) the clean-tree guard, (c) skipping `project.json` and files `ShouldRewrite` rejects, in both the real run and the dry run.
+    - **Red (rename):** `TestRunRenamesTheProject` in `scripts/rename/run_test.go`. Renaming "Acme" to "Zenith" (no `--dry-run`, clean tree) must rewrite `README.md` (brand and env prefix), move `cmd/acme/main.go` to `cmd/zenith/main.go` with its text renamed, remove `cmd/acme`, and record the new names. It fails: `Run` only previews, so `README.md` is unchanged and `cmd/zenith/main.go` doesn't exist.
+    - Green (rename): without `--dry-run`, `Run` passes every listed file to `project.RenameFile` with a pass-through `keep` extra, then calls `project.WriteRecord`. With `--dry-run`, it previews as before. `project.json` is still renamed as text first and then overwritten, which is harmless until (c).
+    - Refactor: `Run` now only checks and chooses. The two loops are `previewAll(out, dir, files, old, n)` and `renameAll(dir, files, old, n)`, which also writes the record. `Run`'s doc comment mentions `--dry-run`.
+    - Deliberately left:
+      - The pass-through `keep` closure stays. Letting `RenameFile` take nil would change `project`'s behaviour, and one line of closure isn't worth a `/red`. That supersedes item 7's note that the rename tool needs nil allowed.
+      - The two `Run` tests each write the `acme` record first; with only two, a helper isn't worth it yet.
 13. [ ] Rename's `Run` returns `go mod tidy` as a follow-up only when the module changed.
 14. [ ] Wiring and docs:
     - `scripts/rename/main.go`;

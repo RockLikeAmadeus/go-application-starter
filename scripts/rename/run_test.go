@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,5 +51,34 @@ func TestRunWithDryRunReportsTheChangesAndWritesNothing(t *testing.T) {
 	}
 	if got, err := project.ReadRecord(dir); err != nil || got != acme {
 		t.Errorf("record = %+v, %v; want it unchanged", got, err)
+	}
+}
+
+func TestRunRenamesTheProject(t *testing.T) {
+	dir := t.TempDir()
+	if err := project.WriteRecord(dir, acme); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, dir, "README.md", "# Acme\n\nSet ACME_STORAGE to choose storage.\n")
+	writeFile(t, dir, "cmd/acme/main.go", "// Command acme runs Acme.\npackage main\n")
+
+	_, err := rename.Run(dir, []string{"README.md", "cmd/acme/main.go", project.RecordFile},
+		[]string{"--name", "Zenith"}, "", io.Discard)
+	if err != nil {
+		t.Fatalf("Run error = %v", err)
+	}
+
+	if got, want := readFile(t, dir, "README.md"), "# Zenith\n\nSet ZENITH_STORAGE to choose storage.\n"; got != want {
+		t.Errorf("README.md = %q, want %q", got, want)
+	}
+	if got, want := readFile(t, dir, "cmd/zenith/main.go"), "// Command zenith runs Zenith.\npackage main\n"; got != want {
+		t.Errorf("cmd/zenith/main.go = %q, want %q", got, want)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "cmd", "acme")); !os.IsNotExist(err) {
+		t.Errorf("cmd/acme still exists (stat error %v)", err)
+	}
+	want := project.Names{Module: acme.Module, Brand: "Zenith", Slug: "zenith", App: "zenith", EnvPrefix: "ZENITH_"}
+	if got, err := project.ReadRecord(dir); err != nil || got != want {
+		t.Errorf("record = %+v, %v; want %+v", got, err, want)
 	}
 }

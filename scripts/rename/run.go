@@ -11,7 +11,8 @@ import (
 )
 
 // Run renames the project in dir as asked by args. files are the paths git
-// tracks in dir, slash-separated. It lists the changes on out.
+// tracks in dir, slash-separated. With --dry-run it only lists the changes on
+// out.
 func Run(dir string, files []string, args []string, porcelain string, out io.Writer) ([][]string, error) {
 	opts, err := ParseArgs(args)
 	if err != nil {
@@ -25,12 +26,31 @@ func Run(dir string, files []string, args []string, porcelain string, out io.Wri
 	if err != nil {
 		return nil, err
 	}
+	if opts.DryRun {
+		return nil, previewAll(out, dir, files, old, n)
+	}
+	return nil, renameAll(dir, files, old, n)
+}
+
+// previewAll lists on out what renaming files would do, without changing them.
+func previewAll(out io.Writer, dir string, files []string, old, n project.Names) error {
 	for _, rel := range files {
 		if err := preview(out, dir, rel, old, n); err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return nil, nil
+	return nil
+}
+
+// renameAll gives files the new names, then records them.
+func renameAll(dir string, files []string, old, n project.Names) error {
+	keep := func(_, text string) (string, error) { return text, nil }
+	for _, rel := range files {
+		if err := project.RenameFile(dir, rel, old, n, keep); err != nil {
+			return err
+		}
+	}
+	return project.WriteRecord(dir, n)
 }
 
 // preview lists on out what renaming the file rel from the old names to the
