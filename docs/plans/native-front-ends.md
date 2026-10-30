@@ -21,27 +21,15 @@ SPEC.md §4.4. `MobileNav` drawer in `web/src/routes/Layout.tsx`, `@phone` e2e p
 ### 2. Installable web app — done
 SPEC.md §4.5. `vite-plugin-pwa` (manifest, icons from `web/public/icon.svg` via `pnpm icons`, and a service worker that never caches `/api`). The server sends `.webmanifest` with the right type. `OfflineNotice` appears on every page. Manual testing: [`docs/installable-app.md`](../installable-app.md). Polish follow-ups are in TODO.md ("Installed-app polish").
 
-### 3. Wails v3 desktop app — in progress ([`docs/wip/desktop-app.md`](../wip/desktop-app.md))
-- `docs/adr/0004-native-shells.md` covers both shells: the in-process REST transport, the rejected options above, and remote-only mobile for now.
-- **A testable adapter with no Wails dependency:** `internal/adapters/desktop/`.
-  - `DataDir(env)` returns `STARTER_DATA_DIR` if set, otherwise `<os.UserConfigDir()>/starter`.
-  - `NewHandler(app *bootstrap.App, log)` reuses `httpapi.NewHandler(httpapi.Options{Items: …, WebAssets: web.Assets()})`.
-  - Black-box tests: GET `/api/items` through the handler, and `DataDir`'s precedence.
-- **A thin entrypoint:** `cmd/desktop/main.go`, behind `//go:build desktop`.
-  - Flow: `config.Load` → override `DataDir` → `bootstrap.NewEmbedded` → `application.New(application.Options{Assets: application.AssetOptions{Handler: handler}})`, plus one window.
-  - The build tag keeps Wails' cgo/GTK dependency out of `go test ./internal/...` and `golangci-lint ./...`.
-- Optional remote mode: `STARTER_SERVER_URL` → `bootstrap.NewRemote`, still served through the same in-process handler.
-- **Taskfile:**
-  - `run:desktop`: `go run -tags desktop,embedweb ./cmd/desktop`, depends on `web:build`.
-  - `build:desktop`: builds `bin/starter-desktop`.
-  - Packaging (AppImage, .deb, .dmg, .msi via the `wails3` CLI in `tools/go.mod`) is a follow-up, unless the CLI makes it trivial.
-- **Linux build dependencies:** `libgtk-3-dev libwebkit2gtk-4.1-dev`. Document them in the README and in CLAUDE.md's Gotchas, and install them in CI if CI builds the desktop app.
-- **Gotcha to document:** the desktop app locks its data directory, as the server does.
-- **Acceptance:** the core is unchanged, so Godog is too. Verify by hand:
-  - `task run:desktop`, then create, rename and delete an item;
-  - restart, and check the data persists;
-  - check no TCP port is opened (`ss -ltnp`).
-- The service worker shouldn't run inside Wails (the app is served in-process and is always "installed"). Check whether `registerSW.js` misbehaves in the webview; if so, skip registration there.
+### 3. Wails v3 desktop app — done
+SPEC.md §4.6, [`features/desktop.feature`](../../features/desktop.feature), [ADR 4](../adr/0004-native-shells.md).
+- `internal/adapters/desktop` (no Wails import): `DataDir` (`STARTER_DATA_DIR`, else `<user settings folder>/starter`) and `Open(getenv, webAssets)`, which wires jsonfile storage behind `httpapi.NewHandler` with `LocalData` set and `/sw.js` answered with 404.
+- `cmd/desktop` (`//go:build desktop`): one Wails v3 window around that handler, so the SPA and its API run in-process and no port is opened. `task run:desktop` and `task build:desktop` (`bin/starter-desktop`).
+- `GET /api/v1/connection` tells the SPA whether a connection is needed. In local mode the SPA hides the offline notice and keeps TanStack Query online (`useConnectionRequired`, `useLocalDataOnline`).
+- A Godog `desktop` driver runs every feature through `desktop.Open`. `@desktop` scenarios cover reopening and the data-folder lock.
+- Linux build deps are GTK 4 and WebKitGTK 6.0 (Wails v3's default; GTK 3 goes away in v3.1). They're documented in the README and CLAUDE.md.
+- Checked by hand on Linux: create, rename and delete; the data persists after a restart; no listening socket; no offline notice, and saving works with the network off.
+- Follow-ups in TODO.md: desktop remote mode, and packaging (including trying macOS and Windows).
 
 ### 4. Capacitor mobile app, remote mode (`/feature mobile app`)
 - **Server CORS** (TDD in `httpapi`):
@@ -67,7 +55,7 @@ SPEC.md §4.5. `vite-plugin-pwa` (manifest, icons from `web/public/icon.svg` via
   - create, rename and delete items from the emulator, and check the drawer layout on the device.
 
 ### 5. Housekeeping (folded into steps 3–4 as they land)
-- **Rename:** `scripts/rename` and `scripts/internal/project` must cover the Capacitor appId/appName, the Wails window title and `bin/starter-desktop`.
+- **Rename:** `scripts/rename` and `scripts/internal/project` must cover the Capacitor appId/appName (the Wails window title and `bin/starter-desktop` are done: step 3).
   - The whole-word brand rewrite already covers anything that literally says "Starter" (it did for the manifest).
   - Check the appId (`com.example.starter`) with `task rename -- --name "Acme Tasks" --dry-run`, then run `task test:rename` and `task test:init`.
   - Don't put quoted block-marker strings in prose.
@@ -85,3 +73,9 @@ SPEC.md §4.5. `vite-plugin-pwa` (manifest, icons from `web/public/icon.svg` via
 - Step 1: added a phone-sized Firefox e2e project. Playwright can't emulate a mobile device in Firefox.
 - Step 2: updates install quietly, with no prompt; offline, the app opens and says so. There's no "never an old copy" scenario, because TanStack Query pauses its requests while offline. The service worker's configuration enforces that rule.
 - Step 3: the desktop app gets Godog scenarios after all (`features/desktop.feature`, `@desktop`) and its own acceptance driver, which runs every feature through `desktop.Open`'s handler. The adapter's seam is `desktop.Open(env)` instead of `NewHandler(app, log)`. Remote mode and packaging are deferred to TODO.md. The SPA must hide the offline notice in the desktop shell.
+- Step 3 done. Changes along the way:
+  - `desktop.Open(getenv, webAssets)` replaced `NewHandler(app, log)`.
+  - Hiding the offline notice wasn't enough, because TanStack Query also pauses requests offline. So the server reports `GET /api/v1/connection`, and the SPA stays online when no connection is needed.
+  - The service worker is turned off by a 404 on `/sw.js`, with no web change.
+  - Linux deps are GTK 4/WebKitGTK 6.0, not GTK 3/WebKitGTK 4.1.
+  - The desktop tests that use `Item` live in a sample file, so `--remove-sample` still works.

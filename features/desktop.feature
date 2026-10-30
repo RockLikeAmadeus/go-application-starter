@@ -1,4 +1,4 @@
-@desktop @wip
+@desktop
 Feature: Use the desktop app
   As a user on my own computer
   I want the app to keep my data on my computer
