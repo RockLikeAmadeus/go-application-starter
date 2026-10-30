@@ -1,7 +1,7 @@
 // sample:start
 import { NavLink } from "react-router";
 // sample:end
-import { type ReactNode, useRef, useState } from "react";
+import { type MouseEvent, type ReactNode, useRef, useState } from "react";
 import { Link, Outlet } from "react-router";
 import type { Style } from "../features/style/style";
 import { StylePicker } from "../features/style/StylePicker";
@@ -41,12 +41,27 @@ function MobileNav({ children }: { children: ReactNode }) {
     dialogRef.current?.showModal();
   }
 
+  function closeMenu() {
+    setOpen(false);
+    dialogRef.current?.close();
+  }
+
+  // Going somewhere from the menu closes it. One handler on the dialog covers
+  // every link the content holds.
+  function closeOnLinkClick(event: MouseEvent) {
+    if (event.target instanceof Element && event.target.closest("a")) {
+      closeMenu();
+    }
+  }
+
   return (
     <>
       <button type="button" aria-expanded={open} className="md:hidden" onClick={openMenu}>
         Menu
       </button>
-      <dialog ref={dialogRef}>{children}</dialog>
+      <dialog ref={dialogRef} onClick={closeOnLinkClick}>
+        {children}
+      </dialog>
     </>
   );
 }

@@ -40,7 +40,10 @@ Run: `task e2e -- --grep @wip` (all projects) · `--project phone` / `--project 
        - The `aside`'s container classes stay in `Layout`, where the desktop layout lives.
        - `MobileNav` stays a local component in `Layout.tsx`, matching `ListIcon`/`Home`. Move it into its own file if it grows past tasks 3–5.
        - The drawer and button are still unstyled (task 6).
-3. [ ] Choosing a link in the dialog closes it.
+3. [x] Choosing a link in the dialog closes it.
+   - Red: `Layout.test.tsx` › "closes the menu when a link in it is chosen" clicks the drawer's "Starter" logo link, so it doesn't depend on the sample. It fails because the dialog is still open. The test also checks that `aria-expanded` goes back to `"false"`.
+   - Green: a delegated `onClick` on the `<dialog>` in `MobileNav`. If the click target is inside an `<a>`, it calls `setOpen(false)` and `dialogRef.current?.close()`. e2e not re-run: "Close the menu › go to the home page" still can't pass while the aside's nav is visible on phones (strict mode, see task 2), so that waits for task 6.
+   - Refactor: `MobileNav` now has a `closeMenu()` (state + `dialog.close()`) mirroring `openMenu()`, and a named `closeOnLinkClick` handler on the dialog with a one-line comment on why it's delegated. Deliberately left: making `open` follow the dialog's native `close` event. That changes how state is driven, so it belongs to task 4's red/green, which will specify it. `closeMenu` is then the one place to adjust.
 4. [ ] The dialog's `close` event (what Escape triggers natively) closes the menu in React state too.
 5. [ ] A click on the dialog's backdrop (target is the dialog itself) closes it. A click inside the panel doesn't.
 6. [ ] CSS wiring, driven by e2e: aside `hidden md:flex`, top bar `md:hidden`, phone padding on `main`. Make "The menu starts closed", "Open the menu", "Close the menu" and "Change the style" green on `phone`.

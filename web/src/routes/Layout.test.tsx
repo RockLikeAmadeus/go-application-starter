@@ -53,6 +53,18 @@ describe("Layout", () => {
     expect(dialog.getByRole("navigation")).toBeInTheDocument();
     expect(dialog.getByRole("group", { name: "Appearance" })).toBeInTheDocument();
   });
+
+  it("closes the menu when a link in it is chosen", async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    const menu = screen.getByRole("button", { name: "Menu" });
+    await user.click(menu);
+
+    await user.click(within(screen.getByRole("dialog")).getByRole("link", { name: "Starter" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(menu).toHaveAttribute("aria-expanded", "false");
+  });
   // sample:start
 
   it("shows the app name and an Items link in the sidebar navigation", () => {
