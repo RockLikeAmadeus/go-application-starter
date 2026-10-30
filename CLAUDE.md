@@ -84,6 +84,8 @@ web/e2e                          playwright-bdd browser journeys
 
 - A **style** (SPEC.md §4.3) is a named look for the SPA: layout, fonts, shape and density. It is separate from the dark/light **theme**, and every style must work in both.
 - Styles and the shared colour palette live in `web/src/styles/`. The active style is the `data-style` attribute on `<html>`.
+- Every page must work at phone width (SPEC.md §4.4), with no sideways scrolling in any style or theme. Below `md`, the sidebar becomes a Menu drawer (`MobileNav` in `web/src/routes/Layout.tsx`). In a flex row, give inputs `min-w-0` so they can shrink: WebKit's default input width is wider than Chromium's.
+- Tag phone browser scenarios `@phone`. They run on an emulated Pixel (Chromium) and iPhone (WebKit, the local stand-in for Safari). Untagged scenarios run on desktop Chromium.
 - Colours: use only the semantic utilities from `palette.css` (`bg-panel`, `text-muted`, `border-line`, `bg-sidebar`, …). Tailwind's default colours are switched off, so `slate-500` and friends won't compile to anything.
 - Style tokens: `font-sans`, `rounded-panel`, `rounded-control`, `py-row` and the `type-label` utility (headings, buttons, table headers) change per style. Reach for the `crisp:`, `terminal:` and `soft:` variants only where markup really must differ.
 - To add a style: add it to `styles` in `web/src/features/style/style.ts`, create `web/src/styles/<id>.css` setting the `--style-*` variables under `:root[data-style="<id>"]` (self-host fonts with `@fontsource`), and import it in `web/src/index.css`.
@@ -102,4 +104,5 @@ web/e2e                          playwright-bdd browser journeys
 - The jsonfile adapter locks its data directory. Running the server and an embedded CLI against the same `./data` fails fast with "data directory is locked". Use `--server http://localhost:8080` for the CLI instead.
 - The server embeds the SPA only when built with `-tags embedweb` after `pnpm build` (`task build` does both). Otherwise `/` shows a hint page.
 - Dev-only Go tools (oapi-codegen for `task gen`, Air for `task dev`) live in `tools/go.mod` so their dependencies stay out of the app's `go.mod`. Add one with `cd tools && go get -tool <pkg>@<version>`, and run it with `go tool -modfile=tools/go.mod <name>`.
+- Playwright's WebKit (the `iphone` e2e project) needs system libraries that need sudo. `task setup` installs them with `--with-deps`. If it was skipped, run `sudo pnpm --dir web exec playwright install-deps webkit` in a real terminal: Claude Code's `!` can't answer sudo's password prompt.
 - Node ≥ 24 is required (see `.nvmrc`). TypeScript is pinned to 6.0.x until typescript-eslint supports 7.

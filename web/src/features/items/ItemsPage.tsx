@@ -25,12 +25,12 @@ export function ItemsPage() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="New item name"
-          className="flex-1 rounded-control border border-line bg-panel px-3 py-2 placeholder:text-muted focus:outline-2 focus:outline-focus soft:px-5"
+          className="min-w-0 flex-1 rounded-control border border-line bg-panel px-3 py-2 placeholder:text-muted focus:outline-2 focus:outline-focus soft:px-5"
         />
         <button
           type="submit"
           disabled={createItem.isPending}
-          className="type-label rounded-control bg-accent px-4 py-2 font-medium text-accent-fg hover:opacity-90 disabled:opacity-50 terminal:text-sm soft:px-5"
+          className="type-label whitespace-nowrap rounded-control bg-accent px-4 py-2 font-medium text-accent-fg hover:opacity-90 disabled:opacity-50 terminal:text-sm soft:px-5"
         >
           Add item
         </button>

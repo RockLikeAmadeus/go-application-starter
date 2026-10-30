@@ -1,7 +1,7 @@
 // sample:start
 import { NavLink } from "react-router";
 // sample:end
-import { type MouseEvent, type ReactNode, useRef, useState } from "react";
+import { type MouseEvent, type ReactNode, type SyntheticEvent, useRef, useState } from "react";
 import { Link, Outlet } from "react-router";
 import type { Style } from "../features/style/style";
 import { StylePicker } from "../features/style/StylePicker";
@@ -18,7 +18,7 @@ export function Layout() {
   );
   return (
     <div className="flex min-h-screen">
-      <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-sidebar-line bg-sidebar px-3 py-4 text-sidebar-fg soft:m-3 soft:h-[calc(100vh-1.5rem)] soft:rounded-panel soft:border-r-0 soft:px-4 soft:py-5">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 border-r border-sidebar-line bg-sidebar text-sidebar-fg md:block soft:m-3 soft:h-[calc(100vh-1.5rem)] soft:rounded-panel soft:border-r-0">
         {content}
       </aside>
       <main className="min-w-0 flex-1 px-8 py-8 terminal:px-5 terminal:py-5">
@@ -31,6 +31,43 @@ export function Layout() {
   );
 }
 
+// The drawer slides in from the left while its backdrop fades in (`starting:`
+// gives the entry transition its start). Closing is driven from script: the
+// dialog gets `data-closing`, slides out, and only then really closes. That
+// works in every browser, unlike CSS exit transitions on the top layer.
+const drawerMotion = [
+  "transition-[translate] duration-200 ease-out",
+  "starting:open:-translate-x-full data-closing:-translate-x-full",
+  "backdrop:bg-black/50 backdrop:transition-[background-color] backdrop:duration-200",
+  "starting:open:backdrop:bg-transparent data-closing:backdrop:bg-transparent",
+  "motion-reduce:duration-0 motion-reduce:backdrop:duration-0",
+].join(" ");
+
+/**
+ * Calls `done` once `el`'s own transition ends, or straight away if it has
+ * none. A timeout stands in for a `transitionend` that never comes, e.g. when
+ * the transition is interrupted. Transitions inside `el` are ignored.
+ */
+function afterTransition(el: HTMLElement, done: () => void) {
+  const seconds = parseFloat(getComputedStyle(el).transitionDuration) || 0;
+  if (seconds === 0) {
+    done();
+    return;
+  }
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    el.removeEventListener("transitionend", onEnd);
+    done();
+  };
+  const onEnd = (event: Event) => {
+    if (event.target === el) finish();
+  };
+  el.addEventListener("transitionend", onEnd);
+  setTimeout(finish, seconds * 1000 + 100);
+}
+
 /** The phone-width menu: a button that opens the sidebar's content in a modal drawer. */
 function MobileNav({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -41,30 +78,58 @@ function MobileNav({ children }: { children: ReactNode }) {
     dialogRef.current?.showModal();
   }
 
-  // However the dialog closes (a link, Escape, the backdrop), the browser fires
-  // `close`, and markClosed keeps `open` in step. Closing goes through the dialog.
+  // Every way of closing (a link, Escape, the backdrop) comes here: slide out,
+  // then close the dialog. The browser then fires `close`, and markClosed keeps
+  // `open` in step.
   function closeMenu() {
-    dialogRef.current?.close();
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.dataset.closing = "";
+    afterTransition(dialog, () => {
+      delete dialog.dataset.closing;
+      dialog.close();
+    });
   }
 
   function markClosed() {
     setOpen(false);
   }
 
-  // Going somewhere from the menu closes it. One handler on the dialog covers
-  // every link the content holds.
-  function closeOnLinkClick(event: MouseEvent) {
-    if (event.target instanceof Element && event.target.closest("a")) {
+  // Going somewhere from the menu, or tapping outside it, closes it. One handler
+  // on the dialog covers every link the content holds. A click on the backdrop
+  // targets the <dialog> itself rather than anything inside it.
+  function closeOnLinkOrBackdropClick(event: MouseEvent) {
+    const isBackdrop = event.target === event.currentTarget;
+    const isLink = event.target instanceof Element && event.target.closest("a") !== null;
+    if (isBackdrop || isLink) {
       closeMenu();
     }
   }
 
+  // Escape fires `cancel` before the browser closes the dialog at once. Close
+  // it our way instead, so it slides out.
+  function closeOnEscape(event: SyntheticEvent) {
+    event.preventDefault();
+    closeMenu();
+  }
+
   return (
     <>
-      <button type="button" aria-expanded={open} className="md:hidden" onClick={openMenu}>
+      <button
+        type="button"
+        aria-expanded={open}
+        className="type-label mb-6 rounded-control border border-line px-3 py-1.5 text-sm text-muted hover:text-fg md:hidden terminal:mb-4 terminal:text-xs"
+        onClick={openMenu}
+      >
         Menu
       </button>
-      <dialog ref={dialogRef} onClick={closeOnLinkClick} onClose={markClosed}>
+      <dialog
+        ref={dialogRef}
+        onClick={closeOnLinkOrBackdropClick}
+        onClose={markClosed}
+        onCancel={closeOnEscape}
+        className={`m-0 h-dvh max-h-none w-72 max-w-[85vw] border-r border-sidebar-line bg-sidebar p-0 text-sidebar-fg soft:rounded-r-panel ${drawerMotion}`}
+      >
         {children}
       </dialog>
     </>
@@ -78,10 +143,14 @@ type SidebarContentProps = {
   onStyleChange: (style: Style) => void;
 };
 
-/** Logo, navigation and Appearance controls, shared by the sidebar and the phone menu. */
+/**
+ * Logo, navigation and Appearance controls, shared by the sidebar and the phone
+ * menu. It fills its container, so in the menu only a tap outside it reaches
+ * the dialog itself (which counts as the backdrop).
+ */
 function SidebarContent({ theme, onThemeChange, style, onStyleChange }: SidebarContentProps) {
   return (
-    <>
+    <div className="flex h-full flex-col px-3 py-4 soft:px-4 soft:py-5">
       <Link to="/" className="flex items-center gap-3 px-2 text-lg font-semibold">
         <span
           aria-hidden="true"
@@ -107,7 +176,7 @@ function SidebarContent({ theme, onThemeChange, style, onStyleChange }: SidebarC
         <StylePicker style={style} onChange={onStyleChange} />
         <ThemeToggle theme={theme} onChange={onThemeChange} />
       </fieldset>
-    </>
+    </div>
   );
 }
 // sample:start

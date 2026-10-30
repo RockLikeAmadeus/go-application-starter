@@ -25,6 +25,9 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "on-first-retry",
+    // Animations off: tests stay fast and deterministic, and this covers the
+    // reduced-motion path users can choose.
+    reducedMotion: "reduce",
   },
   // @phone scenarios run only on the emulated phones; everything else runs on
   // desktop Chromium. WebKit on an iPhone is the closest we get to Safari on Linux.

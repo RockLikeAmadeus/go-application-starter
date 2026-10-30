@@ -78,6 +78,90 @@ describe("Layout", () => {
 
     expect(menu).toHaveAttribute("aria-expanded", "false");
   });
+
+  it("handles Escape itself instead of letting the browser close the menu at once", async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    const menu = screen.getByRole("button", { name: "Menu" });
+    await user.click(menu);
+
+    // Escape on a modal dialog fires a cancelable `cancel` before the browser closes it.
+    const cancel = new Event("cancel", { cancelable: true });
+    act(() => screen.getByRole("dialog").dispatchEvent(cancel));
+
+    expect(cancel.defaultPrevented).toBe(true);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(menu).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("keeps the menu on screen, marked as closing, until its closing transition ends", async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    const dialog = screen.getByRole("dialog");
+    // jsdom applies no stylesheet, so give the drawer the transition its CSS would.
+    dialog.style.transitionDuration = "0.2s";
+
+    await user.click(dialog);
+
+    expect(dialog).toHaveAttribute("data-closing");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    act(() => {
+      dialog.dispatchEvent(new Event("transitionend"));
+    });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(dialog).not.toHaveAttribute("data-closing");
+  });
+
+  it("ignores transitions that end inside the menu while it is closing", async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    const dialog = screen.getByRole("dialog");
+    dialog.style.transitionDuration = "0.2s";
+
+    await user.click(dialog);
+    act(() => {
+      within(dialog)
+        .getByRole("navigation")
+        .dispatchEvent(new Event("transitionend", { bubbles: true }));
+    });
+
+    expect(screen.getByRole("dialog")).toHaveAttribute("data-closing");
+  });
+
+  it("still closes the menu if its closing transition never reports that it ended", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      renderLayout();
+      await user.click(screen.getByRole("button", { name: "Menu" }));
+      const dialog = screen.getByRole("dialog");
+      dialog.style.transitionDuration = "0.2s";
+
+      await user.click(dialog);
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("closes the menu when its backdrop is clicked", async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    const menu = screen.getByRole("button", { name: "Menu" });
+    await user.click(menu);
+
+    // A click on the backdrop targets the <dialog> element itself, not its content.
+    await user.click(screen.getByRole("dialog"));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(menu).toHaveAttribute("aria-expanded", "false");
+  });
   // sample:start
 
   it("shows the app name and an Items link in the sidebar navigation", () => {
