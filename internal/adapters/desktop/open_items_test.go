@@ -29,8 +29,9 @@ func TestOpenServesAnEmptyItemListFromTheDataFolder(t *testing.T) {
 
 func TestOpenKeepsItemsAfterClosingAndReopening(t *testing.T) {
 	env := envOf(map[string]string{"STARTER_DATA_DIR": t.TempDir()})
+	settings := configDirAt(t.TempDir())
 
-	first, err := desktop.Open(env, nil)
+	first, err := desktop.Open(env, settings, nil)
 	if err != nil {
 		t.Fatalf("first Open: %v", err)
 	}
@@ -39,7 +40,7 @@ func TestOpenKeepsItemsAfterClosingAndReopening(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 
-	second, err := desktop.Open(env, nil)
+	second, err := desktop.Open(env, settings, nil)
 	if err != nil {
 		t.Fatalf("second Open: %v", err)
 	}

@@ -145,7 +145,7 @@ func startDesktop() (*harness, error) {
 		return app.open(h)
 	}
 	h.openCopy = func() error {
-		second, err := desktop.Open(app.getenv, nil)
+		second, err := desktop.Open(app.getenv, os.UserConfigDir, nil)
 		if err != nil {
 			return err
 		}
@@ -169,7 +169,7 @@ type desktopApp struct {
 // open opens the app and points h's driving ports at it. The scenarios drive
 // the API only, so the app is opened without the web app.
 func (d *desktopApp) open(h *harness) error {
-	app, err := desktop.Open(d.getenv, nil)
+	app, err := desktop.Open(d.getenv, os.UserConfigDir, nil)
 	if err != nil {
 		return err
 	}

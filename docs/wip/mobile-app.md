@@ -24,7 +24,10 @@
 - **Wails mobile is experimental.** If it breaks or stalls, the fallback is the Capacitor plan in the parent plan.
 
 ## Tasks
-1. [ ] **`desktop.Open` takes the settings-folder lookup** (`os.UserConfigDir` on the desktop, the app's storage on the phone). Red: with no `STARTER_DATA_DIR`, `Open` creates the data folder at `<lookup>/starter`.
+1. [x] **`desktop.Open` takes the settings-folder lookup** (`os.UserConfigDir` on the desktop, the app's storage on the phone). Red: with no `STARTER_DATA_DIR`, `Open` creates the data folder at `<lookup>/starter`.
+   - Red ✔: `TestOpenCreatesTheDataFolderUnderTheGivenSettingsFolder` (`open_test.go`). `Open` now takes `userConfigDir` as its second parameter but still ignores it; every caller passes `os.UserConfigDir`.
+   - Green ✔: `Open` passes `userConfigDir` to `DataDir`, and no longer imports `os`.
+   - Refactor ✔: dropped the new test's `XDG_CONFIG_HOME` guard, which it no longer needed. `openWith` and `TestOpenKeepsItemsAfterClosingAndReopening` now pass a fake `configDirAt(t.TempDir())`, so no unit test sees the real settings folder. `DataDir`'s comment now says `os.UserConfigDir` is the desktop's lookup, not "production"'s. Left alone on purpose: the acceptance drivers still pass `os.UserConfigDir`, to mirror `cmd/desktop`'s wiring (`STARTER_DATA_DIR` always wins there). No `t.Parallel`: the repo doesn't use it anywhere.
 2. [ ] **`mobile.Serve(h, method, path, body) Reply`** runs one request through `h` and returns its status, content type and body. Red: a `POST` with a JSON body reaches the handler with its method, body and `Content-Type: application/json`, and its 201 reply comes back.
 3. [ ] **`mobile.Serve`** returns an error reply's status and problem document unchanged (e.g. 422), and a query string reaches the handler.
 4. [ ] **Android asset handler:** `/index.html` serves what `/` serves.

@@ -5,6 +5,8 @@ import (
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"testing/fstest"
 
@@ -46,6 +48,22 @@ func TestOpenServesNoServiceWorker(t *testing.T) {
 	}
 }
 
+// The phone has no os.UserConfigDir, so Open takes the settings-folder lookup
+// and keeps its data in a "starter" folder there.
+func TestOpenCreatesTheDataFolderUnderTheGivenSettingsFolder(t *testing.T) {
+	settings := t.TempDir()
+
+	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
+
+	if _, err := os.Stat(filepath.Join(settings, "starter")); err != nil {
+		t.Errorf("data folder not created under the settings folder: %v", err)
+	}
+}
+
 // openAt opens the desktop app on dataDir, without the web app, and closes it
 // when the test ends.
 func openAt(t *testing.T, dataDir string) *desktop.App {
@@ -57,7 +75,7 @@ func openAt(t *testing.T, dataDir string) *desktop.App {
 // when the test ends.
 func openWith(t *testing.T, dataDir string, webApp fs.FS) *desktop.App {
 	t.Helper()
-	app, err := desktop.Open(envOf(map[string]string{"STARTER_DATA_DIR": dataDir}), webApp)
+	app, err := desktop.Open(envOf(map[string]string{"STARTER_DATA_DIR": dataDir}), configDirAt(t.TempDir()), webApp)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}

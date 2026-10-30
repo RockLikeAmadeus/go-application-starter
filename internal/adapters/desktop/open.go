@@ -3,7 +3,6 @@ package desktop
 import (
 	"io/fs"
 	"net/http"
-	"os"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
@@ -19,10 +18,11 @@ type App struct {
 
 // Open opens the desktop app's data folder (see DataDir: STARTER_DATA_DIR,
 // else the user's settings folder) and wires the core behind the server's
-// HTTP handler. getenv reads the environment (os.Getenv in production).
-// webAssets is the built web app (web.Assets() in production).
-func Open(getenv func(string) string, webAssets fs.FS) (*App, error) {
-	dir, err := DataDir(getenv, os.UserConfigDir)
+// HTTP handler. getenv reads the environment (os.Getenv in production) and
+// userConfigDir finds the user's settings folder (os.UserConfigDir on the
+// desktop). webAssets is the built web app (web.Assets() in production).
+func Open(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS) (*App, error) {
+	dir, err := DataDir(getenv, userConfigDir)
 	if err != nil {
 		return nil, err
 	}

@@ -10,7 +10,7 @@ import (
 
 // DataDir returns the folder where the desktop app keeps its data.
 // getenv reads the environment (os.Getenv in production) and userConfigDir
-// finds the user's settings folder (os.UserConfigDir in production).
+// finds the user's settings folder (os.UserConfigDir on the desktop).
 func DataDir(getenv func(string) string, userConfigDir func() (string, error)) (string, error) {
 	if dir := getenv("STARTER_DATA_DIR"); dir != "" {
 		return dir, nil
