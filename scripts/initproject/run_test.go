@@ -106,7 +106,7 @@ func readFile(t *testing.T, dir, rel string) string {
 func TestRunRemovesTheSampleOnlyWhenAsked(t *testing.T) {
 	const bootstrap = "package bootstrap\n\n" +
 		"// sample:start\n" +
-		"var items = 1\n" +
+		"var items = 1\n\n" +
 		"// sample:end\n" +
 		"var health = 2\n"
 	tests := []struct {
@@ -306,5 +306,28 @@ func TestRunRemovesDirectoriesTheSampleLeavesEmpty(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "internal", "core", "domain", "errors.go")); err != nil {
 		t.Errorf("internal/core/domain/errors.go: %v, want it kept", err)
+	}
+}
+
+func TestRunKeepsGoImportsSortedWhenTheModuleSortsDifferently(t *testing.T) {
+	dir := t.TempDir()
+	// The template's module sorts before github.com/spf13; zenith.dev sorts after.
+	writeFile(t, dir, "cmd/starter/main.go", "package main\n\nimport (\n"+
+		"\t\"github.com/RockLikeAmadeus/go-application-starter/internal/cli\"\n"+
+		"\t\"github.com/spf13/cobra\"\n"+
+		")\n\nvar _, _ = cli.New, cobra.Command{}\n")
+
+	_, err := initproject.Run(dir, []string{"cmd/starter/main.go"},
+		[]string{"--module", "zenith.dev/notes", "--name", "Zenith"}, "")
+	if err != nil {
+		t.Fatalf("Run error = %v", err)
+	}
+
+	want := "package main\n\nimport (\n" +
+		"\t\"github.com/spf13/cobra\"\n" +
+		"\t\"zenith.dev/notes/internal/cli\"\n" +
+		")\n\nvar _, _ = cli.New, cobra.Command{}\n"
+	if got := readFile(t, dir, "cmd/zenith/main.go"); got != want {
+		t.Errorf("cmd/zenith/main.go =\n%s\nwant\n%s", got, want)
 	}
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"golang.org/x/tools/imports"
@@ -38,11 +37,12 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 	if err := removeAll(dir, toolFiles); err != nil {
 		return nil, err
 	}
+	strip := func(rel, text string) (string, error) { return stripBlocks(rel, text, opts.RemoveSample) }
 	for _, rel := range files {
 		if isUnder(rel, toolFiles) || opts.RemoveSample && IsSample(rel) {
 			continue
 		}
-		if err := renameFile(dir, rel, n, opts.RemoveSample); err != nil {
+		if err := project.RenameFile(dir, rel, template, n, strip); err != nil {
 			return nil, err
 		}
 	}
@@ -65,43 +65,27 @@ var regenerate = [][]string{
 	{"pnpm", "--dir", "web", "gen:api"},
 }
 
-// renameFile transforms one file's content (see transform) and moves it to its
-// new path, keeping its permissions. Directories the move empties are removed.
-func renameFile(dir, rel string, n project.Names, removeSample bool) error {
-	return project.RewriteFile(dir, rel, RenamePath(rel, n), func(content []byte) ([]byte, error) {
-		content, err := transform(rel, content, n, removeSample)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", rel, err)
-		}
-		return content, nil
-	})
-}
-
 // goimports are the settings gofmt and goimports use by default.
 var goimports = &imports.Options{Comments: true, TabIndent: true, TabWidth: 8}
 
-// transform gives a file's new content: template blocks (and, if asked, sample
-// blocks) removed and the template's names replaced. Files project.ShouldRewrite skips
-// come back unchanged. Go files that lost sample blocks are tidied as goimports
-// would, so the sample's code can be fenced without fencing its imports.
-func transform(rel string, content []byte, n project.Names, removeSample bool) ([]byte, error) {
-	if !project.ShouldRewrite(rel, content) {
-		return content, nil
-	}
-	text, err := RemoveBlocks(string(content), templateTag)
+// stripBlocks removes a file's template blocks and, if asked, its sample
+// blocks, before project.RenameFile gives it the new names. Go files that lost
+// sample blocks are tidied as goimports would, so the sample's code can be
+// fenced without fencing its imports.
+func stripBlocks(rel, text string, removeSample bool) (string, error) {
+	text, err := RemoveBlocks(text, templateTag)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	if removeSample {
-		if text, err = RemoveBlocks(text, sampleTag); err != nil {
-			return nil, err
-		}
+	if !removeSample {
+		return text, nil
 	}
-	out := []byte(Rewrite(text, n))
-	// Only removal is tidied here. A new module path that sorts differently can
-	// still leave imports out of order; project.RenameFile formats for that.
-	if removeSample && strings.HasSuffix(rel, ".go") {
-		return imports.Process(rel, out, goimports)
+	if text, err = RemoveBlocks(text, sampleTag); err != nil {
+		return "", err
 	}
-	return out, nil
+	if !strings.HasSuffix(rel, ".go") {
+		return text, nil
+	}
+	out, err := imports.Process(rel, []byte(text), goimports)
+	return string(out), err
 }
