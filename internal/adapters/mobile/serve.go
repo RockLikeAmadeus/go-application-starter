@@ -6,6 +6,7 @@
 package mobile
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,9 +19,14 @@ type Reply struct {
 	Body        string `json:"body"`
 }
 
-// Serve runs one request through h and returns its reply.
+// Serve runs one request through h and returns its reply. A request it can't
+// build, such as one with a malformed path, gets a 400 reply without reaching
+// h, so a bad call never crashes the bridge.
 func Serve(h http.Handler, method, path, body string) Reply {
-	req := httptest.NewRequest(method, path, strings.NewReader(body))
+	req, err := http.NewRequestWithContext(context.Background(), method, path, strings.NewReader(body))
+	if err != nil {
+		return Reply{Status: http.StatusBadRequest}
+	}
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
