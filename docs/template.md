@@ -5,7 +5,7 @@ This repository is a template: a starter project you copy when you begin a new a
 - **Without `--remove-sample`:** everything is renamed from the template's name to yours.
 - **With `--remove-sample`:** the Item demo is deleted as well, leaving an empty app that still builds, passes its tests, and is ready for your first `/feature`.
 
-Either way, the tool then **deletes itself**, because you only need it once.
+Either way, the tool then **deletes itself**, because you only need it once. To rename the project again later, use `task rename` (see [docs/rename.md](rename.md)), which stays.
 
 > This page and the init tool describe the template, not your product. Product intent lives in `SPEC.md`. The init tool deletes this page, and itself, once it has run.
 
@@ -40,7 +40,7 @@ task init -- --module github.com/you/tasks --name "Acme Tasks" --remove-sample
 ## What happens when you run it
 
 1. **Checks.** It makes sure both flags are given and valid, and that you have no uncommitted changes. If anything is wrong, it stops before touching a file.
-2. **Renames.** It replaces the Go module path, the brand, the command-line tool's name and the `STARTER_…` environment variables in every tracked file, and moves `cmd/starter` to `cmd/<slug>`.
+2. **Renames.** It replaces the Go module path, the brand, the command-line tool's name and the `STARTER_…` environment variables in every tracked file, and moves `cmd/starter` to `cmd/<slug>`. It records the new names in `project.json`, where `task rename` finds them later.
 3. **Removes the sample** (only with `--remove-sample`). It deletes the Item files and the Item parts of shared files, then removes any folders that leaves empty.
 4. **Removes itself.** Its code, this page, and the `init` and `test:init` tasks go.
 5. **Tidies up.** It runs `go mod tidy`. After removing the sample, it first regenerates the API code from the trimmed `api/openapi.yaml`, then regenerates the web client's types with `pnpm`.
@@ -66,6 +66,8 @@ a.Items = app.NewItemService(items, system.Clock{}, system.UUIDs{})
 - `template:start` / `template:end` wrap things that only make sense in the template, such as the `task init` task and the README's "Using this as a template" section. These are always removed.
 - Imports don't need markers: in Go files, unused imports are tidied away automatically.
 - A missing or mistyped marker makes the tool fail with the line number, rather than silently deleting the rest of a file.
+
+**Code shared with `task rename`** lives in `scripts/internal/project`, which survives init. A rename rewrites every tracked file, that package included, so it must never mention the template's own names. The init tool reads them from `project.json` instead.
 
 **Leave something behind that still works.** When code is removed, whatever is left must still build, lint and pass its tests. For example, the TUI and the web app fall back to a "Nothing here yet." home screen when there is no Items page, and `features/README.md` keeps the `features/` folder from disappearing. To check, run `task test:init`: one scenario removes the sample and runs the Go build and tests on the result.
 

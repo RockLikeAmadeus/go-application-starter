@@ -1,4 +1,3 @@
-@wip
 Feature: Rename the project
   # Project tooling, not product behaviour: see docs/rename.md.
   # Each scenario runs the rename tool on a throwaway copy of the project as it
@@ -65,7 +64,11 @@ Feature: Rename the project
       | !!!    |              | name must contain a letter or digit |
 
   Scenario: Refuse to rename to the current names
-    When I try to rename it to its current name
+    # Renamed once first: the template's deploy app name differs from its slug,
+    # so renaming the template to its own name still changes something.
+    When I rename it to "Zenith"
+    And I commit the changes
+    And I try to rename it with name "Zenith" and module ""
     Then it fails saying "nothing to rename"
     And the project is unchanged
 

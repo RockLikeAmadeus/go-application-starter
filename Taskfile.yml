@@ -30,6 +30,11 @@ tasks:
       - go run ./scripts/initproject {{.CLI_ARGS}}
 
   # template:end
+  rename:
+    desc: 'Give the project a new name, e.g. task rename -- --name "Zenith Notes" [--module example.com/you/zenith] [--dry-run] (see docs/rename.md)'
+    cmds:
+      - go run ./scripts/rename {{.CLI_ARGS}}
+
   # ---------------------------------------------------------------- codegen
   gen:
     desc: Regenerate Go server/client and TypeScript types from api/openapi.yaml
@@ -112,7 +117,7 @@ tasks:
 
   test:go:
     cmds:
-      - go test -race ./internal/... ./scripts/internal/... {{.CLI_ARGS}}
+      - go test -race ./internal/... ./scripts/internal/... ./scripts/rename/ {{.CLI_ARGS}}
       # template:start
       - go test -race ./scripts/initproject/ {{.CLI_ARGS}}
       # template:end
@@ -132,6 +137,11 @@ tasks:
     cmds:
       - go test ./scripts/initproject/acceptance/ -count=1 -timeout 30m {{.CLI_ARGS}}
   # template:end
+
+  test:rename:
+    desc: "Acceptance tests for the rename tool (slow: each scenario copies and rebuilds the repo)"
+    cmds:
+      - go test ./scripts/rename/acceptance/ -count=1 -timeout 30m {{.CLI_ARGS}}
 
   e2e:
     desc: Browser BDD tests (playwright-bdd) against the real server with the embedded UI

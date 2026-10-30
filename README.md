@@ -50,6 +50,7 @@ task e2e                         # browser tests against the real server binary
 task gen                         # regenerate code after editing api/openapi.yaml
 task build                       # ./bin/server (with UI embedded) and ./bin/starter
 task docker:up                   # production image locally on :8080
+task rename -- --name "New Name" # rebrand the project; --dry-run previews it (see docs/rename.md)
 ```
 
 Configuration is through environment variables (see `.env.example`): `STARTER_STORAGE` (`jsonfile` or `memory`), `STARTER_DATA_DIR`, `PORT`, `STARTER_LOG_FORMAT`, and `STARTER_SERVER_URL`.

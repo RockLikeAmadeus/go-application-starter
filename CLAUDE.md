@@ -39,6 +39,7 @@ Never stage, commit, push or pull unless I explicitly ask. That includes `git ad
 | Lint / format | `task lint` · `task fmt` |
 | Regenerate API code | `task gen` (after editing `api/openapi.yaml`) |
 | Everything CI runs | `task check` |
+| Rename the project | `task rename -- --name "New Name" [--module …] [--dry-run]` (see `docs/rename.md`) |
 | Run locally | `task dev` (API on :8080, restarted by Air on Go changes + Vite on :5173 with HMR, opened in your browser) · `task run:cli -- --help` · `task run:tui` |
 
 ## Architecture

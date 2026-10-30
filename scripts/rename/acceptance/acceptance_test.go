@@ -85,7 +85,6 @@ func initializeScenario(sc *godog.ScenarioContext) {
 	sc.Step(`^I commit the changes$`, p.commit)
 	sc.Step(`^I preview renaming it to "([^"]*)"$`, p.preview)
 	sc.Step(`^I try to rename it with name "([^"]*)" and module "([^"]*)"$`, p.tryToRename)
-	sc.Step(`^I try to rename it to its current name$`, p.tryToRenameToCurrent)
 
 	sc.Step(`^the app is branded "([^"]*)"$`, p.brandedAs)
 	sc.Step(`^the command-line tool is called "([^"]*)"$`, p.commandIs)
@@ -203,10 +202,6 @@ func (p *project) tryToRename(name, module string) error {
 	}
 	p.runTool(args)
 	return nil
-}
-
-func (p *project) tryToRenameToCurrent() error {
-	return p.tryToRename(p.old.Name, "")
 }
 
 func (p *project) runTool(args []string) {

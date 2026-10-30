@@ -42,7 +42,6 @@ Feature: Make the template mine
       |                       |
       | , removing the sample |
 
-  @wip
   Scenario: The project remembers its names
     When I make it mine with module "example.com/acme/tasks" and name "Acme Tasks"
     Then the project records module "example.com/acme/tasks" and name "Acme Tasks"
