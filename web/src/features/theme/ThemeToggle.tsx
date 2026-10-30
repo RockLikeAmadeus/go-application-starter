@@ -14,7 +14,7 @@ export function ThemeToggle({ theme, onChange }: Props) {
         role="switch"
         checked={theme === "dark"}
         onChange={(e) => onChange(e.target.checked ? "dark" : "light")}
-        className="relative h-5 w-9 cursor-pointer appearance-none rounded-full bg-sidebar-muted/50 transition-colors before:absolute before:top-0.5 before:left-0.5 before:size-4 before:rounded-full before:bg-white before:transition-transform checked:bg-sidebar-accent checked:before:translate-x-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className="relative h-5 w-9 cursor-pointer appearance-none rounded-full bg-sidebar-muted/50 transition-colors before:absolute before:top-0.5 before:left-0.5 before:size-4 before:rounded-full before:bg-white before:transition-transform checked:bg-sidebar-accent checked:before:translate-x-4"
       />
     </label>
   );

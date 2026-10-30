@@ -25,7 +25,7 @@ export function ItemsPage() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="New item name"
-          className="min-w-0 flex-1 rounded-control border border-line bg-panel px-3 py-2 placeholder:text-muted focus:outline-2 focus:outline-focus soft:px-5"
+          className="min-w-0 flex-1 rounded-control border border-line bg-panel px-3 py-2 placeholder:text-muted soft:px-5"
         />
         <button
           type="submit"
@@ -123,7 +123,7 @@ function RenameForm({ item, onDone }: { item: Item; onDone: () => void }) {
           aria-label={`New name for ${item.name}`}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          className="flex-1 rounded-control border border-line bg-panel px-2 py-1 focus:outline-2 focus:outline-focus soft:px-4"
+          className="flex-1 rounded-control border border-line bg-panel px-2 py-1 soft:px-4"
           autoFocus
         />
         <button type="submit" className="type-label text-sm font-medium text-fg terminal:text-xs">

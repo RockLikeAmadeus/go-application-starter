@@ -27,3 +27,11 @@
   text-transform: var(--style-label-case);
   letter-spacing: var(--style-label-tracking);
 }
+
+/* Keyboard focus: every focusable element gets the palette's focus ring, so new controls need no focus classes. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}

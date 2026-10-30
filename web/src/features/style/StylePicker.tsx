@@ -12,7 +12,7 @@ export function StylePicker({ style, onChange }: Props) {
       <select
         value={style}
         onChange={(event) => onChange(event.target.value as Style)}
-        className="cursor-pointer rounded-control border border-sidebar-line bg-transparent px-2 py-1 text-sm text-sidebar-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className="cursor-pointer rounded-control border border-sidebar-line bg-transparent px-2 py-1 text-sm text-sidebar-fg"
       >
         {styles.map((option) => (
           <option key={option.id} value={option.id} className="bg-panel text-fg">
