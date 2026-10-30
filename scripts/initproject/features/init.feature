@@ -1,4 +1,3 @@
-@wip
 Feature: Make the template mine
   # Template tooling, not product behaviour: see docs/template.md.
   # Each scenario runs the init tool on a throwaway copy of the template.
