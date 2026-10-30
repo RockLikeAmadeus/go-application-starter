@@ -33,10 +33,25 @@ func TestServesWebAppManifestAsManifestJSON(t *testing.T) {
 // The server is reached over the network, so by default the web app must
 // treat a lost connection as losing its data.
 func TestConnectionIsRequiredByDefault(t *testing.T) {
-	handler := httpapi.NewHandler(httpapi.Options{})
+	if !connectionRequired(t, httpapi.Options{}) {
+		t.Error("required = false, want true")
+	}
+}
 
+// In the desktop app's local-only mode the data is on this device, so a lost
+// connection doesn't matter.
+func TestConnectionIsNotRequiredForLocalData(t *testing.T) {
+	if connectionRequired(t, httpapi.Options{LocalData: true}) {
+		t.Error("required = true, want false")
+	}
+}
+
+// connectionRequired asks a handler built from opts whether the web app needs
+// a connection, failing the test if the answer is missing.
+func connectionRequired(t *testing.T, opts httpapi.Options) bool {
+	t.Helper()
 	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/connection", nil))
+	httpapi.NewHandler(opts).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/connection", nil))
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
@@ -47,7 +62,8 @@ func TestConnectionIsRequiredByDefault(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode %q: %v", rec.Body.String(), err)
 	}
-	if body.Required == nil || !*body.Required {
-		t.Errorf("body = %s, want required: true", rec.Body)
+	if body.Required == nil {
+		t.Fatalf("body = %s, want a required field", rec.Body)
 	}
+	return *body.Required
 }

@@ -14,6 +14,7 @@ type Handlers struct {
 	// sample:start
 	items ports.ItemService
 	// sample:end
+	localData bool
 }
 
 var _ openapi.StrictServerInterface = (*Handlers)(nil)
@@ -24,5 +25,6 @@ func NewHandlers(opts Options) *Handlers {
 		// sample:start
 		items: opts.Items,
 		// sample:end
+		localData: opts.LocalData,
 	}
 }

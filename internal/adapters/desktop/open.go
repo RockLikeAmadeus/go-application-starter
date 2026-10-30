@@ -33,6 +33,7 @@ func Open(getenv func(string) string) (*App, error) {
 			// sample:start
 			Items: core.Items,
 			// sample:end
+			LocalData: true,
 		}),
 		core: core,
 	}, nil

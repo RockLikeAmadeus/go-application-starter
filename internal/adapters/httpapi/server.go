@@ -21,6 +21,9 @@ type Options struct {
 	Logger *slog.Logger
 	// WebAssets is the built SPA (web/dist). When nil, "/" serves a hint page.
 	WebAssets fs.FS
+	// LocalData is set when the data is on the same device as the web app
+	// (the desktop app's local-only mode), so it needs no connection.
+	LocalData bool
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and

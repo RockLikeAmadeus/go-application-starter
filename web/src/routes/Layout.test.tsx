@@ -1,22 +1,31 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { onlineManager, useMutation } from "@tanstack/react-query";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { connectionApi } from "../test/connectionApi";
+import { renderWithClient } from "../test/render";
 import { Layout } from "./Layout";
 
-function renderLayout() {
+function renderLayout(page = <p>Page</p>) {
   const router = createMemoryRouter([
-    { element: <Layout />, children: [{ index: true, element: <p>Page</p> }] },
+    { element: <Layout />, children: [{ index: true, element: page }] },
   ]);
-  return render(<RouterProvider router={router} />);
+  return renderWithClient(<RouterProvider router={router} />);
 }
 
 describe("Layout", () => {
   beforeEach(() => {
     // jsdom has no matchMedia; the theme reads the system colour-scheme preference.
     vi.stubGlobal("matchMedia", () => ({ matches: false }));
+    // The offline notice asks whether a connection is required; leave it unanswered.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
   });
   afterEach(() => {
+    onlineManager.setOnline(true);
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     localStorage.clear();
@@ -170,6 +179,27 @@ describe("Layout", () => {
     renderLayout();
 
     expect(screen.getByRole("status")).toHaveTextContent("You're offline");
+  });
+
+  it("keeps saving after the browser goes offline when no connection is required", async () => {
+    const fetch = connectionApi(false);
+    vi.stubGlobal("fetch", fetch);
+    function SavePage() {
+      const save = useMutation({ mutationFn: async () => "Saved" });
+      return <button onClick={() => save.mutate()}>{save.data ?? "Save"}</button>;
+    }
+    renderLayout(<SavePage />);
+    // Let the app learn its data is local before the network drops. Nothing
+    // on screen changes while online, so wait for the request, then flush.
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    await act(async () => {});
+
+    act(() => {
+      window.dispatchEvent(new Event("offline"));
+    });
+    await userEvent.setup().click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByRole("button", { name: "Saved" })).toBeInTheDocument();
   });
   // sample:start
 

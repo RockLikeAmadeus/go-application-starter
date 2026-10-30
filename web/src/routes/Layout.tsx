@@ -5,6 +5,7 @@ import { type MouseEvent, type ReactNode, type SyntheticEvent, useRef, useState 
 import { Link, Outlet } from "react-router";
 import { afterTransition } from "../lib/afterTransition";
 import { OfflineNotice } from "../features/offline/OfflineNotice";
+import { useLocalDataOnline } from "../features/offline/useLocalDataOnline";
 import type { Style } from "../features/style/style";
 import { StylePicker } from "../features/style/StylePicker";
 import { useStyle } from "../features/style/useStyle";
@@ -13,6 +14,7 @@ import { ThemeToggle } from "../features/theme/ThemeToggle";
 import { useTheme } from "../features/theme/useTheme";
 
 export function Layout() {
+  useLocalDataOnline();
   const [theme, setTheme] = useTheme();
   const [style, setStyle] = useStyle();
   const content = (
