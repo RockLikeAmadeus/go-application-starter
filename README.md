@@ -49,6 +49,7 @@ task accept                      # Godog acceptance tests
 task e2e                         # browser tests against the real server binary
 task gen                         # regenerate code after editing api/openapi.yaml
 task build                       # ./bin/server (with UI embedded) and ./bin/starter
+./bin/server                     # the built app on :8080, installable from Chrome (see docs/installable-app.md)
 task docker:up                   # production image locally on :8080
 task rename -- --name "New Name" # rebrand the project; --dry-run previews it (see docs/rename.md)
 ```

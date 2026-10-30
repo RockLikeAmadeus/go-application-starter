@@ -90,7 +90,7 @@ tasks:
   web:build:
     cmds:
       - pnpm --dir web build
-    sources: [web/src/**/*, web/index.html, web/package.json, web/vite.config.ts]
+    sources: [web/src/**/*, web/public/**/*, web/index.html, web/package.json, web/vite.config.ts]
     generates: [web/dist/index.html]
 
   # ---------------------------------------------------------------- quality
