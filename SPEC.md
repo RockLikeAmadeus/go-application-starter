@@ -131,7 +131,7 @@ Users can run the app as a program on their own computer, so they can use it wit
 - By default the data folder is the user's settings folder for the app (on Linux, `~/.config/starter`). The user can choose another one when they start the app.
 - Data is still there after the app is closed and opened again.
 - Only one copy of the app can use a data folder at a time. A second copy says the data is already in use, and doesn't start.
-- It never says it is offline, because it doesn't need a connection.
+- In local-only mode, it never says it is offline, because it doesn't need a connection.
 
 **Examples**
 - User adds "Widget", closes the app and opens it again → "Widget" is still there.
