@@ -21,7 +21,7 @@ SPEC.md §4.4. `MobileNav` drawer in `web/src/routes/Layout.tsx`, `@phone` e2e p
 ### 2. Installable web app — done
 SPEC.md §4.5. `vite-plugin-pwa` (manifest, icons from `web/public/icon.svg` via `pnpm icons`, and a service worker that never caches `/api`). The server sends `.webmanifest` with the right type. `OfflineNotice` appears on every page. Manual testing: [`docs/installable-app.md`](../installable-app.md). Polish follow-ups are in TODO.md ("Installed-app polish").
 
-### 3. Wails v3 desktop app — next (`/feature desktop app`)
+### 3. Wails v3 desktop app — in progress ([`docs/wip/desktop-app.md`](../wip/desktop-app.md))
 - `docs/adr/0004-native-shells.md` covers both shells: the in-process REST transport, the rejected options above, and remote-only mobile for now.
 - **A testable adapter with no Wails dependency:** `internal/adapters/desktop/`.
   - `DataDir(env)` returns `STARTER_DATA_DIR` if set, otherwise `<os.UserConfigDir()>/starter`.
@@ -84,3 +84,4 @@ SPEC.md §4.5. `vite-plugin-pwa` (manifest, icons from `web/public/icon.svg` via
 ## Changes to the plan
 - Step 1: added a phone-sized Firefox e2e project. Playwright can't emulate a mobile device in Firefox.
 - Step 2: updates install quietly, with no prompt; offline, the app opens and says so. There's no "never an old copy" scenario, because TanStack Query pauses its requests while offline. The service worker's configuration enforces that rule.
+- Step 3: the desktop app gets Godog scenarios after all (`features/desktop.feature`, `@desktop`) and its own acceptance driver, which runs every feature through `desktop.Open`'s handler. The adapter's seam is `desktop.Open(env)` instead of `NewHandler(app, log)`. Remote mode and packaging are deferred to TODO.md. The SPA must hide the offline notice in the desktop shell.

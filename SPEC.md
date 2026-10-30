@@ -13,6 +13,7 @@ _One paragraph: who the users are, what problem this solves, and what success lo
 | _e.g. End user_ | Web (React SPA) | |
 | _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Embedded or `--server` mode |
 | _e.g. Integrations_ | REST API (`api/openapi.yaml`) | |
+| _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | The web app in its own window, with its data on the computer (§4.6) |
 
 ## 3. Glossary (ubiquitous language)
 
@@ -22,6 +23,8 @@ Use these terms consistently in code, Gherkin, and UI copy.
 |---|---|
 | **Theme** | The colour scheme of the web app: **dark** or **light**. Independent of the style. |
 | **Style** | A named look for the web app: its layout, fonts, shape and density. Independent of the theme; every style works in dark and light. |
+| **Desktop app** | The web app packaged as a program for the user's computer. It keeps its own data and needs no server. |
+| **Data folder** | The folder on the user's computer where the desktop app keeps its data. |
 
 <!-- sample:start -->
 The sample capability (§4.1) adds one term:
@@ -117,6 +120,25 @@ Users can install the web app on their phone or computer, so it opens from the h
 - User lands, and the connection comes back → the notice goes away and data loads.
 
 **Specification:** [`web/e2e/features/install.feature`](web/e2e/features/install.feature). Presentation and caching only, so there are no Godog scenarios. These scenarios run on desktop Chromium, where Playwright supports service workers.
+
+### 4.6 Use the desktop app
+
+Users can run the app as a program on their own computer, so they can use it without a server, an account or a connection.
+
+**Rules**
+- The desktop app shows the same app as the web app, with the same styles and themes, in its own window.
+- It keeps the user's data in a data folder on their computer. It needs no server and no connection, and it doesn't open a network port.
+- By default the data folder is the user's settings folder for the app (on Linux, `~/.config/starter`). The user can choose another one when they start the app.
+- Data is still there after the app is closed and opened again.
+- Only one copy of the app can use a data folder at a time. A second copy says the data is already in use, and doesn't start.
+- It never says it is offline, because it doesn't need a connection.
+
+**Examples**
+- User adds "Widget", closes the app and opens it again → "Widget" is still there.
+- User opens the app twice → the second copy says the data is in use.
+- User opens the app with the network off → the app works and shows no offline notice.
+
+**Specification:** [`features/desktop.feature`](features/desktop.feature). The desktop app also runs every scenario in [`features/items.feature`](features/items.feature). Opening no network port and showing no offline notice are checked by unit tests and by hand.
 
 ## 5. Non-functional requirements
 
