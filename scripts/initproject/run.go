@@ -9,7 +9,8 @@ import (
 )
 
 // Run makes the template in dir into a new project, as asked by args (the
-// command line without the program name). files are the paths git tracks in
+// command line without the program name). It replaces the names recorded in
+// dir's project.json, then records the new ones there. files are the paths git tracks in
 // dir, slash-separated; untracked and ignored files are never touched.
 // porcelain is the output of git status --porcelain for dir. Every check runs
 // before any file is touched, so a refused run leaves the project exactly as
@@ -43,12 +44,15 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 	}
 	strip := func(rel, text string) (string, error) { return stripBlocks(rel, text, opts.RemoveSample) }
 	for _, rel := range files {
-		if isUnder(rel, toolFiles) || opts.RemoveSample && IsSample(rel) {
+		if rel == project.RecordFile || isUnder(rel, toolFiles) || opts.RemoveSample && IsSample(rel) {
 			continue
 		}
 		if err := project.RenameFile(dir, rel, old, n, strip); err != nil {
 			return nil, err
 		}
+	}
+	if err := project.WriteRecord(dir, n); err != nil {
+		return nil, err
 	}
 	if opts.RemoveSample {
 		return regenerate, nil

@@ -19,7 +19,7 @@ task rename -- --name "Zenith Notes" --module github.com/you/zenith # rebrand an
 - No trace of the old names is left in any tracked file: not the old brand, slug or environment variable prefix, and not the old module path when `--module` is given.
 - Names are replaced as whole words everywhere. If the old slug is an ordinary word (a project called "Tasks" has the slug `tasks`), unrelated uses of that word are replaced too. **Run with `--dry-run` first.** It lists every change, file by file and line by line, and changes nothing.
 - It refuses to run, and changes nothing, when:
-  - the input is invalid (`--name` is missing, the module path is invalid, or the name has no letters or digits);
+  - the input is invalid (`--name` is missing, the module path is invalid, the name has no letters or digits, or it contains a double quote or backslash);
   - the new names are the same as the current ones;
   - the working tree has uncommitted changes. That way, `git` can always undo a run. A dry run doesn't need a clean tree.
 

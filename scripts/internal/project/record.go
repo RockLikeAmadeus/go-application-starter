@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 )
 
-// recordFile holds the names a project goes by, relative to its root.
-const recordFile = "project.json"
+// RecordFile holds the names a project goes by, relative to its root. Runs
+// write it with WriteRecord rather than renaming its text.
+const RecordFile = "project.json"
 
 // record is how Names are stored. The environment variable prefix is left out:
 // it is derived from the slug.
@@ -20,7 +21,7 @@ type record struct {
 
 // ReadRecord reads the names the project in dir goes by from its project.json.
 func ReadRecord(dir string) (Names, error) {
-	data, err := os.ReadFile(filepath.Join(dir, recordFile))
+	data, err := os.ReadFile(filepath.Join(dir, RecordFile))
 	if err != nil {
 		return Names{}, err
 	}
@@ -37,5 +38,5 @@ func WriteRecord(dir string, n Names) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, recordFile), append(data, '\n'), 0o644)
+	return os.WriteFile(filepath.Join(dir, RecordFile), append(data, '\n'), 0o644)
 }

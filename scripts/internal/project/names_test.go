@@ -16,6 +16,8 @@ func TestSlug(t *testing.T) {
 		{name: "Acme Tasks", want: "acme-tasks"},
 		{name: "  Acme -- Tasks! 2 ", want: "acme-tasks-2"},
 		{name: "!!!", wantErr: "name must contain a letter or digit"},
+		{name: `Acme "Pro"`, wantErr: "name must not contain double quotes or backslashes"},
+		{name: `Acme\Pro`, wantErr: "name must not contain double quotes or backslashes"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

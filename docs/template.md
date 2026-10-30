@@ -28,7 +28,7 @@ task init -- --module github.com/you/tasks --name "Acme Tasks" --remove-sample
 - The sample **Item** capability stays unless `--remove-sample` is given. With it, Item is removed from every layer and from `SPEC.md`, and the project still builds and passes its tests.
 - The tool removes itself when it finishes: its code, this page and the `init` task.
 - It refuses to run, and changes nothing, when:
-  - the input is invalid (a flag is missing, the module path is invalid, or the name has no letters or digits);
+  - the input is invalid (a flag is missing, the module path is invalid, the name has no letters or digits, or it contains a double quote or backslash);
   - the working tree has uncommitted changes. That way, `git` can always undo a run.
 
 **Examples**

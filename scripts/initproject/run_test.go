@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	initproject "github.com/RockLikeAmadeus/go-application-starter/scripts/initproject"
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
 func TestRunRefusesBeforeTouchingFiles(t *testing.T) {
@@ -333,5 +334,28 @@ func TestRunReadsTheOldNamesFromTheProjectRecord(t *testing.T) {
 	want := "# Acme\n\nACME_PORT=8080 go run example.com/acme/tasks/cmd/acme\n"
 	if got := readFile(t, dir, "README.md"); got != want {
 		t.Errorf("README.md = %q, want %q", got, want)
+	}
+}
+
+func TestRunRecordsTheNewNames(t *testing.T) {
+	dir := t.TempDir()
+	// The old names are also keys in project.json, so renaming its text
+	// alone would rename the keys too.
+	writeFile(t, dir, "project.json",
+		`{"module": "example.com/you/app", "name": "App", "slug": "app", "app": "app"}`+"\n")
+
+	_, err := initproject.Run(dir, []string{"project.json"},
+		[]string{"--module", "example.com/acme/tasks", "--name", "Acme Tasks"}, "")
+	if err != nil {
+		t.Fatalf("Run error = %v", err)
+	}
+
+	got, err := project.ReadRecord(dir)
+	if err != nil {
+		t.Fatalf("project.json is unreadable after Run: %v\n%s", err, readFile(t, dir, "project.json"))
+	}
+	want := project.Names{Module: "example.com/acme/tasks", Brand: "Acme Tasks", Slug: "acme-tasks", App: "acme-tasks", EnvPrefix: "ACME_TASKS_"}
+	if got != want {
+		t.Errorf("project.json records %+v, want %+v\n%s", got, want, readFile(t, dir, "project.json"))
 	}
 }

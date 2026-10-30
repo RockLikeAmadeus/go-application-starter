@@ -57,7 +57,7 @@ Temporary: delete this file in the change that removes the `@wip` tags.
 7b. [x] **New:** `RenameFile` leaves files `ShouldRewrite` skips untouched (one `/red`), and wraps its errors with `rel` (another `/red`). Moving init onto `RenameFile` turned out to change behaviour, so it moved to 7c.
     - **Red (skip):** `TestRenameFileLeavesSkippedFilesUntouched` in `renamefile_test.go`. A `go.sum` that holds the old module path must come back unchanged, and `extra` must not be called for it. It fails: `RenameFile` rewrites it, and calls `extra`.
     - Green (skip): `RenameFile`'s transform returns the content unchanged when `ShouldRewrite` is false, before `extra`, the rewrite and formatting. A skipped file is still moved by `RenamePath`, as in init.
-    - **For refactor:** none yet. The `ShouldRewrite` check is now duplicated in init's `transform`, but that goes away when init switches to `RenameFile`, after the error-wrapping `/red`. A binary file named `.go` is now skipped before formatting, which settles that part of 7a's note.
+    - Refactor (skip): none was needed. Init's duplicate `ShouldRewrite` check went away when init switched to `RenameFile` in 7c.
     - **Red (errors):** `TestRenameFileNamesTheFileInItsErrors`. When `extra` fails on `docs/guide.md`, the error must still wrap the cause (`errors.Is`) and name the file. It fails: the error is the bare `"unbalanced block"`.
     - Green (errors): `RenameFile` wraps `extra`'s error as `fmt.Errorf("%s: %w", rel, err)`.
     - Refactor: I tried switching init onto `RenameFile`, with an `extra` that removes blocks and runs goimports. That turned `TestRunRemovesTheSampleOnlyWhenAsked/kept_by_default` red, so I reverted it, and the code is as it was.
@@ -75,7 +75,7 @@ Temporary: delete this file in the change that removes the `@wip` tags.
     - Deliberately left:
       - Init's `Rewrite`/`RenamePath` wrappers in `rewrite.go` are now used only by `rewrite_test.go`. They, their tests and `template` go together in item 8, when `ReadRecord` replaces `template`. Deleting them now would drop the template-specific cases (module path, deploy app name) before item 8 has a replacement.
       - A `format.Source` failure in `RenameFile` still isn't wrapped with `rel`. That's a behaviour change, so it would need a `/red`.
-8. [ ] Init's `Run` reads its old names from the record and writes the new record. Delete the `template*` constants. (Reading and deleting are done; writing is next.)
+8. [x] Init's `Run` reads its old names from the record and writes the new record. Delete the `template*` constants.
    - **Red (read):** `TestRunReadsTheOldNamesFromTheProjectRecord` in `scripts/initproject/run_test.go`. `project.json` names "Old Thing" (`example.com/old/thing`, `old-thing`), and `README.md` mentions its brand, env prefix, module and command path. Init to "Acme" must replace all of them. It fails: init still uses the hardcoded `template` names, so `README.md` is unchanged.
    - Heads-up for `/green`: the other `Run` tests write no `project.json`. Once `Run` reads it, they'll fail with a missing-file error.
      - The simplest fix is a test helper that writes a `project.json` with the template's names into each test's dir. That's a test change, so it needs your approval.
@@ -88,7 +88,21 @@ Temporary: delete this file in the change that removes the `@wip` tags.
      - Their one case not already covered, "whole words only", moved into `project`'s `TestRewriteReplacesOneProjectsNamesWithAnothers`, as "Old Notesy and old-notesy stay".
      - The test helpers `writeFile`, `readFile` and `writeTemplateRecord` moved from `run_test.go` to a new `helpers_test.go`, since `main_test.go` uses them too.
    - Deliberately left: init still rewrites `project.json` as text, which happens to give the right record. The next `/red` makes it write the record explicitly and skip the file.
+   - **Red (write):** `TestRunRecordsTheNewNames` in `scripts/initproject/run_test.go`. The old record names a project "App", so its names are also JSON keys, and `project.json` is listed. After init to "Acme Tasks", `project.ReadRecord` must give the new names. It fails: the text rewrite renames the `"app"` key too, so the app name is lost.
+     - First draft: the test used the name `Acme "Pro"`, where the text rewrite leaves the quote unescaped. You then chose to reject quotes and backslashes in names (item 8a), so I switched to a case that stays valid.
+   - Green (write): after renaming the files, `Run` calls `project.WriteRecord(dir, n)`, which overwrites whatever the text rewrite made of `project.json`. Init's non-WIP acceptance passes. The init `@wip` scenario passes 3 of 4 steps, as before.
+   - Refactor:
+     - The record's file name is now exported as `project.RecordFile`, and init's loop skips that file instead of renaming its text and then overwriting it. Item 12's rename loop can use it too.
+     - `Run`'s doc comment now says it replaces the names in `project.json` and records the new ones there.
    - Writing the new record is a separate `/red` after this one.
+8a. [x] **New:** names with double quotes or backslashes are refused, because they would break JSON, Go strings and other quoted text the rename touches.
+    - **Red:** two rows in `project`'s `TestSlug`: `Acme "Pro"` and `Acme\Pro`, each wanting "name must not contain double quotes or backslashes".
+    - Green: `Slug` refuses them first. Init and rename both get this, since both derive the slug from the name.
+    - Apostrophes stay allowed ("Bob's Tasks"). The brand only appears in double-quoted strings, YAML plain scalars, HTML and JSX, where an apostrophe is safe.
+    - Refactor:
+      - `Slug`'s doc comment explains the refusal.
+      - `docs/rename.md` and `docs/template.md` list it among the invalid inputs.
+    - Deliberately left: an example row in the rename feature's "refuse invalid input" outline. That adds an acceptance check, so it belongs with item 14's wiring, or a `/feature` touch-up if you want it.
 9. [ ] Rename's `ParseArgs`: `--name` is required, `--module` is optional and checked, `--dry-run` is accepted, unknown flags are refused.
 10. [ ] Rename's `NewNames` keeps the current module when `--module` is omitted, and refuses with "nothing to rename" when the new names equal the current ones.
 11. [ ] Rename's `Run` with `--dry-run` reports changed files, lines and path moves, writes nothing, and needs no clean tree.
@@ -107,6 +121,7 @@ Temporary: delete this file in the change that removes the `@wip` tags.
 ## Changes to the plan
 
 - Item 7a was added while planning item 7. Changing the module path can leave Go imports out of order, which `gofmt` and lint reject. Init has the same latent bug; it hasn't shown up because `example.com/...` happens to sort where the template's module did.
+- Item 8a was added at your request while doing item 8: refuse names with double quotes or backslashes. Item 8's write test changed its example to match.
 - Item 7c was split out of 7b's refactor. Moving init onto `RenameFile` makes init format Go files, which changes the output for unformatted input, so it gets a red/green rather than a refactor.
 - Item 7b was split out of 7a's refactor note. Moving init onto `RenameFile` needs two behaviours `RenameFile` doesn't have yet, so it can't be a pure refactor.
 - Item 4: only the brand is tested for regexp metacharacters. A slug can't contain any, because `Slug` only produces `[a-z0-9-]`.
