@@ -34,6 +34,10 @@ Work through them one at a time (each usually starts with `/feature`), tick them
 ## Front-end polish
 - [ ] **No flash of the wrong theme or style:** a tiny inline script in `web/index.html` that applies both before React loads.
 - [ ] **Shared feedback patterns:** toasts, an error boundary and a proper 404 page.
+- [ ] **Installed-app polish** (follow-ups from SPEC.md §4.5):
+  - precache the fonts and icons too (the service worker's default `globPatterns` cover only JS, CSS and HTML, so offline the app falls back to system fonts until they're cached);
+  - a dark-theme `theme-color` meta, so the browser bar matches the dark theme;
+  - offline, the Items page shows "Loading…" under the offline notice, because TanStack Query pauses its requests. Show nothing, or a quieter placeholder.
 - [ ] **Automated accessibility checks:** axe in the Playwright e2e tests, across every style × theme.
 
 ## Maybe (depends on the products built from it)

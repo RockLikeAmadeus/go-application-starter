@@ -39,6 +39,7 @@ Never stage, commit, push or pull unless I explicitly ask. That includes `git ad
 | Lint / format | `task lint` · `task fmt` |
 | Regenerate API code | `task gen` (after editing `api/openapi.yaml`) |
 | Everything CI runs | `task check` |
+| Regenerate the app icons | `pnpm --dir web icons` (after editing `web/public/icon.svg`; commit the PNGs) |
 | Rename the project | `task rename -- --name "New Name" [--module …] [--dry-run]` (see `docs/rename.md`) |
 | Run locally | `task dev` (API on :8080, restarted by Air on Go changes + Vite on :5173 with HMR, opened in your browser) · `task run:cli -- --help` · `task run:tui` |
 
@@ -106,4 +107,5 @@ web/e2e                          playwright-bdd browser journeys
 - The server embeds the SPA only when built with `-tags embedweb` after `pnpm build` (`task build` does both). Otherwise `/` shows a hint page.
 - Dev-only Go tools (oapi-codegen for `task gen`, Air for `task dev`) live in `tools/go.mod` so their dependencies stay out of the app's `go.mod`. Add one with `cd tools && go get -tool <pkg>@<version>`, and run it with `go tool -modfile=tools/go.mod <name>`.
 - Playwright's WebKit (the `iphone` e2e project) needs system libraries that need sudo. `task setup` installs them with `--with-deps`. If it was skipped, run `sudo pnpm --dir web exec playwright install-deps webkit` in a real terminal: Claude Code's `!` can't answer sudo's password prompt.
+- The SPA is an installable web app (`VitePWA` in `web/vite.config.ts`, SPEC.md §4.5). Its service worker precaches only the built app and must never cache `/api`: data always comes from the server. Offline, page loads get the cached app. That includes any path the Go server serves outside `/api`, so add new server routes (like `/healthz` and `/readyz`) to `navigateFallbackDenylist`. A deploy reaches an open or installed app the next time it's opened. The service worker is off under `task dev`; test it with `task e2e` or a built server.
 - Node ≥ 24 is required (see `.nvmrc`). TypeScript is pinned to 6.0.x until typescript-eslint supports 7.
