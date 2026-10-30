@@ -48,6 +48,7 @@ func TestRunRefusesBeforeTouchingFiles(t *testing.T) {
 
 func TestRunRenamesTheProject(t *testing.T) {
 	dir := t.TempDir()
+	writeTemplateRecord(t, dir)
 	write := func(rel, content string) { writeFile(t, dir, rel, content) }
 	read := func(rel string) string { return readFile(t, dir, rel) }
 	const goSum = "github.com/RockLikeAmadeus/go-application-starter v0.0.0 h1:x=\n"
@@ -80,29 +81,6 @@ func TestRunRenamesTheProject(t *testing.T) {
 	}
 }
 
-// writeFile creates dir/rel (a slash-separated path) with content, making any
-// parent directories.
-func writeFile(t *testing.T, dir, rel, content string) {
-	t.Helper()
-	p := filepath.Join(dir, filepath.FromSlash(rel))
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// readFile returns the content of dir/rel (a slash-separated path).
-func readFile(t *testing.T, dir, rel string) string {
-	t.Helper()
-	b, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(rel)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(b)
-}
-
 func TestRunRemovesTheSampleOnlyWhenAsked(t *testing.T) {
 	const bootstrap = "package bootstrap\n\n" +
 		"// sample:start\n" +
@@ -126,6 +104,7 @@ func TestRunRemovesTheSampleOnlyWhenAsked(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			dir := t.TempDir()
+			writeTemplateRecord(t, dir)
 			files := map[string]string{
 				"internal/core/domain/item.go":         "package domain\n",
 				"web/src/features/items/ItemsPage.tsx": "export {};\n",
@@ -157,6 +136,7 @@ func TestRunRemovesTheSampleOnlyWhenAsked(t *testing.T) {
 
 func TestRunRemovesTheInitTool(t *testing.T) {
 	dir := t.TempDir()
+	writeTemplateRecord(t, dir)
 	files := map[string]string{
 		"README.md": "# Starter\n" +
 			"<!-- template:start -->\n" +
@@ -200,6 +180,7 @@ func TestRunRemovesTheInitTool(t *testing.T) {
 
 func TestRunTidiesGoFilesAfterRemovingTheSample(t *testing.T) {
 	dir := t.TempDir()
+	writeTemplateRecord(t, dir)
 	writeFile(t, dir, "internal/core/ports/ports.go", `package ports
 
 import (
@@ -273,7 +254,10 @@ func TestRunAsksForFollowUpCommands(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			args := append([]string{"--module", "example.com/acme/tasks", "--name", "Acme"}, tt.flags...)
 
-			got, err := initproject.Run(t.TempDir(), nil, args, "")
+			dir := t.TempDir()
+			writeTemplateRecord(t, dir)
+
+			got, err := initproject.Run(dir, nil, args, "")
 			if err != nil {
 				t.Fatalf("Run error = %v", err)
 			}
@@ -287,6 +271,7 @@ func TestRunAsksForFollowUpCommands(t *testing.T) {
 
 func TestRunRemovesDirectoriesTheSampleLeavesEmpty(t *testing.T) {
 	dir := t.TempDir()
+	writeTemplateRecord(t, dir)
 	files := []string{
 		"internal/core/app/item_service.go", // the directory's only file
 		"internal/core/domain/item.go",
@@ -311,6 +296,7 @@ func TestRunRemovesDirectoriesTheSampleLeavesEmpty(t *testing.T) {
 
 func TestRunKeepsGoImportsSortedWhenTheModuleSortsDifferently(t *testing.T) {
 	dir := t.TempDir()
+	writeTemplateRecord(t, dir)
 	// The template's module sorts before github.com/spf13; zenith.dev sorts after.
 	writeFile(t, dir, "cmd/starter/main.go", "package main\n\nimport (\n"+
 		"\t\"github.com/RockLikeAmadeus/go-application-starter/internal/cli\"\n"+
@@ -329,5 +315,23 @@ func TestRunKeepsGoImportsSortedWhenTheModuleSortsDifferently(t *testing.T) {
 		")\n\nvar _, _ = cli.New, cobra.Command{}\n"
 	if got := readFile(t, dir, "cmd/zenith/main.go"); got != want {
 		t.Errorf("cmd/zenith/main.go =\n%s\nwant\n%s", got, want)
+	}
+}
+
+func TestRunReadsTheOldNamesFromTheProjectRecord(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "project.json",
+		`{"module": "example.com/old/thing", "name": "Old Thing", "slug": "old-thing", "app": "old-thing"}`+"\n")
+	writeFile(t, dir, "README.md", "# Old Thing\n\nOLD_THING_PORT=8080 go run example.com/old/thing/cmd/old-thing\n")
+
+	_, err := initproject.Run(dir, []string{"README.md"},
+		[]string{"--module", "example.com/acme/tasks", "--name", "Acme"}, "")
+	if err != nil {
+		t.Fatalf("Run error = %v", err)
+	}
+
+	want := "# Acme\n\nACME_PORT=8080 go run example.com/acme/tasks/cmd/acme\n"
+	if got := readFile(t, dir, "README.md"); got != want {
+		t.Errorf("README.md = %q, want %q", got, want)
 	}
 }

@@ -33,6 +33,7 @@ func TestMainRunsInAGitRepository(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			dir := t.TempDir()
 			writeFile(t, dir, "go.mod", "module github.com/RockLikeAmadeus/go-application-starter\n\ngo 1.22\n")
+			writeTemplateRecord(t, dir)
 			git(t, dir, "init", "-q")
 			git(t, dir, "add", ".")
 			git(t, dir, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-qm", "template")

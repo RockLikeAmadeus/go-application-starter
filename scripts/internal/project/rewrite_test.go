@@ -28,14 +28,16 @@ func TestRewriteReplacesOneProjectsNamesWithAnothers(t *testing.T) {
 		`"name": "old-notes-web",` + "\n" +
 		`getenv("OLD_NOTES_STORAGE", "jsonfile")` + "\n" +
 		"<title>Old Notes</title>\n" +
-		"go run ./cmd/old-notes tui\n"
+		"go run ./cmd/old-notes tui\n" +
+		"Old Notesy and old-notesy stay\n"
 	want := "module example.com/zenith\n" +
 		`import "example.com/zenith/internal/core/domain"` + "\n" +
 		"app = 'zenith-staging'\n" +
 		`"name": "zenith-web",` + "\n" +
 		`getenv("ZENITH_STORAGE", "jsonfile")` + "\n" +
 		"<title>Zenith</title>\n" +
-		"go run ./cmd/zenith tui\n"
+		"go run ./cmd/zenith tui\n" +
+		"Old Notesy and old-notesy stay\n"
 
 	if got := project.Rewrite(in, from, to); got != want {
 		t.Errorf("Rewrite(%q) =\n%q\nwant\n%q", in, got, want)

@@ -75,7 +75,20 @@ Temporary: delete this file in the change that removes the `@wip` tags.
     - Deliberately left:
       - Init's `Rewrite`/`RenamePath` wrappers in `rewrite.go` are now used only by `rewrite_test.go`. They, their tests and `template` go together in item 8, when `ReadRecord` replaces `template`. Deleting them now would drop the template-specific cases (module path, deploy app name) before item 8 has a replacement.
       - A `format.Source` failure in `RenameFile` still isn't wrapped with `rel`. That's a behaviour change, so it would need a `/red`.
-8. [ ] Init's `Run` reads its old names from the record and writes the new record. Delete the `template*` constants.
+8. [ ] Init's `Run` reads its old names from the record and writes the new record. Delete the `template*` constants. (Reading and deleting are done; writing is next.)
+   - **Red (read):** `TestRunReadsTheOldNamesFromTheProjectRecord` in `scripts/initproject/run_test.go`. `project.json` names "Old Thing" (`example.com/old/thing`, `old-thing`), and `README.md` mentions its brand, env prefix, module and command path. Init to "Acme" must replace all of them. It fails: init still uses the hardcoded `template` names, so `README.md` is unchanged.
+   - Heads-up for `/green`: the other `Run` tests write no `project.json`. Once `Run` reads it, they'll fail with a missing-file error.
+     - The simplest fix is a test helper that writes a `project.json` with the template's names into each test's dir. That's a test change, so it needs your approval.
+     - The other route, falling back to the template's names when the file is missing, is behaviour no test demands, and it would keep the `template` names alive.
+   - Green (read): after its checks, `Run` calls `project.ReadRecord(dir)` and passes those names to `project.RenameFile` instead of `template`. A missing record is an error.
+     - With your approval, a new `writeTemplateRecord(t, dir)` helper in `run_test.go` writes the template's `project.json`. Every `Run` test that gets past the checks calls it, and so does `TestMainRunsInAGitRepository` (before its git commit).
+     - Init's non-WIP acceptance passes. Init's `@wip` scenario passes 3 of its 4 steps; only "can still be renamed" fails, since `scripts/rename` doesn't exist yet.
+   - Refactor:
+     - The hardcoded template names are gone. `scripts/initproject/rewrite.go` (`template` and the `Rewrite`/`RenamePath` wrappers) and its `rewrite_test.go` were deleted with plain `rm`.
+     - Their one case not already covered, "whole words only", moved into `project`'s `TestRewriteReplacesOneProjectsNamesWithAnothers`, as "Old Notesy and old-notesy stay".
+     - The test helpers `writeFile`, `readFile` and `writeTemplateRecord` moved from `run_test.go` to a new `helpers_test.go`, since `main_test.go` uses them too.
+   - Deliberately left: init still rewrites `project.json` as text, which happens to give the right record. The next `/red` makes it write the record explicitly and skip the file.
+   - Writing the new record is a separate `/red` after this one.
 9. [ ] Rename's `ParseArgs`: `--name` is required, `--module` is optional and checked, `--dry-run` is accepted, unknown flags are refused.
 10. [ ] Rename's `NewNames` keeps the current module when `--module` is omitted, and refuses with "nothing to rename" when the new names equal the current ones.
 11. [ ] Rename's `Run` with `--dry-run` reports changed files, lines and path moves, writes nothing, and needs no clean tree.

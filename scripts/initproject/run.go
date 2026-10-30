@@ -29,6 +29,10 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 	if err := project.CheckClean(porcelain); err != nil {
 		return nil, err
 	}
+	old, err := project.ReadRecord(dir)
+	if err != nil {
+		return nil, err
+	}
 	if opts.RemoveSample {
 		if err := removeAll(dir, SampleFiles); err != nil {
 			return nil, err
@@ -42,7 +46,7 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 		if isUnder(rel, toolFiles) || opts.RemoveSample && IsSample(rel) {
 			continue
 		}
-		if err := project.RenameFile(dir, rel, template, n, strip); err != nil {
+		if err := project.RenameFile(dir, rel, old, n, strip); err != nil {
 			return nil, err
 		}
 	}
