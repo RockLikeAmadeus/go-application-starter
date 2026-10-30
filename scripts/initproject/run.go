@@ -23,7 +23,7 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 	if err != nil {
 		return nil, err
 	}
-	n, err := NewNames(opts)
+	n, err := project.NewNames(opts.Module, opts.Name)
 	if err != nil {
 		return nil, err
 	}

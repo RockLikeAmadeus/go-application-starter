@@ -111,12 +111,23 @@ Temporary: delete this file in the change that removes the `@wip` tags.
    - Deliberately left:
      - The two flag sets stay separate: they differ in flags and in which are required.
      - The flag help texts aren't printed anywhere, in either tool, because output is discarded. Leave them unless `main.go` (item 14) shows usage.
-10. [ ] Rename's `NewNames` keeps the current module when `--module` is omitted, and refuses with "nothing to rename" when the new names equal the current ones.
+10. [x] Rename's `NewNames` keeps the current module when `--module` is omitted, and refuses with "nothing to rename" when the new names equal the current ones.
     - **Red (keep module):** `TestNewNamesKeepsTheCurrentModuleWhenNoneIsGiven` in `scripts/rename/names_test.go`. The current names are "Acme" (`example.com/acme/tasks`). Renaming to "Zenith Notes" with no module must give the full set of new names on the current module, with `App` equal to the slug. It fails: `NewNames(opts, current)` in `scripts/rename/names.go` is a stub returning zero `Names`.
     - Green (keep module): `NewNames` slugs the name with `project.Slug` (passing on its error) and always keeps `current.Module`. **`--module` is ignored for now**: no unit test asks for it yet. It needs its own `/red` (new item 10a), or `--module` would silently do nothing.
-    - **For refactor:** rename's `NewNames` and init's differ only in where the module comes from. A shared `project.NewNames(module, name)` could build the brand, slug, app and env prefix for both. Better done after 10a, once rename's module choice is real.
+    - For refactor: moved to item 10a, since it was better done after that.
     - "Nothing to rename" gets its own `/red` next.
-10a. [ ] **New:** rename's `NewNames` uses `--module` when it's given.
+    - **Red (nothing to rename):** `TestNewNamesRefusesTheCurrentNames` in `scripts/rename/names_test.go`. Renaming "Acme" (`example.com/acme/tasks`) to "Acme" with no module must fail with an error mentioning "nothing to rename". It fails: `NewNames` returns no error.
+      - Comparing the whole `Names` is enough. In the template, renaming to "Starter" would still change the app name (its deploy name differs from its slug), so that run isn't refused, and it shouldn't be.
+    - Green (nothing to rename): after building the new names, `NewNames` returns "nothing to rename" if they equal `current`.
+    - Refactor: the three `NewNames` tests share a package-level `acme` fixture in `names_test.go`. `NewNames`'s doc comment now says when it fails.
+    - Deliberately left: `NewNames` itself. It is short, and its two rules (keep the module, refuse no change) are rename's own.
+10a. [x] **New:** rename's `NewNames` uses `--module` when it's given.
+    - **Red:** `TestNewNamesUsesTheModuleWhenOneIsGiven` in `scripts/rename/names_test.go`. With current module `example.com/acme/tasks` and `--module example.com/zenith/notes`, the new module must be the given one. It fails: `NewNames` always keeps the current module.
+    - Green: `NewNames` uses `opts.Module` when it's given, and `current.Module` otherwise.
+    - Refactor: the name derivation is now `project.NewNames(module, name)` in `scripts/internal/project/names.go`. Rename's `NewNames` only picks the module and delegates to it.
+      - Init's `NewNames` was a pure wrapper, so `scripts/initproject/names.go` was deleted with plain `rm`, and init's `Run` calls `project.NewNames(opts.Module, opts.Name)` directly. This supersedes item 1's note that `NewNames(Options)` stays in init.
+      - `project.NewNames` has no test of its own: init's `Run` tests and rename's `NewNames` tests cover it.
+    - Deliberately left: rename keeps its own `NewNames(opts, current)`, since choosing the module and (next) refusing "nothing to rename" are rename's rules, not init's.
 11. [ ] Rename's `Run` with `--dry-run` reports changed files, lines and path moves, writes nothing, and needs no clean tree.
 12. [ ] Rename's `Run` does the rename: clean-tree guard, every tracked file except `project.json`, then writes the record.
 13. [ ] Rename's `Run` returns `go mod tidy` as a follow-up only when the module changed.

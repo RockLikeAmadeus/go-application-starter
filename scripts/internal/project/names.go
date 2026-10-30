@@ -42,3 +42,13 @@ func Slug(name string) (string, error) {
 func EnvPrefix(slug string) string {
 	return strings.ToUpper(strings.ReplaceAll(slug, "-", "_")) + "_"
 }
+
+// NewNames derives a project's names from its module path and brand name. It
+// fails if the brand name gives no usable slug.
+func NewNames(module, name string) (Names, error) {
+	slug, err := Slug(name)
+	if err != nil {
+		return Names{}, err
+	}
+	return Names{Module: module, Brand: name, Slug: slug, App: slug, EnvPrefix: EnvPrefix(slug)}, nil
+}
