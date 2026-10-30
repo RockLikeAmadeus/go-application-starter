@@ -33,6 +33,7 @@ func TestFeatures(t *testing.T) {
 		t.Run(d.name, func(t *testing.T) {
 			o := opts
 			o.TestingT = t
+			o.Tags = joinTags(opts.Tags, d.tags)
 			suite := godog.TestSuite{
 				Name:                d.name,
 				ScenarioInitializer: initializeScenario(d),
@@ -43,4 +44,12 @@ func TestFeatures(t *testing.T) {
 			}
 		})
 	}
+}
+
+// joinTags requires both Godog tag expressions; either may be empty.
+func joinTags(a, b string) string {
+	if a == "" || b == "" {
+		return a + b
+	}
+	return a + " && " + b
 }

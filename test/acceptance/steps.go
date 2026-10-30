@@ -33,6 +33,7 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		})
 
 		sc.Step(`^I am told the "([^"]*)" is invalid$`, w.iAmToldTheFieldIsInvalid)
+		w.registerDesktopSteps(sc)
 		// sample:start
 		w.registerItemSteps(sc)
 		// sample:end
