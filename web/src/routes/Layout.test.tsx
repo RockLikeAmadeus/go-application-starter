@@ -20,12 +20,25 @@ describe("Layout", () => {
     localStorage.clear();
     document.documentElement.removeAttribute("style");
     document.documentElement.removeAttribute("class");
+    document.documentElement.removeAttribute("data-style");
   });
 
-  it("shows the Dark mode switch in the header", () => {
+  it("groups the Style picker and Dark mode switch under Appearance in the sidebar", () => {
     renderLayout();
-    expect(
-      within(screen.getByRole("banner")).getByRole("switch", { name: "Dark mode" }),
-    ).toBeInTheDocument();
+
+    const appearance = within(screen.getByRole("complementary")).getByRole("group", {
+      name: "Appearance",
+    });
+    expect(within(appearance).getByRole("combobox", { name: "Style" })).toBeInTheDocument();
+    expect(within(appearance).getByRole("switch", { name: "Dark mode" })).toBeInTheDocument();
+  });
+
+  it("shows the app name and an Items link in the sidebar navigation", () => {
+    renderLayout();
+
+    const sidebar = within(screen.getByRole("complementary"));
+    expect(sidebar.getByText("Starter")).toBeInTheDocument();
+    const nav = within(sidebar.getByRole("navigation"));
+    expect(nav.getByRole("link", { name: "Items" })).toHaveAttribute("href", "/");
   });
 });

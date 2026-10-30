@@ -19,7 +19,7 @@ When("I add an item named {string}", async ({ page }, name: string) => {
 Given("I have added an item named {string}", async ({ page }, name: string) => {
   await page.getByLabel("New item name").fill(name);
   await page.getByRole("button", { name: "Add item" }).click();
-  await expect(page.getByRole("list", { name: "Items" })).toContainText(name);
+  await expect(page.getByRole("table", { name: "Items" })).toContainText(name);
 });
 
 When("I rename {string} to {string}", async ({ page }, from: string, to: string) => {
@@ -34,7 +34,7 @@ When("I delete {string}", async ({ page }, name: string) => {
 
 Then("I see {string} in the item list", async ({ page }, name: string) => {
   await expect(
-    page.getByRole("list", { name: "Items" }).getByText(name, { exact: true }),
+    page.getByRole("table", { name: "Items" }).getByText(name, { exact: true }),
   ).toBeVisible();
 });
 

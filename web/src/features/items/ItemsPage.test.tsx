@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Item } from "../../api/client";
@@ -48,6 +48,20 @@ describe("ItemsPage", () => {
     expect(await screen.findByText("No items yet.")).toBeInTheDocument();
   });
 
+  it("lists items in a table, one row each with its rename and delete actions", async () => {
+    const now = new Date().toISOString();
+    vi.stubGlobal("fetch", fakeApi([{ id: "1", name: "Widget", createdAt: now, updatedAt: now }]));
+    renderWithClient(<ItemsPage />);
+
+    const table = await screen.findByRole("table", { name: "Items" });
+    const [header, row] = within(table).getAllByRole("row");
+    expect(within(header!).getByRole("columnheader", { name: "Name" })).toBeInTheDocument();
+    const cells = within(row!);
+    expect(cells.getByRole("cell", { name: "Widget" })).toBeInTheDocument();
+    expect(cells.getByRole("button", { name: "Rename Widget" })).toBeInTheDocument();
+    expect(cells.getByRole("button", { name: "Delete Widget" })).toBeInTheDocument();
+  });
+
   it("adds an item", async () => {
     const user = userEvent.setup();
     renderWithClient(<ItemsPage />);
@@ -55,7 +69,7 @@ describe("ItemsPage", () => {
     await user.type(await screen.findByLabelText("New item name"), "Widget");
     await user.click(screen.getByRole("button", { name: "Add item" }));
 
-    expect(await screen.findByRole("list", { name: "Items" })).toHaveTextContent("Widget");
+    expect(await screen.findByRole("table", { name: "Items" })).toHaveTextContent("Widget");
     expect(screen.getByLabelText("New item name")).toHaveValue("");
   });
 
