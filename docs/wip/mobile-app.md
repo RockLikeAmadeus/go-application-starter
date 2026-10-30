@@ -51,8 +51,20 @@
    - Red ✔: `TestOpenAnswersTheAPIOverTheBridgeOnly` (`internal/adapters/mobile/open_test.go`) opens with an empty environment and `storagePath` = a temp folder, as the phone would. It fails with "Open returned API <nil> and Handler <nil>, want both". Stub in `open.go`: `App{Handler, API}`, `Open(getenv, storagePath string, webAssets fs.FS)` returning an empty `App`, and a no-op `Close`. `storagePath` is a string because `application.Android.StoragePath()` returns one.
    - Green ✔: `Open` calls `desktop.Open` with a lookup that returns `storagePath`. `API` is the desktop handler, `Handler` is `AssetHandler` around it, and `Close` closes the desktop app. This also confirms task 3a's open question: the real `httpapi` handler works with the empty `Host`/`RequestURI` that `http.NewRequest` leaves.
    - Refactor ✔: comments only, no code changes. `App`, its `Handler`/`API` fields and `Open` now say which handler is for the asset path and which for the bridge, where the data folder goes (`<storagePath>/starter` unless `STARTER_DATA_DIR`), what production passes in, and that `/sw.js` answers 404 as on the desktop. The package doc says `mobile` reuses `desktop`'s wiring because the phone keeps its data locally. Left alone on purpose: the `mobile` → `desktop` import stays, because a shared package would only pay off with a third user.
-7. [ ] **Mobile acceptance driver and tag routing** (test code). Turns `features/mobile.feature` green and runs every other non-desktop feature over the bridge.
-8. [ ] **Web: `bridgeFetch(call)`** sends the method, path with query, and body, and returns a `Response` with the reply's status, content type and body.
+7. [x] **Mobile acceptance driver and tag routing** (test code). Turns `features/mobile.feature` green and runs every other non-desktop feature over the bridge.
+   - Done ✔ (test code, no red/green):
+     - `startMobile` in `test/acceptance/drivers.go` opens `mobile.Open` with an empty environment and a temp folder as `storagePath`, as the phone does.
+     - It drives the app with `httpclient` through a `bridge` doer (`apiclient.WithHTTPClient`) that sends each request through `mobile.Serve` on `App.API`. The doer takes the place of the planned `http.RoundTripper`, because the generated client accepts any `Do(*http.Request)`, which is one layer less.
+     - Tags as planned (`~@desktop && ~@mobile`, `~@mobile`, `~@desktop`).
+     - `mobile_steps.go` binds "I close the mobile app and open it again" to the harness's `reopen`.
+     - Results: mobile runs 9 scenarios (8 items + 1 mobile), desktop runs 10, and the others run 8 each, all passing. `task accept -- --godog.tags=@wip` passes. `task lint`, `task test` and `task test:init` pass.
+     - The `@wip` tag stays until task 18.
+8. [x] **Web: `bridgeFetch(call)`** sends the method, path with query, and body, and returns a `Response` with the reply's status, content type and body.
+   - Red ✔: "sends the request over the bridge and returns the reply as a Response" (`web/src/api/bridge.test.ts`) fails with "expected vi.fn() to be called with arguments: [ 'POST', … ] — Number of calls: 0".
+     - Stub in `web/src/api/bridge.ts`: types `BridgeReply` (mirrors `mobile.Reply`) and `BridgeCall(method, path, body)`, plus `bridgeFetch(_call)`, which returns a fetch-like `(request: Request) => Promise<Response>` that answers an empty `Response`.
+     - `tsc` passes. ESLint flags the unused `_call` until green uses it.
+   - Green ✔: `bridgeFetch` passes `call` the request's method, `pathname + search` and `await request.text()`, and turns the reply into `new Response(body, { status, headers: { "Content-Type": contentType } })`. All 54 web tests pass, and `tsc`, ESLint and Prettier are clean.
+   - Refactor ✔: destructured `{ pathname, search }` from the URL. The doc comment now says why the bridge exists (Android's asset path makes every request a GET with no body). Test unchanged. Left alone on purpose: an empty `contentType` still sets `Content-Type: ""`, which is harmless and has no test showing otherwise. The 204 crash is task 9's red, not a refactor.
 9. [ ] **Web: `bridgeFetch`** returns a body-less `Response` for 204.
 10. [ ] **Web: `client.ts` uses the bridge** when `window.wails.invokeAsync` exists when the module loads, and plain `fetch` otherwise (both cases tested, re-importing the module).
 11. [ ] **`@wailsio/runtime`**, dynamically imported, passed to `bridgeFetch` as `Call.ByName("main.Proxy.Do", …)` or whatever name the service gets. Wiring: check the browser bundle doesn't grow.
@@ -70,3 +82,4 @@
 
 ## Changes to the plan
 - 2026-10-30, task 2 refactor: added task 3a. `Serve` uses `httptest.NewRequest`, which panics on a malformed method or path and would crash the bridge call. Fixing that changes behaviour, so it needs its own red test rather than a refactor.
+- 2026-10-30, task 7: the acceptance bridge is a `Do(*http.Request)` doer passed with `apiclient.WithHTTPClient`, not an `http.RoundTripper`. Same effect, one layer less.

@@ -6,13 +6,18 @@
 package acceptance
 
 import (
+	"io"
+	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/desktop"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient/apiclient"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/mobile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
@@ -28,8 +33,8 @@ type harness struct {
 	// sample:end
 	clock   *testsupport.FixedClock
 	cleanup func()
-	// reopen closes the desktop app and opens it again on the same data
-	// folder. Only the desktop driver sets it.
+	// reopen closes the desktop or mobile app and opens it again on the same
+	// data folder. Only the desktop and mobile drivers set it.
 	reopen func() error
 	// openCopy tries to open a second copy of the desktop app on the same
 	// data folder, closing it again if it opens. Only the desktop driver sets it.
@@ -44,13 +49,15 @@ type driver struct {
 	tags string
 }
 
-// Desktop-only scenarios (@desktop) run only on the desktop driver, which
-// also runs every other feature.
+// Desktop-only scenarios (@desktop) run only on the desktop driver, and
+// mobile-only ones (@mobile) only on the mobile driver. Each of those also
+// runs every feature that isn't the other's.
 var drivers = []driver{
-	{name: "memory", start: startMemory, tags: "~@desktop"},
-	{name: "jsonfile", start: startJSONFile, tags: "~@desktop"},
-	{name: "http", start: startHTTP, tags: "~@desktop"},
-	{name: "desktop", start: startDesktop},
+	{name: "memory", start: startMemory, tags: "~@desktop && ~@mobile"},
+	{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile"},
+	{name: "http", start: startHTTP, tags: "~@desktop && ~@mobile"},
+	{name: "desktop", start: startDesktop, tags: "~@mobile"},
+	{name: "mobile", start: startMobile, tags: "~@desktop"},
 }
 
 func newHarness() *harness {
@@ -185,4 +192,86 @@ func (d *desktopApp) close() {
 	d.srv.Close()
 	d.app.Close()
 	d.app, d.srv = nil, nil
+}
+
+// startMobile opens the mobile app's wiring on a temporary storage folder, as
+// the phone does, and drives it over the bridge, as the phone's web app does.
+func startMobile() (*harness, error) {
+	dir, err := os.MkdirTemp("", "acceptance-mobile-*")
+	if err != nil {
+		return nil, err
+	}
+	app := &mobileApp{storagePath: dir}
+
+	h := newHarness()
+	h.cleanup = func() {
+		app.close()
+		os.RemoveAll(dir)
+	}
+	h.reopen = func() error {
+		app.close()
+		return app.open(h)
+	}
+	if err := app.open(h); err != nil {
+		h.cleanup()
+		return nil, err
+	}
+	return h, nil
+}
+
+// mobileApp is one copy of the mobile app, opened on storagePath.
+type mobileApp struct {
+	storagePath string
+	app         *mobile.App
+}
+
+// open opens the app and points h's driving ports at its bridge. The
+// scenarios drive the API only, so the app is opened without the web app.
+func (m *mobileApp) open(h *harness) error {
+	app, err := mobile.Open(func(string) string { return "" }, m.storagePath, nil)
+	if err != nil {
+		return err
+	}
+	m.app = app
+	// sample:start
+	// The bridge ignores the host: only the path and query reach mobile.Serve.
+	client, err := httpclient.New("http://mobile.invalid", apiclient.WithHTTPClient(bridge{app.API}))
+	if err != nil {
+		return err
+	}
+	h.items = client
+	// sample:end
+	return nil
+}
+
+// close releases the app's data folder, if it is open.
+func (m *mobileApp) close() {
+	if m.app == nil {
+		return
+	}
+	m.app.Close()
+	m.app = nil
+}
+
+// bridge sends the HTTP client's requests through mobile.Serve, as the
+// phone's web app sends them over the Wails bridge.
+type bridge struct {
+	api http.Handler
+}
+
+func (b bridge) Do(req *http.Request) (*http.Response, error) {
+	var body []byte
+	if req.Body != nil {
+		var err error
+		if body, err = io.ReadAll(req.Body); err != nil {
+			return nil, err
+		}
+	}
+	reply := mobile.Serve(b.api, req.Method, req.URL.RequestURI(), string(body))
+	return &http.Response{
+		StatusCode: reply.Status,
+		Header:     http.Header{"Content-Type": {reply.ContentType}},
+		Body:       io.NopCloser(strings.NewReader(reply.Body)),
+		Request:    req,
+	}, nil
 }
