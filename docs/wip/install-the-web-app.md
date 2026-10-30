@@ -59,7 +59,12 @@ Run: `task e2e -- --project chromium --grep @wip` (`task e2e` rebuilds the SPA f
      - The deny list now has a comment saying why: the API must always reach the server, and so must the health probes.
      - Checked after the change: the built `sw.js` has the same deny list, and the `@wip` scenarios are unchanged (1 passes; the 2 offline ones fail on the missing notice). `task lint`, `task test` and `task accept` pass.
      - Deliberately left: a separate `web/pwa.config.ts`. One constant in the same file is enough at this size.
-4. [ ] `OfflineNotice` shows "You're offline…" in a `status` region when the browser is offline at first render (stub `navigator.onLine`).
+4. [x] `OfflineNotice` shows "You're offline…" in a `status` region when the browser is offline at first render (stub `navigator.onLine`).
+   - Red: `web/src/features/offline/OfflineNotice.test.tsx` › "says the app is offline when the browser starts without a connection" (`vi.spyOn(navigator, "onLine", "get")` → `false`) fails with `Unable to find an accessible element with the role "status"`. The compile stub `OfflineNotice` in `OfflineNotice.tsx` returns `null`. It's a new `features/offline/` folder: the notice is app-wide, not sample code.
+   - Green: `OfflineNotice` renders `<p role="status">` that holds "You're offline. Data will load when the connection comes back." while `navigator.onLine` is false. It reads `navigator.onLine` once per render; it doesn't listen for changes yet (task 5). Web suite: 43 pass. No Godog `@wip` scenarios; the e2e offline scenarios still need `Layout` to render it (task 6).
+   - **For refactor:**
+     - The paragraph has no styling: no palette colour or size. Probably wait for task 6, where it gets a place in `Layout` and its look can be judged in context. Styling doesn't change what the test sees.
+     - The message is an inline string inside JSX. Fine while it's the only one.
 5. [ ] `OfflineNotice` shows the message when an `offline` event fires, and clears it when an `online` event fires.
 6. [ ] `Layout` renders the offline notice. Then:
    - run the `@wip` scenarios, and the full `task e2e` (the service worker must not break the other 51);
