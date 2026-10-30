@@ -79,9 +79,21 @@ Run: `task e2e -- --project chromium --grep @wip` (`task e2e` rebuilds the SPA f
        - No separate `useOnline.test.ts`: the three component tests already drive every path through the hook, and new tests would be new assertions, not a refactor.
        - Task 4's styling note waits for task 6, as planned.
 6. [ ] `Layout` renders the offline notice. Then:
-   - run the `@wip` scenarios, and the full `task e2e` (the service worker must not break the other 51);
-   - remove the `@wip` tags;
-   - check "updates quietly" by hand: build, open, change something, rebuild, then reopen twice.
+   - Red: `Layout.test.tsx` › "tells the user when the app is offline, on every page" (`navigator.onLine` stubbed `false`) fails with `Unable to find an accessible element with the role "status"`. It sits outside the sample block, since the notice isn't sample code. `afterEach` now also calls `vi.restoreAllMocks()` to undo the `navigator.onLine` spy.
+   - Green: `Layout` renders `<OfflineNotice />` in `<main>`, right after `<MobileNav>` and before the page's `Outlet`, so it shows on every page. Web suite: 46 pass; lint clean.
+   - Results:
+     - All three `@wip` install scenarios pass on Chromium.
+     - Full `task e2e`: 54 passed (the 51 from before plus these 3), so the service worker breaks nothing else.
+   - Refactor (`OfflineNotice.tsx`, also closing task 4's styling note):
+     - The `status` region is now an always-present `<div>` that holds a styled `<p>` only while offline. Empty, it takes no space (measured: 0px tall online, 34–38px offline), and it stays in the page so screen readers announce the message when it appears.
+     - The `<p>` is a quiet banner made only of palette and style tokens: `rounded-control border border-line bg-sunken px-4 py-2 text-sm text-muted`, `mb-6` (`terminal:mb-4 terminal:text-xs`, matching the Menu button's spacing).
+     - A doc comment explains the empty-region choice.
+     - Checked offline in Crisp, Terminal and Soft × light and dark (desktop Chromium screenshots): readable everywhere, and it doesn't compete with the page heading.
+     - `task lint`, `task test` (46 web), `task accept` and the full `task e2e` (54) pass.
+     - Deliberately left: a shared `navigator.onLine` stub helper across `Layout.test.tsx` and `OfflineNotice.test.tsx`. It's one line in `Layout.test.tsx`.
+   - Still to do in this task, after `/refactor`:
+     - remove the `@wip` tags;
+     - check "updates quietly" by hand: build, open, change something, rebuild, then reopen twice.
 7. [ ] Housekeeping:
    - `task rename -- --name "Acme" --dry-run` shows the manifest name renamed;
    - CLAUDE.md: the service worker never caches `/api`, and icons come from `pnpm icons`;

@@ -18,6 +18,7 @@ describe("Layout", () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     localStorage.clear();
     document.documentElement.removeAttribute("style");
     document.documentElement.removeAttribute("class");
@@ -161,6 +162,14 @@ describe("Layout", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(menu).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("tells the user when the app is offline, on every page", () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+
+    renderLayout();
+
+    expect(screen.getByRole("status")).toHaveTextContent("You're offline");
   });
   // sample:start
 

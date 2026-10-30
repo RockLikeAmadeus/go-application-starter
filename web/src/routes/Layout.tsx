@@ -4,6 +4,7 @@ import { NavLink } from "react-router";
 import { type MouseEvent, type ReactNode, type SyntheticEvent, useRef, useState } from "react";
 import { Link, Outlet } from "react-router";
 import { afterTransition } from "../lib/afterTransition";
+import { OfflineNotice } from "../features/offline/OfflineNotice";
 import type { Style } from "../features/style/style";
 import { StylePicker } from "../features/style/StylePicker";
 import { useStyle } from "../features/style/useStyle";
@@ -24,6 +25,7 @@ export function Layout() {
       </aside>
       <main className="min-w-0 flex-1 px-8 py-8 terminal:px-5 terminal:py-5">
         <MobileNav>{content}</MobileNav>
+        <OfflineNotice />
         <div className="mx-auto max-w-4xl">
           <Outlet />
         </div>
