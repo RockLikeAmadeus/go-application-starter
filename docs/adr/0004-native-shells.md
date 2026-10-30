@@ -1,6 +1,6 @@
 # 4. Native shells run the same web app over the same REST API
 
-- Status: accepted (desktop built; mobile planned)
+- Status: accepted (desktop built; mobile planned: Wails, Android first)
 - Date: 2026-10-30
 
 ## Context
@@ -23,11 +23,14 @@ Every native shell runs the existing SPA from `web/` unchanged, and the SPA keep
 Rejected:
 - **Wails bindings:** a second API surface beside REST.
 - **Electron, Tauri:** a second runtime or language next to Go.
+- **Capacitor for mobile** (the first plan): remote-only, so no offline use on the phone. It remains the fallback.
 - **A local HTTP server on a port:** other programs on the machine could reach the data, and it adds port clashes.
 
-### Mobile: Capacitor, remote-only (planned)
+### Mobile: Wails v3 too, Android first (planned)
 
-Capacitor wraps `web/dist` and talks to a server, which then needs CORS for Capacitor's origins. Running the core on the device (gomobile) waits until local-only mode and accounts are designed. iOS waits for a Mac and a real iPhone.
+The phone runs the same core and REST handler in-process, with its data on the phone, so it works offline. A spike on the Android emulator (2026-10-30) proved this, with one catch: Wails' Android asset path sends every request to Go as a `GET` with no body, and drops every status except 200. So on Android the web app sends `/api` requests over the Wails bridge, through a small Go service that runs them through the same `http.Handler`. `/api` on the asset path answers 404, so a request that misses the bridge fails loudly. iOS waits for a Mac.
+
+Wails mobile is experimental (outside its stability promise). The fallback is Capacitor, remote-only: mature, but it needs CORS and an API base URL, and can't work offline without reimplementing the core.
 
 ## Consequences
 
