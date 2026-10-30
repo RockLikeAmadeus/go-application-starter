@@ -13,7 +13,9 @@ export function bridgeFetch(call: BridgeCall): (request: Request) => Promise<Res
   return async (request) => {
     const { pathname, search } = new URL(request.url);
     const reply = await call(request.method, pathname + search, await request.text());
-    return new Response(reply.body, {
+    // Go sends an empty body for 204, but a 204 Response can't have one at all.
+    const body = reply.status === 204 ? null : reply.body;
+    return new Response(body, {
       status: reply.status,
       headers: { "Content-Type": reply.contentType },
     });

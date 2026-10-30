@@ -21,4 +21,17 @@ describe("bridgeFetch", () => {
     expect(response.headers.get("Content-Type")).toBe("application/json");
     expect(await response.text()).toBe('{"name":"Widget"}');
   });
+
+  // Deleting an item answers 204, and a Response for 204 can't have a body,
+  // not even an empty one.
+  it("returns a Response with no body for 204", async () => {
+    const call = vi.fn<BridgeCall>(async () => ({ status: 204, contentType: "", body: "" }));
+
+    const response = await bridgeFetch(call)(
+      new Request("http://localhost/api/v1/items/item-1", { method: "DELETE" }),
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.body).toBeNull();
+  });
 });

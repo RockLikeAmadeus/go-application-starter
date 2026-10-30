@@ -65,7 +65,10 @@
      - `tsc` passes. ESLint flags the unused `_call` until green uses it.
    - Green ✔: `bridgeFetch` passes `call` the request's method, `pathname + search` and `await request.text()`, and turns the reply into `new Response(body, { status, headers: { "Content-Type": contentType } })`. All 54 web tests pass, and `tsc`, ESLint and Prettier are clean.
    - Refactor ✔: destructured `{ pathname, search }` from the URL. The doc comment now says why the bridge exists (Android's asset path makes every request a GET with no body). Test unchanged. Left alone on purpose: an empty `contentType` still sets `Content-Type: ""`, which is harmless and has no test showing otherwise. The 204 crash is task 9's red, not a refactor.
-9. [ ] **Web: `bridgeFetch`** returns a body-less `Response` for 204.
+9. [x] **Web: `bridgeFetch`** returns a body-less `Response` for 204.
+   - Red ✔: "returns a Response with no body for 204" (`bridge.test.ts`), for a `DELETE` whose reply is `{ status: 204, contentType: "", body: "" }`. Fails with `TypeError: Response constructor: Invalid response status code 204` from `bridge.ts:16`. That's the missing behaviour itself (a 204 can't have even an empty body), so the throw isn't wrapped in an assertion.
+   - Green ✔: `bridgeFetch` passes `null` as the body when `reply.status === 204`. All 55 web tests pass, and `tsc`, ESLint and Prettier are clean.
+   - Refactor ✔: the 204 check moved into a named `body` variable, with a comment on why (Go sends an empty body, and a 204 `Response` can't have one). Left alone on purpose: 101/205/304 aren't handled, because the API never sends them. The empty `Content-Type` on a 204 is harmless.
 10. [ ] **Web: `client.ts` uses the bridge** when `window.wails.invokeAsync` exists when the module loads, and plain `fetch` otherwise (both cases tested, re-importing the module).
 11. [ ] **`@wailsio/runtime`**, dynamically imported, passed to `bridgeFetch` as `Call.ByName("main.Proxy.Do", …)` or whatever name the service gets. Wiring: check the browser bundle doesn't grow.
 12. [ ] `cmd/mobile/main.go` (`//go:build android`) and the Wails service wrapper. Wiring, no unit test. Builds with the NDK.
