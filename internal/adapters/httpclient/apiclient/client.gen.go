@@ -17,6 +17,14 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Connection defines model for Connection.
+type Connection struct {
+	// Required True when the app reaches its data over the network (the server).
+	// False when the data is on this device (the desktop app's local-only
+	// mode), so a lost connection doesn't matter.
+	Required bool `json:"required"`
+}
+
 // Item defines model for Item.
 type Item struct {
 	CreatedAt time.Time `json:"createdAt"`
@@ -128,6 +136,9 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
+	// GetConnection performs a GET /api/v1/connection (the `GetConnection` operationId) request.
+	GetConnection(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListItems performs a GET /api/v1/items (the `ListItems` operationId) request.
 	ListItems(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -152,6 +163,19 @@ type ClientInterface interface {
 	// RenameItem performs a PATCH /api/v1/items/{id} (the `RenameItem` operationId) request.
 	// Takes a body of the `application/json` content type.
 	RenameItem(ctx context.Context, id string, body RenameItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+// GetConnection performs a GET /api/v1/connection (the `GetConnection` operationId) request.
+func (c *Client) GetConnection(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetConnectionRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 // ListItems performs a GET /api/v1/items (the `ListItems` operationId) request.
@@ -247,6 +271,33 @@ func (c *Client) RenameItem(ctx context.Context, id string, body RenameItemJSONR
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewGetConnectionRequest constructs an http.Request for the GetConnection method
+func NewGetConnectionRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/connection")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // NewListItemsRequest constructs an http.Request for the ListItems method
@@ -475,6 +526,11 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
+	// GetConnectionWithResponse performs a GET /api/v1/connection (the `GetConnection` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetConnectionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConnectionResponse, error)
+
 	// ListItemsWithResponse performs a GET /api/v1/items (the `ListItems` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -509,6 +565,54 @@ type ClientWithResponsesInterface interface {
 	// RenameItemWithResponse performs a PATCH /api/v1/items/{id} (the `RenameItem` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	RenameItemWithResponse(ctx context.Context, id string, body RenameItemJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameItemResponse, error)
+}
+
+type GetConnectionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Connection
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetConnectionResponse) GetJSON200() *Connection {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetConnectionResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetConnectionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetConnectionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetConnectionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetConnectionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
 }
 
 type ListItemsResponse struct {
@@ -744,6 +848,17 @@ func (r RenameItemResponse) ContentType() string {
 	return ""
 }
 
+// GetConnectionWithResponse performs a GET /api/v1/connection (the `GetConnection` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetConnectionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConnectionResponse, error) {
+	rsp, err := c.GetConnection(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetConnectionResponse(rsp)
+}
+
 // ListItemsWithResponse performs a GET /api/v1/items (the `ListItems` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -819,6 +934,39 @@ func (c *ClientWithResponses) RenameItemWithResponse(ctx context.Context, id str
 		return nil, err
 	}
 	return ParseRenameItemResponse(rsp)
+}
+
+// ParseGetConnectionResponse parses an HTTP response from a GetConnectionWithResponse call
+func ParseGetConnectionResponse(rsp *http.Response) (*GetConnectionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetConnectionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Connection
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseListItemsResponse parses an HTTP response from a ListItemsWithResponse call

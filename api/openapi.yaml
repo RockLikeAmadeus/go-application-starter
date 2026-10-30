@@ -7,6 +7,19 @@ info:
     This file is the single source of truth: Go server/client code and the
     TypeScript client types are generated from it (`task gen`).
 paths:
+  /api/v1/connection:
+    get:
+      operationId: getConnection
+      tags: [connection]
+      responses:
+        "200":
+          description: Whether the app needs a network connection to reach its data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+        default:
+          $ref: "#/components/responses/Problem"
   # sample:start
   /api/v1/items:
     get:
@@ -94,6 +107,16 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
   schemas:
+    Connection:
+      type: object
+      required: [required]
+      properties:
+        required:
+          type: boolean
+          description: |
+            True when the app reaches its data over the network (the server).
+            False when the data is on this device (the desktop app's local-only
+            mode), so a lost connection doesn't matter.
     # sample:start
     Item:
       type: object

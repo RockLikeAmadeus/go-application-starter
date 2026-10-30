@@ -16,6 +16,14 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Connection defines model for Connection.
+type Connection struct {
+	// Required True when the app reaches its data over the network (the server).
+	// False when the data is on this device (the desktop app's local-only
+	// mode), so a lost connection doesn't matter.
+	Required bool `json:"required"`
+}
+
 // Item defines model for Item.
 type Item struct {
 	CreatedAt time.Time `json:"createdAt"`
@@ -56,6 +64,9 @@ type RenameItemJSONRequestBody = ItemInput
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (GET /api/v1/connection)
+	GetConnection(w http.ResponseWriter, r *http.Request)
+
 	// (GET /api/v1/items)
 	ListItems(w http.ResponseWriter, r *http.Request)
 
@@ -80,6 +91,20 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetConnection operation middleware
+func (siw *ServerInterfaceWrapper) GetConnection(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetConnection(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ListItems operation middleware
 func (siw *ServerInterfaceWrapper) ListItems(w http.ResponseWriter, r *http.Request) {
@@ -307,6 +332,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/connection", wrapper.GetConnection)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/items", wrapper.ListItems)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/items", wrapper.CreateItem)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/items/{id}", wrapper.DeleteItem)
@@ -317,6 +343,44 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 }
 
 type ProblemApplicationProblemPlusJSONResponse Problem
+
+type GetConnectionRequestObject struct {
+}
+
+type GetConnectionResponseObject interface {
+	VisitGetConnectionResponse(w http.ResponseWriter) error
+}
+
+type GetConnection200JSONResponse Connection
+
+func (response GetConnection200JSONResponse) VisitGetConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetConnectiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetConnectiondefaultApplicationProblemPlusJSONResponse) VisitGetConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type ListItemsRequestObject struct {
 }
@@ -510,6 +574,9 @@ func (response RenameItemdefaultApplicationProblemPlusJSONResponse) VisitRenameI
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (GET /api/v1/connection)
+	GetConnection(ctx context.Context, request GetConnectionRequestObject) (GetConnectionResponseObject, error)
+
 	// (GET /api/v1/items)
 	ListItems(ctx context.Context, request ListItemsRequestObject) (ListItemsResponseObject, error)
 
@@ -563,6 +630,30 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// GetConnection operation middleware
+func (sh *strictHandler) GetConnection(w http.ResponseWriter, r *http.Request) {
+	var request GetConnectionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetConnection(ctx, request.(GetConnectionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetConnection")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetConnectionResponseObject); ok {
+		if err := validResponse.VisitGetConnectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ListItems operation middleware
