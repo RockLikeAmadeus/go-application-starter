@@ -29,12 +29,19 @@ export default defineConfig({
     // reduced-motion path users can choose.
     reducedMotion: "reduce",
   },
-  // @phone scenarios run only on the emulated phones; everything else runs on
-  // desktop Chromium. WebKit on an iPhone is the closest we get to Safari on Linux.
+  // @phone scenarios run only at phone width; everything else runs on desktop
+  // Chromium. WebKit on an iPhone is the closest we get to Safari on Linux.
+  // Playwright can't emulate a mobile device in Firefox, so it gets a
+  // phone-sized desktop window instead.
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] }, grepInvert: /@phone/ },
     { name: "phone", use: { ...devices["Pixel 7"] }, grep: /@phone/ },
     { name: "iphone", use: { ...devices["iPhone 15"] }, grep: /@phone/ },
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"], viewport: { width: 390, height: 844 } },
+      grep: /@phone/,
+    },
   ],
   // Skip starting a server when pointing at an existing deployment (smoke tests).
   webServer: process.env.E2E_BASE_URL

@@ -3,6 +3,7 @@ import { NavLink } from "react-router";
 // sample:end
 import { type MouseEvent, type ReactNode, type SyntheticEvent, useRef, useState } from "react";
 import { Link, Outlet } from "react-router";
+import { afterTransition } from "../lib/afterTransition";
 import type { Style } from "../features/style/style";
 import { StylePicker } from "../features/style/StylePicker";
 import { useStyle } from "../features/style/useStyle";
@@ -42,31 +43,6 @@ const drawerMotion = [
   "starting:open:backdrop:bg-transparent data-closing:backdrop:bg-transparent",
   "motion-reduce:duration-0 motion-reduce:backdrop:duration-0",
 ].join(" ");
-
-/**
- * Calls `done` once `el`'s own transition ends, or straight away if it has
- * none. A timeout stands in for a `transitionend` that never comes, e.g. when
- * the transition is interrupted. Transitions inside `el` are ignored.
- */
-function afterTransition(el: HTMLElement, done: () => void) {
-  const seconds = parseFloat(getComputedStyle(el).transitionDuration) || 0;
-  if (seconds === 0) {
-    done();
-    return;
-  }
-  let finished = false;
-  const finish = () => {
-    if (finished) return;
-    finished = true;
-    el.removeEventListener("transitionend", onEnd);
-    done();
-  };
-  const onEnd = (event: Event) => {
-    if (event.target === el) finish();
-  };
-  el.addEventListener("transitionend", onEnd);
-  setTimeout(finish, seconds * 1000 + 100);
-}
 
 /** The phone-width menu: a button that opens the sidebar's content in a modal drawer. */
 function MobileNav({ children }: { children: ReactNode }) {

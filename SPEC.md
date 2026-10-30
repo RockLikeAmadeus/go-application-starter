@@ -98,7 +98,7 @@ Users can use the web app comfortably on a phone, so they aren't tied to a deskt
 - Phone, Terminal style, dark theme → no sideways scrolling.
 - Laptop → the sidebar is shown and there is no menu button.
 
-**Specification:** [`web/e2e/features/phone.feature`](web/e2e/features/phone.feature). Presentation only, so there are no Godog scenarios. Scenarios tagged `@phone` run on an emulated Android phone (Chromium) and an emulated iPhone (WebKit). The rest run on desktop Chromium.
+**Specification:** [`web/e2e/features/phone.feature`](web/e2e/features/phone.feature). Presentation only, so there are no Godog scenarios. Scenarios tagged `@phone` run on an emulated Android phone (Chromium), an emulated iPhone (WebKit) and a phone-sized Firefox window. The rest run on desktop Chromium.
 
 ## 5. Non-functional requirements
 
