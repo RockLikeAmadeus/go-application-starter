@@ -29,7 +29,7 @@ const fileFormatVersion = 1
 // domain types are created from it and share its mutex.
 type Store struct {
 	dir    string
-	mu     sync.RWMutex
+	mu     sync.RWMutex //nolint:unused // shared by the repositories built on this Store
 	unlock func() error
 }
 

@@ -15,7 +15,9 @@ import (
 
 // Options configures the HTTP handler.
 type Options struct {
-	Items  ports.ItemService
+	// sample:start
+	Items ports.ItemService
+	// sample:end
 	Logger *slog.Logger
 	// WebAssets is the built SPA (web/dist). When nil, "/" serves a hint page.
 	WebAssets fs.FS
@@ -35,14 +37,16 @@ func NewHandler(opts Options) http.Handler {
 		_, _ = w.Write([]byte("ok"))
 	})
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+		// sample:start
 		if _, err := opts.Items.ListItems(r.Context()); err != nil {
 			http.Error(w, "storage unavailable", http.StatusServiceUnavailable)
 			return
 		}
+		// sample:end
 		_, _ = w.Write([]byte("ready"))
 	})
 
-	strict := openapi.NewStrictHandlerWithOptions(NewHandlers(opts.Items), nil, openapi.StrictHTTPServerOptions{
+	strict := openapi.NewStrictHandlerWithOptions(NewHandlers(opts), nil, openapi.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  requestErrorHandler,
 		ResponseErrorHandlerFunc: responseErrorHandler(log),
 	})

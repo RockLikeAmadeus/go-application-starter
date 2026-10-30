@@ -30,6 +30,10 @@ jobs:
           version: v2.15
       - name: Unit tests
         run: go test -race ./internal/...
+      # template:start
+      - name: Init tool unit tests
+        run: go test -race ./scripts/initproject/
+      # template:end
       - name: Acceptance tests (Godog)
         run: go test ./test/acceptance/ -count=1 --godog.format=pretty
 

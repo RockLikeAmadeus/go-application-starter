@@ -13,7 +13,11 @@ func newTUICmd(open appOpener) *cobra.Command {
 		Short: "Launch the interactive terminal UI",
 		Args:  cobra.NoArgs,
 		RunE: withApp(open, func(_ *cobra.Command, _ []string, app *bootstrap.App) error {
-			return tui.Run(app.Items)
+			return tui.Run(tui.Ports{
+				// sample:start
+				Items: app.Items,
+				// sample:end
+			})
 		}),
 	}
 }

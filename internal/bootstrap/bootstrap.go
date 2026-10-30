@@ -16,9 +16,12 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
-// App is the wired application handed to a driving adapter.
+// App is the wired application handed to a driving adapter: one driving port
+// per capability.
 type App struct {
+	// sample:start
 	Items ports.ItemService
+	// sample:end
 	close func() error
 }
 
@@ -32,23 +35,44 @@ func (a *App) Close() error {
 
 // NewEmbedded wires the core in-process with the configured storage adapter.
 func NewEmbedded(cfg config.Config) (*App, error) {
-	repo, closer, err := newItemRepository(cfg)
-	if err != nil {
-		return nil, err
+	a := &App{}
+	// sample:start
+	var items ports.ItemRepository
+	// sample:end
+	switch cfg.Storage {
+	case config.StorageMemory:
+		// sample:start
+		items = memory.NewItemRepository()
+		// sample:end
+	case config.StorageJSONFile:
+		store, err := jsonfile.Open(cfg.DataDir)
+		if err != nil {
+			return nil, err
+		}
+		a.close = store.Close
+		// sample:start
+		items = jsonfile.NewItemRepository(store)
+		// sample:end
+	default:
+		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
 	}
-	return &App{
-		Items: app.NewItemService(repo, system.Clock{}, system.UUIDs{}),
-		close: closer,
-	}, nil
+	// sample:start
+	a.Items = app.NewItemService(items, system.Clock{}, system.UUIDs{})
+	// sample:end
+	return a, nil
 }
 
-// NewRemote returns an App whose ItemService talks to a server over HTTP.
+// NewRemote returns an App whose driving ports talk to a server over HTTP.
 func NewRemote(serverURL string) (*App, error) {
+	a := &App{}
+	// sample:start
 	svc, err := httpclient.New(serverURL)
 	if err != nil {
 		return nil, fmt.Errorf("create API client: %w", err)
 	}
-	return &App{Items: svc}, nil
+	a.Items = svc
+	// sample:end
+	return a, nil
 }
 
 // New picks remote mode when cfg.ServerURL is set, embedded otherwise.
@@ -57,21 +81,6 @@ func New(cfg config.Config) (*App, error) {
 		return NewRemote(cfg.ServerURL)
 	}
 	return NewEmbedded(cfg)
-}
-
-func newItemRepository(cfg config.Config) (ports.ItemRepository, func() error, error) {
-	switch cfg.Storage {
-	case config.StorageMemory:
-		return memory.NewItemRepository(), nil, nil
-	case config.StorageJSONFile:
-		store, err := jsonfile.Open(cfg.DataDir)
-		if err != nil {
-			return nil, nil, err
-		}
-		return jsonfile.NewItemRepository(store), store.Close, nil
-	default:
-		return nil, nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
-	}
 }
 
 // NewLogger builds the process-wide structured logger.

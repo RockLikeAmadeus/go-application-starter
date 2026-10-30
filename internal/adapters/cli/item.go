@@ -12,20 +12,6 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
-type appOpener func() (*bootstrap.App, error)
-
-// withApp opens the app for the duration of a command.
-func withApp(open appOpener, fn func(cmd *cobra.Command, args []string, app *bootstrap.App) error) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		app, err := open()
-		if err != nil {
-			return err
-		}
-		defer app.Close()
-		return fn(cmd, args, app)
-	}
-}
-
 func newItemCmd(open appOpener) *cobra.Command {
 	var asJSON bool
 

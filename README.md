@@ -2,17 +2,19 @@
 
 A template for multi-front-end applications: a **hexagonal Go core** driven by a **React web app** (through a REST API), a **Cobra CLI**, and a **Bubble Tea TUI**, with swappable storage. It is built **BDD outside-in (Godog + playwright-bdd) with a TDD inner loop**, and set up for agentic development with Claude Code.
 
+<!-- sample:start -->
 It ships as a working *walking skeleton*: one tiny `Item` domain wired end to end through every layer, tested at every level, and deployable from CI.
+<!-- sample:end -->
 
 ```
  React SPA ──HTTP──┐
  CLI / TUI ──HTTP──┤ (--server mode)
                    ▼
-            httpapi adapter ──► ports.ItemService ◄── CLI / TUI (embedded mode)
+            httpapi adapter ──► driving ports ◄── CLI / TUI (embedded mode)
                                        │
                                   core (domain + app)
                                        │
-                               ports.ItemRepository
+                               driven ports
                               ┌────────┴────────┐
                            memory            jsonfile   (← add SQL/NoSQL here)
 ```
@@ -40,8 +42,7 @@ task check     # codegen drift, lint, unit, acceptance, e2e: everything CI runs
 
 ```sh
 task dev                         # API on :8080 + Vite on :5173, opened in your browser; both reload on save
-task run:cli -- item add "Milk"  # CLI, embedded core, data in ./data
-task run:cli -- --server http://localhost:8080 item list   # CLI against a running server
+task run:cli -- --help           # CLI, embedded core, data in ./data (add --server http://localhost:8080 to use a running server)
 task run:tui                     # terminal UI (also accepts --server)
 task test                        # unit tests (Go + web)
 task accept                      # Godog acceptance tests
@@ -111,11 +112,13 @@ Fly must be able to pull the image from GHCR. The simplest option is to make the
 
 `Dockerfile` is a multi-stage build: Node builds the SPA, Go builds a static server with the SPA embedded, and the result is a small distroless image. `docker-compose.yml` runs it locally with a named volume.
 
+<!-- template:start -->
 ## Using this as a template
 
 1. Create a repo from this template, or copy it.
-2. Run `scripts/rename-template.sh github.com/you/your-app your-app`.
-3. Fill in `SPEC.md`, then replace the `Item` domain using `/feature`.
+2. Run `task init -- --module github.com/you/your-app --name "Your App"`. Add `--remove-sample` to drop the sample `Item` domain too. See [docs/template.md](docs/template.md).
+3. Fill in `SPEC.md`, then build your first capability with `/feature`.
+<!-- template:end -->
 
 ## Ideas not included (yet)
 

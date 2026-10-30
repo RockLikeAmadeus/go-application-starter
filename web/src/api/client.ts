@@ -1,7 +1,9 @@
 import createClient from "openapi-fetch";
 import type { components, paths } from "./schema.gen";
 
+// sample:start
 export type Item = components["schemas"]["Item"];
+// sample:end
 export type Problem = components["schemas"]["Problem"];
 
 /** Typed client generated from api/openapi.yaml. Same-origin in prod; proxied by Vite in dev. */

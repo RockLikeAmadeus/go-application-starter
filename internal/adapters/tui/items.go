@@ -1,5 +1,3 @@
-// Package tui is a Bubble Tea driving adapter. It talks to the core only via
-// ports.ItemService, so it works identically in embedded and remote mode.
 package tui
 
 import (
@@ -29,7 +27,7 @@ type (
 	errMsg         struct{ err error }
 )
 
-// Model is the root Bubble Tea model.
+// Model is the Items screen.
 type Model struct {
 	items  ports.ItemService
 	list   []domain.Item
@@ -39,18 +37,12 @@ type Model struct {
 	err    error
 }
 
-// New creates the root model.
+// New creates the Items screen.
 func New(items ports.ItemService) Model {
 	in := textinput.New()
 	in.Placeholder = "Item name"
 	in.CharLimit = domain.MaxItemNameLength
 	return Model{items: items, input: in}
-}
-
-// Run starts the TUI and blocks until the user quits.
-func Run(items ports.ItemService, opts ...tea.ProgramOption) error {
-	_, err := tea.NewProgram(New(items), opts...).Run()
-	return err
 }
 
 func (m Model) Init() tea.Cmd {

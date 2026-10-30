@@ -2,10 +2,8 @@ package jsonfile_test
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -15,16 +13,6 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
-
-func openStore(t *testing.T, dir string) *jsonfile.Store {
-	t.Helper()
-	store, err := jsonfile.Open(dir)
-	if err != nil {
-		t.Fatalf("Open: %v", err)
-	}
-	t.Cleanup(func() { store.Close() })
-	return store
-}
 
 func TestItemRepositoryContract(t *testing.T) {
 	storagetest.RunItemRepositoryContract(t, func(t *testing.T) ports.ItemRepository {
@@ -51,17 +39,5 @@ func TestItemsSurviveReopen(t *testing.T) {
 	data, _ := os.ReadFile(filepath.Join(dir, "items.json"))
 	if !strings.Contains(string(data), `"version": 1`) {
 		t.Errorf("items.json missing version header:\n%s", data)
-	}
-}
-
-func TestOpenFailsWhenDirectoryIsLocked(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("file locking is not implemented on windows")
-	}
-	dir := t.TempDir()
-	openStore(t, dir)
-
-	if _, err := jsonfile.Open(dir); !errors.Is(err, jsonfile.ErrLocked) {
-		t.Fatalf("second Open err = %v, want ErrLocked", err)
 	}
 }

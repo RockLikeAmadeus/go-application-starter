@@ -32,6 +32,7 @@ describe("Layout", () => {
     expect(within(appearance).getByRole("combobox", { name: "Style" })).toBeInTheDocument();
     expect(within(appearance).getByRole("switch", { name: "Dark mode" })).toBeInTheDocument();
   });
+  // sample:start
 
   it("shows the app name and an Items link in the sidebar navigation", () => {
     renderLayout();
@@ -41,4 +42,5 @@ describe("Layout", () => {
     const nav = within(sidebar.getByRole("navigation"));
     expect(nav.getByRole("link", { name: "Items" })).toHaveAttribute("href", "/");
   });
+  // sample:end
 });

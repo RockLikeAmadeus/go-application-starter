@@ -16,6 +16,10 @@ import (
 // AppFactory builds the application for a command. Tests substitute their own.
 type AppFactory func(cfg config.Config) (*bootstrap.App, error)
 
+// appOpener opens the application. Commands call it only when they run, so
+// --help and --version work without wiring anything.
+type appOpener func() (*bootstrap.App, error)
+
 // Version is set at build time via -ldflags "-X .../cli.Version=v1.2.3".
 var Version = "dev"
 
@@ -29,7 +33,7 @@ func NewRootCmd(newApp AppFactory, out io.Writer) *cobra.Command {
 
 	root := &cobra.Command{
 		Use:           "starter",
-		Short:         "Command-line interface for the starter application",
+		Short:         "Command-line interface for Starter",
 		Version:       Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -64,6 +68,21 @@ func NewRootCmd(newApp AppFactory, out io.Writer) *cobra.Command {
 		return app, nil
 	}
 
-	root.AddCommand(newItemCmd(openApp), newTUICmd(openApp))
+	root.AddCommand(newTUICmd(openApp))
+	// sample:start
+	root.AddCommand(newItemCmd(openApp))
+	// sample:end
 	return root
+}
+
+// withApp opens the app for the duration of a command.
+func withApp(open appOpener, fn func(cmd *cobra.Command, args []string, app *bootstrap.App) error) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		app, err := open()
+		if err != nil {
+			return err
+		}
+		defer app.Close()
+		return fn(cmd, args, app)
+	}
 }

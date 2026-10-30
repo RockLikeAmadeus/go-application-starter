@@ -5,3 +5,6 @@ generate:
   models: true
   std-http-server: true
   strict-server: true
+output-options:
+  # problem.go renders every error as a Problem, even when no path uses it.
+  skip-prune: true

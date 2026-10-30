@@ -12,6 +12,8 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
+// sample:start
+
 // ItemService is the driving port for the Item use cases. Every UI talks to
 // the core exclusively through this interface, which is also implemented by
 // the HTTP client adapter so CLI/TUI can run against a remote server.
@@ -35,6 +37,8 @@ type ItemRepository interface {
 	// Delete returns domain.ErrNotFound when no item has the given ID.
 	Delete(ctx context.Context, id string) error
 }
+
+// sample:end
 
 // Clock abstracts time so use cases are deterministic under test.
 type Clock interface {

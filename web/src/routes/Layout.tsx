@@ -1,4 +1,7 @@
-import { Link, NavLink, Outlet } from "react-router";
+// sample:start
+import { NavLink } from "react-router";
+// sample:end
+import { Link, Outlet } from "react-router";
 import { StylePicker } from "../features/style/StylePicker";
 import { useStyle } from "../features/style/useStyle";
 import { ThemeToggle } from "../features/theme/ThemeToggle";
@@ -18,6 +21,8 @@ export function Layout() {
           <span className="type-label">Starter</span>
         </Link>
         <nav className="mt-8 flex flex-col gap-1">
+          {/* Add a NavLink here for each capability's page, with an icon and a short label. */}
+          {/* sample:start */}
           <NavLink
             to="/"
             end
@@ -26,6 +31,7 @@ export function Layout() {
             <ListIcon />
             Items
           </NavLink>
+          {/* sample:end */}
         </nav>
         <fieldset className="mt-auto flex flex-col gap-3 border-t border-sidebar-line px-2 pt-4 soft:border-t-0">
           <legend className="sr-only">Appearance</legend>
@@ -41,6 +47,7 @@ export function Layout() {
     </div>
   );
 }
+// sample:start
 
 function ListIcon() {
   return (
@@ -55,6 +62,17 @@ function ListIcon() {
     >
       <path d="M7 5h10M7 10h10M7 15h10M3 5h.01M3 10h.01M3 15h.01" />
     </svg>
+  );
+}
+// sample:end
+
+/** The first page, until the app has capabilities of its own. */
+export function Home() {
+  return (
+    <section className="space-y-6 terminal:space-y-4">
+      <h1 className="text-2xl font-semibold tracking-tight soft:text-3xl soft:font-bold">Home</h1>
+      <p className="text-muted">Nothing here yet.</p>
+    </section>
   );
 }
 

@@ -23,6 +23,13 @@ tasks:
       - cmd: lefthook install
         ignore_error: true
 
+  # template:start
+  init:
+    desc: 'Make this template your own project, e.g. task init -- --module github.com/you/app --name "Acme" [--remove-sample] (see docs/template.md)'
+    cmds:
+      - go run ./scripts/initproject {{.CLI_ARGS}}
+
+  # template:end
   # ---------------------------------------------------------------- codegen
   gen:
     desc: Regenerate Go server/client and TypeScript types from api/openapi.yaml
@@ -53,7 +60,7 @@ tasks:
       - go run ./cmd/server
 
   run:cli:
-    desc: "Run the CLI, e.g. task run:cli -- item list"
+    desc: "Run the CLI, e.g. task run:cli -- --help"
     cmds:
       - go run ./cmd/starter {{.CLI_ARGS}}
 
@@ -106,6 +113,9 @@ tasks:
   test:go:
     cmds:
       - go test -race ./internal/... {{.CLI_ARGS}}
+      # template:start
+      - go test -race ./scripts/initproject/ {{.CLI_ARGS}}
+      # template:end
 
   test:web:
     cmds:
@@ -115,6 +125,13 @@ tasks:
     desc: "Godog acceptance tests — the BDD outer loop (e.g. task accept -- --godog.tags=@wip)"
     cmds:
       - go test ./test/acceptance/ -count=1 {{.CLI_ARGS}}
+
+  # template:start
+  test:init:
+    desc: "Acceptance tests for the template's init tool (slow: each scenario copies and rebuilds the repo)"
+    cmds:
+      - go test ./scripts/initproject/acceptance/ -count=1 -timeout 30m {{.CLI_ARGS}}
+  # template:end
 
   e2e:
     desc: Browser BDD tests (playwright-bdd) against the real server with the embedded UI

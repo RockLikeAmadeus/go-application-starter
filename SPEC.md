@@ -20,12 +20,20 @@ Use these terms consistently in code, Gherkin, and UI copy.
 
 | Term | Meaning |
 |---|---|
-| **Item** | A named thing the user wants to track. Placeholder entity for the walking skeleton. |
 | **Theme** | The colour scheme of the web app: **dark** or **light**. Independent of the style. |
 | **Style** | A named look for the web app: its layout, fonts, shape and density. Independent of the theme; every style works in dark and light. |
 
+<!-- sample:start -->
+The sample capability (§4.1) adds one term:
+
+| Term | Meaning |
+|---|---|
+| **Item** | A named thing the user wants to track. Placeholder entity for the walking skeleton. |
+<!-- sample:end -->
+
 ## 4. Capabilities
 
+<!-- sample:start -->
 ### 4.1 Manage items _(walking skeleton)_
 
 Users can create, list, rename and delete items.
@@ -36,6 +44,7 @@ Users can create, list, rename and delete items.
 - Items are listed oldest first.
 
 **Specification:** [`features/items.feature`](features/items.feature) · UI journeys: [`web/e2e/features/items.feature`](web/e2e/features/items.feature)
+<!-- sample:end -->
 
 <!-- /feature adds new capability sections below this line -->
 
@@ -59,7 +68,7 @@ Users can switch the web app between a dark and a light theme, so it suits their
 Users can switch the web app between styles, so it suits how they like to work: compact and dense, or roomy and soft.
 
 **Rules**
-- The app offers a fixed list of styles. The starter offers **Crisp**, **Terminal** and **Soft**.
+- The app offers a fixed list of styles. Out of the box it offers **Crisp**, **Terminal** and **Soft**.
 - A first visit uses the first style in the list.
 - A user's chosen style is remembered in their browser and wins on later visits. A remembered style the app no longer offers falls back to the first style.
 - Style and theme are independent: changing one never changes the other.

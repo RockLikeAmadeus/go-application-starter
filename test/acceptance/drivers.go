@@ -1,7 +1,7 @@
 // Package acceptance runs the Gherkin features in /features with Godog.
 //
 // Each scenario runs once per driver. A driver is a way of reaching the core
-// through its driving port, so the same business scenarios prove the core,
+// through its driving ports, so the same business scenarios prove the core,
 // each storage adapter, and the HTTP server+client adapters.
 package acceptance
 
@@ -19,10 +19,12 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
 
-// harness is everything a scenario needs: the service under test, the clock
-// controlling it, and a cleanup function.
+// harness is everything a scenario needs: the driving ports under test, the
+// clock controlling them, and a cleanup function.
 type harness struct {
-	items   ports.ItemService
+	// sample:start
+	items ports.ItemService
+	// sample:end
 	clock   *testsupport.FixedClock
 	cleanup func()
 }
@@ -38,14 +40,28 @@ var drivers = []driver{
 	{name: "http", start: startHTTP},
 }
 
-func newCore(repo ports.ItemRepository) (*app.ItemService, *testsupport.FixedClock) {
-	clock := testsupport.NewFixedClock(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
-	return app.NewItemService(repo, clock, testsupport.NewSequentialIDs("item")), clock
+func newHarness() *harness {
+	return &harness{
+		clock:   testsupport.NewFixedClock(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)),
+		cleanup: func() {},
+	}
 }
 
+// sample:start
+
+// newItems builds the Item use cases on repo, driven by the harness's clock.
+func (h *harness) newItems(repo ports.ItemRepository) *app.ItemService {
+	return app.NewItemService(repo, h.clock, testsupport.NewSequentialIDs("item"))
+}
+
+// sample:end
+
 func startMemory() (*harness, error) {
-	svc, clock := newCore(memory.NewItemRepository())
-	return &harness{items: svc, clock: clock, cleanup: func() {}}, nil
+	h := newHarness()
+	// sample:start
+	h.items = h.newItems(memory.NewItemRepository())
+	// sample:end
+	return h, nil
 }
 
 func startJSONFile() (*harness, error) {
@@ -57,20 +73,32 @@ func startJSONFile() (*harness, error) {
 	if err != nil {
 		return nil, err
 	}
-	svc, clock := newCore(jsonfile.NewItemRepository(store))
-	return &harness{items: svc, clock: clock, cleanup: func() {
+	h := newHarness()
+	h.cleanup = func() {
 		store.Close()
 		os.RemoveAll(dir)
-	}}, nil
+	}
+	// sample:start
+	h.items = h.newItems(jsonfile.NewItemRepository(store))
+	// sample:end
+	return h, nil
 }
 
 func startHTTP() (*harness, error) {
-	svc, clock := newCore(memory.NewItemRepository())
-	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Items: svc}))
+	h := newHarness()
+	var opts httpapi.Options
+	// sample:start
+	opts.Items = h.newItems(memory.NewItemRepository())
+	// sample:end
+	srv := httptest.NewServer(httpapi.NewHandler(opts))
+	h.cleanup = srv.Close
+	// sample:start
 	client, err := httpclient.New(srv.URL)
 	if err != nil {
 		srv.Close()
 		return nil, err
 	}
-	return &harness{items: client, clock: clock, cleanup: srv.Close}, nil
+	h.items = client
+	// sample:end
+	return h, nil
 }

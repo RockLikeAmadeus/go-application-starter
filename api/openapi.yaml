@@ -7,6 +7,7 @@ info:
     This file is the single source of truth: Go server/client code and the
     TypeScript client types are generated from it (`task gen`).
 paths:
+  # sample:start
   /api/v1/items:
     get:
       operationId: listItems
@@ -83,6 +84,7 @@ paths:
           description: Deleted.
         default:
           $ref: "#/components/responses/Problem"
+  # sample:end
 components:
   responses:
     Problem:
@@ -92,6 +94,7 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
   schemas:
+    # sample:start
     Item:
       type: object
       required: [id, name, createdAt, updatedAt]
@@ -120,6 +123,7 @@ components:
       properties:
         name:
           type: string
+    # sample:end
     Problem:
       type: object
       required: [title, status]

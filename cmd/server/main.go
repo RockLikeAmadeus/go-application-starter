@@ -40,7 +40,9 @@ func run() error {
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%d", cfg.Port),
 		Handler: httpapi.NewHandler(httpapi.Options{
-			Items:     application.Items,
+			// sample:start
+			Items: application.Items,
+			// sample:end
 			Logger:    log,
 			WebAssets: web.Assets(),
 		}),
