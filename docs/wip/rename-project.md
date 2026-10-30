@@ -112,6 +112,11 @@ Temporary: delete this file in the change that removes the `@wip` tags.
      - The two flag sets stay separate: they differ in flags and in which are required.
      - The flag help texts aren't printed anywhere, in either tool, because output is discarded. Leave them unless `main.go` (item 14) shows usage.
 10. [ ] Rename's `NewNames` keeps the current module when `--module` is omitted, and refuses with "nothing to rename" when the new names equal the current ones.
+    - **Red (keep module):** `TestNewNamesKeepsTheCurrentModuleWhenNoneIsGiven` in `scripts/rename/names_test.go`. The current names are "Acme" (`example.com/acme/tasks`). Renaming to "Zenith Notes" with no module must give the full set of new names on the current module, with `App` equal to the slug. It fails: `NewNames(opts, current)` in `scripts/rename/names.go` is a stub returning zero `Names`.
+    - Green (keep module): `NewNames` slugs the name with `project.Slug` (passing on its error) and always keeps `current.Module`. **`--module` is ignored for now**: no unit test asks for it yet. It needs its own `/red` (new item 10a), or `--module` would silently do nothing.
+    - **For refactor:** rename's `NewNames` and init's differ only in where the module comes from. A shared `project.NewNames(module, name)` could build the brand, slug, app and env prefix for both. Better done after 10a, once rename's module choice is real.
+    - "Nothing to rename" gets its own `/red` next.
+10a. [ ] **New:** rename's `NewNames` uses `--module` when it's given.
 11. [ ] Rename's `Run` with `--dry-run` reports changed files, lines and path moves, writes nothing, and needs no clean tree.
 12. [ ] Rename's `Run` does the rename: clean-tree guard, every tracked file except `project.json`, then writes the record.
 13. [ ] Rename's `Run` returns `go mod tidy` as a follow-up only when the module changed.
@@ -127,6 +132,7 @@ Temporary: delete this file in the change that removes the `@wip` tags.
 
 ## Changes to the plan
 
+- Item 10a was added during item 10's green. Keeping the current module was the minimum to pass, so using a given `--module` needs a test of its own.
 - Item 7a was added while planning item 7. Changing the module path can leave Go imports out of order, which `gofmt` and lint reject. Init has the same latent bug; it hasn't shown up because `example.com/...` happens to sort where the template's module did.
 - Item 8a was added at your request while doing item 8: refuse names with double quotes or backslashes. Item 8's write test changed its example to match.
 - Item 7c was split out of 7b's refactor. Moving init onto `RenameFile` makes init format Go files, which changes the output for unformatted input, so it gets a red/green rather than a refactor.
