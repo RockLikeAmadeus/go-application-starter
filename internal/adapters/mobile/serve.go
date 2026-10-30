@@ -1,8 +1,9 @@
-// Package mobile wires the mobile app. Wails' Android asset path can only make
-// GET requests with no body, so the web app sends its API requests over the
-// Wails bridge instead, and Serve runs each one through the HTTP handler. It
-// has no Wails dependency, so it is unit-testable; cmd/mobile only adds the
-// window and the bridge service.
+// Package mobile wires the mobile app. The phone keeps its data on the phone,
+// like the desktop app, so Open reuses package desktop's wiring. Wails'
+// Android asset path can only make GET requests with no body, so the web app
+// sends its API requests over the Wails bridge instead, and Serve runs each one
+// through the HTTP handler. It has no Wails dependency, so it is unit-testable;
+// cmd/mobile only adds the window and the bridge service.
 package mobile
 
 import (
