@@ -27,7 +27,24 @@ Run: `task e2e -- --project chromium --grep @wip` (`task e2e` rebuilds the SPA f
    - Refactor: added a comment in `spaHandler` saying why the type is set by hand: no MIME table Go reads, nor the distroless image, knows `.webmanifest`. Deliberately left:
      - Checking the type after the `index.html` fallback, or registering it with `mime.AddExtensionType`. Either would change what a request for a *missing* `.webmanifest` gets (today: `index.html` labelled as a manifest), which is a behaviour change, not a refactor. Nothing requests such a file, so it's not worth its own red/green cycle unless that changes.
      - An extension → type map: one entry doesn't justify it.
-2. [ ] Web: add `vite-plugin-pwa` with the manifest (see Decisions), `public/icon.svg`, the `pnpm icons` script and the generated PNGs, plus a `theme-color` meta tag and an `apple-touch-icon` link in `index.html` (iOS ignores manifest icons). Demanded by "The app can be installed".
+2. [x] Web: add `vite-plugin-pwa` with the manifest (see Decisions), `public/icon.svg`, the `pnpm icons` script and the generated PNGs, plus a `theme-color` meta tag and an `apple-touch-icon` link in `index.html` (iOS ignores manifest icons). Demanded by "The app can be installed".
+   - Red: the e2e scenario "The app can be installed" (the page links no manifest).
+   - Green:
+     - `vite-plugin-pwa@2.0.0` and `@vite-pwa/assets-generator@2.0.0` (dev dependencies).
+     - `web/public/icon.svg`: a plum rounded square with a blush inner square, echoing the sidebar's logo mark.
+     - `web/pwa-assets.config.ts` (`minimal2023Preset`) and a `pnpm icons` script. They generated, into `web/public/`: `pwa-64x64.png`, `pwa-192x192.png`, `pwa-512x512.png`, `maskable-icon-512x512.png`, `apple-touch-icon-180x180.png` and `favicon.ico`.
+     - `VitePWA` in `web/vite.config.ts` with the manifest written out by hand, `theme_color`/`background_color` `#e6eaee` (frost, the light theme's background), and **`injectRegister: false`**. The plugin still emits `sw.js` but nothing registers it, so the service worker stays task 3's job.
+     - `index.html`: `theme-color` meta, favicon (`.ico` + `.svg`) and `apple-touch-icon` links.
+   - Results:
+     - "The app can be installed" passes. The two offline scenarios still fail as before: no service worker controls the page.
+     - Web unit tests (42), lint, typecheck and the format check pass.
+   - Refactor:
+     - `vite.config.ts`: the manifest's two colours are one named constant, `appBackground`, with a comment saying it is frost from `palette.css` and that `index.html`'s `theme-color` meta repeats it.
+     - `public/icon.svg`: a comment saying it is the source for every icon (run `pnpm icons` after changing it) and that its colours come from `palette.css`.
+     - Deliberately left:
+       - The plugin's `pwaAssets` option, which would generate the icons at build time and derive the manifest list and `index.html` links. It would undo the decision to commit the PNGs, put `sharp` into every build (including the Alpine Docker stage), and change the emitted `index.html`. That's a decision to make on its own, not a tidy-up.
+       - The colours can't be shared with `palette.css` at build time without new code. Comments keep the copies findable.
+     - Possible follow-up (a behaviour change, so not done here): a dark-scheme `theme-color` meta.
 3. [ ] Web: the service worker: `autoUpdate`, precache the build, the navigation fallback with its deny list, no runtime caching. Demanded by the `Given I have opened the app before` step of both offline scenarios. Expect them to fail next on the missing offline notice.
 4. [ ] `OfflineNotice` shows "You're offline…" in a `status` region when the browser is offline at first render (stub `navigator.onLine`).
 5. [ ] `OfflineNotice` shows the message when an `offline` event fires, and clears it when an `online` event fires.
