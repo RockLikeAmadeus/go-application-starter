@@ -28,15 +28,31 @@ func Open(getenv func(string) string) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	api := httpapi.NewHandler(httpapi.Options{
+		// sample:start
+		Items: core.Items,
+		// sample:end
+		LocalData: true,
+	})
 	return &App{
-		Handler: httpapi.NewHandler(httpapi.Options{
-			// sample:start
-			Items: core.Items,
-			// sample:end
-			LocalData: true,
-		}),
-		core: core,
+		Handler: withoutServiceWorker(api),
+		core:    core,
 	}, nil
+}
+
+// withoutServiceWorker answers the web app's service worker script with 404.
+// The desktop app's files are built into it, so precaching adds nothing, and
+// "update on next open" would show the old version once after each upgrade.
+// With no script the web app can't register one, and a browser drops one
+// already registered when its update check gets a 404.
+func withoutServiceWorker(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/sw.js" {
+			http.NotFound(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // Close releases the data folder.

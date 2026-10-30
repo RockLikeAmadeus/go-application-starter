@@ -93,6 +93,19 @@ func TestOpenReportsNoConnectionIsRequired(t *testing.T) {
 	}
 }
 
+// The desktop app's files are built into it, so it needs no service worker
+// (see withoutServiceWorker for why it would do harm).
+func TestOpenServesNoServiceWorker(t *testing.T) {
+	app := openAt(t, t.TempDir())
+
+	rec := httptest.NewRecorder()
+	app.Handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/sw.js", nil))
+
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("GET /sw.js: status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
 // openAt opens the desktop app on dataDir and closes it when the test ends.
 func openAt(t *testing.T, dataDir string) *desktop.App {
 	t.Helper()
