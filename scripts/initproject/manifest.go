@@ -45,6 +45,7 @@ var SampleFiles = []string{
 	// Front ends and the HTTP client they use
 	"internal/adapters/cli/item.go",
 	"internal/adapters/cli/item_test.go",
+	"internal/adapters/desktop/open_items_test.go",
 	"internal/adapters/httpapi/items.go",
 	"internal/adapters/httpclient/item_service.go",
 	"internal/adapters/httpclient/item_service_test.go",

@@ -118,7 +118,17 @@
      - The port check in that run was flawed (`pgrep` matched three processes), so redo it in item 13.
 10. [x] `docs/adr/0004-native-shells.md`. Include the "Keep remote mode open" decision (local-only or cloud, no sync), then repoint TODO.md's link to it, which points at this file today.
    - Written: it covers the desktop decisions (Wails in-process, `internal/adapters/desktop` without Wails, local-only with remote mode kept open, no sync, the connection endpoint over sniffing `window._wails`, no service worker, and the rejected options including a local port) and mobile's remote-only plan, as the parent plan asked. Status is "accepted (desktop built; mobile planned)"; step 4 updates the mobile part if it changes. TODO.md's link now points to the ADR's "Local-only for now, remote mode kept open". The ADR doesn't link to this file, which will be deleted.
-11. [ ] Rename/init: the window title and `bin/starter-desktop` follow the rename. Check with `task rename -- --name "Acme Tasks" --dry-run`, then `task test:rename` and `task test:init`.
+11. [x] Rename/init: the window title and `bin/starter-desktop` follow the rename. Check with `task rename -- --name "Acme Tasks" --dry-run`, then `task test:rename` and `task test:init`.
+   - Rename dry run ("Acme Tasks"): the window `Name`/`Title`, `bin/acme-tasks-desktop`, `ACME_TASKS_DATA_DIR`, the `acme-tasks` fallback folder (in `datadir.go` and its test), SPEC.md's `~/.config/acme-tasks` and `acme-tasks-desktop`, the ADR, the README and the tests all follow. `task test:rename` passed.
+   - `task test:init` first failed on "The new project is healthy" with `--remove-sample`, for two reasons:
+     - `TestOpenServesAnEmptyItemListFromTheDataFolder` and `TestOpenKeepsItemsAfterClosingAndReopening` call `/api/v1/items`, which is gone (404).
+     - desktop.feature's reopen scenario uses the item steps.
+   - Fixes:
+     - Those two tests and their `createItem`/`itemNames` helpers moved to `internal/adapters/desktop/open_items_test.go`, which is listed in `SampleFiles` (`scripts/initproject/manifest.go`). A separate file, because markers inside `open_test.go` would have left unused imports.
+     - The reopen scenario is fenced with `# sample:start`/`# sample:end`.
+     - The feature's narrative says "keep my data", its comment and SPEC §4.6 say "every other feature's scenarios" instead of naming `items.feature`, so nothing dangles after removal.
+     - Without the sample, the "data folder is created" check and the reopen guard go too. A new project gets them back when its own domain arrives. The "second copy" scenario stays.
+   - After: `task test:init`, `task test:rename`, `task accept`, `task test` and `task lint` are all green.
 12. [ ] CLAUDE.md: architecture lines (`cmd/desktop`, `internal/adapters/desktop`), Commands rows, Gotchas (build deps; the desktop app locks its data folder like the server).
 13. [ ] Manual check: `task run:desktop`; create, rename and delete an item; restart and see it persist; `ss -ltnp` shows no port; network off shows no offline notice.
 14. [ ] Remove `@wip`, add follow-ups (remote mode, packaging) to TODO.md, mark step 3 done in the parent plan, delete this file. `task check` green.

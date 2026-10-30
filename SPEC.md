@@ -138,7 +138,7 @@ Users can run the app as a program on their own computer, so they can use it wit
 - User opens the app twice → the second copy says the data is in use.
 - User opens the app with the network off → the app works and shows no offline notice.
 
-**Specification:** [`features/desktop.feature`](features/desktop.feature). The desktop app also runs every scenario in [`features/items.feature`](features/items.feature). Opening no network port and showing no offline notice are checked by unit tests and by hand.
+**Specification:** [`features/desktop.feature`](features/desktop.feature). The desktop app also runs every other feature's scenarios. Opening no network port and showing no offline notice are checked by unit tests and by hand.
 
 ## 5. Non-functional requirements
 
