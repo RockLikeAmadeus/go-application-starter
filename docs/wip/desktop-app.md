@@ -17,7 +17,10 @@
 - **Offline notice:** the SPA's `OfflineNotice` uses `navigator.onLine`, so a desktop app with the network off would wrongly say it is offline. The SPA needs to know it is in the desktop shell. How it detects that (e.g. a Wails-injected global, or the `wails:` origin) is settled by a quick check at item 6, before its `/red`. The same check decides whether the service worker must be skipped (item 7).
 
 ## Tasks
-1. [ ] `desktop.DataDir`: `STARTER_DATA_DIR` wins when set.
+1. [x] `desktop.DataDir`: `STARTER_DATA_DIR` wins when set.
+   - Red: `TestDataDirUsesStarterDataDirWhenSet` in `internal/adapters/desktop/datadir_test.go`. Signature `DataDir(getenv func(string) string, userConfigDir func() (string, error)) (string, error)`; a stub returns `""`.
+   - Green: returns `getenv("STARTER_DATA_DIR")` unconditionally; the fallback is item 2.
+   - Refactor: no change. The `"STARTER_DATA_DIR"` literal stays duplicated: `config.Load` spells every env key as a literal, so one exported constant would break that idiom for a single key. Desktop can't simply reuse `config.Load` either, because its `./data` default hides whether the variable was set. Revisit if a third place reads it. `userConfigDir` stays unused until item 2.
 2. [ ] `desktop.DataDir`: falls back to `<user config dir>/starter`; an error from the lookup is returned.
 3. [ ] `desktop.Open(env)`: serves `GET /api/v1/items` (empty list) from jsonfile storage in the data folder, and the data is still there after `Close` and a second `Open`.
 4. [ ] `desktop.Open(env)`: a second `Open` on a folder that's in use fails with `jsonfile.ErrLocked`.
