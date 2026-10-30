@@ -128,7 +128,19 @@ Temporary: delete this file in the change that removes the `@wip` tags.
       - Init's `NewNames` was a pure wrapper, so `scripts/initproject/names.go` was deleted with plain `rm`, and init's `Run` calls `project.NewNames(opts.Module, opts.Name)` directly. This supersedes item 1's note that `NewNames(Options)` stays in init.
       - `project.NewNames` has no test of its own: init's `Run` tests and rename's `NewNames` tests cover it.
     - Deliberately left: rename keeps its own `NewNames(opts, current)`, since choosing the module and (next) refusing "nothing to rename" are rename's rules, not init's.
-11. [ ] Rename's `Run` with `--dry-run` reports changed files, lines and path moves, writes nothing, and needs no clean tree.
+11. [x] Rename's `Run` with `--dry-run` reports changed files, lines and path moves, writes nothing, and needs no clean tree.
+    - **Red:** `TestRunWithDryRunReportsTheChangesAndWritesNothing` in `scripts/rename/run_test.go`. The project "Acme" has `README.md` (`# Acme` plus an unrelated line), `cmd/acme/main.go` and its record, and the tree is dirty. A dry run to "Zenith" must not fail, and its output must:
+      - name `README.md` and show the changed line as `- # Acme` / `+ # Zenith`, but not the unrelated line;
+      - show the move from `cmd/acme/main.go` to `cmd/zenith/main.go`.
+      - Afterwards, the files, the record and the tree must be as they were. It fails: `Run(dir, files, args, porcelain, out)` in `scripts/rename/run.go` is a stub that writes no output.
+      - New test helpers `writeFile` and `readFile` in `scripts/rename/helpers_test.go`, copied from init's.
+      - The dirty tree pins "needs no clean tree" now, so item 12's clean-tree guard can't break dry runs unnoticed.
+    - Green: `Run` parses the args, reads the record, derives the new names, then for each listed file rewrites its text in memory with `project.Rewrite`. It prints the file name and each changed line as `- old` / `+ new`, and any move from `project.RenamePath` as `old -> new`. It writes nothing.
+      - Naive on purpose: it ignores `--dry-run` (every run is a dry run until item 12), doesn't skip `project.json` or files `ShouldRewrite` rejects, and compares lines by index (safe, since a rename never adds or removes newlines).
+    - Refactor: the loop body is now `preview(out, dir, rel, old, n)`, and the line comparison is `printChangedLines(out, before, after)`, whose comment explains why lines line up by index. `Run`'s doc comment describes `files` and `out`.
+    - Deliberately left:
+      - The skips (`project.json`, `ShouldRewrite`) and honouring `--dry-run` are behaviour, so they wait for item 12's tests. A dry run must list exactly what a real run changes.
+      - The `- ` / `+ ` format stays as the test pins it.
 12. [ ] Rename's `Run` does the rename: clean-tree guard, every tracked file except `project.json`, then writes the record.
 13. [ ] Rename's `Run` returns `go mod tidy` as a follow-up only when the module changed.
 14. [ ] Wiring and docs:
