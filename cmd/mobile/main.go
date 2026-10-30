@@ -8,6 +8,7 @@ package main
 
 import (
 	"os"
+	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
@@ -16,8 +17,12 @@ import (
 )
 
 // The app is built as a shared library, so Go never calls main itself: Wails
-// calls it when Android starts the app.
-func init() { application.RegisterAndroidMain(main) }
+// calls it when Android creates the app's screen. Android does that again in
+// the same process after a theme change, or Back and reopen, but the first app
+// is still running (on Android app.Run never returns), so run main only once.
+var mainOnce sync.Once
+
+func init() { application.RegisterAndroidMain(func() { mainOnce.Do(main) }) }
 
 func main() {
 	// Go's stderr goes nowhere on Android, so report the error to logcat

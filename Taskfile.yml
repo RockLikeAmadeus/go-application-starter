@@ -6,6 +6,15 @@ vars:
   VERSION:
     sh: git describe --tags --always --dirty 2>/dev/null || echo dev
   LDFLAGS: -s -w -X github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli.Version={{.VERSION}}
+  # The Android SDK: $ANDROID_HOME, or Android Studio's default on Linux.
+  ANDROID_HOME:
+    sh: echo "${ANDROID_HOME:-$HOME/Android/Sdk}"
+  ADB: "{{.ANDROID_HOME}}/platform-tools/adb"
+  # Must match applicationId in mobile/android/app/build.gradle.
+  ANDROID_APP_ID: com.example.starter
+
+env:
+  ANDROID_HOME: "{{.ANDROID_HOME}}"
 
 tasks:
   default:
@@ -98,6 +107,52 @@ tasks:
     deps: [web:build]
     cmds:
       - go build -tags desktop,embedweb -ldflags "-s -w" -o {{.BIN}}/starter-desktop ./cmd/desktop
+
+  # ---------------------------------------------------------------- mobile
+  # Built directly rather than with wails3's own Taskfile, because this repo
+  # isn't laid out as a Wails project. See docs/mobile.md for the SDK setup.
+  mobile:android:build:
+    desc: Build the Android app (a debug APK for phones and the emulator) into ./bin (needs the Android SDK, NDK and a JDK, see docs/mobile.md)
+    deps: [web:build]
+    cmds:
+      - task: mobile:android:lib
+        vars: { GOARCH: arm64, CLANG: aarch64-linux-android21-clang, ABI: arm64-v8a }
+      - task: mobile:android:lib
+        vars: { GOARCH: amd64, CLANG: x86_64-linux-android21-clang, ABI: x86_64 }
+      - cd mobile/android && ./gradlew assembleDebug --quiet
+      - mkdir -p {{.BIN}}
+      - cp mobile/android/app/build/outputs/apk/debug/app-debug.apk {{.BIN}}/starter.apk
+
+  mobile:android:run:
+    desc: Build the Android app, install it on the connected phone or emulator (starting the emulator if none is) and open it
+    deps: [mobile:android:build]
+    cmds:
+      - |
+        if ! "{{.ADB}}" get-state >/dev/null 2>&1; then
+          AVD="${AVD:-$("{{.ANDROID_HOME}}/emulator/emulator" -list-avds | head -1)}"
+          if [ -z "$AVD" ]; then echo "No phone or emulator connected, and no AVD to start (see docs/mobile.md)"; exit 1; fi
+          echo "Starting the $AVD emulator"
+          nohup "{{.ANDROID_HOME}}/emulator/emulator" -avd "$AVD" >/dev/null 2>&1 &
+          "{{.ADB}}" wait-for-device
+          until [ "$("{{.ADB}}" shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; do sleep 2; done
+        fi
+      # -r keeps the app's data, as an update from a store would.
+      - '"{{.ADB}}" install -r {{.BIN}}/starter.apk'
+      - '"{{.ADB}}" shell am start -n {{.ANDROID_APP_ID}}/com.wails.app.MainActivity'
+
+  # The Go side of the app, as the shared library Android loads, for one ABI.
+  mobile:android:lib:
+    internal: true
+    cmds:
+      - |
+        NDK="${ANDROID_NDK_HOME:-$(ls -d "{{.ANDROID_HOME}}"/ndk/* 2>/dev/null | sort -V | tail -1)}"
+        if [ ! -d "$NDK" ]; then echo "Android NDK not found: install it (see docs/mobile.md) or set ANDROID_NDK_HOME"; exit 1; fi
+        CGO_ENABLED=1 GOOS=android GOARCH={{.GOARCH}} \
+          CC="$NDK/toolchains/llvm/prebuilt/$(uname -s | tr '[:upper:]' '[:lower:]')-x86_64/bin/{{.CLANG}}" \
+          go build -buildmode=c-shared -tags embedweb -ldflags "-s -w" \
+          -o mobile/android/app/src/main/jniLibs/{{.ABI}}/libwails.so ./cmd/mobile
+      # go build also writes a C header the app doesn't use.
+      - rm -f mobile/android/app/src/main/jniLibs/{{.ABI}}/libwails.h
 
   web:build:
     cmds:
