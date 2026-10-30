@@ -4,10 +4,10 @@ Ideas for things every project built from this template is likely to need.
 Work through them one at a time (each usually starts with `/feature`), tick them off, and delete this file when it's empty.
 
 ## Do first
-- [ ] **"Make it mine" init script.** e.g. `task init -- --module github.com/you/app --name "Acme"`. It should:
+- [x] **"Make it mine" init script.** e.g. `task init -- --module github.com/you/app --name "Acme"`. It should:
   - rename the Go module, the "Starter" brand, the binaries and the Docker image;
   - optionally remove the sample `Item` domain.
-- [ ] **"Rename project" script** based on the init script above. Allows for easy rebranding or changing from an initial "working title" later in development. Unlike the init script, it does not get deleted after running. Where logic can be shared between this and the init script and it makes sense to do so, avoid duplicating code.
+- [ ] **Create a "Rename project" script** based on the init script above. Allows for easy rebranding or changing from an initial "working title" later in development. Unlike the init script, it does not get deleted after running. Where logic can be shared between this and the init script and it makes sense to do so, avoid duplicating code.
 - [ ] **SQL storage adapter + migrations** (SQLite first). It must implement `ports.ItemRepository` and pass `storagetest.RunItemRepositoryContract`. It lifts the jsonfile adapter's single-instance limit (ADR 0003).
 - [ ] **Authentication behind a port.** An `Authenticator` port with a simple session or OIDC adapter, wired through the REST API, the SPA, and the CLI's `--server` mode. Currently listed in SPEC.md §6 "Out of scope".
 - [ ] **Phone-width SPA layout.** The sidebar is a fixed `w-60`, so the app breaks on phones. Add a collapsible sidebar or bottom navigation, and check it in all three styles and both themes.
