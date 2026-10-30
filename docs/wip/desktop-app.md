@@ -21,10 +21,13 @@
    - Red: `TestDataDirUsesStarterDataDirWhenSet` in `internal/adapters/desktop/datadir_test.go`. Signature `DataDir(getenv func(string) string, userConfigDir func() (string, error)) (string, error)`; a stub returns `""`.
    - Green: returns `getenv("STARTER_DATA_DIR")` unconditionally; the fallback is item 2.
    - Refactor: no change. The `"STARTER_DATA_DIR"` literal stays duplicated: `config.Load` spells every env key as a literal, so one exported constant would break that idiom for a single key. Desktop can't simply reuse `config.Load` either, because its `./data` default hides whether the variable was set. Revisit if a third place reads it. `userConfigDir` stays unused until item 2.
-2. [ ] `desktop.DataDir`: falls back to `<user config dir>/starter`; an error from the lookup is returned.
+2. [x] `desktop.DataDir`: falls back to `<user config dir>/starter`; an error from the lookup is returned.
    - Red: `TestDataDirFallsBackToUserConfigDir` (unset → `filepath.Join(<config dir>, "starter")`). The lookup-error case is a separate red after this one.
    - Green: falls back to `filepath.Join(configDir, "starter")`. The lookup's error is discarded (`configDir, _ :=`) until the next red demands it, so the item stays open.
    - Refactor: no change. A constant for `"starter"` adds nothing: the rename's whole-word slug rewrite (`scripts/internal/project/rewrite.go`) already catches the literal, as it does `STARTER_DATA_DIR`. The two lookup stubs are one-liners; reconsider a helper if the error-case test makes a third.
+   - Red: `TestDataDirReturnsTheUserConfigDirError` (lookup fails → `errors.Is(err, lookupErr)`; wrapping with context is allowed).
+   - Green: returns the lookup's error unwrapped.
+   - Refactor: the lookup error is wrapped as `find the data folder: %w`, so a startup failure says what it was doing. The tests use two helpers, `envOf(map)` for `os.Getenv` and `configDirAt(dir)` for `os.UserConfigDir`. Left: a table test. The error case asserts differently, so a table would need branching; three short tests read better.
    - Item 11: confirm with the dry run that the folder name and SPEC.md §4.6's `~/.config/starter` are rewritten.
 3. [ ] `desktop.Open(env)`: serves `GET /api/v1/items` (empty list) from jsonfile storage in the data folder, and the data is still there after `Close` and a second `Open`.
 4. [ ] `desktop.Open(env)`: a second `Open` on a folder that's in use fails with `jsonfile.ErrLocked`.
