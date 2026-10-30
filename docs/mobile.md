@@ -69,7 +69,7 @@ The data folder is in the app's private storage: `/data/data/com.example.starter
 
 ## How it works
 
-The phone runs the desktop app's wiring. `mobile.Open` (in `internal/adapters/mobile`) calls `desktop.Open` with the app's private storage as the settings folder, so the core, jsonfile storage and the REST handler are the same as on the desktop. `cmd/mobile/main.go` (build tag `android`) only wraps it in Wails. Four things differ from the desktop.
+The phone runs the desktop app's wiring. `mobile.Open` (in `internal/adapters/mobile`) calls `desktop.Open` with the app's private storage as the settings folder, so the core, jsonfile storage and the REST handler are the same as on the desktop. `cmd/mobile/main.go` (build tag `android`) only wraps it in Wails. Five things differ from the desktop.
 
 **The API goes over the Wails bridge.** On Android, Wails hands every page request to Go as a `GET` with no body, and treats any status but 200 as "not found". So the web app can't reach the REST API the normal way: a `POST` would arrive as a `GET`, and a 404 or 422 would be lost. Instead:
 
@@ -83,6 +83,8 @@ Wails names a bound method after its Go package and type. `cmd/mobile` is packag
 **`/api` on the page path answers 404.** `mobile.AssetHandler` serves the web app for Wails' page path. Any `/api/…` request that reaches it has missed the bridge, so it fails loudly instead of being answered as a `GET`. Without this, a spike build showed a saved item as saved when nothing had been stored. The handler also serves `/` when Android asks for `/index.html`, because Go's file server would answer with a redirect, which Wails treats as "not found".
 
 **The bridge check runs once, before the runtime loads.** Android's bridge shows up as `window.wails.invokeAsync`. Importing the Wails runtime replaces `window.wails`, so `apiFetch` checks for the bridge once, when the API client is created, and imports the runtime only when it's there. The runtime is its own chunk, and the service worker doesn't precache it, so browsers never download it.
+
+**The app stays clear of the system bars.** Apps that target Android 15 draw under the status and gesture bars. The generated project doesn't allow for that, so the Menu button sat under the clock and half of it couldn't be tapped. `res/layout/activity_main.xml` pads the WebView for the bars (`fitsSystemWindows`), and the theme shows the web app's light background behind them, with dark icons. Change `app_background` in `res/values/colors.xml` if the palette's light background changes. The bars don't follow the app's dark mode yet.
 
 **`main` runs once per process.** Wails calls `main` each time Android creates the app's screen. That happens again in the same process after a system theme change or Back and reopen, while the first app is still running, because on Android `app.Run` never returns. So `main` is wrapped in a `sync.Once`; otherwise the second copy would fail on the data-folder lock. For the same reason `opened.Close()` never runs, which is fine: jsonfile writes each change straight away.
 
@@ -101,7 +103,7 @@ Wails mobile is experimental: it's outside Wails' stability promise, and the bri
   diff -r /tmp/wails-assets/android mobile/android
   ```
 
-  Copy over everything except `Taskfile.yml`, `scripts/` (both for wails3's own build) and `main_android.go` (`cmd/mobile/main.go` already does its job). Then reapply the edits: `applicationId`, `app_name` and `rootProject.name`; the comment on `namespace`; the trimmed permissions in `AndroidManifest.xml`; and `chmod +x gradlew`. Keep `mobile/android/.gitignore`.
+  Copy over everything except `Taskfile.yml`, `scripts/` (both for wails3's own build) and `main_android.go` (`cmd/mobile/main.go` already does its job). Then reapply the edits: `applicationId`, `app_name` and `rootProject.name`; the comment on `namespace`; the trimmed permissions in `AndroidManifest.xml`; `android:fitsSystemWindows="true"` in `res/layout/activity_main.xml`; the `app_background` colour and the system-bar items in `res/values/colors.xml` and `themes.xml`; and `chmod +x gradlew`. Keep `mobile/android/.gitignore`.
 - **Keep the Java package `com.wails.app`.** The Go library's JNI functions are named after it, so only `applicationId` changes per app.
 
 ## The app ID
