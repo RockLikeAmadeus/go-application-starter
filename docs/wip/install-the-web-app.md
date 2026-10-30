@@ -45,7 +45,20 @@ Run: `task e2e -- --project chromium --grep @wip` (`task e2e` rebuilds the SPA f
        - The plugin's `pwaAssets` option, which would generate the icons at build time and derive the manifest list and `index.html` links. It would undo the decision to commit the PNGs, put `sharp` into every build (including the Alpine Docker stage), and change the emitted `index.html`. That's a decision to make on its own, not a tidy-up.
        - The colours can't be shared with `palette.css` at build time without new code. Comments keep the copies findable.
      - Possible follow-up (a behaviour change, so not done here): a dark-scheme `theme-color` meta.
-3. [ ] Web: the service worker: `autoUpdate`, precache the build, the navigation fallback with its deny list, no runtime caching. Demanded by the `Given I have opened the app before` step of both offline scenarios. Expect them to fail next on the missing offline notice.
+3. [x] Web: the service worker: `autoUpdate`, precache the build, the navigation fallback with its deny list, no runtime caching. Demanded by the `Given I have opened the app before` step of both offline scenarios. Expect them to fail next on the missing offline notice.
+   - Red: both offline scenarios time out in `Given I have opened the app before`, because no service worker controls the page.
+   - Green: in `VitePWA`, `injectRegister: false` became `registerType: "autoUpdate"`. With the default `injectRegister: "auto"`, the plugin adds a `registerSW.js` script to `index.html`. `workbox.navigateFallbackDenylist` excludes `/api/`, `/healthz` and `/readyz`. The plugin already defaults `navigateFallback` to `index.html`, and there's no `runtimeCaching`. The built `sw.js` has `NavigationRoute(…"index.html", {denylist: […]})` and precaches 9 entries.
+   - Results:
+     - "The app can be installed" passes.
+     - "The app opens without a connection" gets past the offline reload and shows the navigation. It now fails only on `the app says it is offline` (no `status` element yet), the right reason for tasks 4–6.
+     - "The offline notice goes when the connection comes back" **passed vacuously**: its only `Then` was a negative, and no notice exists yet. At the user's request it now asserts `And the app says it is offline` before `When the connection comes back`, so it fails on the missing notice like the other offline scenario.
+     - Web unit tests (42) pass.
+   - Noticed, not done (no scenario demands it): the default `globPatterns` (`**/*.{js,css,html}`) leave out the `.woff2` fonts and the icons. Offline, the app falls back to system fonts until they're cached. If wanted, it's a behaviour change for its own step.
+   - Refactor (`web/vite.config.ts`):
+     - The plugin setup moved out of `defineConfig` into a `pwa` constant, with a comment on what it does (manifest, caches the built app but not the API, updates quietly) pointing at SPEC.md §4.5. `plugins` is back to one line.
+     - The deny list now has a comment saying why: the API must always reach the server, and so must the health probes.
+     - Checked after the change: the built `sw.js` has the same deny list, and the `@wip` scenarios are unchanged (1 passes; the 2 offline ones fail on the missing notice). `task lint`, `task test` and `task accept` pass.
+     - Deliberately left: a separate `web/pwa.config.ts`. One constant in the same file is enough at this size.
 4. [ ] `OfflineNotice` shows "You're offline…" in a `status` region when the browser is offline at first render (stub `navigator.onLine`).
 5. [ ] `OfflineNotice` shows the message when an `offline` event fires, and clears it when an `online` event fires.
 6. [ ] `Layout` renders the offline notice. Then:
@@ -58,3 +71,4 @@ Run: `task e2e -- --project chromium --grep @wip` (`task e2e` rebuilds the SPA f
    - delete this file.
 
 ## Changes to the plan
+- Task 3: "The offline notice goes when the connection comes back" passed before any notice existed. Added `And the app says it is offline` to its setup, so it now proves the notice appears and then goes.

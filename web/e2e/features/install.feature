@@ -19,5 +19,6 @@ Feature: Install the web app
   Scenario: The offline notice goes when the connection comes back
     Given I have opened the app before
     And I open the app without a connection
+    And the app says it is offline
     When the connection comes back
     Then the app no longer says it is offline
