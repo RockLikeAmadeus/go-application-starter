@@ -96,6 +96,33 @@ func TestRewriteTreatsTheOldBrandLiterally(t *testing.T) {
 	}
 }
 
+func TestRewriteGivesTheAndroidAppAnIDWithoutHyphens(t *testing.T) {
+	// An Android application ID is a Java package name: a hyphen makes it
+	// invalid, so the slug's hyphens are dropped.
+	from := project.Names{
+		Module:    "example.com/you/old-notes",
+		Brand:     "Old Notes",
+		Slug:      "old-notes",
+		App:       "old-notes",
+		EnvPrefix: "OLD_NOTES_",
+	}
+	to := project.Names{
+		Module:    "example.com/you/acme-tasks",
+		Brand:     "Acme Tasks",
+		Slug:      "acme-tasks",
+		App:       "acme-tasks",
+		EnvPrefix: "ACME_TASKS_",
+	}
+	in := `applicationId "com.example.oldnotes"` + "\n" +
+		"adb shell am start -n com.example.oldnotes/com.wails.app.MainActivity\n"
+	want := `applicationId "com.example.acmetasks"` + "\n" +
+		"adb shell am start -n com.example.acmetasks/com.wails.app.MainActivity\n"
+
+	if got := project.Rewrite(in, from, to); got != want {
+		t.Errorf("Rewrite(%q) =\n%q\nwant\n%q", in, got, want)
+	}
+}
+
 func TestRenamePathMovesTheCommandLineTool(t *testing.T) {
 	from := project.Names{Slug: "old-notes"}
 	to := project.Names{Slug: "zenith"}

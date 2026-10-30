@@ -97,10 +97,17 @@ Wails mobile is experimental: it's outside Wails' stability promise, and the bri
 
   ```sh
   go tool -modfile=tools/go.mod wails3 generate build-assets -dir /tmp/wails-assets \
-    -name starter -productname Starter -productidentifier com.example.starter
+    -name starter -productname "Starter" -productidentifier com.example.starter
   diff -r /tmp/wails-assets/android mobile/android
   ```
 
   Copy over everything except `Taskfile.yml`, `scripts/` (both for wails3's own build) and `main_android.go` (`cmd/mobile/main.go` already does its job). Then reapply the edits: `applicationId`, `app_name` and `rootProject.name`; the comment on `namespace`; the trimmed permissions in `AndroidManifest.xml`; and `chmod +x gradlew`. Keep `mobile/android/.gitignore`.
 - **Keep the Java package `com.wails.app`.** The Go library's JNI functions are named after it, so only `applicationId` changes per app.
+
+## The app ID
+
+The app's ID, `com.example.starter`, is `applicationId` in `mobile/android/app/build.gradle` and `ANDROID_APP_ID` in `Taskfile.yml`. `task rename` and `task init` set it to `com.example.` followed by the slug without its hyphens, because Android doesn't allow hyphens there.
+
+- **`com.example` is a placeholder.** Before publishing the app, change the ID in both places to a domain you own, reversed (`com.yourcompany.app`). Android treats an app with a different ID as a different app, so changing it after people have installed the app leaves their data behind in the old one.
+- **A name that starts with a digit** (like "3D Notes") gives an ID part that starts with a digit (`com.example.3dnotes`), which Android refuses. Change the ID by hand in that case.
 - Wails 3.0.0 exposes the Android bridge to every frame in the WebView; a fix is planned for 3.0.1. The app embeds no third-party pages, so this doesn't matter yet.

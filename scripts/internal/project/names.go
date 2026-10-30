@@ -43,6 +43,13 @@ func EnvPrefix(slug string) string {
 	return strings.ToUpper(strings.ReplaceAll(slug, "-", "_")) + "_"
 }
 
+// androidAppID derives the Android app's application ID from the slug:
+// "acme-tasks" is com.example.acmetasks. The ID is a Java package name, where
+// a hyphen isn't allowed, so the slug's hyphens are dropped.
+func androidAppID(slug string) string {
+	return "com.example." + strings.ReplaceAll(slug, "-", "")
+}
+
 // NewNames derives a project's names from its module path and brand name. It
 // fails if the brand name gives no usable slug.
 func NewNames(module, name string) (Names, error) {
