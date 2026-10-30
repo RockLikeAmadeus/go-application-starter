@@ -100,6 +100,24 @@ Users can use the web app comfortably on a phone, so they aren't tied to a deskt
 
 **Specification:** [`web/e2e/features/phone.feature`](web/e2e/features/phone.feature). Presentation only, so there are no Godog scenarios. Scenarios tagged `@phone` run on an emulated Android phone (Chromium), an emulated iPhone (WebKit) and a phone-sized Firefox window. The rest run on desktop Chromium.
 
+### 4.5 Install the web app _(web only)_
+
+Users can install the web app on their phone or computer, so it opens from the home screen or app list in its own window, like a native app. It needs no app store.
+
+**Rules**
+- The app can be installed under the product's name and icon. It opens in its own window, at the home page.
+- After one visit, the app opens even without a connection.
+- Without a connection, the app says it is offline. When the connection comes back, the notice goes away.
+- Data always comes from the server. The app never shows a stored copy that may be out of date.
+- A new version installs quietly in the background and takes over the next time the app is opened.
+
+**Examples**
+- User installs the app on their phone → it opens from the home screen, full screen, at the home page.
+- User opens the installed app on a plane → the app opens and says it is offline. It shows no data.
+- User lands, and the connection comes back → the notice goes away and data loads.
+
+**Specification:** [`web/e2e/features/install.feature`](web/e2e/features/install.feature). Presentation and caching only, so there are no Godog scenarios. These scenarios run on desktop Chromium, where Playwright supports service workers.
+
 ## 5. Non-functional requirements
 
 | Area | Requirement |
