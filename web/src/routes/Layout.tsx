@@ -41,9 +41,14 @@ function MobileNav({ children }: { children: ReactNode }) {
     dialogRef.current?.showModal();
   }
 
+  // However the dialog closes (a link, Escape, the backdrop), the browser fires
+  // `close`, and markClosed keeps `open` in step. Closing goes through the dialog.
   function closeMenu() {
-    setOpen(false);
     dialogRef.current?.close();
+  }
+
+  function markClosed() {
+    setOpen(false);
   }
 
   // Going somewhere from the menu closes it. One handler on the dialog covers
@@ -59,7 +64,7 @@ function MobileNav({ children }: { children: ReactNode }) {
       <button type="button" aria-expanded={open} className="md:hidden" onClick={openMenu}>
         Menu
       </button>
-      <dialog ref={dialogRef} onClick={closeOnLinkClick}>
+      <dialog ref={dialogRef} onClick={closeOnLinkClick} onClose={markClosed}>
         {children}
       </dialog>
     </>

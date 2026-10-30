@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -63,6 +63,19 @@ describe("Layout", () => {
     await user.click(within(screen.getByRole("dialog")).getByRole("link", { name: "Starter" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(menu).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("marks the menu closed when the browser closes the dialog, as Escape does", async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    const menu = screen.getByRole("button", { name: "Menu" });
+    await user.click(menu);
+
+    // jsdom can't press Escape on a modal dialog, so close it the way the browser would.
+    const dialog = screen.getByRole<HTMLDialogElement>("dialog");
+    act(() => dialog.close());
+
     expect(menu).toHaveAttribute("aria-expanded", "false");
   });
   // sample:start
