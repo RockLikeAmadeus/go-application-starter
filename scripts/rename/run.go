@@ -11,8 +11,12 @@ import (
 )
 
 // Run renames the project in dir as asked by args. files are the paths git
-// tracks in dir, slash-separated. With --dry-run it only lists the changes on
-// out.
+// tracks in dir, slash-separated; untracked and ignored files are never
+// touched. porcelain is the output of git status --porcelain for dir. With
+// --dry-run it only lists the changes on out, and needs no clean tree.
+//
+// Run returns the commands the caller must then run in dir to bring go.mod in
+// line with the changed sources.
 func Run(dir string, files []string, args []string, porcelain string, out io.Writer) ([][]string, error) {
 	opts, err := ParseArgs(args)
 	if err != nil {
@@ -32,8 +36,18 @@ func Run(dir string, files []string, args []string, porcelain string, out io.Wri
 	if err := project.CheckClean(porcelain); err != nil {
 		return nil, err
 	}
-	return nil, renameAll(dir, files, old, n)
+	if err := renameAll(dir, files, old, n); err != nil {
+		return nil, err
+	}
+	if n.Module != old.Module {
+		return [][]string{tidy}, nil
+	}
+	return nil, nil
 }
+
+// tidy follows a change of module path, so go.mod and go.sum agree with the
+// renamed imports.
+var tidy = []string{"go", "mod", "tidy"}
 
 // previewAll lists on out what renameAll would do to files, without changing
 // them.

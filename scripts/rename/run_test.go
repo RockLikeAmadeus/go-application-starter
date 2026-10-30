@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -111,5 +112,34 @@ func TestRunWithDryRunListsOnlyFilesARealRunRewrites(t *testing.T) {
 		if strings.Contains(out.String(), skipped) {
 			t.Errorf("output lists %s:\n%s", skipped, out.String())
 		}
+	}
+}
+
+func TestRunAsksForGoModTidyOnlyWhenTheModuleChanges(t *testing.T) {
+	tests := []struct {
+		desc string
+		args []string
+		want [][]string
+	}{
+		{desc: "module kept", args: []string{"--name", "Zenith"}, want: nil},
+		{
+			desc: "module changed",
+			args: []string{"--name", "Zenith", "--module", "example.com/zenith/notes"},
+			want: [][]string{{"go", "mod", "tidy"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			dir := newAcmeProject(t)
+
+			got, err := rename.Run(dir, []string{project.RecordFile}, tt.args, "", io.Discard)
+			if err != nil {
+				t.Fatalf("Run error = %v", err)
+			}
+
+			if !slices.EqualFunc(got, tt.want, slices.Equal) {
+				t.Errorf("Run follow-up = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

@@ -161,7 +161,11 @@ Temporary: delete this file in the change that removes the `@wip` tags.
       - `preview` asks `ShouldRewrite` before rewriting.
       - The doc comments say `previewAll` mirrors `renameAll`, and that the record is written, not renamed.
     - Deliberately left: the record skip appears in both loops. Filtering `files` once in `Run` would mean copying the caller's slice, which costs more than the two lines it saves.
-13. [ ] Rename's `Run` returns `go mod tidy` as a follow-up only when the module changed.
+13. [x] Rename's `Run` returns `go mod tidy` as a follow-up only when the module changed.
+    - **Red:** `TestRunAsksForGoModTidyOnlyWhenTheModuleChanges` in `scripts/rename/run_test.go`, a two-row table. Keeping the module must return no follow-up; `--module example.com/zenith/notes` must return `go mod tidy`. The "module changed" row fails: `Run` always returns nil. The "module kept" row passes already and guards the "only".
+    - Green: after `renameAll`, `Run` returns `go mod tidy` when `n.Module != old.Module`, and nil otherwise.
+    - Refactor: the command is a named `tidy` var with a comment saying why it follows a module change, and `Run`'s doc comment now matches init's: what `files` and `porcelain` are, that a dry run needs no clean tree, and what it returns.
+    - Deliberately left: init has its own `tidy` var. Sharing one through `project` would export a three-word slice for no real gain.
 14. [ ] Wiring and docs:
     - `scripts/rename/main.go`;
     - `rename` (outside the template block) and `test:rename` tasks in `Taskfile.yml`;
