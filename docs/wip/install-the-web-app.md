@@ -65,11 +65,19 @@ Run: `task e2e -- --project chromium --grep @wip` (`task e2e` rebuilds the SPA f
    - **For refactor:**
      - The paragraph has no styling: no palette colour or size. Probably wait for task 6, where it gets a place in `Layout` and its look can be judged in context. Styling doesn't change what the test sees.
      - The message is an inline string inside JSX. Fine while it's the only one.
-5. [ ] `OfflineNotice` shows the message when an `offline` event fires, and clears it when an `online` event fires.
+5. [x] `OfflineNotice` shows the message when an `offline` event fires, and clears it when an `online` event fires.
    - 5a Red (offline event): `OfflineNotice.test.tsx` › "says the app is offline as soon as the connection drops" fails. It renders online, flips the `navigator.onLine` stub to `false`, and dispatches `offline` on `window` inside `act`. The `status` region exists but is empty: nothing re-renders the component on the event. Task 4's **For refactor:** notes are still open; they fit task 6.
    - 5a Green: `OfflineNotice` reads `navigator.onLine` through `useSyncExternalStore`. A module-level `subscribe` listens only for `offline` on `window`, since the `online` event isn't demanded yet (5b). Web suite: 44 pass; lint clean.
-   - **For refactor:** the online/offline subscription is generic (it knows nothing about the notice). Once 5b adds `online`, moving it into a `useOnline()` hook (`features/offline/useOnline.ts`) would let the component read as markup only and give other code (e.g. a future "retry" button) the same source. Wait for 5b: with one event the hook would be thinner than its name.
-   - 5b (still to do): the `online` event clears it.
+   - 5b Red (online event): `OfflineNotice.test.tsx` › "clears the notice as soon as the connection comes back" fails. It renders offline, flips the stub to `true`, and dispatches `online` inside `act`. The `status` region still holds "You're offline. Data will load when the connection comes back.", because `subscribe` listens only for `offline`.
+   - 5b Green: `subscribe` also listens for `online` on `window` and removes both listeners on cleanup. Web suite: 45 pass; lint clean.
+   - Refactor:
+     - `features/offline/useOnline.ts`: a `useOnline()` hook now holds the subscription and the `useSyncExternalStore` call, named like `useTheme`/`useStyle`. `OfflineNotice` is just markup.
+     - `subscribe` loops over one `connectionEvents` list (`online`, `offline`) to add and remove its listeners, so the event names appear once.
+     - Tests: a `connection(online)` helper stubs `navigator.onLine` and returns a `change(nowOnline)` function that flips the stub and dispatches the matching event inside `act`. The two event tests are now three lines each.
+     - `task lint`, `task test` (45 web) and `task accept` pass.
+     - Deliberately left:
+       - No separate `useOnline.test.ts`: the three component tests already drive every path through the hook, and new tests would be new assertions, not a refactor.
+       - Task 4's styling note waits for task 6, as planned.
 6. [ ] `Layout` renders the offline notice. Then:
    - run the `@wip` scenarios, and the full `task e2e` (the service worker must not break the other 51);
    - remove the `@wip` tags;
