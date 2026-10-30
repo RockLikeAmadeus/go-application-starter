@@ -1,0 +1,10 @@
+# Gradle and Android Studio output
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+
+# Built by task mobile:android:build: the Go library and nothing else
+app/src/main/jniLibs/
+app/src/main/assets/
