@@ -18,6 +18,11 @@ The sample domain is `Item`; replace it when starting a real product.
 4. `/refactor` tidies the code on green, with no behaviour change.
 5. Repeat 2–4 until `task accept` passes. Then remove the `@wip` tags.
 
+`/feature` saves its inner-loop task list to `docs/wip/<feature-slug>.md`, which is tracked by git, so it survives a cleared context. It also holds the feature's links, the decisions behind the plan, and a log of plan changes.
+- When resuming a feature, read its `docs/wip/` file first.
+- After each `/red`, `/green` or `/refactor`, tick off or annotate the item it advanced. If the plan changes, revise the list and note why.
+- Delete the file in the same change that removes the `@wip` tags.
+
 Never skip a step or merge steps unless I ask. Never write production code without a failing test that demands it.
 
 ## Commands

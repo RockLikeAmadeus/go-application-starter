@@ -7,9 +7,11 @@ TDD **REFACTOR** step. Focus: $ARGUMENTS
 
 Rules:
 
+0. If a `docs/wip/` file exists for the feature in progress, read it first. It holds the task list and the decisions behind it.
 1. Run `task test` and `task accept` first. If anything is red, STOP and tell me: refactoring only happens on green.
 2. Improve the code touched in the current red/green cycle (and the tests themselves if useful). Look for duplication, naming, long functions, misplaced responsibilities, and violations of the hexagonal dependency rule in CLAUDE.md.
 3. **No behaviour changes**: no new features, no new tests asserting new behaviour, no changes to public API contracts (`api/openapi.yaml`) unless I asked.
 4. Make small steps, re-running the relevant tests after each one. If a step turns a test red, revert that step.
 5. Finish with `task lint`, `task test` and `task accept`, all green.
-6. STOP. Summarise what you changed and why. If nothing was worth changing, say so; that's a valid outcome.
+6. Update the `docs/wip/` file: tick off or annotate the item this step advanced, and if the plan changed, revise the list and log why.
+7. STOP. Summarise what you changed and why. If nothing was worth changing, say so; that's a valid outcome.

@@ -3,6 +3,7 @@ package acceptance
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -82,6 +83,8 @@ func initializeScenario(sc *godog.ScenarioContext) {
 	sc.Step(`^the specification has no sample Item capability$`, p.specHasNoSample)
 	sc.Step(`^the project builds and its Go tests pass$`, p.buildsAndPasses)
 	sc.Step(`^the init tool and its documentation are gone$`, p.toolIsGone)
+	sc.Step(`^the project records module "([^"]*)" and name "([^"]*)"$`, p.records)
+	sc.Step(`^the project can still be renamed$`, p.canBeRenamed)
 	sc.Step(`^it fails saying "([^"]*)"$`, p.failsSaying)
 	sc.Step(`^the project is unchanged$`, p.unchanged)
 }
@@ -266,6 +269,28 @@ func (p *project) toolIsGone() error {
 		}
 	}
 	return p.noneContain(map[string]string{"Taskfile.yml": "\n  init:", "README.md": "task init"})
+}
+
+func (p *project) records(module, name string) error {
+	data, err := os.ReadFile(filepath.Join(p.dir, "project.json"))
+	if err != nil {
+		return err
+	}
+	var got struct{ Module, Name string }
+	if err := json.Unmarshal(data, &got); err != nil {
+		return err
+	}
+	if got.Module != module || got.Name != name {
+		return fmt.Errorf("project.json records module %q and name %q, want %q and %q", got.Module, got.Name, module, name)
+	}
+	return nil
+}
+
+func (p *project) canBeRenamed() error {
+	if !p.exists("scripts/rename/main.go") {
+		return errors.New("the rename tool is gone")
+	}
+	return p.allContain(map[string]string{"Taskfile.yml": "\n  rename:"})
 }
 
 func (p *project) failsSaying(message string) error {

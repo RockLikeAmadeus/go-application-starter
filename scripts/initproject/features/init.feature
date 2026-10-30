@@ -42,6 +42,12 @@ Feature: Make the template mine
       |                       |
       | , removing the sample |
 
+  @wip
+  Scenario: The project remembers its names
+    When I make it mine with module "example.com/acme/tasks" and name "Acme Tasks"
+    Then the project records module "example.com/acme/tasks" and name "Acme Tasks"
+    And the project can still be renamed
+
   Scenario: The init tool removes itself
     When I make it mine with module "example.com/acme/tasks" and name "Acme"
     Then the init tool and its documentation are gone
