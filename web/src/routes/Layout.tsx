@@ -40,6 +40,9 @@ export function Layout() {
         </fieldset>
       </aside>
       <main className="min-w-0 flex-1 px-8 py-8 terminal:px-5 terminal:py-5">
+        <button type="button" aria-expanded={false} className="md:hidden">
+          Menu
+        </button>
         <div className="mx-auto max-w-4xl">
           <Outlet />
         </div>

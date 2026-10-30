@@ -32,6 +32,13 @@ describe("Layout", () => {
     expect(within(appearance).getByRole("combobox", { name: "Style" })).toBeInTheDocument();
     expect(within(appearance).getByRole("switch", { name: "Dark mode" })).toBeInTheDocument();
   });
+
+  it("offers a closed Menu button for phone screens", () => {
+    renderLayout();
+
+    expect(screen.getByRole("button", { name: "Menu" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
   // sample:start
 
   it("shows the app name and an Items link in the sidebar navigation", () => {

@@ -18,8 +18,14 @@ Run: `task e2e -- --grep @wip` (all projects) · `--project phone` / `--project 
 - Colours and shape come only from palette/style tokens (`bg-sidebar`, `border-sidebar-line`, `rounded-panel`, …), and every style × theme is checked by the "Pages fit" outline.
 
 ## Tasks
-1. [ ] `Layout` shows a "Menu" button with `aria-expanded="false"`, and no dialog is open at first.
-2. [ ] Pressing "Menu" opens a dialog that contains the navigation and the Appearance group, and sets `aria-expanded="true"`. (Check jsdom's `showModal` support first; stub it in the test if it's missing.)
+1. [x] `Layout` shows a "Menu" button with `aria-expanded="false"`, and no dialog is open at first.
+   - Red: `Layout.test.tsx` › "offers a closed Menu button for phone screens" fails because no "Menu" button exists.
+   - Green: a bare `<button aria-expanded={false} className="md:hidden">Menu</button>` at the top of `<main>`. `md:hidden` keeps the wide-screen e2e scenario green.
+   - e2e after green (`phone` + `chromium`): 3 pass, 10 fail. "Open the menu" and "Change the style from the menu" pass **falsely** for now, because the desktop `aside` nav is still visible on phones. They become meaningful once task 6 hides the aside. "Pages fit" overflows by 139–239px, which is roughly the `w-60` aside. `iphone` can't launch WebKit until `libavif16` is installed.
+   - Refactor: no change, on purpose. A `MobileNav` component holding only one static button would be an abstraction with nothing behind it yet. A top bar with the logo and token styling is new layout, which belongs to task 6 (the e2e scenarios demand it), not to a no-behaviour-change step. Carried forward:
+     - extract `MobileNav` (button + `<dialog>` + `open` state) when task 2 adds the state;
+     - put the button in a styled phone top bar in task 6.
+2. [ ] Pressing "Menu" opens a dialog that contains the navigation and the Appearance group, and sets `aria-expanded="true"`. Checked: jsdom hides a closed `<dialog>` (`display: none`, so `queryByRole` skips it) but has **no `showModal`/`close`**. Stub them on `HTMLDialogElement.prototype` in `src/test/setup.ts` (toggling `open`, and firing `close` from `close()`).
 3. [ ] Choosing a link in the dialog closes it.
 4. [ ] The dialog's `close` event (what Escape triggers natively) closes the menu in React state too.
 5. [ ] A click on the dialog's backdrop (target is the dialog itself) closes it. A click inside the panel doesn't.
@@ -30,4 +36,4 @@ Run: `task e2e -- --grep @wip` (all projects) · `--project phone` / `--project 
 10. [ ] Remove the `@wip` tags, add a phone-width line to CLAUDE.md "Web styles", and delete this file.
 
 ## Changes to the plan
-_(none yet)_
+- 2026-10-30: fixed `phone.steps.ts` to pass `page.evaluate` a string expression. `tsc -b` in `web:build` type-checks `e2e/` without DOM types, so `document` didn't compile. The scenario's meaning is unchanged.

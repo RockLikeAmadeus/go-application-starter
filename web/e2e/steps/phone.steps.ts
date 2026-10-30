@@ -55,8 +55,9 @@ Then("I see the Appearance controls", async ({ page }) => {
 });
 
 Then("the page does not scroll sideways", async ({ page }) => {
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  // A string expression, because the e2e tsconfig has no DOM types.
+  const overflow = await page.evaluate<number>(
+    "document.documentElement.scrollWidth - document.documentElement.clientWidth",
   );
   expect(overflow).toBeLessThanOrEqual(0);
 });
