@@ -39,7 +39,7 @@ task check     # codegen drift, lint, unit, acceptance, e2e: everything CI runs
 ## Everyday commands
 
 ```sh
-task dev                         # API on :8080 + Vite on :5173 (open http://localhost:5173); both reload on save
+task dev                         # API on :8080 + Vite on :5173, opened in your browser; both reload on save
 task run:cli -- item add "Milk"  # CLI, embedded core, data in ./data
 task run:cli -- --server http://localhost:8080 item list   # CLI against a running server
 task run:tui                     # terminal UI (also accepts --server)

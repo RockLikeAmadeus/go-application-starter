@@ -65,7 +65,7 @@ tasks:
 
   web:dev:
     cmds:
-      - pnpm --dir web dev
+      - pnpm --dir web dev --open
 
   # ---------------------------------------------------------------- build
   build:

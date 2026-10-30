@@ -27,7 +27,7 @@ Never skip a step or merge steps unless I ask. Never write production code witho
 | Lint / format | `task lint` · `task fmt` |
 | Regenerate API code | `task gen` (after editing `api/openapi.yaml`) |
 | Everything CI runs | `task check` |
-| Run locally | `task dev` (API on :8080, restarted by Air on Go changes + Vite on :5173 with HMR) · `task run:cli -- item list` · `task run:tui` |
+| Run locally | `task dev` (API on :8080, restarted by Air on Go changes + Vite on :5173 with HMR, opened in your browser) · `task run:cli -- item list` · `task run:tui` |
 
 ## Architecture
 
