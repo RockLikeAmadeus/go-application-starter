@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/RockLikeAmadeus/go-application-starter/scripts/internal/project"
 )
 
 // Tags for the marker lines that fence code inside shared files (see
@@ -82,18 +84,7 @@ func removeAll(dir string, entries []string) error {
 		if err := os.RemoveAll(p); err != nil {
 			return err
 		}
-		removeEmptyParents(dir, p)
+		project.RemoveEmptyParents(dir, p)
 	}
 	return nil
-}
-
-// removeEmptyParents removes the directories above path, from the nearest up,
-// until one is not empty. It stops at dir, which path must lie inside.
-func removeEmptyParents(dir, path string) {
-	dir = filepath.Clean(dir)
-	for parent := filepath.Dir(path); parent != dir; parent = filepath.Dir(parent) {
-		if os.Remove(parent) != nil { // fails once a directory is not empty
-			return
-		}
-	}
 }

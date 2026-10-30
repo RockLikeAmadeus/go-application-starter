@@ -27,6 +27,11 @@
     "ask": [
       "Bash(git push:*)",
       "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(git stage:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(git pull:*)",
       "Bash(flyctl:*)",
       "Bash(fly:*)",
       "Bash(docker:*)"

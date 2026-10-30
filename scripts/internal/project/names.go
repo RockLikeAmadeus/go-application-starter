@@ -14,6 +14,7 @@ type Names struct {
 	Module    string // Go module path
 	Brand     string // brand name people see, e.g. "Acme Tasks"
 	Slug      string // machine name, e.g. "acme-tasks"; see Slug
+	App       string // deploy app name: the slug, except in the template
 	EnvPrefix string // environment variable prefix, e.g. "ACME_TASKS_"; see EnvPrefix
 }
 

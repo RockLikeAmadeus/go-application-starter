@@ -11,6 +11,7 @@ var acme = project.Names{
 	Module:    "example.com/acme/tasks",
 	Brand:     "Acme Tasks",
 	Slug:      "acme-tasks",
+	App:       "acme-tasks",
 	EnvPrefix: "ACME_TASKS_",
 }
 

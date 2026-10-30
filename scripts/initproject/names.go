@@ -9,5 +9,5 @@ func NewNames(opts Options) (project.Names, error) {
 	if err != nil {
 		return project.Names{}, err
 	}
-	return project.Names{Module: opts.Module, Brand: opts.Name, Slug: slug, EnvPrefix: project.EnvPrefix(slug)}, nil
+	return project.Names{Module: opts.Module, Brand: opts.Name, Slug: slug, App: slug, EnvPrefix: project.EnvPrefix(slug)}, nil
 }

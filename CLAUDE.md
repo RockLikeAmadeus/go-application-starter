@@ -21,9 +21,12 @@ The sample domain is `Item`; replace it when starting a real product.
 `/feature` saves its inner-loop task list to `docs/wip/<feature-slug>.md`, which is tracked by git, so it survives a cleared context. It also holds the feature's links, the decisions behind the plan, and a log of plan changes.
 - When resuming a feature, read its `docs/wip/` file first.
 - After each `/red`, `/green` or `/refactor`, tick off or annotate the item it advanced. If the plan changes, revise the list and note why.
+- `/green` leaves a **For refactor:** note under its item, listing the refactoring it spotted. `/refactor` starts from that note and replaces it with what it did.
 - Delete the file in the same change that removes the `@wip` tags.
 
 Never skip a step or merge steps unless I ask. Never write production code without a failing test that demands it.
+
+Never stage, commit, push or pull unless I explicitly ask. That includes `git add`, `git mv` and `git rm`, which stage changes. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
 
 ## Commands
 

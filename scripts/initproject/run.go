@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/imports"
@@ -70,34 +68,13 @@ var regenerate = [][]string{
 // renameFile transforms one file's content (see transform) and moves it to its
 // new path, keeping its permissions. Directories the move empties are removed.
 func renameFile(dir, rel string, n project.Names, removeSample bool) error {
-	old := filepath.Join(dir, filepath.FromSlash(rel))
-	info, err := os.Stat(old)
-	if err != nil {
-		return err
-	}
-	content, err := os.ReadFile(old)
-	if err != nil {
-		return err
-	}
-	content, err = transform(rel, content, n, removeSample)
-	if err != nil {
-		return fmt.Errorf("%s: %w", rel, err)
-	}
-	renamed := filepath.Join(dir, filepath.FromSlash(RenamePath(rel, n)))
-	if err := os.MkdirAll(filepath.Dir(renamed), 0o755); err != nil {
-		return err
-	}
-	if err := os.WriteFile(renamed, content, info.Mode().Perm()); err != nil {
-		return err
-	}
-	if renamed == old {
-		return nil
-	}
-	if err := os.Remove(old); err != nil {
-		return err
-	}
-	removeEmptyParents(dir, old)
-	return nil
+	return project.RewriteFile(dir, rel, RenamePath(rel, n), func(content []byte) ([]byte, error) {
+		content, err := transform(rel, content, n, removeSample)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", rel, err)
+		}
+		return content, nil
+	})
 }
 
 // goimports are the settings gofmt and goimports use by default.
@@ -121,7 +98,8 @@ func transform(rel string, content []byte, n project.Names, removeSample bool) (
 		}
 	}
 	out := []byte(Rewrite(text, n))
-	// Renaming alone never breaks formatting, so only removal needs tidying.
+	// Only removal is tidied here. A new module path that sorts differently can
+	// still leave imports out of order; project.RenameFile formats for that.
 	if removeSample && strings.HasSuffix(rel, ".go") {
 		return imports.Process(rel, out, goimports)
 	}
