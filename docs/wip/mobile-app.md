@@ -28,8 +28,12 @@
    - Red ✔: `TestOpenCreatesTheDataFolderUnderTheGivenSettingsFolder` (`open_test.go`). `Open` now takes `userConfigDir` as its second parameter but still ignores it; every caller passes `os.UserConfigDir`.
    - Green ✔: `Open` passes `userConfigDir` to `DataDir`, and no longer imports `os`.
    - Refactor ✔: dropped the new test's `XDG_CONFIG_HOME` guard, which it no longer needed. `openWith` and `TestOpenKeepsItemsAfterClosingAndReopening` now pass a fake `configDirAt(t.TempDir())`, so no unit test sees the real settings folder. `DataDir`'s comment now says `os.UserConfigDir` is the desktop's lookup, not "production"'s. Left alone on purpose: the acceptance drivers still pass `os.UserConfigDir`, to mirror `cmd/desktop`'s wiring (`STARTER_DATA_DIR` always wins there). No `t.Parallel`: the repo doesn't use it anywhere.
-2. [ ] **`mobile.Serve(h, method, path, body) Reply`** runs one request through `h` and returns its status, content type and body. Red: a `POST` with a JSON body reaches the handler with its method, body and `Content-Type: application/json`, and its 201 reply comes back.
+2. [x] **`mobile.Serve(h, method, path, body) Reply`** runs one request through `h` and returns its status, content type and body. Red: a `POST` with a JSON body reaches the handler with its method, body and `Content-Type: application/json`, and its 201 reply comes back.
+   - Red ✔: `TestServeSendsTheRequestAndReturnsTheReply` (`internal/adapters/mobile/serve_test.go`). New package `mobile`, with a stub `Serve` that returns an empty `Reply{Status, ContentType, Body}`. `Body` is a string, with JSON tags, so it crosses the Wails bridge as plain JSON.
+   - Green ✔: `Serve` builds the request with `httptest.NewRequest` (setting `Content-Type: application/json`), records the reply with `httptest.NewRecorder`, and returns its status, `Content-Type` and body.
+   - Refactor ✔: production code unchanged, since it's already short and clear. The test now keeps the `*http.Request` and its body instead of four separate strings, and fails with "the handler was not called" instead of a nil-pointer panic if `Serve` stops calling it. Left alone on purpose: `httptest.NewRequest` can panic, which is moved to the new task 3a because fixing it changes behaviour. `Content-Type` is set on every request, which is harmless.
 3. [ ] **`mobile.Serve`** returns an error reply's status and problem document unchanged (e.g. 422), and a query string reaches the handler.
+3a. [ ] **`mobile.Serve`** answers a request it can't build (e.g. a malformed path) with a 400 reply instead of panicking. `httptest.NewRequest` panics, so this probably means switching to `http.NewRequest`. Red: a path with a space or a bad method returns status 400.
 4. [ ] **Android asset handler:** `/index.html` serves what `/` serves.
 5. [ ] **Android asset handler:** `/api/*` answers 404, and other paths pass through.
 6. [ ] **`mobile.Open(getenv, storagePath, webAssets)`** returns `Handler` (the asset handler from items 4–5) and `API` (for the bridge), with `LocalData` set. Red: `GET /api/v1/connection` through `Serve` on `API` says no connection is required, and the same path on `Handler` is a 404.
@@ -51,3 +55,4 @@
 18. [ ] Remove `@wip`. Add follow-ups to TODO.md (iOS, mobile remote mode, Play Store release builds and signing, app icon). Mark step 4 done in the parent plan, delete this file, and `task check` green.
 
 ## Changes to the plan
+- 2026-10-30, task 2 refactor: added task 3a. `Serve` uses `httptest.NewRequest`, which panics on a malformed method or path and would crash the bridge call. Fixing that changes behaviour, so it needs its own red test rather than a refactor.
