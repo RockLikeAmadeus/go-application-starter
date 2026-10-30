@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { bridgeFetch, type BridgeCall } from "./bridge";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { apiFetch, bridgeFetch, type BridgeCall, type BridgeWindow } from "./bridge";
 
 describe("bridgeFetch", () => {
   it("sends the request over the bridge and returns the reply as a Response", async () => {
@@ -33,5 +33,29 @@ describe("bridgeFetch", () => {
 
     expect(response.status).toBe(204);
     expect(response.body).toBeNull();
+  });
+});
+
+describe("apiFetch", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("sends requests over the bridge when Android's Wails bridge is there when it's created", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>();
+    vi.stubGlobal("fetch", fetch);
+    const call = vi.fn<BridgeCall>(async () => ({
+      status: 200,
+      contentType: "application/json",
+      body: '{"required":false}',
+    }));
+    const win: BridgeWindow = { wails: { invokeAsync: () => {} } };
+
+    const send = apiFetch(win, async () => call);
+    // Importing the Wails runtime replaces window.wails, after the check.
+    delete win.wails;
+    const response = await send(new Request("http://localhost/api/v1/connection"));
+
+    expect(call).toHaveBeenCalledWith("GET", "/api/v1/connection", "");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await response.json()).toEqual({ required: false });
   });
 });

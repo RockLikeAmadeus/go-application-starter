@@ -69,7 +69,14 @@
    - Red ✔: "returns a Response with no body for 204" (`bridge.test.ts`), for a `DELETE` whose reply is `{ status: 204, contentType: "", body: "" }`. Fails with `TypeError: Response constructor: Invalid response status code 204` from `bridge.ts:16`. That's the missing behaviour itself (a 204 can't have even an empty body), so the throw isn't wrapped in an assertion.
    - Green ✔: `bridgeFetch` passes `null` as the body when `reply.status === 204`. All 55 web tests pass, and `tsc`, ESLint and Prettier are clean.
    - Refactor ✔: the 204 check moved into a named `body` variable, with a comment on why (Go sends an empty body, and a 204 `Response` can't have one). Left alone on purpose: 101/205/304 aren't handled, because the API never sends them. The empty `Content-Type` on a 204 is harmless.
-10. [ ] **Web: `client.ts` uses the bridge** when `window.wails.invokeAsync` exists when the module loads, and plain `fetch` otherwise (both cases tested, re-importing the module).
+10. [ ] **Web: `client.ts` uses the bridge** when `window.wails.invokeAsync` exists when the module loads, and plain `fetch` otherwise. The decision lives in `apiFetch(win, loadCall)` in `bridge.ts`, which checks `win` once, when created, and is tested directly. `client.ts` only passes `globalThis` and the runtime loader (task 11).
+   - Red ✔ (bridge case): "sends requests over the bridge when Android's Wails bridge is there when it's created" (`bridge.test.ts`). It deletes `win.wails` after creating the fetch, as the runtime import will, and checks the request still goes to `call` and never to `fetch`. Fails with "expected vi.fn() to be called with arguments: [ 'GET', '/api/v1/connection', '' ] — Number of calls: 0".
+     - Stub: `BridgeWindow` and `apiFetch(_win, _loadCall)`, which returns an empty `Response`. `tsc` passes. ESLint flags the unused parameters until green.
+   - Green ✔ (bridge case): `apiFetch` returns `async (request) => bridgeFetch(await loadCall())(request)`. It ignores `_win` for now, because no test fails without the check yet. All 56 web tests pass, and `tsc`, ESLint and Prettier are clean.
+   - Refactor ✔ (bridge case): nothing changed, on purpose.
+     - Loading the call once changes how often `loadCall` runs, which callers can see. The plain-`fetch` green reshapes `apiFetch` anyway, and task 11's dynamic import is what makes it pay. **Carry this to the plain-`fetch` refactor.**
+     - The doc comment ("else plain fetch") describes the contract the next cycle completes, and nothing calls `apiFetch` yet, so it isn't rewritten twice.
+   - Still to do: red for the plain-`fetch` case (no `window.wails`; must call `globalThis.fetch` at call time, so tests can stub it after load). Then wire `client.ts`: `fetch: apiFetch(globalThis, …)`.
 11. [ ] **`@wailsio/runtime`**, dynamically imported, passed to `bridgeFetch` as `Call.ByName("main.Proxy.Do", …)` or whatever name the service gets. Wiring: check the browser bundle doesn't grow.
 12. [ ] `cmd/mobile/main.go` (`//go:build android`) and the Wails service wrapper. Wiring, no unit test. Builds with the NDK.
 13. [ ] `mobile/android/`: the generated Gradle project, with `applicationId` and app name set. `wails3` in `tools/go.mod`.
@@ -86,3 +93,4 @@
 ## Changes to the plan
 - 2026-10-30, task 2 refactor: added task 3a. `Serve` uses `httptest.NewRequest`, which panics on a malformed method or path and would crash the bridge call. Fixing that changes behaviour, so it needs its own red test rather than a refactor.
 - 2026-10-30, task 7: the acceptance bridge is a `Do(*http.Request)` doer passed with `apiclient.WithHTTPClient`, not an `http.RoundTripper`. Same effect, one layer less.
+- 2026-10-30, task 10: the bridge-or-fetch choice moved out of `client.ts`'s module body into `apiFetch(win, loadCall)`, which is tested directly, instead of re-importing `client.ts` with globals stubbed. Watching the bridge call through `client.ts` would mean mocking `@wailsio/runtime`, and CLAUDE.md says to stub `fetch` rather than mock modules. "Check once, at load" is still covered: `apiFetch` checks when it's created, and `client.ts` creates it when the module loads.

@@ -21,3 +21,14 @@ export function bridgeFetch(call: BridgeCall): (request: Request) => Promise<Res
     });
   };
 }
+
+/** The global object, as far as finding Android's Wails bridge goes. */
+export type BridgeWindow = { wails?: { invokeAsync?: unknown } };
+
+/** The fetch for the API client: over the bridge on Android, else plain fetch. */
+export function apiFetch(
+  _win: BridgeWindow,
+  loadCall: () => Promise<BridgeCall>,
+): (request: Request) => Promise<Response> {
+  return async (request) => bridgeFetch(await loadCall())(request);
+}
