@@ -25,7 +25,21 @@ Run: `task e2e -- --grep @wip` (all projects) · `--project phone` / `--project 
    - Refactor: no change, on purpose. A `MobileNav` component holding only one static button would be an abstraction with nothing behind it yet. A top bar with the logo and token styling is new layout, which belongs to task 6 (the e2e scenarios demand it), not to a no-behaviour-change step. Carried forward:
      - extract `MobileNav` (button + `<dialog>` + `open` state) when task 2 adds the state;
      - put the button in a styled phone top bar in task 6.
-2. [ ] Pressing "Menu" opens a dialog that contains the navigation and the Appearance group, and sets `aria-expanded="true"`. Checked: jsdom hides a closed `<dialog>` (`display: none`, so `queryByRole` skips it) but has **no `showModal`/`close`**. Stub them on `HTMLDialogElement.prototype` in `src/test/setup.ts` (toggling `open`, and firing `close` from `close()`).
+2. [x] Pressing "Menu" opens a dialog that contains the navigation and the Appearance group, and sets `aria-expanded="true"`. Checked: jsdom hides a closed `<dialog>` (`display: none`, so `queryByRole` skips it) but has **no `showModal`/`close`**. Stub them on `HTMLDialogElement.prototype` in `src/test/setup.ts` (toggling `open`, and firing `close` from `close()`).
+   - Red: `Layout.test.tsx` › "opens the navigation and Appearance controls in a dialog from the Menu button" fails because `aria-expanded` stays `"false"`. The `showModal`/`close` stand-ins are in `src/test/setup.ts`, defined only where missing (`??=`).
+   - Green: `menuOpen` state + `menuRef`. The button's onClick sets the state and calls `showModal()`. A bare `<dialog>` holds a **copy** of the nav (an unstyled Items `NavLink`) and the Appearance fieldset with a second `StylePicker`/`ThemeToggle`, sharing the same hooks. Neither uses fixed ids, so the duplicate controls don't clash.
+   - e2e after green (`phone` + `chromium`): 1 passes (wide screen), 12 fail. With the drawer open, the phone now shows **two** navs and two Style pickers (the aside's and the drawer's), so Playwright's strict mode trips. That's honest now: the earlier false passes are gone. Task 6 (hiding the aside below `md`) fixes it.
+   - Refactor, all in `web/src/routes/Layout.tsx`:
+     - `SidebarContent` (logo link, styled nav, Appearance fieldset) is the one copy of that markup. `Layout` builds it once and renders it in both the `aside` and the drawer.
+     - `useTheme`/`useStyle` stay in `Layout` and are passed down as props, so both copies share one state. Two hook instances would drift apart.
+     - `MobileNav` owns `open`, `dialogRef` and an `openMenu` handler, and takes the content as `children`.
+     - Side effects of sharing the markup:
+       - The drawer now also contains the logo link, which task 3's scenario uses.
+       - The drawer's "Appearance" legend is now screen-reader-only, like the sidebar's. The accessible name is unchanged.
+     - Deliberately left:
+       - The `aside`'s container classes stay in `Layout`, where the desktop layout lives.
+       - `MobileNav` stays a local component in `Layout.tsx`, matching `ListIcon`/`Home`. Move it into its own file if it grows past tasks 3–5.
+       - The drawer and button are still unstyled (task 6).
 3. [ ] Choosing a link in the dialog closes it.
 4. [ ] The dialog's `close` event (what Escape triggers natively) closes the menu in React state too.
 5. [ ] A click on the dialog's backdrop (target is the dialog itself) closes it. A click inside the panel doesn't.

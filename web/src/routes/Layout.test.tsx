@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Layout } from "./Layout";
@@ -38,6 +39,19 @@ describe("Layout", () => {
 
     expect(screen.getByRole("button", { name: "Menu" })).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens the navigation and Appearance controls in a dialog from the Menu button", async () => {
+    const user = userEvent.setup();
+    renderLayout();
+
+    const menu = screen.getByRole("button", { name: "Menu" });
+    await user.click(menu);
+
+    expect(menu).toHaveAttribute("aria-expanded", "true");
+    const dialog = within(screen.getByRole("dialog"));
+    expect(dialog.getByRole("navigation")).toBeInTheDocument();
+    expect(dialog.getByRole("group", { name: "Appearance" })).toBeInTheDocument();
   });
   // sample:start
 
