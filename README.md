@@ -30,6 +30,7 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
 | golangci-lint | 2 | https://golangci-lint.run/welcome/install/ |
 | lefthook (optional) | | `go install github.com/evilmartians/lefthook@latest` |
 | Docker (optional) | | for `task docker:*` |
+| Desktop build deps (optional) | | only for the desktop app (`task run:desktop`, `task build:desktop`). Linux (Ubuntu/Debian): `sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev`. macOS: `xcode-select --install`. Windows: nothing extra expected (Wails uses no cgo there, and the WebView2 runtime ships with Windows 10 and 11; not yet tried) |
 
 Then:
 
@@ -44,11 +45,13 @@ task check     # codegen drift, lint, unit, acceptance, e2e: everything CI runs
 task dev                         # API on :8080 + Vite on :5173, opened in your browser; both reload on save
 task run:cli -- --help           # CLI, embedded core, data in ./data (add --server http://localhost:8080 to use a running server)
 task run:tui                     # terminal UI (also accepts --server)
+task run:desktop                 # desktop app in a native window, data in your settings folder (needs the desktop build deps)
 task test                        # unit tests (Go + web)
 task accept                      # Godog acceptance tests
 task e2e                         # browser tests against the real server binary
 task gen                         # regenerate code after editing api/openapi.yaml
 task build                       # ./bin/server (with UI embedded) and ./bin/starter
+task build:desktop               # ./bin/starter-desktop (needs the desktop build deps)
 ./bin/server                     # the built app on :8080, installable from Chrome (see docs/installable-app.md)
 task docker:up                   # production image locally on :8080
 task rename -- --name "New Name" # rebrand the project; --dry-run previews it (see docs/rename.md)

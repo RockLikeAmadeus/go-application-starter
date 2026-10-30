@@ -75,6 +75,12 @@ tasks:
     cmds:
       - go run ./cmd/starter tui {{.CLI_ARGS}}
 
+  run:desktop:
+    desc: Run the desktop app (needs the desktop build deps, see README)
+    deps: [web:build]
+    cmds:
+      - go run -tags desktop,embedweb ./cmd/desktop
+
   web:dev:
     cmds:
       - pnpm --dir web dev --open
@@ -86,6 +92,12 @@ tasks:
     cmds:
       - go build -tags embedweb -ldflags "{{.LDFLAGS}}" -o {{.BIN}}/server ./cmd/server
       - go build -ldflags "{{.LDFLAGS}}" -o {{.BIN}}/starter ./cmd/starter
+
+  build:desktop:
+    desc: Build the desktop app, with the web UI built in, into ./bin (needs the desktop build deps, see README)
+    deps: [web:build]
+    cmds:
+      - go build -tags desktop,embedweb -ldflags "-s -w" -o {{.BIN}}/starter-desktop ./cmd/desktop
 
   web:build:
     cmds:
