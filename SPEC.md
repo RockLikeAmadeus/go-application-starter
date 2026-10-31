@@ -135,14 +135,16 @@ Users can run the app as a program on their own computer, so they can use it wit
 - Only one copy of the app can use a data folder at a time. A second copy says the data is already in use, and doesn't start.
 - In local-only mode, it never says it is offline, because it doesn't need a connection.
 - It shows the product's icon, the same one as the installed web app (§4.5), in the taskbar or Dock. On Linux the icon comes from the installed app, so a copy that wasn't installed from a package may show a generic icon.
+- On Linux, users install it from a package for their system (`.deb` for Debian, Ubuntu and Pop!_OS; `.rpm` for Fedora and openSUSE), or run it as an AppImage with nothing to install. Once installed, it appears in the app list under the product's name and icon, and uninstalling it leaves the user's data folder alone.
 
 **Examples**
 - User adds "Widget", closes the app and opens it again → "Widget" is still there.
 - User opens the app twice → the second copy says the data is in use.
 - User opens the app on Windows or a Mac → the taskbar or Dock shows the product's icon.
+- User installs the `.deb` on Pop!_OS → "Starter" appears in the app list with its icon, and opens from there.
 - User opens the app with the network off → the app works and shows no offline notice.
 
-**Specification:** [`features/desktop.feature`](features/desktop.feature). The desktop app also runs every other feature's scenarios. Opening no network port, showing no offline notice, and the icon are checked by unit tests and by hand.
+**Specification:** [`features/desktop.feature`](features/desktop.feature). The desktop app also runs every other feature's scenarios. Opening no network port, showing no offline notice, and the icon are checked by unit tests and by hand. The Linux packages' contents are checked by `test/packaging` (`task test:package`), and installing them by hand.
 
 ### 4.7 Use the mobile app
 

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Starter
+Exec=starter-desktop
+Icon=com.example.starter
+StartupWMClass=com.example.starter
+Categories=Utility;

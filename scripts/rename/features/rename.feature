@@ -21,6 +21,7 @@ Feature: Rename the project
   Scenario: No trace of the old names is left
     When I rename it to "Zenith Notes" with module "example.com/zenith/notes"
     Then no file mentions the old names
+    And no file is named after the old names
 
   Scenario: The module path stays unless I ask to change it
     # The old module path may contain the old slug; it must survive intact.

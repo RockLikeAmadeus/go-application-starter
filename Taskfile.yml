@@ -12,6 +12,13 @@ vars:
   ADB: "{{.ANDROID_HOME}}/platform-tools/adb"
   # Must match applicationId in mobile/android/app/build.gradle.
   ANDROID_APP_ID: com.example.starter
+  # The Wails CLI, pinned in tools/go.mod with the Wails module.
+  WAILS: go tool -modfile=tools/go.mod wails3
+  # Packages need a version that starts with a digit: a release tag (v2.0.0)
+  # loses its v, and anything else (a commit, 060a096-dirty) is 0.0.0.
+  PACKAGE_VERSION: '{{if regexMatch "^v?[0-9]+[.][0-9]+[.][0-9]+$" .VERSION}}{{trimPrefix "v" .VERSION}}{{else}}0.0.0{{end}}'
+  # The desktop app's packages are built for this machine's architecture only.
+  ARCH: amd64
 
 env:
   ANDROID_HOME: "{{.ANDROID_HOME}}"
@@ -107,6 +114,41 @@ tasks:
     deps: [web:build]
     cmds:
       - go build -tags desktop,embedweb -ldflags "-s -w" -o {{.BIN}}/starter-desktop ./cmd/desktop
+
+  # ---------------------------------------------------------------- package
+  # Each format has its own task, so one can be built alone (the package
+  # check builds the .deb at other versions). nfpm.yaml reads VERSION and ARCH
+  # from the environment.
+  package:desktop:linux:
+    desc: Package the desktop app for Linux (.deb, .rpm and AppImage) into ./bin (needs the desktop build deps, see README)
+    cmds:
+      - task: package:desktop:linux:deb
+      - task: package:desktop:linux:rpm
+      - task: package:desktop:linux:appimage
+
+  package:desktop:linux:deb:
+    deps: [build:desktop]
+    env: { VERSION: "{{.PACKAGE_VERSION}}", ARCH: "{{.ARCH}}" }
+    cmds:
+      - "{{.WAILS}} tool package -format deb -config build/desktop/linux/nfpm.yaml -name starter-desktop_{{.PACKAGE_VERSION}}_{{.ARCH}} -out {{.BIN}}"
+
+  package:desktop:linux:rpm:
+    deps: [build:desktop]
+    env: { VERSION: "{{.PACKAGE_VERSION}}", ARCH: "{{.ARCH}}" }
+    cmds:
+      # rpm calls amd64 x86_64. nfpm converts ARCH itself; the file name is ours.
+      - "{{.WAILS}} tool package -format rpm -config build/desktop/linux/nfpm.yaml -name starter-desktop-{{.PACKAGE_VERSION}}-1.x86_64 -out {{.BIN}}"
+
+  package:desktop:linux:appimage:
+    deps: [build:desktop]
+    cmds:
+      # Wails names the icon and desktop file after their files, and the
+      # AppImage after the program.
+      - mkdir -p {{.BIN}}/appimage
+      - cp web/public/pwa-512x512.png {{.BIN}}/appimage/com.example.starter.png
+      - cp build/desktop/linux/app.desktop {{.BIN}}/appimage/com.example.starter.desktop
+      - "{{.WAILS}} generate appimage -binary {{.BIN}}/starter-desktop -icon {{.BIN}}/appimage/com.example.starter.png -desktopfile {{.BIN}}/appimage/com.example.starter.desktop -builddir {{.BIN}}/appimage -outputdir {{.BIN}}/appimage"
+      - mv {{.BIN}}/appimage/starter-desktop-x86_64.AppImage {{.BIN}}/starter-desktop-{{.PACKAGE_VERSION}}-x86_64.AppImage
 
   # ---------------------------------------------------------------- mobile
   # Built directly rather than with wails3's own Taskfile, because this repo
@@ -204,6 +246,11 @@ tasks:
     cmds:
       - go test ./scripts/initproject/acceptance/ -count=1 -timeout 30m {{.CLI_ARGS}}
   # template:end
+
+  test:package:
+    desc: "Package check: build the desktop app's Linux packages and look inside (slow: it builds an AppImage)"
+    cmds:
+      - go test -tags packaging ./test/packaging/ -count=1 -timeout 30m {{.CLI_ARGS}}
 
   test:rename:
     desc: "Acceptance tests for the rename tool (slow: each scenario copies and rebuilds the repo)"

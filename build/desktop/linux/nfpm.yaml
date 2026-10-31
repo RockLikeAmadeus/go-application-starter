@@ -1,0 +1,42 @@
+# nfpm config for the desktop app's .deb, built by task package:desktop:linux.
+# See https://nfpm.goreleaser.com/configuration/
+name: starter-desktop
+arch: ${ARCH}
+version: ${VERSION}
+maintainer: Starter <starter@example.com>
+depends:
+  - libgtk-4-1
+  - libwebkitgtk-6.0-4
+overrides:
+  rpm:
+    depends:
+      - gtk4
+      - webkitgtk6.0
+contents:
+  # Every file sets its mode: otherwise nfpm copies the checkout's, which
+  # follows the umask and is often group-writable (0664).
+  - src: ./bin/starter-desktop
+    dst: /usr/bin/starter-desktop
+    file_info:
+      mode: 0755
+  # The desktop file and the icon are installed under the app ID cmd/desktop
+  # gives GTK, so the desktop can match the app's window to them. Their sources
+  # keep generic names: task rename rewrites names inside files but doesn't
+  # rename files (only cmd/<slug>), so a source named after the ID would be
+  # left behind.
+  - src: ./build/desktop/linux/app.desktop
+    dst: /usr/share/applications/com.example.starter.desktop
+    file_info:
+      mode: 0644
+  # The icons are the web app's (pnpm --dir web icons).
+  - src: ./web/public/pwa-512x512.png
+    dst: /usr/share/icons/hicolor/512x512/apps/com.example.starter.png
+    file_info:
+      mode: 0644
+  - src: ./web/public/icon.svg
+    dst: /usr/share/icons/hicolor/scalable/apps/com.example.starter.svg
+    file_info:
+      mode: 0644
+scripts:
+  postinstall: ./build/desktop/linux/refresh.sh
+  postremove: ./build/desktop/linux/refresh.sh

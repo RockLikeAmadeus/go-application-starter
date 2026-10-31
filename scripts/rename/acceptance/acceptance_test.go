@@ -91,6 +91,7 @@ func initializeScenario(sc *godog.ScenarioContext) {
 	sc.Step(`^settings are read from environment variables starting "([^"]*)"$`, p.envPrefixIs)
 	sc.Step(`^the web package is called "([^"]*)"$`, p.webPackageIs)
 	sc.Step(`^no file mentions the old names$`, p.noOldNames)
+	sc.Step(`^no file is named after the old names$`, p.noOldNamesInPaths)
 	sc.Step(`^no file mentions "([^"]*)"$`, p.noMention)
 	sc.Step(`^the project's Go module is unchanged$`, p.moduleUnchanged)
 	sc.Step(`^the project's Go module is "([^"]*)"$`, p.goModuleIs)
@@ -246,6 +247,33 @@ func (p *project) noOldNames() error {
 		regexp.QuoteMeta(p.old.Module),
 		`\b`+regexp.QuoteMeta(envPrefix)+`[A-Za-z0-9_]+`,
 	)
+}
+
+// noOldNamesInPaths fails if any file's path in the copy holds an old name: a
+// rename that rewrote a reference to a file but left the file where it was.
+func (p *project) noOldNamesInPaths() error {
+	re := regexp.MustCompile(`(?i)\b(` + regexp.QuoteMeta(p.old.Name) + `|` + regexp.QuoteMeta(p.old.Slug) + `)\b`)
+	var found []string
+	err := filepath.WalkDir(p.dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() && d.Name() == ".git" {
+			return filepath.SkipDir
+		}
+		rel, _ := filepath.Rel(p.dir, path)
+		if re.MatchString(filepath.ToSlash(rel)) {
+			found = append(found, filepath.ToSlash(rel))
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if len(found) > 0 {
+		return fmt.Errorf("files are still named after the old names:\n%s", strings.Join(found, "\n"))
+	}
+	return nil
 }
 
 func (p *project) noMention(word string) error {
