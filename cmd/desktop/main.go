@@ -31,7 +31,11 @@ func run() error {
 
 	app := application.New(application.Options{
 		Name:   "Starter",
+		Icon:   opened.Icon,
 		Assets: application.AssetOptions{Handler: opened.Handler},
+		// GTK 4 has no window icons: Linux takes the icon from the installed
+		// .desktop file whose name matches this ID.
+		Linux: application.LinuxOptions{ApplicationID: "com.example.starter"},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},

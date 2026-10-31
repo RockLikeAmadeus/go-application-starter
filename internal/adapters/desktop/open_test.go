@@ -1,7 +1,9 @@
 package desktop_test
 
 import (
+	"bytes"
 	"encoding/json"
+	"image/png"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -45,6 +47,38 @@ func TestOpenServesNoServiceWorker(t *testing.T) {
 
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("GET /sw.js: status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+// The desktop app's icon is the web app's, which `pnpm icons` makes from
+// web/public/icon.svg. Opening on web/public itself checks that the icon Open
+// looks for is one that command makes.
+func TestOpenReturnsTheProductsIcon(t *testing.T) {
+	app := openWith(t, t.TempDir(), os.DirFS("../../../web/public"))
+
+	icon, err := png.Decode(bytes.NewReader(app.Icon))
+	if err != nil {
+		t.Fatalf("Icon is not a PNG: %v", err)
+	}
+	if size := icon.Bounds().Size(); size.X != 512 || size.Y != 512 {
+		t.Errorf("Icon is %v, want 512×512", size)
+	}
+}
+
+// A missing icon only costs the window its icon, so the app still opens.
+func TestOpenWithoutAnIconStillOpens(t *testing.T) {
+	tests := map[string]fs.FS{
+		"no web app":       nil,
+		"web app, no icon": fstest.MapFS{"index.html": {Data: []byte("<title>Starter</title>")}},
+	}
+	for name, webApp := range tests {
+		t.Run(name, func(t *testing.T) {
+			app := openWith(t, t.TempDir(), webApp)
+
+			if app.Icon != nil {
+				t.Errorf("Icon = %d bytes, want none", len(app.Icon))
+			}
+		})
 	}
 }
 

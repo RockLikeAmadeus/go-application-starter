@@ -40,9 +40,13 @@ export function Layout() {
 // gives the entry transition its start). Closing is driven from script: the
 // dialog gets `data-closing`, slides out, and only then really closes. That
 // works in every browser, unlike CSS exit transitions on the top layer.
+// The off-screen position is a plain `translate` value, not Tailwind's
+// `-translate-x-full`: that reads `--tw-translate-y`, which is registered and
+// unset, and WebKitGTK 2.52 (the desktop app's engine) then drops the whole
+// declaration inside `@starting-style`, so the drawer appeared without sliding in.
 const drawerMotion = [
   "transition-[translate] duration-200 ease-out",
-  "starting:open:-translate-x-full data-closing:-translate-x-full",
+  "starting:open:[translate:-100%_0] data-closing:[translate:-100%_0]",
   "backdrop:bg-black/50 backdrop:transition-[background-color] backdrop:duration-200",
   "starting:open:backdrop:bg-transparent data-closing:backdrop:bg-transparent",
   "motion-reduce:duration-0 motion-reduce:backdrop:duration-0",

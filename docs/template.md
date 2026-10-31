@@ -24,7 +24,7 @@ task init -- --module github.com/you/tasks --name "Acme Tasks" --remove-sample
   - The brand name replaces "Starter" in the UI and the docs.
   - The slug names the command-line tool (`cmd/<slug>`), the Docker image, the deploy configs and the web package (`<slug>-web`).
   - The slug in upper case, with underscores for hyphens, prefixes the environment variables: `ACME_TASKS_STORAGE`.
-  - The slug without its hyphens ends the Android app's ID: `com.example.acmetasks`.
+  - The slug without its hyphens ends the app ID that the Android app and the desktop app's Linux window use: `com.example.acmetasks`.
 - No trace of the template's name is left: not its module path, not "starter", and not `STARTER_`.
 - The sample **Item** capability stays unless `--remove-sample` is given. With it, Item is removed from every layer and from `SPEC.md`, and the project still builds and passes its tests.
 - The tool removes itself when it finishes: its code, this page and the `init` task.

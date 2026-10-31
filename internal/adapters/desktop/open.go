@@ -10,10 +10,13 @@ import (
 )
 
 // App is the opened desktop app: the handler the window loads the SPA and
-// its API from, and the wired core whose storage is closed on quit.
+// its API from, the app's icon, and the wired core whose storage is closed
+// on quit.
 type App struct {
 	Handler http.Handler
-	core    *bootstrap.App
+	// Icon is the product's icon as a PNG, or nil when the web app has none.
+	Icon []byte
+	core *bootstrap.App
 }
 
 // Open opens the desktop app's data folder (see DataDir: STARTER_DATA_DIR,
@@ -39,8 +42,27 @@ func Open(getenv func(string) string, userConfigDir func() (string, error), webA
 	})
 	return &App{
 		Handler: withoutServiceWorker(api),
+		Icon:    iconOf(webAssets),
 		core:    core,
 	}, nil
+}
+
+// iconFile is the web app's largest icon, which `pnpm icons` makes from
+// web/public/icon.svg.
+const iconFile = "pwa-512x512.png"
+
+// iconOf returns the web app's icon, so the desktop app and the installed web
+// app share one. Without a web app, or an icon in it, there is none: the
+// window then shows the system's default icon, which is no reason to fail.
+func iconOf(webAssets fs.FS) []byte {
+	if webAssets == nil {
+		return nil
+	}
+	icon, err := fs.ReadFile(webAssets, iconFile)
+	if err != nil {
+		return nil
+	}
+	return icon
 }
 
 // withoutServiceWorker answers the web app's service worker script with 404.

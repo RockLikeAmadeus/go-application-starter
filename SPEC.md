@@ -134,13 +134,15 @@ Users can run the app as a program on their own computer, so they can use it wit
 - Data is still there after the app is closed and opened again.
 - Only one copy of the app can use a data folder at a time. A second copy says the data is already in use, and doesn't start.
 - In local-only mode, it never says it is offline, because it doesn't need a connection.
+- It shows the product's icon, the same one as the installed web app (§4.5), in the taskbar or Dock. On Linux the icon comes from the installed app, so a copy that wasn't installed from a package may show a generic icon.
 
 **Examples**
 - User adds "Widget", closes the app and opens it again → "Widget" is still there.
 - User opens the app twice → the second copy says the data is in use.
+- User opens the app on Windows or a Mac → the taskbar or Dock shows the product's icon.
 - User opens the app with the network off → the app works and shows no offline notice.
 
-**Specification:** [`features/desktop.feature`](features/desktop.feature). The desktop app also runs every other feature's scenarios. Opening no network port and showing no offline notice are checked by unit tests and by hand.
+**Specification:** [`features/desktop.feature`](features/desktop.feature). The desktop app also runs every other feature's scenarios. Opening no network port, showing no offline notice, and the icon are checked by unit tests and by hand.
 
 ### 4.7 Use the mobile app
 

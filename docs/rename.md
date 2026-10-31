@@ -16,7 +16,7 @@ task rename -- --name "Zenith Notes" --module github.com/you/zenith # rebrand an
 - The new names are derived from the brand name exactly as `task init` derives them:
   - The **slug** is the brand name in lower case, with runs of anything other than letters and digits turned into single hyphens: "Zenith Notes" becomes `zenith-notes`. It names the command-line tool (`cmd/<slug>`), the Docker image, the deploy configs and the web package (`<slug>-web`).
   - The **environment variable prefix** is the slug in upper case, with underscores for hyphens: `ZENITH_NOTES_STORAGE`.
-  - The **Android app ID** is `com.example.` followed by the slug without its hyphens: `com.example.zenithnotes`. Android doesn't allow hyphens there.
+  - The **app ID** is `com.example.` followed by the slug without its hyphens: `com.example.zenithnotes`. The Android app and the desktop app's Linux window use it, and Android doesn't allow hyphens there.
 - No trace of the old names is left in any tracked file: not the old brand, slug or environment variable prefix, and not the old module path when `--module` is given.
 - Names are replaced as whole words everywhere. If the old slug is an ordinary word (a project called "Tasks" has the slug `tasks`), unrelated uses of that word are replaced too. **Run with `--dry-run` first.** It lists every change, file by file and line by line, and changes nothing.
 - It refuses to run, and changes nothing, when:

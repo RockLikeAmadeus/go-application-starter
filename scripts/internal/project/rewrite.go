@@ -8,7 +8,7 @@ import (
 // Rewrite replaces the names from goes by in a file's text with the names to goes by.
 //
 // The compound names go first: the module path, the deploy app name, the web
-// package, the environment variable prefix and the Android app ID. At each
+// package, the environment variable prefix and the app ID. At each
 // position the replacer tries the pairs in order, so the module path wins over
 // the app name it may contain. The bare brand and slug go last, as whole
 // words, once the compound names are gone.
@@ -18,7 +18,7 @@ func Rewrite(text string, from, to Names) string {
 		from.App, to.App,
 		from.Slug+"-web", to.Slug+"-web",
 		from.EnvPrefix, to.EnvPrefix,
-		androidAppID(from.Slug), androidAppID(to.Slug),
+		appID(from.Slug), appID(to.Slug),
 	).Replace(text)
 	brand, slug := wholeWord(from.Brand), wholeWord(from.Slug)
 	// The module path may contain the old slug even when it does not change.

@@ -43,10 +43,11 @@ func EnvPrefix(slug string) string {
 	return strings.ToUpper(strings.ReplaceAll(slug, "-", "_")) + "_"
 }
 
-// androidAppID derives the Android app's application ID from the slug:
-// "acme-tasks" is com.example.acmetasks. The ID is a Java package name, where
-// a hyphen isn't allowed, so the slug's hyphens are dropped.
-func androidAppID(slug string) string {
+// appID derives the app ID that the Android app and the desktop app's Linux
+// window share from the slug: "acme-tasks" is com.example.acmetasks. On
+// Android it is a Java package name, where a hyphen isn't allowed, so the
+// slug's hyphens are dropped.
+func appID(slug string) string {
 	return "com.example." + strings.ReplaceAll(slug, "-", "")
 }
 
