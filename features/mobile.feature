@@ -1,4 +1,4 @@
-@mobile @wip
+@mobile
 Feature: Use the mobile app
   As a user with an Android phone
   I want the app to keep my data on my phone
