@@ -27,6 +27,11 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Desktop app** | The web app packaged as a program for the user's computer. It keeps its own data and needs no server. |
 | **Data folder** | The folder where the desktop app or the mobile app keeps its data: on the user's computer, or in the app's private storage on the phone. |
 | **Mobile app** | The web app packaged as an app for the user's phone (Android for now). It keeps its own data on the phone and needs no server. |
+| **Edition** | How a copy of the product runs. The **hosted edition** serves many users from a server, each with an account. The **local edition** is for one user, with data on their own device and no account. Both run the same app (planned: ADR 5). |
+| **Workspace** | The space a piece of data belongs to. In the hosted edition, each user has their own workspace. The local edition has exactly one. |
+| **Plan** | What a workspace is allowed to do: which features it has and what its limits are (for example, free or paid). |
+| **Feature** | A capability that a plan turns on or off. |
+| **Limit** | A number a plan sets, such as how many items a workspace may have. |
 
 <!-- sample:start -->
 The sample capability (§4.1) adds one term:
@@ -179,5 +184,5 @@ Users can install the app on their Android phone and use it without a server, an
 
 ## 6. Out of scope (for now)
 
-- Authentication and authorization
+- Authentication and authorization (planned: hosted edition, [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md))
 - Multi-instance deployments (blocked by the jsonfile adapter; see ADR 0003)
