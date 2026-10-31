@@ -1,5 +1,10 @@
 version: "2"
 
+run:
+  # Lint the package check too (test/packaging), which builds only with this
+  # tag. It adds no code to anything else.
+  build-tags: [packaging]
+
 linters:
   enable:
     - depguard
