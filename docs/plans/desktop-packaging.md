@@ -35,6 +35,7 @@ SPEC.md §4.6 (the Linux install rule). `task package:desktop:linux` builds `bin
 - Other follow-up: arm64 packages (a cross toolchain or an arm64 runner). (`test/packaging` is linted: `.golangci.yml` sets the `packaging` build tag, for `task lint` and CI alike.)
 
 ### 3. Windows installer — in progress ([docs/wip/windows-installer.md](../wip/windows-installer.md))
+- **Paused 2026-10-31**, items 1–9 done: waiting on the hand test on Windows (item 10), then item 11 (switch the Linux package build back on in `test/packaging`, full checks). Start from the WIP file's "Resume here".
 - Generate `icon.ico` from `icon.svg` (`wails3 generate icons`), from the same command as the other icons.
 - Cross-compile `bin/starter-desktop.exe` on Linux, with the icon and version info embedded (`wails3 generate syso`).
 - `build/desktop/windows/`: the NSIS script (Start menu shortcut, uninstaller, and the WebView2 bootstrapper if Wails' template includes it).
