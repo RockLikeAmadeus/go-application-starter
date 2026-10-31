@@ -115,6 +115,26 @@ tasks:
     cmds:
       - go build -tags desktop,embedweb -ldflags "-s -w" -o {{.BIN}}/starter-desktop ./cmd/desktop
 
+  build:desktop:windows:
+    desc: Cross-compile the desktop app for Windows, with the web UI built in, into ./bin
+    deps: [web:build]
+    vars:
+      # Go links every .syso in the package's folder into the program: this one
+      # holds the icon and manifest. Its _windows_amd64 suffix keeps it out of
+      # other builds, and it's deleted afterwards.
+      SYSO: cmd/desktop/rsrc_windows_amd64.syso
+      # The version info, from build/desktop/windows/info.json, a template in
+      # which @VERSION@ becomes the package version.
+      INFO: "{{.BIN}}/windows/info.json"
+    cmds:
+      - mkdir -p {{.BIN}}/windows
+      - sed 's/@VERSION@/{{.PACKAGE_VERSION}}/g' build/desktop/windows/info.json > {{.INFO}}
+      - "{{.WAILS}} generate syso -arch amd64 -icon build/desktop/windows/icon.ico -manifest build/desktop/windows/app.manifest -info {{.INFO}} -out {{.SYSO}}"
+      - defer: rm -f {{.SYSO}}
+      # Only go build targets Windows, so go tool wails3 above runs here.
+      # windowsgui: a GUI program, so Windows opens no console window beside it.
+      - GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags desktop,embedweb -ldflags "-s -w -H windowsgui" -o {{.BIN}}/starter-desktop.exe ./cmd/desktop
+
   # ---------------------------------------------------------------- package
   # Each format has its own task, so one can be built alone (the package
   # check builds the .deb at other versions). nfpm.yaml reads VERSION and ARCH
@@ -149,6 +169,44 @@ tasks:
       - cp build/desktop/linux/app.desktop {{.BIN}}/appimage/com.example.starter.desktop
       - "{{.WAILS}} generate appimage -binary {{.BIN}}/starter-desktop -icon {{.BIN}}/appimage/com.example.starter.png -desktopfile {{.BIN}}/appimage/com.example.starter.desktop -builddir {{.BIN}}/appimage -outputdir {{.BIN}}/appimage"
       - mv {{.BIN}}/appimage/starter-desktop-x86_64.AppImage {{.BIN}}/starter-desktop-{{.PACKAGE_VERSION}}-x86_64.AppImage
+
+  package:desktop:windows:
+    desc: Package the desktop app for Windows (an NSIS setup .exe) into ./bin (needs makensis, see README)
+    deps: [build:desktop:windows]
+    vars:
+      # The script's File command takes the bootstrapper from its own folder,
+      # so it's written there for the build and deleted afterwards.
+      BOOTSTRAPPER: build/desktop/windows/MicrosoftEdgeWebview2Setup.exe
+      # The program's version info strings, so the installer names the same
+      # product, publisher and copyright. A value can't contain a double quote
+      # (it would end makensis's -D argument).
+      INFO_JSON:
+        sh: cat build/desktop/windows/info.json
+      INFO_STRINGS:
+        ref: index (fromJson .INFO_JSON) "info" "0409"
+    cmds:
+      - "{{.WAILS}} generate webview2bootstrapper -dir build/desktop/windows"
+      - defer: rm -f {{.BOOTSTRAPPER}}
+      - mkdir -p {{.BIN}}/windows
+      # WAILS_INSTALL_SCOPE=user: installs for the current user, with no
+      # administrator (wails_tools.nsh sets the execution level from it).
+      # makensis resolves paths from the script's folder, so these are
+      # absolute. INFO_PROJECTNAME names the installed program (.exe added).
+      # -V4 logs each command into bin/windows/makensis.log (errors still show
+      # here): the package check reads it, because the setup program's own
+      # copy of the script is compressed.
+      - >-
+        makensis -V4
+        -DWAILS_INSTALL_SCOPE=user
+        -DARG_WAILS_AMD64_BINARY="{{.ROOT_DIR}}/{{.BIN}}/starter-desktop.exe"
+        -DINFO_PROJECTNAME=starter-desktop
+        -DINFO_PRODUCTVERSION={{.PACKAGE_VERSION}}
+        -DINFO_PRODUCTNAME="{{index .INFO_STRINGS "ProductName"}}"
+        -DINFO_COMPANYNAME="{{index .INFO_STRINGS "CompanyName"}}"
+        -DINFO_COPYRIGHT="{{index .INFO_STRINGS "LegalCopyright"}}"
+        -DOUTFILE="{{.ROOT_DIR}}/{{.BIN}}/starter-desktop-{{.PACKAGE_VERSION}}-setup.exe"
+        build/desktop/windows/installer.nsi
+        > {{.BIN}}/windows/makensis.log
 
   # ---------------------------------------------------------------- mobile
   # Built directly rather than with wails3's own Taskfile, because this repo
@@ -248,7 +306,7 @@ tasks:
   # template:end
 
   test:package:
-    desc: "Package check: build the desktop app's Linux packages and look inside (slow: it builds an AppImage)"
+    desc: "Package check: build the desktop app's Linux packages and Windows setup program, and look inside (slow: it builds an AppImage)"
     cmds:
       - go test -tags packaging ./test/packaging/ -count=1 -timeout 30m {{.CLI_ARGS}}
 

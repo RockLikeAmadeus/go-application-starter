@@ -34,7 +34,7 @@ SPEC.md §4.6 (the Linux install rule). `task package:desktop:linux` builds `bin
 - Follow-ups for step 5: build release packages only in CI (a runner with only WebKitGTK 6.0, so the AppImage doesn't bundle 4.1); decide whether CI runs `task test:package`; `linuxdeploy` comes unpinned from GitHub's "continuous" release (Wails' choice).
 - Other follow-up: arm64 packages (a cross toolchain or an arm64 runner). (`test/packaging` is linted: `.golangci.yml` sets the `packaging` build tag, for `task lint` and CI alike.)
 
-### 3. Windows installer — not started
+### 3. Windows installer — in progress ([docs/wip/windows-installer.md](../wip/windows-installer.md))
 - Generate `icon.ico` from `icon.svg` (`wails3 generate icons`), from the same command as the other icons.
 - Cross-compile `bin/starter-desktop.exe` on Linux, with the icon and version info embedded (`wails3 generate syso`).
 - `build/desktop/windows/`: the NSIS script (Start menu shortcut, uninstaller, and the WebView2 bootstrapper if Wails' template includes it).

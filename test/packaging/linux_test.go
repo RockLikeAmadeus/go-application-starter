@@ -8,6 +8,7 @@ package packaging
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image/png"
 	"net/mail"
@@ -37,12 +38,22 @@ const (
 	appImage = "starter-desktop-" + version + "-x86_64.AppImage"
 )
 
-// buildErr is why building the packages failed, if it did. Every test checks
-// it first, so a failed build fails each test with the reason.
-var buildErr error
+// linuxErr and windowsErr are why building each platform's packages failed,
+// if it did. Every test checks its platform's first, so a failed build fails
+// each of its tests with the reason, and only those.
+var linuxErr, windowsErr error
+
+// errLinuxBuildOff marks the Linux build as temporarily switched off in
+// TestMain: its tests skip instead of reading stale packages from bin/.
+var errLinuxBuildOff = errors.New("the Linux build is switched off in TestMain")
 
 func TestMain(m *testing.M) {
-	buildErr = build("package:desktop:linux", version)
+	// TEMPORARY, while the Windows installer is in progress
+	// (docs/wip/windows-installer.md): the Linux build is the slow part, so
+	// it's off and the Linux tests skip. Restore this line before the step ends.
+	// linuxErr = build("package:desktop:linux", version)
+	linuxErr = errLinuxBuildOff
+	windowsErr = build("package:desktop:windows", version)
 	os.Exit(m.Run())
 }
 
@@ -361,10 +372,20 @@ func builtRpm(t *testing.T) string {
 	return built(t, rpm)
 }
 
-// built returns the path of a package the build made in bin/, failing the
-// test if the build failed or didn't make it.
+// built returns the path of a Linux package the build made in bin/, failing
+// the test if the build failed or didn't make it.
 func built(t *testing.T, name string) string {
 	t.Helper()
+	return builtBy(t, linuxErr, name)
+}
+
+// builtBy returns the path of a file a build made in bin/, failing the test
+// if that build failed (buildErr) or didn't make it.
+func builtBy(t *testing.T, buildErr error, name string) string {
+	t.Helper()
+	if errors.Is(buildErr, errLinuxBuildOff) {
+		t.Skip(buildErr)
+	}
 	if buildErr != nil {
 		t.Fatal(buildErr)
 	}

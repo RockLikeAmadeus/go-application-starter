@@ -32,6 +32,7 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
 | Docker (optional) | | for `task docker:*` |
 | Desktop build deps (optional) | | only for the desktop app (`task run:desktop`, `task build:desktop`). Linux (Ubuntu/Debian): `sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev`. macOS: `xcode-select --install`. Windows: nothing extra expected (Wails uses no cgo there, and the WebView2 runtime ships with Windows 10 and 11; not yet tried) |
 | Linux packaging tools (optional) | | only for the desktop app's Linux packages (`task package:desktop:linux`, `task test:package`), on top of the desktop build deps. `sudo apt install desktop-file-utils rpm libfuse2t64`: `desktop-file-validate` checks the desktop file, `rpm` reads the `.rpm` (its checks are skipped without it), and FUSE 2 runs an AppImage (on Ubuntu before 24.04, `libfuse2`). The first AppImage build downloads `linuxdeploy` from GitHub. Build the AppImage where WebKitGTK 4.1 isn't installed (`sudo apt remove libwebkit2gtk-4.1-dev` if nothing else needs it), or it bundles that too, about 90 MB the app never uses |
+| Windows packaging tools (optional) | | only for the desktop app's Windows setup program (`task package:desktop:windows`, `task test:package`), built on Linux. `sudo apt install nsis 7zip`: `makensis` builds the setup `.exe`, and 7-Zip checks the files inside it (that check is skipped without it). Cross-compiling the Windows program needs no desktop build deps |
 | Android tools (optional) | JDK 17+, Android SDK 35, NDK 26 | only for the mobile app (`task mobile:android:*`). A JDK (`sudo apt install openjdk-21-jdk-headless`), then the SDK command-line tools and `sdkmanager` packages listed in [docs/mobile.md](docs/mobile.md), plus an emulator or a phone with USB debugging |
 
 Then:
@@ -56,6 +57,7 @@ task gen                         # regenerate code after editing api/openapi.yam
 task build                       # ./bin/server (with UI embedded) and ./bin/starter
 task build:desktop               # ./bin/starter-desktop (needs the desktop build deps)
 task package:desktop:linux       # .deb, .rpm and AppImage of the desktop app in ./bin (VERSION=v1.2.3 for a release)
+task package:desktop:windows     # Windows setup .exe of the desktop app in ./bin, built on Linux (needs nsis)
 task mobile:android:build        # ./bin/starter.apk, a debug build for phones and the emulator (needs the Android tools)
 ./bin/server                     # the built app on :8080, installable from Chrome (see docs/installable-app.md)
 task docker:up                   # production image locally on :8080

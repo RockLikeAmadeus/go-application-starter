@@ -1,5 +1,8 @@
 # Build output
 /bin/
+# Written and deleted by task build:desktop:windows and package:desktop:windows
+/cmd/desktop/*.syso
+/build/desktop/windows/MicrosoftEdgeWebview2Setup.exe
 /dist/
 /tmp/
 

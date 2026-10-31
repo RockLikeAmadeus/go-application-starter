@@ -18,7 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:api": "openapi-typescript ../api/openapi.yaml -o src/api/schema.gen.ts",
-    "icons": "pwa-assets-generator",
+    "icons": "pwa-assets-generator && go tool -modfile=../tools/go.mod wails3 generate icons -input public/pwa-512x512.png -windowsfilename ../build/desktop/windows/icon.ico -macfilename \"\"",
     "e2e": "bddgen && playwright test",
     "e2e:ui": "bddgen && playwright test --ui"
   },
