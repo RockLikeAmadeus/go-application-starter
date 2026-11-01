@@ -2,6 +2,7 @@ package plans_test
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/plans"
@@ -57,5 +58,39 @@ func TestParse_IgnoresFullLineComments(t *testing.T) {
 	}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
+	}
+}
+
+func TestParse_RefusesABadPlansFile(t *testing.T) {
+	cases := map[string]struct {
+		doc  string
+		want []string // each must appear in the error
+	}{
+		"invalid JSON": {`{"plans": {`, []string{"plans file"}},
+		"a negative max": {
+			`{"plans": {"free": {"limits": {"items": {"max": -1, "whenOver": "block-new"}}}}}`,
+			[]string{`plan "free"`, `limit "items"`, "max"},
+		},
+		"an unknown over-limit behaviour": {
+			`{"plans": {"free": {"limits": {"items": {"max": 3, "whenOver": "delete-all"}}}}}`,
+			[]string{`plan "free"`, `limit "items"`, "whenOver"},
+		},
+		"an unknown field": {
+			`{"plans": {"free": {"limits": {"items": {"maximum": 3, "whenOver": "block-new"}}}}}`,
+			[]string{`unknown field "maximum"`},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := plans.Parse([]byte(tc.doc))
+			if err == nil {
+				t.Fatal("Parse succeeded, want an error")
+			}
+			for _, want := range tc.want {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("error %q doesn't mention %q", err, want)
+				}
+			}
+		})
 	}
 }

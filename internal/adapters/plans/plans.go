@@ -5,6 +5,7 @@ package plans
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
@@ -36,16 +37,33 @@ type limitRecord struct {
 // sample markers. Comments at the end of a line aren't supported.
 func Parse(data []byte) (Catalog, error) {
 	var doc document
-	_ = json.Unmarshal(stripComments(data), &doc)
+	dec := json.NewDecoder(bytes.NewReader(stripComments(data)))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&doc); err != nil {
+		return nil, fmt.Errorf("plans file: %w", err)
+	}
 	catalog := Catalog{}
 	for name, plan := range doc.Plans {
-		limits := map[string]domain.Limit{}
-		for limit, l := range plan.Limits {
-			limits[limit] = domain.Limit{Name: limit, Max: l.Max, WhenOver: l.WhenOver}
+		entitlements, err := plan.entitlements(name)
+		if err != nil {
+			return nil, fmt.Errorf("plans file: plan %q, %w", name, err)
 		}
-		catalog[name] = domain.Entitlements{Plan: name, Limits: limits}
+		catalog[name] = entitlements
 	}
 	return catalog, nil
+}
+
+// entitlements builds the named plan's entitlements, validating each limit.
+func (p planRecord) entitlements(name string) (domain.Entitlements, error) {
+	limits := map[string]domain.Limit{}
+	for limit, l := range p.Limits {
+		built, err := domain.NewLimit(limit, l.Max, l.WhenOver)
+		if err != nil {
+			return domain.Entitlements{}, fmt.Errorf("limit %q: %w", limit, err)
+		}
+		limits[limit] = built
+	}
+	return domain.Entitlements{Plan: name, Limits: limits}, nil
 }
 
 // stripComments empties every full-line // comment. It keeps the lines, so a
