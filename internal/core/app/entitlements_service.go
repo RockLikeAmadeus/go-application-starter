@@ -22,6 +22,9 @@ func NewEntitlementsService(entitlements ports.Entitlements, workspaces ports.Wo
 
 // CurrentEntitlements returns what the current workspace's plan allows it.
 func (s *EntitlementsService) CurrentEntitlements(ctx context.Context) (domain.Entitlements, error) {
-	workspace, _ := s.workspaces.CurrentWorkspace(ctx)
+	workspace, err := s.workspaces.CurrentWorkspace(ctx)
+	if err != nil {
+		return domain.Entitlements{}, err
+	}
 	return s.entitlements.For(ctx, workspace)
 }

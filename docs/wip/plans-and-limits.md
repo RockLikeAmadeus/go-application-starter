@@ -54,7 +54,10 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
      - **Red:** `TestCurrentEntitlements_AreTheCurrentWorkspacesPlan` (`app/entitlements_service_test.go`), with a test-local `plansByWorkspace` fake answering two workspaces differently. It failed with empty entitlements against a stub. Compile stubs: `ports.EntitlementsService` (driving) and `ports.Entitlements` (driven), and `app.EntitlementsService`.
      - **Green:** resolve the workspace and ask `ports.Entitlements.For` with it. The resolver's error is ignored for now: 5b's test demands the early return.
      - **Refactor:** doc comments on `NewEntitlementsService` and `CurrentEntitlements`, as `ItemService` has. The ports sit outside the sample block, beside `WorkspaceResolver`, since they're template. Nothing else was worth changing.
-   - [ ] **5b.** With no workspace, it returns `ErrNoWorkspace` and `ports.Entitlements` isn't asked.
+   - [x] **5b.** With no workspace, it returns `ErrNoWorkspace` and `ports.Entitlements` isn't asked.
+     - **Red:** `TestCurrentEntitlements_WithoutAWorkspaceIsRefusedBeforeAskingThePlans`, with `testsupport.NoWorkspace` and a counting `unaskedPlans` fake (as `untouchedRepo` in the item tests). It failed: no error, and the plans asked once.
+     - **Green:** return the resolver's error before asking the plans.
+     - **Refactor:** nothing worth changing. The service reads like `ItemService`'s use cases, and its two test fakes each serve one test, as the item tests' do.
 6. [ ] **plans adapter, parse:** a plans document gives each plan's entitlements (name, limits with name, max and `WhenOver`).
 7. [ ] **plans adapter, comments:** full-line `//` comments are ignored.
 8. [ ] **plans adapter, bad config:** invalid JSON, an invalid limit (through `NewLimit`), and unknown fields are errors that name the plan and limit.

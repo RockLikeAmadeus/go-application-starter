@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -32,5 +33,26 @@ func TestCurrentEntitlements_AreTheCurrentWorkspacesPlan(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, free) {
 		t.Errorf("CurrentEntitlements = %+v, want %+v", got, free)
+	}
+}
+
+// unaskedPlans is a ports.Entitlements that counts every call, for tests that
+// must not reach it.
+type unaskedPlans struct{ calls int }
+
+func (p *unaskedPlans) For(context.Context, domain.WorkspaceID) (domain.Entitlements, error) {
+	p.calls++
+	return domain.Entitlements{}, nil
+}
+
+func TestCurrentEntitlements_WithoutAWorkspaceIsRefusedBeforeAskingThePlans(t *testing.T) {
+	plans := &unaskedPlans{}
+	svc := app.NewEntitlementsService(plans, testsupport.NoWorkspace{})
+
+	if _, err := svc.CurrentEntitlements(context.Background()); !errors.Is(err, domain.ErrNoWorkspace) {
+		t.Errorf("err = %v, want ErrNoWorkspace", err)
+	}
+	if plans.calls != 0 {
+		t.Errorf("plans asked %d times, want 0", plans.calls)
 	}
 }
