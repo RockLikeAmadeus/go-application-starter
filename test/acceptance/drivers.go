@@ -20,6 +20,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/mobile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
@@ -72,9 +73,10 @@ func newHarness() *harness {
 
 // sample:start
 
-// newItems builds the Item use cases on repo, driven by the harness's clock.
-func (h *harness) newItems(repo ports.ItemRepository) *app.ItemService {
-	return app.NewItemService(repo, h.clock, testsupport.NewSequentialIDs("item"))
+// newItems builds the Item use cases on repo, driven by the harness's clock,
+// in the workspace that workspaces resolves.
+func (h *harness) newItems(repo ports.ItemRepository, workspaces ports.WorkspaceResolver) *app.ItemService {
+	return app.NewItemService(repo, workspaces, h.clock, testsupport.NewSequentialIDs("item"))
 }
 
 // sample:end
@@ -82,7 +84,7 @@ func (h *harness) newItems(repo ports.ItemRepository) *app.ItemService {
 func startMemory() (*harness, error) {
 	h := newHarness()
 	// sample:start
-	h.items = h.newItems(memory.NewItemRepository())
+	h.items = h.newItems(memory.NewItemRepository(), workspace.FromContext{})
 	// sample:end
 	return h, nil
 }
@@ -102,7 +104,7 @@ func startJSONFile() (*harness, error) {
 		os.RemoveAll(dir)
 	}
 	// sample:start
-	h.items = h.newItems(jsonfile.NewItemRepository(store))
+	h.items = h.newItems(jsonfile.NewItemRepository(store), workspace.FromContext{})
 	// sample:end
 	return h, nil
 }
@@ -111,7 +113,9 @@ func startHTTP() (*harness, error) {
 	h := newHarness()
 	var opts httpapi.Options
 	// sample:start
-	opts.Items = h.newItems(memory.NewItemRepository())
+	// Nothing over HTTP carries a workspace yet, so the server is the local
+	// edition, as cmd/server is.
+	opts.Items = h.newItems(memory.NewItemRepository(), workspace.Local{})
 	// sample:end
 	srv := httptest.NewServer(httpapi.NewHandler(opts))
 	h.cleanup = srv.Close

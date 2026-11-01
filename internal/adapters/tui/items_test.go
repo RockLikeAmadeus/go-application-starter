@@ -10,6 +10,7 @@ import (
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
@@ -18,7 +19,7 @@ import (
 // commands synchronously, and assert on the rendered view.
 
 func newCore() ports.ItemService {
-	return app.NewItemService(memory.NewItemRepository(),
+	return app.NewItemService(memory.NewItemRepository(), testsupport.FixedWorkspace(domain.LocalWorkspace),
 		testsupport.NewFixedClock(time.Unix(0, 0).UTC()), testsupport.NewSequentialIDs("item"))
 }
 

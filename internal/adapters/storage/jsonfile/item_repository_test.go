@@ -31,7 +31,7 @@ func TestItemsSurviveReopen(t *testing.T) {
 	}
 	store.Close()
 
-	got, err := jsonfile.NewItemRepository(openStore(t, dir)).FindByID(ctx, "a")
+	got, err := jsonfile.NewItemRepository(openStore(t, dir)).FindByID(ctx, "", "a")
 	if err != nil || got.Name != "Alpha" {
 		t.Fatalf("after reopen got %+v, %v", got, err)
 	}

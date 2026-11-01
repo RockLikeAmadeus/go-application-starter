@@ -13,20 +13,30 @@ import (
 
 // ItemService implements ports.ItemService.
 type ItemService struct {
-	repo  ports.ItemRepository
-	clock ports.Clock
-	ids   ports.IDGenerator
+	repo       ports.ItemRepository
+	workspaces ports.WorkspaceResolver
+	clock      ports.Clock
+	ids        ports.IDGenerator
 }
 
 var _ ports.ItemService = (*ItemService)(nil)
 
 // NewItemService wires the use cases to their driven ports.
-func NewItemService(repo ports.ItemRepository, clock ports.Clock, ids ports.IDGenerator) *ItemService {
-	return &ItemService{repo: repo, clock: clock, ids: ids}
+func NewItemService(
+	repo ports.ItemRepository,
+	workspaces ports.WorkspaceResolver,
+	clock ports.Clock,
+	ids ports.IDGenerator,
+) *ItemService {
+	return &ItemService{repo: repo, workspaces: workspaces, clock: clock, ids: ids}
 }
 
 func (s *ItemService) CreateItem(ctx context.Context, name string) (domain.Item, error) {
-	item, err := domain.NewItem(s.ids.NewID(), name, s.clock.Now())
+	workspace, err := s.workspaces.CurrentWorkspace(ctx)
+	if err != nil {
+		return domain.Item{}, err
+	}
+	item, err := domain.NewItem(workspace, s.ids.NewID(), name, s.clock.Now())
 	if err != nil {
 		return domain.Item{}, err
 	}
@@ -37,15 +47,27 @@ func (s *ItemService) CreateItem(ctx context.Context, name string) (domain.Item,
 }
 
 func (s *ItemService) GetItem(ctx context.Context, id string) (domain.Item, error) {
-	return s.repo.FindByID(ctx, id)
+	workspace, err := s.workspaces.CurrentWorkspace(ctx)
+	if err != nil {
+		return domain.Item{}, err
+	}
+	return s.repo.FindByID(ctx, workspace, id)
 }
 
 func (s *ItemService) ListItems(ctx context.Context) ([]domain.Item, error) {
-	return s.repo.FindAll(ctx)
+	workspace, err := s.workspaces.CurrentWorkspace(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.FindAll(ctx, workspace)
 }
 
 func (s *ItemService) RenameItem(ctx context.Context, id, name string) (domain.Item, error) {
-	item, err := s.repo.FindByID(ctx, id)
+	workspace, err := s.workspaces.CurrentWorkspace(ctx)
+	if err != nil {
+		return domain.Item{}, err
+	}
+	item, err := s.repo.FindByID(ctx, workspace, id)
 	if err != nil {
 		return domain.Item{}, err
 	}
@@ -59,5 +81,9 @@ func (s *ItemService) RenameItem(ctx context.Context, id, name string) (domain.I
 }
 
 func (s *ItemService) DeleteItem(ctx context.Context, id string) error {
-	return s.repo.Delete(ctx, id)
+	workspace, err := s.workspaces.CurrentWorkspace(ctx)
+	if err != nil {
+		return err
+	}
+	return s.repo.Delete(ctx, workspace, id)
 }

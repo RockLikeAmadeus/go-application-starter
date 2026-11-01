@@ -1,6 +1,6 @@
 # 5. Hosted and local editions share one core
 
-- Status: accepted (not yet built; see [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md))
+- Status: accepted. Workspaces are built (step 1); the rest is planned. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
 - Date: 2026-10-31
 
 ## Context
@@ -20,7 +20,11 @@ A product built from this template may be sold as a hosted service: many users, 
 ### Data belongs to a workspace
 
 - Every record has a `WorkspaceID`. In the hosted edition, each user gets a personal workspace, so teams can be added later as workspace members and roles, with no data migration. The local edition has exactly one implicit workspace.
-- The driving adapter puts the current workspace in the request's `context`: the auth middleware in the hosted edition, a fixed value in the local edition. Use cases read it there and pass it **explicitly** to repositories.
+- **Use cases ask a driven port for the current workspace:** `ports.WorkspaceResolver`. They pass the answer **explicitly** to repositories.
+  - The local edition's resolver, `workspace.Local`, always answers the local workspace, so no local front end has to set anything.
+  - The hosted edition's resolver, `workspace.FromContext`, reads what the auth middleware put in the request's `context` (`workspace.WithID`).
+  - A missing or empty workspace is refused with `domain.ErrNoWorkspace` before storage is touched.
+  - This refines the first plan, where use cases read the context directly. With a resolver port, local front ends need no changes, and a forgotten context value fails closed instead of leaking.
 - The `storagetest` contract suite checks isolation: one workspace never sees another's records. Every storage backend must pass it.
 
 ### Features and limits come from plans

@@ -14,19 +14,26 @@ const MaxItemNameLength = 200
 // Item is the sample aggregate for the walking skeleton. Rename or replace it
 // when starting a real project.
 type Item struct {
-	ID        string
-	Name      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          string
+	WorkspaceID WorkspaceID
+	Name        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // NewItem builds a valid Item or returns a *ValidationError.
-func NewItem(id, name string, now time.Time) (Item, error) {
+func NewItem(workspace WorkspaceID, id, name string, now time.Time) (Item, error) {
 	name, err := normalizeName(name)
 	if err != nil {
 		return Item{}, err
 	}
-	return Item{ID: id, Name: name, CreatedAt: now, UpdatedAt: now}, nil
+	return Item{
+		ID:          id,
+		WorkspaceID: workspace,
+		Name:        name,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}, nil
 }
 
 // Rename changes the item's name, enforcing the same rules as NewItem.

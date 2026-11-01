@@ -30,15 +30,24 @@ type ItemService interface {
 type ItemRepository interface {
 	// Save inserts or replaces the item with the same ID.
 	Save(ctx context.Context, item domain.Item) error
-	// FindByID returns domain.ErrNotFound when no item has the given ID.
-	FindByID(ctx context.Context, id string) (domain.Item, error)
-	// FindAll returns all items ordered by CreatedAt, then ID.
-	FindAll(ctx context.Context) ([]domain.Item, error)
-	// Delete returns domain.ErrNotFound when no item has the given ID.
-	Delete(ctx context.Context, id string) error
+	// FindByID returns domain.ErrNotFound when the workspace has no item with
+	// the given ID, including when the item belongs to another workspace.
+	FindByID(ctx context.Context, workspace domain.WorkspaceID, id string) (domain.Item, error)
+	// FindAll returns the workspace's items ordered by CreatedAt, then ID.
+	FindAll(ctx context.Context, workspace domain.WorkspaceID) ([]domain.Item, error)
+	// Delete returns domain.ErrNotFound, and deletes nothing, when the
+	// workspace has no item with the given ID, including when the item belongs
+	// to another workspace.
+	Delete(ctx context.Context, workspace domain.WorkspaceID, id string) error
 }
 
 // sample:end
+
+// WorkspaceResolver tells a use case which workspace the current request
+// works in.
+type WorkspaceResolver interface {
+	CurrentWorkspace(ctx context.Context) (domain.WorkspaceID, error)
+}
 
 // Clock abstracts time so use cases are deterministic under test.
 type Clock interface {

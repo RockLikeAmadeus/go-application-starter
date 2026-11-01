@@ -9,12 +9,34 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
 
+// workspace is the workspace every newService request works in.
+const workspace domain.WorkspaceID = "ws-a"
+
 func newService() (*app.ItemService, *testsupport.FixedClock) {
+	return newServiceWith(memory.NewItemRepository(), testsupport.FixedWorkspace(workspace))
+}
+
+// newServiceWith builds the service on the given repository and resolver, with
+// a fixed clock and sequential IDs.
+func newServiceWith(repo ports.ItemRepository, workspaces ports.WorkspaceResolver) (*app.ItemService, *testsupport.FixedClock) {
 	clock := testsupport.NewFixedClock(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
-	return app.NewItemService(memory.NewItemRepository(), clock, testsupport.NewSequentialIDs("item")), clock
+	return app.NewItemService(repo, workspaces, clock, testsupport.NewSequentialIDs("item")), clock
+}
+
+func TestCreateItem_PutsTheItemInTheCurrentWorkspace(t *testing.T) {
+	svc, _ := newService()
+
+	created, err := svc.CreateItem(context.Background(), "Widget")
+	if err != nil {
+		t.Fatalf("CreateItem: %v", err)
+	}
+	if created.WorkspaceID != workspace {
+		t.Errorf("WorkspaceID = %q, want %q", created.WorkspaceID, workspace)
+	}
 }
 
 func TestCreateItem_PersistsAndReturnsItem(t *testing.T) {
@@ -80,5 +102,66 @@ func TestDeleteItem(t *testing.T) {
 	}
 	if _, err := svc.GetItem(ctx, created.ID); !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("GetItem after delete err = %v, want ErrNotFound", err)
+	}
+}
+
+// untouchedRepo is an ItemRepository that counts every call, for tests that
+// must not reach storage.
+type untouchedRepo struct{ calls int }
+
+func (r *untouchedRepo) Save(context.Context, domain.Item) error {
+	r.calls++
+	return nil
+}
+
+func (r *untouchedRepo) FindByID(context.Context, domain.WorkspaceID, string) (domain.Item, error) {
+	r.calls++
+	return domain.Item{}, nil
+}
+
+func (r *untouchedRepo) FindAll(context.Context, domain.WorkspaceID) ([]domain.Item, error) {
+	r.calls++
+	return nil, nil
+}
+
+func (r *untouchedRepo) Delete(context.Context, domain.WorkspaceID, string) error {
+	r.calls++
+	return nil
+}
+
+func TestUseCases_WithoutAWorkspaceAreRefusedBeforeStorage(t *testing.T) {
+	cases := map[string]func(context.Context, *app.ItemService) error{
+		"CreateItem": func(ctx context.Context, s *app.ItemService) error {
+			_, err := s.CreateItem(ctx, "Widget")
+			return err
+		},
+		"GetItem": func(ctx context.Context, s *app.ItemService) error {
+			_, err := s.GetItem(ctx, "item-1")
+			return err
+		},
+		"ListItems": func(ctx context.Context, s *app.ItemService) error {
+			_, err := s.ListItems(ctx)
+			return err
+		},
+		"RenameItem": func(ctx context.Context, s *app.ItemService) error {
+			_, err := s.RenameItem(ctx, "item-1", "New")
+			return err
+		},
+		"DeleteItem": func(ctx context.Context, s *app.ItemService) error {
+			return s.DeleteItem(ctx, "item-1")
+		},
+	}
+	for name, call := range cases {
+		t.Run(name, func(t *testing.T) {
+			repo := &untouchedRepo{}
+			svc, _ := newServiceWith(repo, testsupport.NoWorkspace{})
+
+			if err := call(context.Background(), svc); !errors.Is(err, domain.ErrNoWorkspace) {
+				t.Errorf("err = %v, want ErrNoWorkspace", err)
+			}
+			if repo.calls != 0 {
+				t.Errorf("repository called %d times, want 0", repo.calls)
+			}
+		})
 	}
 }

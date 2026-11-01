@@ -4,6 +4,9 @@
 //	<dir>/items.json   {"version": 1, "records": {"<id>": {...}, ...}}
 //	<dir>/.lock        advisory lock held while a Store is open
 //
+// Each record carries its workspaceId, and repositories only return records
+// in the workspace they are asked about (see ports.ItemRepository).
+//
 // Trade-offs (see docs/adr/0003-plain-text-storage.md):
 //   - every write rewrites the whole file, so it suits small datasets;
 //   - only one process may open a data directory at a time (enforced by the

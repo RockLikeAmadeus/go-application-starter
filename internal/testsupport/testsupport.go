@@ -3,9 +3,12 @@
 package testsupport
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 // FixedClock is a ports.Clock that only moves when told to.
@@ -42,4 +45,18 @@ func (g *SequentialIDs) NewID() string {
 	defer g.mu.Unlock()
 	g.n++
 	return fmt.Sprintf("%s-%d", g.prefix, g.n)
+}
+
+// FixedWorkspace is a ports.WorkspaceResolver that always resolves to itself.
+type FixedWorkspace domain.WorkspaceID
+
+func (w FixedWorkspace) CurrentWorkspace(context.Context) (domain.WorkspaceID, error) {
+	return domain.WorkspaceID(w), nil
+}
+
+// NoWorkspace is a ports.WorkspaceResolver for a request with no workspace.
+type NoWorkspace struct{}
+
+func (NoWorkspace) CurrentWorkspace(context.Context) (domain.WorkspaceID, error) {
+	return "", domain.ErrNoWorkspace
 }

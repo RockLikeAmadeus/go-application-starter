@@ -8,6 +8,9 @@ import (
 // ErrNotFound is returned when a requested entity does not exist.
 var ErrNotFound = errors.New("not found")
 
+// ErrNoWorkspace is returned when a request has no workspace to work in.
+var ErrNoWorkspace = errors.New("no workspace")
+
 // ErrValidation is the sentinel matched by every *ValidationError via errors.Is.
 var ErrValidation = errors.New("validation failed")
 

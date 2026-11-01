@@ -7,6 +7,7 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
@@ -23,7 +24,9 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 			h, err := d.start()
 			w.harness = h
-			return ctx, err
+			// Scenarios that don't name a workspace work in the local edition's
+			// one. Drivers wired with workspace.FromContext read it from here.
+			return workspace.WithID(ctx, domain.LocalWorkspace), err
 		})
 		sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
 			if w.harness != nil {
@@ -37,6 +40,7 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		w.registerMobileSteps(sc)
 		// sample:start
 		w.registerItemSteps(sc)
+		w.registerWorkspaceSteps(sc)
 		// sample:end
 	}
 }

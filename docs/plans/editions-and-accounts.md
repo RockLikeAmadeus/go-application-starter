@@ -41,11 +41,16 @@ All clients can operate as commercial products, with data kept separate per acco
 ### 0. Record the plan — done (docs only)
 This file, [ADR 5](../adr/0005-hosted-and-local-editions.md), and a merge of the two duplicate TODO entries into one that links here. The SQL-adapter, authentication and desktop/mobile remote-mode TODO items now point at their steps below. SPEC.md §3 now defines edition, workspace, plan, feature and limit, and §6 links this plan. §2 (personas) waits until the editions exist.
 
-### 1. Workspace scoping — in progress ([docs/wip/workspace-scoping.md](../wip/workspace-scoping.md))
-- `domain.Item` gets a `WorkspaceID`. Repositories take the workspace explicitly.
-- A context helper carries the current workspace. `bootstrap` wires the fixed local workspace for the local edition (every current driving adapter).
-- A contract-suite isolation test (`storagetest`) for every repository. Update memory and jsonfile. Existing jsonfile data with no workspace gets the local workspace.
-- Users see no change.
+### 1. Workspace scoping — done
+SPEC.md §4.8 · [`features/workspaces.feature`](../../features/workspaces.feature) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Data belongs to a workspace".
+- **Domain:** every item has a `WorkspaceID`. `domain.LocalWorkspace` (`"local"`) is the local edition's one workspace, and `domain.ErrNoWorkspace` is returned when a request has none.
+- **Resolver port:** use cases ask `ports.WorkspaceResolver` for the current workspace and pass it explicitly to every repository call. `internal/adapters/workspace` has two resolvers:
+  - `Local`, which `bootstrap` wires for every current front end;
+  - `FromContext`, which reads what `WithID` set and refuses a missing or empty workspace.
+- **Storage:** memory and jsonfile return only the given workspace's items, and treat another workspace's item as missing. Contract-suite cases check that for `FindAll`, `FindByID` and `Delete`. jsonfile records carry `workspaceId`. There's no migration (the template has no users).
+- **Fail closed:** with no workspace, every use case returns `ErrNoWorkspace` before touching storage (a table test).
+- **Acceptance:** the workspace scenarios run on the memory and jsonfile drivers, which use `FromContext`. A `Before` hook puts every other scenario in the local workspace. The http, desktop and mobile drivers stay on `Local` until sign-in (step 8).
+- Users see no change. Left for step 8: mapping `ErrNoWorkspace` to HTTP, and running the isolation scenarios on the http driver.
 
 ### 2. Plans and entitlements — not started
 - The plans config (format and location to decide in the `/feature`), the `Entitlements` port and its config adapter, and the local plan chosen at build time.
@@ -61,7 +66,7 @@ This file, [ADR 5](../adr/0005-hosted-and-local-editions.md), and a merge of the
 - `docs/billing.md`, the template users' guide described above.
 
 ### 5. Sync-safe plain text — not started
-- jsonfile v2: one file per record, migrating the v1 `items.json`.
+- jsonfile v2: one file per record. No migration from the v1 `items.json` (the template has no users).
 - Detect conflict copies. Warn about a heartbeat lock file from another device.
 - Update ADR 3.
 
@@ -101,3 +106,4 @@ This file, [ADR 5](../adr/0005-hosted-and-local-editions.md), and a merge of the
 - 2026-10-31: plan created from the design discussion.
 - 2026-10-31: step 1 refines how the workspace reaches the core: use cases ask a driven port, `ports.WorkspaceResolver`, instead of reading the context directly. bootstrap plugs in a fixed local resolver for the local edition, and the hosted edition's resolver reads what the auth middleware put in the context. Missing workspaces are refused. The API doesn't expose the workspace yet.
 - 2026-11-01: the server can also run as a self-hosted local edition, with sign-in off (step 8). Recorded in ADR 5. SPEC.md, CLAUDE.md and README.md now describe which clients run in which edition, marking the parts still to build as planned.
+- 2026-11-01: no backwards compatibility while this is still the template, which has no users. Data saved before a change isn't migrated: step 1 drops its "old records read as local" task, and step 5 no longer migrates the v1 `items.json`. Products built from the template handle their own compatibility.

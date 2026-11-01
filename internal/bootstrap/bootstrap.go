@@ -11,6 +11,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/system"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
@@ -57,7 +58,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
 	}
 	// sample:start
-	a.Items = app.NewItemService(items, system.Clock{}, system.UUIDs{})
+	a.Items = app.NewItemService(items, workspace.Local{}, system.Clock{}, system.UUIDs{})
 	// sample:end
 	return a, nil
 }

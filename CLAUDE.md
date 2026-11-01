@@ -33,6 +33,10 @@ Each copy uses one edition, and nothing syncs between them. Outside `internal/bo
 
 When a change leaves something that a developer starting a new project from this template must set up or fill in themselves (a placeholder name, publisher or description, an account, a key), add a step for them in the same change. Until the template's permanent starter TODO list exists, these steps go under the TODO.md item that creates it ("Steps the new file must give the developer using the template"). They are tasks for template users, not for us.
 
+<!-- template:start -->
+This is still the template and has no users, so don't build backwards compatibility. Don't migrate data saved before a change, don't add defaults for old records, and don't hold a release for old data. Breaking changes are fine. Products built from the template handle their own compatibility. (`task init` removes this paragraph.)
+<!-- template:end -->
+
 `TODO.md` is the backlog. When an item needs more than one `/feature`, its plan lives in `docs/plans/<item-slug>.md`, which is also tracked and temporary:
 - The plan holds the item's decisions, an ordered list of steps (each one a `/feature`) with their status, and a log of plan changes. The TODO item links to it.
 - When resuming the item, read the plan first, then the current step's `docs/wip/` file, if one exists.
@@ -79,6 +83,7 @@ internal/adapters/cli, tui       Cobra / Bubble Tea + Lip Gloss
 internal/adapters/desktop        desktop app wiring with no Wails import: data folder, storage, in-process handler
 internal/adapters/mobile         Android wiring on top of desktop's, no Wails import: the page handler and Serve, the API bridge
 internal/adapters/storage/*      memory, jsonfile, + storagetest contract suite
+internal/adapters/workspace      ports.WorkspaceResolver: Local (the local edition's one workspace), FromContext (set with WithID)
 internal/bootstrap               composition root: the only place that picks adapters
 web/                             Vite + React + TS + Tailwind + TanStack Query
 mobile/android                   Wails' generated Gradle project for the Android app (see docs/mobile.md)
@@ -93,7 +98,8 @@ test/packaging                   package check: builds the Linux packages and th
 - Business rules live in `domain`. Use cases in `app` only orchestrate.
 - UIs call the core **only** through driving ports (the `…Service` interfaces in `ports`). Never put business logic in handlers, Cobra commands, Bubble Tea models or React components.
 - A new storage backend implements the `…Repository` ports and **must** run each one's contract suite from `storagetest` in its tests. Wire it in `internal/bootstrap`.
-- Domain errors (`domain.ErrNotFound`, `*domain.ValidationError`) are the shared language. `httpapi/problem.go` maps them to HTTP, and `httpclient` maps them back.
+- Data belongs to a workspace (ADR 5). Use cases get the current one from `ports.WorkspaceResolver` and pass it **explicitly** to every repository call. A repository treats another workspace's record as missing (`ErrNotFound`), and every contract suite in `storagetest` checks that. With no workspace, a use case returns `domain.ErrNoWorkspace` before touching storage. `bootstrap` wires `workspace.Local`; tests use `testsupport.FixedWorkspace` or `NoWorkspace`.
+- Domain errors (`domain.ErrNotFound`, `*domain.ValidationError`, `domain.ErrNoWorkspace`) are the shared language. `httpapi/problem.go` maps them to HTTP, and `httpclient` maps them back. (`ErrNoWorkspace` isn't mapped yet: nothing over HTTP can lack a workspace until sign-in exists.)
 - Time and IDs come from `ports.Clock` / `ports.IDGenerator`. Use `internal/testsupport` fakes in tests.
 
 ### API contract
