@@ -4,6 +4,12 @@ Ideas for things every project built from this template is likely to need.
 Work through them one at a time (each usually starts with `/feature`), tick them off, and delete this file when it's empty.
 
 ## Do first
+- [ ] **`/readyz` checks storage without the sample.** The server's only readiness check is `opts.Items.ListItems` (`internal/adapters/httpapi/server.go`), inside a sample block, so after `--remove-sample` `/readyz` always answers "ready", even when storage is broken. Give it a check that doesn't depend on an entity: for example a `Ready func(ctx) error` in `httpapi.Options` that `bootstrap` takes from the storage adapter (the jsonfile store, and later SQL's ping). Cover it with a test that runs without the sample, and run `task test:init`.
+- [ ] **Move generic UI helpers out of the sample.** After `--remove-sample`, a template user rebuilding a screen has to recreate these:
+  - the TUI's `danger` colour, `errorStyle` and `selectedStyle` (in a sample block in `internal/adapters/tui/styles.go`);
+  - the web app's `ErrorMessage` alert (in `web/src/features/items/ItemsPage.tsx`), which belongs in a shared component.
+
+  Keep them in template code, with the sample using them, and run `task test:init`. Watch the linters: with the sample removed, an unexported style nothing uses fails golangci-lint's `unused` check, which may be why they ended up in the sample block. (The HTTP client's `toError` is the other case found; it moves to `httpclient/client.go` in task 18 of the plans and limits feature.)
 - [x] **"Make it mine" init script.** e.g. `task init -- --module github.com/you/app --name "Acme"`. It should:
   - rename the Go module, the "Starter" brand, the binaries and the Docker image;
   - optionally remove the sample `Item` domain.

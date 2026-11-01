@@ -37,6 +37,8 @@ When a change leaves something that a developer starting a new project from this
 
 <!-- template:start -->
 This is still the template and has no users, so don't build backwards compatibility. Don't migrate data saved before a change, don't add defaults for old records, and don't hold a release for old data. Breaking changes are fine. Products built from the template handle their own compatibility. (`task init` removes this paragraph.)
+
+The sample `Item` feature is removed by most projects, so work spent on it is mostly lost. When planning a feature, put its machinery in template code, then give it one thin sample use that runs it end to end: the worked example and the acceptance proof, not a place to cover every edge case. Template code must never depend on sample code, which includes a template helper living in a sample file. Run `task test:init` in any cycle that adds code next to sample code or moves it across a sample boundary, not only at the end of a feature. (`task init` removes this paragraph too.)
 <!-- template:end -->
 
 `TODO.md` is the backlog. When an item needs more than one `/feature`, its plan lives in `docs/plans/<item-slug>.md`, which is also tracked and temporary:
