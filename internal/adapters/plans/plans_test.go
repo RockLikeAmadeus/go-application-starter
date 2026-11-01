@@ -151,3 +151,17 @@ func TestEntitlements_RefusesAPlanItCantAnswer(t *testing.T) {
 		})
 	}
 }
+
+func TestDefault_HasALocalPlanWithNoLimits(t *testing.T) {
+	catalog, err := plans.Default()
+	if err != nil {
+		t.Fatalf("Default: %v", err)
+	}
+	local, ok := catalog["local"]
+	if !ok {
+		t.Fatalf("the shipped plans file has no local plan; it has %v", catalog)
+	}
+	if len(local.Limits) != 0 {
+		t.Errorf("local plan limits = %v, want none", local.Limits)
+	}
+}

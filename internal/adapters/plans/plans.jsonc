@@ -1,0 +1,8 @@
+// The product's plans: what each one allows a workspace. See SPEC.md, "Plans
+// and limits". Lines starting with // are comments.
+{
+	"plans": {
+		// The local edition's plan, chosen when the app is built.
+		"local": {"limits": {}}
+	}
+}

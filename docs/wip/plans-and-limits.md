@@ -79,7 +79,10 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
      - **Red:** `TestEntitlements_RefusesAPlanItCantAnswer`: a plan the catalog doesn't have (`gold`) must give an error naming it; `PlanOf`'s error must come back as is. Both returned `nil`.
      - **Green:** `For` returns `PlanOf`'s error, then refuses a missing plan with `plan "gold" isn't in the plans file`.
      - **Refactor:** `For`'s doc comment now says how it fails. Nothing else: `PlanOf`'s error stays unwrapped, as use cases return the resolver's, since wrapping would add nothing a caller needs yet.
-10. [ ] **plans adapter, shipped file:** the embedded default loads and has a `local` plan with no limits.
+10. [x] **plans adapter, shipped file:** the embedded default loads and has a `local` plan with no limits.
+    - **Red:** `TestDefault_HasALocalPlanWithNoLimits`: `plans.Default()` loads the shipped file without error, and it has a `local` plan with no limits. It failed against a stub returning an empty catalog.
+    - **Green:** `internal/adapters/plans/plans.jsonc`, embedded with `go:embed`, holding only `local`; `Default` parses it. `free` and `pro` wait for task 21, where the sample limit and its markers are checked by `task test:init` (see the log).
+    - **Refactor:** doc comments on `Default` and the embedded variable. `STARTER_PLANS_FILE` isn't mentioned yet: task 19 adds it. The `.jsonc` keeps tabs: Prettier only checks `web/`.
 11. [ ] **app, `CreateItem` at the limit** is refused with `LimitError` and saves nothing. `NewItemService` takes `ports.Entitlements`; existing tests use an unlimited fake.
 12. [ ] **app, `RenameItem` over a `read-only` limit** is refused and saves nothing; over `block-new` it works.
 13. [ ] **app, `DeleteItem` over a `read-only` limit** works (likely already passing; keep as a guard).
@@ -97,4 +100,5 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
 ## Changes to the plan
 
 - 2026-11-01: task 5 split into 5a (answers the workspace's entitlements) and 5b (fails closed), one test each. The `testsupport` fake for `ports.Entitlements` moves to task 11, where `ItemService` first needs one; 5a's fake is local to its test.
+- 2026-11-01: the shipped plans file holds only `local` after task 10, which is all its test demands. `free` (with the sample item limit inside sample markers) and `pro` are added in task 21, which checks `--remove-sample` strips the limit and leaves valid JSON.
 - 2026-11-01: task 9 split the same way: 9a (answers the workspace's plan) and 9b (an unknown plan, or `PlanOf` failing, is an error).

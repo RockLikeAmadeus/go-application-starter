@@ -5,6 +5,7 @@ package plans
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 
@@ -104,4 +105,15 @@ func (e Entitlements) For(ctx context.Context, workspace domain.WorkspaceID) (do
 		return domain.Entitlements{}, fmt.Errorf("plan %q isn't in the plans file", plan)
 	}
 	return entitlements, nil
+}
+
+// shipped is the plans file built into the binary.
+//
+//go:embed plans.jsonc
+var shipped []byte
+
+// Default returns the plans in the file built into the binary,
+// plans.jsonc. A product edits that file to set its own plans.
+func Default() (Catalog, error) {
+	return Parse(shipped)
 }
