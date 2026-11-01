@@ -9,7 +9,7 @@ Work through them one at a time (each usually starts with `/feature`), tick them
   - the TUI's `danger` colour, `errorStyle` and `selectedStyle` (in a sample block in `internal/adapters/tui/styles.go`);
   - the web app's `ErrorMessage` alert (in `web/src/features/items/ItemsPage.tsx`), which belongs in a shared component.
 
-  Keep them in template code, with the sample using them, and run `task test:init`. Watch the linters: with the sample removed, an unexported style nothing uses fails golangci-lint's `unused` check, which may be why they ended up in the sample block. (The HTTP client's `toError` is the other case found; it moves to `httpclient/client.go` in task 18 of the plans and limits feature.)
+  Keep them in template code, with the sample using them, and run `task test:init`. Watch the linters: with the sample removed, an unexported style nothing uses fails golangci-lint's `unused` check, which may be why they ended up in the sample block. (The HTTP client's `toError` was the other case found; it moved to `httpclient/client.go` in task 18 of the plans and limits feature.)
 - [x] **"Make it mine" init script.** e.g. `task init -- --module github.com/you/app --name "Acme"`. It should:
   - rename the Go module, the "Starter" brand, the binaries and the Docker image;
   - optionally remove the sample `Item` domain.

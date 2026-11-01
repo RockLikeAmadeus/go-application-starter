@@ -2,9 +2,7 @@ package httpclient
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient/apiclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -87,28 +85,4 @@ func (s *ItemService) DeleteItem(ctx context.Context, id string) error {
 
 func toDomain(i apiclient.Item) domain.Item {
 	return domain.Item{ID: i.Id, Name: i.Name, CreatedAt: i.CreatedAt, UpdatedAt: i.UpdatedAt}
-}
-
-// toError maps a problem document back to the domain error the server
-// started from, so callers can use errors.Is regardless of transport.
-func toError(status int, p *apiclient.Problem) error {
-	if p == nil {
-		return fmt.Errorf("unexpected HTTP status %d", status)
-	}
-	typ, detail, field := deref(p.Type), deref(p.Detail), deref(p.Field)
-	switch typ {
-	case "not_found":
-		return domain.ErrNotFound
-	case "validation":
-		return &domain.ValidationError{Field: field, Message: strings.TrimSpace(strings.TrimPrefix(detail, field))}
-	default:
-		return fmt.Errorf("server error (%d): %s", status, detail)
-	}
-}
-
-func deref(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

@@ -2,7 +2,6 @@ package httpclient
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient/apiclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -33,7 +32,7 @@ func (s *EntitlementsService) CurrentEntitlements(ctx context.Context) (domain.E
 		return domain.Entitlements{}, err
 	}
 	if res.JSON200 == nil {
-		return domain.Entitlements{}, fmt.Errorf("unexpected HTTP status %d", res.StatusCode())
+		return domain.Entitlements{}, toError(res.StatusCode(), res.ApplicationproblemJSONDefault)
 	}
 	return toEntitlements(*res.JSON200), nil
 }
