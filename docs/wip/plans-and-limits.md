@@ -58,7 +58,10 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
      - **Red:** `TestCurrentEntitlements_WithoutAWorkspaceIsRefusedBeforeAskingThePlans`, with `testsupport.NoWorkspace` and a counting `unaskedPlans` fake (as `untouchedRepo` in the item tests). It failed: no error, and the plans asked once.
      - **Green:** return the resolver's error before asking the plans.
      - **Refactor:** nothing worth changing. The service reads like `ItemService`'s use cases, and its two test fakes each serve one test, as the item tests' do.
-6. [ ] **plans adapter, parse:** a plans document gives each plan's entitlements (name, limits with name, max and `WhenOver`).
+6. [x] **plans adapter, parse:** a plans document gives each plan's entitlements (name, limits with name, max and `WhenOver`).
+    - **Red:** `TestParse_GivesEachPlansEntitlements` (`adapters/plans/plans_test.go`): a document with `free` (items: 3, read-only) and `pro` (no limits) gives a `plans.Catalog` (plan name → `domain.Entitlements`). It failed with an empty catalog against a stub.
+    - **Green:** `Parse` unmarshals into a private `document` struct and builds each plan's entitlements. The JSON error is ignored and limits are built as literals: tasks 8 (bad config) and 8's `NewLimit` check demand otherwise.
+    - **Refactor:** named the anonymous structs (`planRecord`, `limitRecord`), as jsonfile names its on-disk records, with a comment on why they're separate from the domain types; a doc comment on `Parse` showing the format. Left the ignored JSON error and the literal limits for task 8, whose tests demand them.
 7. [ ] **plans adapter, comments:** full-line `//` comments are ignored.
 8. [ ] **plans adapter, bad config:** invalid JSON, an invalid limit (through `NewLimit`), and unknown fields are errors that name the plan and limit.
 9. [ ] **plans adapter, `ports.Entitlements`:** `For` answers the plan the plan-of function names; an unknown plan name is an error.
