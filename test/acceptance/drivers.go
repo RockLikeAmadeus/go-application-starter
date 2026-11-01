@@ -51,13 +51,16 @@ type driver struct {
 
 // Desktop-only scenarios (@desktop) run only on the desktop driver, and
 // mobile-only ones (@mobile) only on the mobile driver. Each of those also
-// runs every feature that isn't the other's.
+// runs every feature that isn't the other's. Scenarios that switch between
+// workspaces (@workspaces) run only where the core is wired directly: nothing
+// over HTTP can pick a workspace until sign-in exists, and the desktop and
+// mobile apps are the local edition.
 var drivers = []driver{
 	{name: "memory", start: startMemory, tags: "~@desktop && ~@mobile"},
 	{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile"},
-	{name: "http", start: startHTTP, tags: "~@desktop && ~@mobile"},
-	{name: "desktop", start: startDesktop, tags: "~@mobile"},
-	{name: "mobile", start: startMobile, tags: "~@desktop"},
+	{name: "http", start: startHTTP, tags: "~@desktop && ~@mobile && ~@workspaces"},
+	{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces"},
+	{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces"},
 }
 
 func newHarness() *harness {

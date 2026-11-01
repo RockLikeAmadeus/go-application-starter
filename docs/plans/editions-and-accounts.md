@@ -6,7 +6,7 @@
 - The lasting decisions are in [ADR 5](../adr/0005-hosted-and-local-editions.md). This file is the working plan.
 
 ## Goal
-Web, desktop and mobile can be commercial products, with data kept separate per account and features gated by paid plans. CLI, TUI and free local-only desktop and mobile apps stay single-user tools on local data (SQLite or plain text, in a folder the user chooses, which can be a cloud-synced one). Both run on the same core and data structures.
+All clients can operate as commercial products, with data kept separate per account and features gated by paid plans. CLI, TUI and free local-only desktop and mobile apps stay single-user tools on local data (SQLite or plain text, in a folder the user chooses, which can be a cloud-synced one). Both run on the same core and data structures.
 
 ## Decisions (agreed 2026-10-31)
 - **Scope: template seams.** The template ships the ports, a simple reference adapter for each, and a sample gated feature. Each product picks its real auth, billing and hosting.
@@ -41,7 +41,7 @@ Web, desktop and mobile can be commercial products, with data kept separate per 
 ### 0. Record the plan — done (docs only)
 This file, [ADR 5](../adr/0005-hosted-and-local-editions.md), and a merge of the two duplicate TODO entries into one that links here. The SQL-adapter, authentication and desktop/mobile remote-mode TODO items now point at their steps below. SPEC.md §3 now defines edition, workspace, plan, feature and limit, and §6 links this plan. §2 (personas) waits until the editions exist.
 
-### 1. Workspace scoping — not started
+### 1. Workspace scoping — in progress ([docs/wip/workspace-scoping.md](../wip/workspace-scoping.md))
 - `domain.Item` gets a `WorkspaceID`. Repositories take the workspace explicitly.
 - A context helper carries the current workspace. `bootstrap` wires the fixed local workspace for the local edition (every current driving adapter).
 - A contract-suite isolation test (`storagetest`) for every repository. Update memory and jsonfile. Existing jsonfile data with no workspace gets the local workspace.
@@ -98,3 +98,4 @@ This file, [ADR 5](../adr/0005-hosted-and-local-editions.md), and a merge of the
 
 ## Plan changes
 - 2026-10-31: plan created from the design discussion.
+- 2026-10-31: step 1 refines how the workspace reaches the core: use cases ask a driven port, `ports.WorkspaceResolver`, instead of reading the context directly. bootstrap plugs in a fixed local resolver for the local edition, and the hosted edition's resolver reads what the auth middleware put in the context. Missing workspaces are refused. The API doesn't expose the workspace yet.

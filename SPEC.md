@@ -172,6 +172,26 @@ Users can install the app on their Android phone and use it without a server, an
 
 **Specification:** [`features/mobile.feature`](features/mobile.feature). The mobile app also runs every other feature's scenarios, except the desktop app's. Showing no offline notice is checked by unit tests and by hand.
 
+### 4.8 Keep each workspace's data separate
+
+All data belongs to a workspace, so that when one server serves many users, nobody sees or changes anyone else's data. This is the groundwork for the hosted edition (ADR 5).
+
+**Rules**
+- Every piece of data belongs to exactly one workspace: the one it was created in.
+- In a workspace, only that workspace's data can be seen or changed. Data in another workspace behaves as if it doesn't exist.
+- Without a workspace, no data can be seen or changed.
+- The local edition has exactly one workspace and uses it automatically. Its users never see or choose a workspace.
+- Data saved before workspaces existed belongs to the local workspace, so nothing is lost on upgrade.
+
+<!-- sample:start -->
+**Examples**
+- Workspace Alpha has "Widget", and Beta has "Gadget" → Alpha lists only "Widget", and Beta only "Gadget".
+- Someone in Beta tries to rename or delete Alpha's "Widget" → they're told it wasn't found, and Alpha still has "Widget".
+- A desktop app user had items before upgrading → after upgrading, they're all still there.
+
+**Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory and jsonfile drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition. Keeping data saved before workspaces existed is checked by the jsonfile adapter's unit tests.
+<!-- sample:end -->
+
 ## 5. Non-functional requirements
 
 | Area | Requirement |
