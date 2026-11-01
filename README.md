@@ -82,7 +82,7 @@ Configuration is through environment variables (see `.env.example`): `STARTER_ST
 | Red | `/red <behaviour>` | exactly one failing unit test |
 | Green | `/green` | the minimum code to pass, then stop |
 | Refactor | `/refactor` | cleaner code, all tests still green |
-| One cycle | `/iterate [behaviour]` | red, green and refactor for the next open task, stopping only for questions |
+| One cycle | `/iterate [behaviour]` | red, green and refactor for the next open task, stopping only for questions; then commits and pushes it, if all went cleanly |
 
 Repeat red → green → refactor until `task accept` is green, then drop the `@wip` tag. See `CLAUDE.md` for the architecture rules Claude follows, and `.claude/settings.json` for permissions and the auto-format hook.
 

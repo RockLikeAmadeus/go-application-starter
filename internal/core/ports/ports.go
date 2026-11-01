@@ -60,6 +60,17 @@ type WorkspaceRepository[T any] interface {
 	Delete(ctx context.Context, workspace domain.WorkspaceID, id string) error
 }
 
+// EntitlementsService is the driving port for what the current workspace's
+// plan allows it.
+type EntitlementsService interface {
+	CurrentEntitlements(ctx context.Context) (domain.Entitlements, error)
+}
+
+// Entitlements tells a use case what a workspace's plan allows it.
+type Entitlements interface {
+	For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error)
+}
+
 // WorkspaceResolver tells a use case which workspace the current request
 // works in.
 type WorkspaceResolver interface {

@@ -1,5 +1,5 @@
 ---
-description: TDD loop — one red → green → refactor cycle for the next task, without stopping between steps
+description: TDD loop — one red → green → refactor cycle for the next task, without stopping between steps, then commit and push it
 argument-hint: "[optional: behaviour to specify; default: the next open task in docs/wip/]"
 ---
 
@@ -11,7 +11,7 @@ If that's empty, take the first unticked task in the `docs/wip/` file of the fea
 
 Run the three steps below in order, each exactly as its own command would (`.claude/commands/red.md`, `green.md` and `refactor.md`), with every rule they set, except their "STOP" at the end: go straight on to the next step instead. Don't merge the steps: the test must fail for the right reason before any production code is written, and refactoring starts only once everything is green.
 
-0. **Prepare.** Read the feature's `docs/wip/` file, the plan it belongs to (`docs/plans/`), if any, and the code the task touches. If no task is open, STOP and say so.
+0. **Prepare.** Run `git status`, and note whether the working tree is clean: the cycle commits its own changes at the end. Read the feature's `docs/wip/` file, the plan it belongs to (`docs/plans/`), if any, and the code the task touches. If no task is open, STOP and say so.
 1. **Red** (`red.md`): exactly one new failing test, failing for the expected reason. Record it in the `docs/wip/` file.
 2. **Green** (`green.md`): the minimum production code to pass it, with the full unit suite green. Record it, and leave the **For refactor:** note.
 3. **Refactor** (`refactor.md`), starting from that note. While the feature's scenarios are still `@wip`, "`task accept` green" means every scenario outside them: `task accept -- --godog.tags='~@wip'`. Report how far the `@wip` ones got (`task accept -- --godog.tags=@wip`), without chasing them. Replace the note with what was done.
@@ -25,9 +25,25 @@ Run the three steps below in order, each exactly as its own command would (`.cla
 
 Anything with a conventional answer, or that the code, CLAUDE.md or the `docs/wip/` file settles, isn't a question: decide, and say so in the summary.
 
-**Finish.** `task lint`, `task test` and the acceptance run above, all green. Then STOP after this one cycle, and show me:
+**Finish.** `task lint`, `task test` and the acceptance run above, all green.
+
+**Commit and push.** Running `/iterate` is my explicit request to commit its cycle, so when the cycle went cleanly, stage everything (`git add -A`), commit, and push to the current branch's upstream. "Cleanly" means:
+- the cycle ran to the end: red failed for the right reason, then green, then refactor;
+- the finishing checks above are all green;
+- nothing is left open for me: any question I answered during the cycle is settled.
+
+The commit message follows the repository's style (`feat: …`, or `test:`/`refactor:` when that's all the cycle did). It names the task, and says what the test specifies and what the code now does. End it with the attribution lines this session gives for commits.
+
+Don't commit, and say why, when:
+- anything above isn't clean (the cycle stopped early, or a check is red);
+- the working tree had changes before the cycle started that aren't part of it. Ask whether to include them, leave them out, or not commit.
+
+Never pull, force-push or rewrite history. If the push is refused (for example, the remote has moved on), leave the commit in place and tell me.
+
+Then STOP after this one cycle, and show me:
 - the test, and the failure it showed before green;
 - the production change, in 1–3 lines;
 - what the refactor changed, or why nothing was worth changing;
 - the `@wip` scenarios' progress;
+- the commit and push (its hash and message), or why there wasn't one;
 - the next open task, as the suggested next `/iterate` (or `/red`).

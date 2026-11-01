@@ -49,7 +49,12 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
     - **Red:** `TestNewLimit`: a valid limit is built as given; a negative max (field `max`), an unknown behaviour and none at all (field `whenOver`) are refused with `*ValidationError`, the domain's existing error for a broken rule. All four failed against a stub returning `Limit{}, nil`.
     - **Green:** `NewLimit` checks `max >= 0` and `whenOver` is `BlockNew` or `ReadOnly`, then builds the `Limit`.
     - **Refactor:** a doc comment on `NewLimit`: build limits through it, never as a literal, and its fields are the plans file's keys. Left the other domain types as they are: nothing else changed this cycle.
-5. [ ] **ports + app, `EntitlementsService.CurrentEntitlements`:** returns the current workspace's entitlements from `ports.Entitlements`; with no workspace, `ErrNoWorkspace` and the port isn't asked. Add a `testsupport` fake for `ports.Entitlements`.
+5. **ports + app, `EntitlementsService.CurrentEntitlements`** (split in two: one test per cycle):
+   - [x] **5a.** It returns the current workspace's entitlements from `ports.Entitlements`.
+     - **Red:** `TestCurrentEntitlements_AreTheCurrentWorkspacesPlan` (`app/entitlements_service_test.go`), with a test-local `plansByWorkspace` fake answering two workspaces differently. It failed with empty entitlements against a stub. Compile stubs: `ports.EntitlementsService` (driving) and `ports.Entitlements` (driven), and `app.EntitlementsService`.
+     - **Green:** resolve the workspace and ask `ports.Entitlements.For` with it. The resolver's error is ignored for now: 5b's test demands the early return.
+     - **Refactor:** doc comments on `NewEntitlementsService` and `CurrentEntitlements`, as `ItemService` has. The ports sit outside the sample block, beside `WorkspaceResolver`, since they're template. Nothing else was worth changing.
+   - [ ] **5b.** With no workspace, it returns `ErrNoWorkspace` and `ports.Entitlements` isn't asked.
 6. [ ] **plans adapter, parse:** a plans document gives each plan's entitlements (name, limits with name, max and `WhenOver`).
 7. [ ] **plans adapter, comments:** full-line `//` comments are ignored.
 8. [ ] **plans adapter, bad config:** invalid JSON, an invalid limit (through `NewLimit`), and unknown fields are errors that name the plan and limit.
@@ -70,3 +75,5 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
 23. [ ] **finish:** `task check`, remove the `@wip` tags, delete this file.
 
 ## Changes to the plan
+
+- 2026-11-01: task 5 split into 5a (answers the workspace's entitlements) and 5b (fails closed), one test each. The `testsupport` fake for `ports.Entitlements` moves to task 11, where `ItemService` first needs one; 5a's fake is local to its test.
