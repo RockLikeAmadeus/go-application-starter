@@ -90,9 +90,20 @@ type Problem struct {
 	Detail *string `json:"detail,omitempty"`
 
 	// Field The offending input field, for validation errors.
-	Field  *string `json:"field,omitempty"`
-	Status int     `json:"status"`
-	Title  string  `json:"title"`
+	Field *string `json:"field,omitempty"`
+
+	// Limit The plan limit that was reached (e.g. "items"), for limit errors.
+	Limit *string `json:"limit,omitempty"`
+
+	// Max The plan's maximum for that limit, for limit errors.
+	Max *int `json:"max,omitempty"`
+
+	// ReadOnly For limit errors: true when the change was refused because the
+	// workspace is over a limit that makes things read only, false when
+	// a new one was refused at the limit.
+	ReadOnly *bool  `json:"readOnly,omitempty"`
+	Status   int    `json:"status"`
+	Title    string `json:"title"`
 
 	// Type Machine-readable error code, e.g. "not_found", "validation".
 	Type *string `json:"type,omitempty"`

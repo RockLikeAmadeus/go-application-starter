@@ -123,6 +123,16 @@ export interface components {
             detail?: string;
             /** @description The offending input field, for validation errors. */
             field?: string;
+            /** @description The plan limit that was reached (e.g. "items"), for limit errors. */
+            limit?: string;
+            /** @description The plan's maximum for that limit, for limit errors. */
+            max?: number;
+            /**
+             * @description For limit errors: true when the change was refused because the
+             *     workspace is over a limit that makes things read only, false when
+             *     a new one was refused at the limit.
+             */
+            readOnly?: boolean;
         };
     };
     responses: {

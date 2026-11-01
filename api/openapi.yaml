@@ -203,3 +203,15 @@ components:
         field:
           type: string
           description: The offending input field, for validation errors.
+        limit:
+          type: string
+          description: The plan limit that was reached (e.g. "items"), for limit errors.
+        max:
+          type: integer
+          description: The plan's maximum for that limit, for limit errors.
+        readOnly:
+          type: boolean
+          description: |
+            For limit errors: true when the change was refused because the
+            workspace is over a limit that makes things read only, false when
+            a new one was refused at the limit.

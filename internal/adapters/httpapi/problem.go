@@ -14,6 +14,7 @@ import (
 const (
 	ProblemNotFound   = "not_found"
 	ProblemValidation = "validation"
+	ProblemLimit      = "limit"
 	ProblemBadRequest = "bad_request"
 	ProblemInternal   = "internal"
 )
@@ -21,9 +22,14 @@ const (
 // problemFor maps a domain error to an RFC 9457 problem document.
 func problemFor(err error) openapi.Problem {
 	var verr *domain.ValidationError
+	var lerr *domain.LimitError
 	switch {
 	case errors.As(err, &verr):
 		return problem(http.StatusUnprocessableEntity, ProblemValidation, verr.Error(), &verr.Field)
+	case errors.As(err, &lerr):
+		p := problem(http.StatusForbidden, ProblemLimit, lerr.Error(), nil)
+		p.Limit, p.Max, p.ReadOnly = &lerr.Limit, &lerr.Max, &lerr.ReadOnly
+		return p
 	case errors.Is(err, domain.ErrNotFound):
 		return problem(http.StatusNotFound, ProblemNotFound, err.Error(), nil)
 	default:

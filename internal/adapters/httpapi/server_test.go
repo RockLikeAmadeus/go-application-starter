@@ -100,3 +100,38 @@ func TestEntitlementsAreTheCurrentWorkspacesPlanAndLimits(t *testing.T) {
 		t.Errorf("body = %s, want %v", rec.Body, want)
 	}
 }
+
+// failingEntitlements is a ports.EntitlementsService that always fails with
+// err.
+type failingEntitlements struct{ err error }
+
+func (e failingEntitlements) CurrentEntitlements(context.Context) (domain.Entitlements, error) {
+	return domain.Entitlements{}, e.err
+}
+
+// A limit error is forbidden, and its problem document says which limit, so
+// clients can map it back.
+func TestALimitErrorIsAForbiddenProblemNamingTheLimit(t *testing.T) {
+	limitErr := &domain.LimitError{Limit: "items", Max: 3, ReadOnly: true}
+	rec := httptest.NewRecorder()
+	httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{limitErr}}).
+		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusForbidden)
+	}
+	if got, want := rec.Header().Get("Content-Type"), "application/problem+json"; got != want {
+		t.Errorf("Content-Type = %q, want %q", got, want)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode %q: %v", rec.Body.String(), err)
+	}
+	want := map[string]any{
+		"type": "limit", "title": "Forbidden", "status": 403.0, "detail": limitErr.Error(),
+		"limit": "items", "max": 3.0, "readOnly": true,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("body = %v, want %v", got, want)
+	}
+}
