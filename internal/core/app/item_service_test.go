@@ -80,6 +80,24 @@ func freePlan(whenOver domain.OverLimit) testsupport.FixedEntitlements {
 	}
 }
 
+// overTheFreePlan returns a service on freePlan(whenOver) whose workspace
+// already has four items, made before the limit applied, and those items.
+func overTheFreePlan(t *testing.T, whenOver domain.OverLimit) (*app.ItemService, []domain.Item) {
+	t.Helper()
+	repo := memory.NewItemRepository()
+	unlimited, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), testsupport.FixedEntitlements{})
+	var items []domain.Item
+	for _, name := range []string{"First", "Second", "Third", "Fourth"} {
+		item, err := unlimited.CreateItem(context.Background(), name)
+		if err != nil {
+			t.Fatalf("CreateItem(%q): %v", name, err)
+		}
+		items = append(items, item)
+	}
+	svc, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), freePlan(whenOver))
+	return svc, items
+}
+
 func TestCreateItem_AtTheLimitIsRefusedAndSavesNothing(t *testing.T) {
 	svc, _ := newServiceWith(memory.NewItemRepository(), testsupport.FixedWorkspace(workspace), freePlan(domain.BlockNew))
 	ctx := context.Background()
@@ -124,20 +142,9 @@ func TestRenameItem_OverALimit(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			repo := memory.NewItemRepository()
-			unlimited, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), testsupport.FixedEntitlements{})
+			svc, items := overTheFreePlan(t, tc.whenOver)
 			ctx := context.Background()
-			var first domain.Item
-			for i, name := range []string{"First", "Second", "Third", "Fourth"} {
-				item, err := unlimited.CreateItem(ctx, name)
-				if err != nil {
-					t.Fatalf("CreateItem(%q): %v", name, err)
-				}
-				if i == 0 {
-					first = item
-				}
-			}
-			svc, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), freePlan(tc.whenOver))
+			first := items[0]
 
 			_, err := svc.RenameItem(ctx, first.ID, "Renamed")
 			got, _ := svc.GetItem(ctx, first.ID)
@@ -155,6 +162,19 @@ func TestRenameItem_OverALimit(t *testing.T) {
 				t.Errorf("name = %q, want it unchanged", got.Name)
 			}
 		})
+	}
+}
+
+func TestDeleteItem_OverAReadOnlyLimitWorks(t *testing.T) {
+	svc, items := overTheFreePlan(t, domain.ReadOnly)
+	ctx := context.Background()
+	last := items[len(items)-1]
+
+	if err := svc.DeleteItem(ctx, last.ID); err != nil {
+		t.Fatalf("DeleteItem: %v", err)
+	}
+	if _, err := svc.GetItem(ctx, last.ID); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("GetItem after delete err = %v, want ErrNotFound", err)
 	}
 }
 

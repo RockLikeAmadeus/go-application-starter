@@ -91,7 +91,10 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
     - **Red:** `TestRenameItem_OverALimit`, a table test: four items made on an unlimited plan, then a second service on the same repository with a limit of 3. Over a read-only limit, renaming must be refused with `*LimitError{ReadOnly: true}` and leave the name; over a block-new one, it must work. The read-only case failed with `nil`. The block-new case passed from the start, as task 2's table did: it guards against checking renames with `CheckCreate`.
     - **Green:** `RenameItem` finds the item, then counts the workspace's items and returns `CheckChange("items", count)`'s error before renaming.
     - **Refactor:** the shared lookup moved into `itemUsage` (the entitlements and the item count) and the limit's name into the `itemsLimit` constant, in `item_service.go`. The tests' plan moved into `freePlan(whenOver)`. Lookup errors are still ignored: task 14 demands them, and `itemUsage` is where they'll go.
-13. [ ] **app, `DeleteItem` over a `read-only` limit** works (likely already passing; keep as a guard).
+13. [x] **app, `DeleteItem` over a `read-only` limit** works (likely already passing; keep as a guard).
+    - **Red:** `TestDeleteItem_OverAReadOnlyLimitWorks`: four items, then a read-only limit of 3; deleting one must work. It passed straight away, since `DeleteItem` has no limit check. Kept as a guard, at Alec's choice: it pins that deleting always works, which is how a workspace gets back within a read-only limit.
+    - **Green:** nothing to do.
+    - **Refactor:** the rename and delete tests' shared setup (four items made on an unlimited plan, then a service on `freePlan(whenOver)` over the same repository) moved into `overTheFreePlan(t, whenOver)`.
 14. [ ] **app, entitlements errors:** when `ports.Entitlements` fails, `CreateItem` and `RenameItem` return the error and save nothing.
 15. [ ] **API, `GET /api/v1/entitlements`:** `api/openapi.yaml` + `task gen`; the handler returns the current entitlements (`httpapi.Options.Entitlements`).
 16. [ ] **httpclient, `CurrentEntitlements`** maps the response back to `domain.Entitlements`.
