@@ -1,6 +1,3 @@
-// Package httpclient implements the ports.ItemService driving port over
-// HTTP, so the CLI and TUI can run against a remote server with exactly the
-// same code they use against the embedded core.
 package httpclient
 
 import (
@@ -8,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient/apiclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -23,10 +19,7 @@ var _ ports.ItemService = (*ItemService)(nil)
 
 // New returns a client for the server at baseURL, e.g. "http://localhost:8080".
 func New(baseURL string, opts ...apiclient.ClientOption) (*ItemService, error) {
-	opts = append([]apiclient.ClientOption{
-		apiclient.WithHTTPClient(&http.Client{Timeout: 10 * time.Second}),
-	}, opts...)
-	api, err := apiclient.NewClientWithResponses(strings.TrimRight(baseURL, "/"), opts...)
+	api, err := newAPI(baseURL, opts...)
 	if err != nil {
 		return nil, err
 	}
