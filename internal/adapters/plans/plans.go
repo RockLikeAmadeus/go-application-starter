@@ -4,10 +4,12 @@ package plans
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
 // Catalog holds each plan's entitlements, by plan name.
@@ -76,4 +78,22 @@ func stripComments(data []byte) []byte {
 		}
 	}
 	return bytes.Join(lines, []byte("\n"))
+}
+
+// Entitlements is the ports.Entitlements adapter over a Catalog.
+type Entitlements struct {
+	// Catalog holds the plans, usually from Parse.
+	Catalog Catalog
+	// PlanOf names the plan a workspace is on. The local edition answers its
+	// one plan for every workspace; the acceptance tests answer from a map.
+	// Changing a workspace's plan (ChangePlan) will store the answers instead.
+	PlanOf func(ctx context.Context, workspace domain.WorkspaceID) (string, error)
+}
+
+var _ ports.Entitlements = Entitlements{}
+
+// For returns the entitlements of the plan the workspace is on.
+func (e Entitlements) For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error) {
+	plan, _ := e.PlanOf(ctx, workspace)
+	return e.Catalog[plan], nil
 }

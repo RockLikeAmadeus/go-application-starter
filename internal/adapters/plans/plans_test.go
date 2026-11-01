@@ -1,6 +1,7 @@
 package plans_test
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
@@ -92,5 +93,28 @@ func TestParse_RefusesABadPlansFile(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestEntitlements_AnswersThePlanTheWorkspaceIsOn(t *testing.T) {
+	free := domain.Entitlements{
+		Plan:   "free",
+		Limits: map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.BlockNew}},
+	}
+	pro := domain.Entitlements{Plan: "pro", Limits: map[string]domain.Limit{}}
+	onPlan := map[domain.WorkspaceID]string{"ws-a": "free", "ws-b": "pro"}
+	adapter := plans.Entitlements{
+		Catalog: plans.Catalog{"free": free, "pro": pro},
+		PlanOf: func(_ context.Context, ws domain.WorkspaceID) (string, error) {
+			return onPlan[ws], nil
+		},
+	}
+
+	got, err := adapter.For(context.Background(), "ws-a")
+	if err != nil {
+		t.Fatalf("For: %v", err)
+	}
+	if !reflect.DeepEqual(got, free) {
+		t.Errorf("For(ws-a) = %+v, want %+v", got, free)
 	}
 }

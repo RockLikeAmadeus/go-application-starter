@@ -70,7 +70,12 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
     - **Red:** `TestParse_RefusesABadPlansFile`: invalid JSON, a negative max, an unknown `whenOver`, and an unknown field (`maximum`). Each must fail, with the plan and limit named for an invalid limit, and the field named for an unknown one. All four were accepted.
     - **Green:** decode with `DisallowUnknownFields`, wrapping the error in "plans file: …"; build each limit with `domain.NewLimit`, wrapping its error with the plan and limit. The standard library's unknown-field error names the field but not where it is; good enough, since field names are few.
     - **Refactor:** the per-plan loop moved into `planRecord.entitlements(name)`, so `Parse` reads as strip → decode → build each plan. Errors still read `plans file: plan "free", limit "items": max must not be negative`. Left alone: a second JSON value after the first is still accepted. Refusing it would be new behaviour, so it needs its own test; it isn't worth one in a template, where the file is the developer's own.
-9. [ ] **plans adapter, `ports.Entitlements`:** `For` answers the plan the plan-of function names; an unknown plan name is an error.
+9. **plans adapter, `ports.Entitlements`** (split in two, as task 5):
+   - [x] **9a.** `For` answers the plan that the plan-of function names for the workspace.
+     - **Red:** `TestEntitlements_AnswersThePlanTheWorkspaceIsOn`: two workspaces on two plans; `For(ws-a)` must give `free`'s entitlements. It failed with empty entitlements against a stub. Compile stub: `plans.Entitlements{Catalog, PlanOf}`, asserted to satisfy `ports.Entitlements`.
+     - **Green:** `For` asks `PlanOf` and looks the plan up in the catalog. `PlanOf`'s error and a missing plan are ignored until 9b.
+     - **Refactor:** doc comments on the fields and `For`, saying who supplies `PlanOf`: the local edition (its one plan), the acceptance tests (a map), and later `ChangePlan`'s stored plans. Nothing else was worth changing.
+   - [ ] **9b.** An unknown plan name, or an error from `PlanOf`, is an error.
 10. [ ] **plans adapter, shipped file:** the embedded default loads and has a `local` plan with no limits.
 11. [ ] **app, `CreateItem` at the limit** is refused with `LimitError` and saves nothing. `NewItemService` takes `ports.Entitlements`; existing tests use an unlimited fake.
 12. [ ] **app, `RenameItem` over a `read-only` limit** is refused and saves nothing; over `block-new` it works.
@@ -89,3 +94,4 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
 ## Changes to the plan
 
 - 2026-11-01: task 5 split into 5a (answers the workspace's entitlements) and 5b (fails closed), one test each. The `testsupport` fake for `ports.Entitlements` moves to task 11, where `ItemService` first needs one; 5a's fake is local to its test.
+- 2026-11-01: task 9 split the same way: 9a (answers the workspace's plan) and 9b (an unknown plan, or `PlanOf` failing, is an error).
