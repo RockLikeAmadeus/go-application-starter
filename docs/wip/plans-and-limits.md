@@ -99,7 +99,10 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
     - **Red:** `TestUseCases_WhenThePlanCantBeLookedUpAreRefusedAndSaveNothing`, a table test over `CreateItem` and `RenameItem` with a test-local `unavailablePlans` fake: each must return its error and leave the one existing item as it was. Both failed with `nil`: the error was dropped and the empty plan let them through.
     - **Green:** `itemUsage` returns `For`'s error, and both use cases return it before checking the limit. Unwrapped, as `CreateItem` returns the resolver's.
     - **Refactor:** the setup shared by three tests (items made on an unlimited plan, then a service on another plan) became `serviceWithItems(t, entitlements, names...)`; `overTheFreePlan` now calls it. The count's error is task 14b's (see the log).
-14b. [ ] **app, count errors:** when counting the items (`FindAll`) fails, `CreateItem` and `RenameItem` return the error, wrapped as `count items: …`, and save nothing.
+14b. [x] **app, count errors:** when counting the items (`FindAll`) fails, `CreateItem` and `RenameItem` return the error, wrapped as `count items: …`, and save nothing.
+    - **Red:** `TestUseCases_WhenTheItemsCantBeCountedAreRefusedAndSaveNothing`, a table test over both use cases with `uncountableRepo`, which wraps a memory repository and fails only `FindAll`. Each must return `count items: <the error>` and leave the existing item as it was, checked on the memory repository underneath. Both failed with `nil`.
+    - **Green:** `itemUsage` returns `FindAll`'s error wrapped as `count items: …`, as storage errors are wrapped elsewhere (`save item: …`).
+    - **Refactor:** the two error tests' table of calls became the shared `limitedUseCases`. Left the new test's setup apart from `serviceWithItems`: it needs the memory repository underneath, which the helper hides.
 15. [ ] **API, `GET /api/v1/entitlements`:** `api/openapi.yaml` + `task gen`; the handler returns the current entitlements (`httpapi.Options.Entitlements`).
 16. [ ] **httpclient, `CurrentEntitlements`** maps the response back to `domain.Entitlements`.
 17. [ ] **API, limit errors:** `problem.go` maps `*LimitError` to 403 with limit, max and read-only (the item endpoints' responses in `openapi.yaml`, inside sample blocks).

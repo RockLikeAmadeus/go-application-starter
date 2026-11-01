@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -185,6 +186,19 @@ func TestDeleteItem_OverAReadOnlyLimitWorks(t *testing.T) {
 	}
 }
 
+// limitedUseCases are the use cases that check the items limit, each called
+// on a workspace that already has the existing item.
+var limitedUseCases = map[string]func(context.Context, *app.ItemService, domain.Item) error{
+	"CreateItem": func(ctx context.Context, s *app.ItemService, _ domain.Item) error {
+		_, err := s.CreateItem(ctx, "Second")
+		return err
+	},
+	"RenameItem": func(ctx context.Context, s *app.ItemService, existing domain.Item) error {
+		_, err := s.RenameItem(ctx, existing.ID, "Renamed")
+		return err
+	},
+}
+
 // errPlans is the error unavailablePlans fails with.
 var errPlans = errors.New("plans unavailable")
 
@@ -196,17 +210,7 @@ func (unavailablePlans) For(context.Context, domain.WorkspaceID) (domain.Entitle
 }
 
 func TestUseCases_WhenThePlanCantBeLookedUpAreRefusedAndSaveNothing(t *testing.T) {
-	cases := map[string]func(context.Context, *app.ItemService, domain.Item) error{
-		"CreateItem": func(ctx context.Context, s *app.ItemService, _ domain.Item) error {
-			_, err := s.CreateItem(ctx, "Second")
-			return err
-		},
-		"RenameItem": func(ctx context.Context, s *app.ItemService, existing domain.Item) error {
-			_, err := s.RenameItem(ctx, existing.ID, "Renamed")
-			return err
-		},
-	}
-	for name, call := range cases {
+	for name, call := range limitedUseCases {
 		t.Run(name, func(t *testing.T) {
 			svc, made := serviceWithItems(t, unavailablePlans{}, "First")
 			ctx := context.Background()
@@ -216,6 +220,41 @@ func TestUseCases_WhenThePlanCantBeLookedUpAreRefusedAndSaveNothing(t *testing.T
 				t.Fatalf("err = %v, want %v", err, errPlans)
 			}
 			items, _ := svc.ListItems(ctx)
+			if len(items) != 1 || items[0] != existing {
+				t.Errorf("items = %+v, want only %+v", items, existing)
+			}
+		})
+	}
+}
+
+// errCount is the error uncountableRepo's FindAll fails with.
+var errCount = errors.New("storage unavailable")
+
+// uncountableRepo is an ItemRepository whose FindAll always fails; its other
+// calls go to the repository it wraps.
+type uncountableRepo struct{ ports.ItemRepository }
+
+func (uncountableRepo) FindAll(context.Context, domain.WorkspaceID) ([]domain.Item, error) {
+	return nil, errCount
+}
+
+func TestUseCases_WhenTheItemsCantBeCountedAreRefusedAndSaveNothing(t *testing.T) {
+	for name, call := range limitedUseCases {
+		t.Run(name, func(t *testing.T) {
+			repo := memory.NewItemRepository()
+			unlimited, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), testsupport.FixedEntitlements{})
+			ctx := context.Background()
+			existing, err := unlimited.CreateItem(ctx, "First")
+			if err != nil {
+				t.Fatalf("CreateItem: %v", err)
+			}
+			svc, _ := newServiceWith(uncountableRepo{repo}, testsupport.FixedWorkspace(workspace), testsupport.FixedEntitlements{})
+
+			err = call(ctx, svc, existing)
+			if !errors.Is(err, errCount) || !strings.HasPrefix(err.Error(), "count items: ") {
+				t.Fatalf("err = %v, want count items: %v", err, errCount)
+			}
+			items, _ := repo.FindAll(ctx, workspace)
 			if len(items) != 1 || items[0] != existing {
 				t.Errorf("items = %+v, want only %+v", items, existing)
 			}

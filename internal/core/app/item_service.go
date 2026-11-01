@@ -43,7 +43,10 @@ func (s *ItemService) itemUsage(ctx context.Context, workspace domain.WorkspaceI
 	if err != nil {
 		return domain.Entitlements{}, 0, err
 	}
-	existing, _ := s.repo.FindAll(ctx, workspace)
+	existing, err := s.repo.FindAll(ctx, workspace)
+	if err != nil {
+		return domain.Entitlements{}, 0, fmt.Errorf("count items: %w", err)
+	}
 	return entitlements, len(existing), nil
 }
 
