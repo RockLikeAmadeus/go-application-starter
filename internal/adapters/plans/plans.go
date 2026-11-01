@@ -8,6 +8,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
@@ -113,7 +114,21 @@ func (e Entitlements) For(ctx context.Context, workspace domain.WorkspaceID) (do
 var shipped []byte
 
 // Default returns the plans in the file built into the binary,
-// plans.jsonc. A product edits that file to set its own plans.
+// plans.jsonc. A product edits that file to set its own plans; Load reads
+// another one instead (STARTER_PLANS_FILE).
 func Default() (Catalog, error) {
 	return Parse(shipped)
+}
+
+// Load returns the plans in the file at path, or Default's when path is
+// empty.
+func Load(path string) (Catalog, error) {
+	if path == "" {
+		return Default()
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return Parse(data)
 }

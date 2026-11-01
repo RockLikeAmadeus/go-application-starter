@@ -69,7 +69,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	default:
 		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
 	}
-	entitlements, err := localEntitlements()
+	entitlements, err := localEntitlements(cfg.PlansFile)
 	if err != nil {
 		return nil, err
 	}
@@ -84,11 +84,11 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	return a, nil
 }
 
-// localEntitlements answers LocalPlan, from the plans file built into the
-// binary, for every workspace: the local edition has only one. It refuses a
-// LocalPlan the file doesn't have.
-func localEntitlements() (plans.Entitlements, error) {
-	catalog, err := plans.Default()
+// localEntitlements answers LocalPlan, from plansFile or else the plans file
+// built into the binary, for every workspace: the local edition has only
+// one. It refuses a LocalPlan the file doesn't have.
+func localEntitlements(plansFile string) (plans.Entitlements, error) {
+	catalog, err := plans.Load(plansFile)
 	if err != nil {
 		return plans.Entitlements{}, err
 	}

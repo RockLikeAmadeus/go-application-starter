@@ -129,7 +129,10 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
      - **Red:** `TestNewEmbedded_RefusesALocalPlanThePlansFileDoesntHave`: with `LocalPlan` set to `gold` (as `-ldflags -X` would, restored after), `NewEmbedded` must fail with an error naming it. It succeeded. Compile stub: `var LocalPlan = "local"`.
      - **Green:** `localEntitlements` answers `LocalPlan` instead of the literal, and refuses one the catalog doesn't have: `local plan "gold" isn't in the plans file`.
      - **Refactor:** a doc comment on `LocalPlan` with the `go build -ldflags` line, and `localEntitlements`' comment names it. No task sets it yet: the starter step for template users is task 21.
-   - [ ] **19c.** `config.PlansFile` (`STARTER_PLANS_FILE`) replaces the shipped plans file, and a bad file fails at start.
+   - [x] **19c.** `config.PlansFile` (`STARTER_PLANS_FILE`) replaces the shipped plans file, and a bad file fails at start.
+     - **Red:** `TestNewEmbedded_WithAPlansFile`, two cases on a temporary file: one whose `local` plan has an items limit must give that limit; a bad one (`{"plans": `) must make `NewEmbedded` fail with the plans file's error. Both failed, since the field was ignored. Compile stub: `config.Config.PlansFile`.
+     - **Green:** `localEntitlements` reads and parses the file when one is given; `config.Load` fills the field from `STARTER_PLANS_FILE`, as it does every other variable (`config` has no tests).
+     - **Refactor:** choosing between the shipped file and a given one moved into the plans adapter as `plans.Load(path)`, so `bootstrap` doesn't read files and the shipped file isn't parsed for nothing. Doc comments on `Config.PlansFile` and `Default`, which now points to `Load`. A missing file's error is the standard library's, which already names the path.
    - [ ] **19d.** `cmd/server`, `desktop.Open` and `mobile` pass `App.Entitlements` to `httpapi`, so `GET /api/v1/entitlements` answers.
    - [ ] **19e.** `NewRemote` sets `App.Entitlements` to `httpclient.EntitlementsService`, so the CLI and TUI with `--server` answer the server's plan.
 20. [ ] **acceptance:** the harness's `entitlements` driving port, test catalog and plan map (all drivers); step definitions (`plan_steps.go`, sample; the plan-name step, template). Turns the `@wip` scenarios green.

@@ -26,6 +26,9 @@ type Config struct {
 	ServerURL string
 	// LogFormat is "json" or "text" (STARTER_LOG_FORMAT).
 	LogFormat string
+	// PlansFile replaces the plans file built into the binary
+	// (STARTER_PLANS_FILE). Empty means the built-in one.
+	PlansFile string
 }
 
 func Load() (Config, error) {
@@ -34,6 +37,7 @@ func Load() (Config, error) {
 		DataDir:   getenv("STARTER_DATA_DIR", "./data"),
 		ServerURL: os.Getenv("STARTER_SERVER_URL"),
 		LogFormat: getenv("STARTER_LOG_FORMAT", "text"),
+		PlansFile: os.Getenv("STARTER_PLANS_FILE"),
 	}
 	port, err := strconv.Atoi(getenv("PORT", "8080"))
 	if err != nil {
