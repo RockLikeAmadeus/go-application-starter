@@ -62,7 +62,10 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
     - **Red:** `TestParse_GivesEachPlansEntitlements` (`adapters/plans/plans_test.go`): a document with `free` (items: 3, read-only) and `pro` (no limits) gives a `plans.Catalog` (plan name → `domain.Entitlements`). It failed with an empty catalog against a stub.
     - **Green:** `Parse` unmarshals into a private `document` struct and builds each plan's entitlements. The JSON error is ignored and limits are built as literals: tasks 8 (bad config) and 8's `NewLimit` check demand otherwise.
     - **Refactor:** named the anonymous structs (`planRecord`, `limitRecord`), as jsonfile names its on-disk records, with a comment on why they're separate from the domain types; a doc comment on `Parse` showing the format. Left the ignored JSON error and the literal limits for task 8, whose tests demand them.
-7. [ ] **plans adapter, comments:** full-line `//` comments are ignored.
+7. [x] **plans adapter, comments:** full-line `//` comments are ignored.
+    - **Red:** `TestParse_IgnoresFullLineComments`: a document with `//` comment lines, including sample markers around the only limit, parses as the same plan without them. It failed with an empty catalog: the comments made the JSON invalid, and the error is still ignored (task 8).
+    - **Green:** `Parse` empties every line whose first non-blank characters are `//`, keeping the line so JSON error positions still match the file, then unmarshals.
+    - **Refactor:** moved the stripping into `stripComments`, so `Parse` reads as strip → decode → build. `Parse`'s doc comment now says full-line comments are allowed (for explanations and sample markers) and end-of-line ones aren't.
 8. [ ] **plans adapter, bad config:** invalid JSON, an invalid limit (through `NewLimit`), and unknown fields are errors that name the plan and limit.
 9. [ ] **plans adapter, `ports.Entitlements`:** `For` answers the plan the plan-of function names; an unknown plan name is an error.
 10. [ ] **plans adapter, shipped file:** the embedded default loads and has a `local` plan with no limits.

@@ -31,3 +31,31 @@ func TestParse_GivesEachPlansEntitlements(t *testing.T) {
 		t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
 	}
 }
+
+func TestParse_IgnoresFullLineComments(t *testing.T) {
+	doc := `// The product's plans.
+	{
+		"plans": {
+			// The free plan.
+			"free": {
+				"limits": {
+					// sample:start
+					"items": {"max": 3, "whenOver": "block-new"}
+					// sample:end
+				}
+			}
+		}
+	}`
+
+	got, err := plans.Parse([]byte(doc))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	want := plans.Catalog{"free": {
+		Plan:   "free",
+		Limits: map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.BlockNew}},
+	}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
+	}
+}
