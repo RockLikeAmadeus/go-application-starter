@@ -33,14 +33,24 @@ func NewItemService(
 	return &ItemService{repo: repo, workspaces: workspaces, entitlements: entitlements, clock: clock, ids: ids}
 }
 
+// itemsLimit is the name of the plan limit on how many items a workspace has.
+const itemsLimit = "items"
+
+// itemUsage returns the workspace's entitlements and how many items it has,
+// for checking the items limit.
+func (s *ItemService) itemUsage(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, int) {
+	entitlements, _ := s.entitlements.For(ctx, workspace)
+	existing, _ := s.repo.FindAll(ctx, workspace)
+	return entitlements, len(existing)
+}
+
 func (s *ItemService) CreateItem(ctx context.Context, name string) (domain.Item, error) {
 	workspace, err := s.workspaces.CurrentWorkspace(ctx)
 	if err != nil {
 		return domain.Item{}, err
 	}
-	entitlements, _ := s.entitlements.For(ctx, workspace)
-	existing, _ := s.repo.FindAll(ctx, workspace)
-	if err := entitlements.CheckCreate("items", len(existing)); err != nil {
+	entitlements, count := s.itemUsage(ctx, workspace)
+	if err := entitlements.CheckCreate(itemsLimit, count); err != nil {
 		return domain.Item{}, err
 	}
 	item, err := domain.NewItem(workspace, s.ids.NewID(), name, s.clock.Now())
@@ -76,6 +86,10 @@ func (s *ItemService) RenameItem(ctx context.Context, id, name string) (domain.I
 	}
 	item, err := s.repo.FindByID(ctx, workspace, id)
 	if err != nil {
+		return domain.Item{}, err
+	}
+	entitlements, count := s.itemUsage(ctx, workspace)
+	if err := entitlements.CheckChange(itemsLimit, count); err != nil {
 		return domain.Item{}, err
 	}
 	if err := item.Rename(name, s.clock.Now()); err != nil {

@@ -72,12 +72,16 @@ func TestCreateItem_ValidationErrorIsNotPersisted(t *testing.T) {
 	}
 }
 
-func TestCreateItem_AtTheLimitIsRefusedAndSavesNothing(t *testing.T) {
-	free := testsupport.FixedEntitlements{
+// freePlan is a plan allowing 3 items, with whenOver past the limit.
+func freePlan(whenOver domain.OverLimit) testsupport.FixedEntitlements {
+	return testsupport.FixedEntitlements{
 		Plan:   "free",
-		Limits: map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.BlockNew}},
+		Limits: map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: whenOver}},
 	}
-	svc, _ := newServiceWith(memory.NewItemRepository(), testsupport.FixedWorkspace(workspace), free)
+}
+
+func TestCreateItem_AtTheLimitIsRefusedAndSavesNothing(t *testing.T) {
+	svc, _ := newServiceWith(memory.NewItemRepository(), testsupport.FixedWorkspace(workspace), freePlan(domain.BlockNew))
 	ctx := context.Background()
 	for _, name := range []string{"First", "Second", "Third"} {
 		if _, err := svc.CreateItem(ctx, name); err != nil {
@@ -107,6 +111,50 @@ func TestRenameItem_UpdatesTimestamp(t *testing.T) {
 	}
 	if renamed.Name != "New" || !renamed.UpdatedAt.After(created.UpdatedAt) {
 		t.Errorf("unexpected item after rename: %+v", renamed)
+	}
+}
+
+func TestRenameItem_OverALimit(t *testing.T) {
+	cases := map[string]struct {
+		whenOver domain.OverLimit
+		refused  bool
+	}{
+		"that makes them read only is refused and saves nothing": {domain.ReadOnly, true},
+		"that blocks new ones works":                             {domain.BlockNew, false},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			repo := memory.NewItemRepository()
+			unlimited, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), testsupport.FixedEntitlements{})
+			ctx := context.Background()
+			var first domain.Item
+			for i, name := range []string{"First", "Second", "Third", "Fourth"} {
+				item, err := unlimited.CreateItem(ctx, name)
+				if err != nil {
+					t.Fatalf("CreateItem(%q): %v", name, err)
+				}
+				if i == 0 {
+					first = item
+				}
+			}
+			svc, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), freePlan(tc.whenOver))
+
+			_, err := svc.RenameItem(ctx, first.ID, "Renamed")
+			got, _ := svc.GetItem(ctx, first.ID)
+			if !tc.refused {
+				if err != nil || got.Name != "Renamed" {
+					t.Fatalf("RenameItem = %v, name %q; want it renamed", err, got.Name)
+				}
+				return
+			}
+			var limitErr *domain.LimitError
+			if !errors.As(err, &limitErr) || limitErr.Limit != "items" || limitErr.Max != 3 || !limitErr.ReadOnly {
+				t.Fatalf("err = %v, want items read only while over the limit of 3", err)
+			}
+			if got.Name != "First" {
+				t.Errorf("name = %q, want it unchanged", got.Name)
+			}
+		})
 	}
 }
 
