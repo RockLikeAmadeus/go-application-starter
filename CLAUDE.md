@@ -25,6 +25,8 @@ Each copy uses one edition, and nothing syncs between them. Outside `internal/bo
 4. `/refactor` tidies the code on green, with no behaviour change.
 5. Repeat 2–4 until `task accept` passes. Then remove the `@wip` tags.
 
+`/iterate [behaviour]` runs one whole red → green → refactor cycle for the next open task (or the one given), stopping only to ask me something, and then once at the end.
+
 `/feature` saves its inner-loop task list to `docs/wip/<feature-slug>.md`, which is tracked by git, so it survives a cleared context. It also holds the feature's links, the decisions behind the plan, and a log of plan changes.
 - When resuming a feature, read its `docs/wip/` file first.
 - After each `/red`, `/green` or `/refactor`, tick off or annotate the item it advanced. If the plan changes, revise the list and note why.

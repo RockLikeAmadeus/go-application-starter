@@ -19,3 +19,7 @@ Feature: Use the desktop app
   Scenario: Only one copy of the desktop app can use a data folder
     When I try to open a second copy of the desktop app on the same data folder
     Then I am told the data is already in use
+
+  @wip
+  Scenario: The desktop app is on the local plan
+    Then my workspace's plan is "local"

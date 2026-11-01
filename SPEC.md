@@ -192,6 +192,28 @@ All data belongs to a workspace, so that when one server serves many users, nobo
 **Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory and jsonfile drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition.
 <!-- sample:end -->
 
+### 4.9 Plans and limits
+
+Each workspace is on a **plan**, which sets its limits: for example, how many items it may have. Paid plans can then offer more than free ones (ADR 5). Plans are defined in configuration, not code, so they can change without a new release. On/off features come in a later step ([`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md), step 3).
+
+**Rules**
+- A workspace's plan sets its limits. A plan without a given limit has no limit on that thing.
+- A workspace can always see its plan and its limits.
+- At a limit, nothing more can be created. Whatever was already there stays.
+- A workspace can end up **over** a limit, for example after moving to a smaller plan. Each limit says what happens then:
+  - **block new:** existing data can still be changed and deleted; only new data is refused;
+  - **read only:** existing data can still be seen and deleted, but not changed, until the workspace is back within the limit.
+- The local edition is on a plan chosen when the app is built (by default, `local`, with no limits).
+
+<!-- sample:start -->
+**Examples**
+- The free plan allows 3 items. A workspace on it with 3 items tries to create a fourth → it's told the limit of 3 items is reached, and still has 3 items.
+- The free plan allows 3 items and makes them read only when over. A workspace with 4 items moves to it → it can't rename an item, but can delete one; with 3 items left, it can rename again.
+- The pro plan has no item limit → a workspace on it can create a fourth item.
+
+**Specification:** [`features/plans.feature`](features/plans.feature). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
+<!-- sample:end -->
+
 ## 5. Non-functional requirements
 
 | Area | Requirement |

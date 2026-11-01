@@ -52,7 +52,7 @@ SPEC.md §4.8 · [`features/workspaces.feature`](../../features/workspaces.featu
 - **Acceptance:** the workspace scenarios run on the memory and jsonfile drivers, which use `FromContext`. A `Before` hook puts every other scenario in the local workspace. The http, desktop and mobile drivers stay on `Local` until sign-in (step 8).
 - Users see no change. Left for step 8: mapping `ErrNoWorkspace` to HTTP, and running the isolation scenarios on the http driver.
 
-### 2. Plans and entitlements — not started
+### 2. Plans and entitlements — in progress ([docs/wip/plans-and-limits.md](../wip/plans-and-limits.md))
 - The plans config (format and location to decide in the `/feature`), the `Entitlements` port and its config adapter, and the local plan chosen at build time.
 - `GET /api/v1/entitlements` (`api/openapi.yaml`, then `task gen`). `httpclient` maps it back.
 - Sample: a limit on items on the free plan, with the over-limit behaviour set per limit. Inside the sample blocks, so `--remove-sample` strips it. Run `task test:init`.
@@ -112,3 +112,4 @@ SPEC.md §4.8 · [`features/workspaces.feature`](../../features/workspaces.featu
   - a generic isolation suite, `storagetest.RunWorkspaceIsolation`, which the Item contract now calls instead of its own isolation cases;
   - a guide with a checklist, `docs/workspaces.md`, linked from CLAUDE.md's workspace rule, the port and `/feature`'s planning step;
   - a comment in `bootstrap.NewEmbedded`, outside the sample block, naming `workspace.Local{}` beside the clock and IDs.
+- 2026-11-01: step 2 covers limits only. On/off features, with show-locked or hide, move to step 3, where CSV export is their first user. The plans file is JSON with full-line `//` comments, so it can carry sample markers.
