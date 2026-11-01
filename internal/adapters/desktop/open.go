@@ -37,8 +37,9 @@ func Open(getenv func(string) string, userConfigDir func() (string, error), webA
 		// sample:start
 		Items: core.Items,
 		// sample:end
-		LocalData: true,
-		WebAssets: webAssets,
+		Entitlements: core.Entitlements,
+		LocalData:    true,
+		WebAssets:    webAssets,
 	})
 	return &App{
 		Handler: withoutServiceWorker(api),

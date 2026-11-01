@@ -121,19 +121,39 @@ func openWith(t *testing.T, dataDir string, webApp fs.FS) *desktop.App {
 // connection, as the SPA does.
 func connectionRequired(t *testing.T, h http.Handler) bool {
 	t.Helper()
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/connection", nil))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("connection: status = %d, want %d", rec.Code, http.StatusOK)
-	}
 	var body struct {
 		Required *bool `json:"required"`
 	}
-	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
-		t.Fatalf("decode %q: %v", rec.Body.String(), err)
-	}
+	getJSON(t, h, "/api/v1/connection", &body)
 	if body.Required == nil {
-		t.Fatalf("body = %s, want a required field", rec.Body)
+		t.Fatal("connection: the answer has no required field")
 	}
 	return *body.Required
+}
+
+// getJSON asks the REST API for path, as the SPA does, and decodes its
+// answer into body, failing the test unless it is a 200.
+func getJSON(t *testing.T, h http.Handler, path string, body any) {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET %s: status = %d, want %d", path, rec.Code, http.StatusOK)
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), body); err != nil {
+		t.Fatalf("GET %s: decode %q: %v", path, rec.Body.String(), err)
+	}
+}
+
+// The desktop app is the local edition, so its web app sees the local plan.
+func TestOpenServesTheLocalPlan(t *testing.T) {
+	app := openAt(t, t.TempDir())
+
+	var body struct {
+		Plan string `json:"plan"`
+	}
+	getJSON(t, app.Handler, "/api/v1/entitlements", &body)
+	if body.Plan != "local" {
+		t.Errorf("plan = %q, want %q", body.Plan, "local")
+	}
 }

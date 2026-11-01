@@ -43,8 +43,9 @@ func run() error {
 			// sample:start
 			Items: application.Items,
 			// sample:end
-			Logger:    log,
-			WebAssets: web.Assets(),
+			Entitlements: application.Entitlements,
+			Logger:       log,
+			WebAssets:    web.Assets(),
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
