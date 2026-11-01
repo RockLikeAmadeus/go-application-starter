@@ -18,7 +18,7 @@ import (
 // TestRoundTrip exercises the HTTP server and client adapters together:
 // client -> HTTP -> server -> core -> memory storage, and errors back.
 func TestRoundTrip(t *testing.T) {
-	core := app.NewItemService(memory.NewItemRepository(), testsupport.FixedWorkspace(domain.LocalWorkspace),
+	core := app.NewItemService(memory.NewItemRepository(), testsupport.FixedWorkspace(domain.LocalWorkspace), testsupport.FixedEntitlements{},
 		testsupport.NewFixedClock(time.Unix(0, 0).UTC()), testsupport.NewSequentialIDs("item"))
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Items: core}))
 	t.Cleanup(srv.Close)

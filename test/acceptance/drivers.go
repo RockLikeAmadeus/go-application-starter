@@ -78,7 +78,7 @@ func newHarness() *harness {
 // newItems builds the Item use cases on repo, driven by the harness's clock,
 // in the workspace that workspaces resolves.
 func (h *harness) newItems(repo ports.ItemRepository, workspaces ports.WorkspaceResolver) *app.ItemService {
-	return app.NewItemService(repo, workspaces, h.clock, testsupport.NewSequentialIDs("item"))
+	return app.NewItemService(repo, workspaces, testsupport.FixedEntitlements{}, h.clock, testsupport.NewSequentialIDs("item"))
 }
 
 // sample:end

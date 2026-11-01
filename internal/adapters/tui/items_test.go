@@ -19,7 +19,7 @@ import (
 // commands synchronously, and assert on the rendered view.
 
 func newCore() ports.ItemService {
-	return app.NewItemService(memory.NewItemRepository(), testsupport.FixedWorkspace(domain.LocalWorkspace),
+	return app.NewItemService(memory.NewItemRepository(), testsupport.FixedWorkspace(domain.LocalWorkspace), testsupport.FixedEntitlements{},
 		testsupport.NewFixedClock(time.Unix(0, 0).UTC()), testsupport.NewSequentialIDs("item"))
 }
 

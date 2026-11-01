@@ -60,3 +60,11 @@ type NoWorkspace struct{}
 func (NoWorkspace) CurrentWorkspace(context.Context) (domain.WorkspaceID, error) {
 	return "", domain.ErrNoWorkspace
 }
+
+// FixedEntitlements is a ports.Entitlements that answers the same
+// entitlements for every workspace. Its zero value is a plan with no limits.
+type FixedEntitlements domain.Entitlements
+
+func (e FixedEntitlements) For(context.Context, domain.WorkspaceID) (domain.Entitlements, error) {
+	return domain.Entitlements(e), nil
+}

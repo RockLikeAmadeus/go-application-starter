@@ -3,17 +3,20 @@
 package bootstrap
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/plans"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/system"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
@@ -57,11 +60,24 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	default:
 		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
 	}
+	// The local edition's workspace is on the local plan, from the plans file
+	// built into the binary.
+	catalog, err := plans.Default()
+	if err != nil {
+		return nil, err
+	}
+	entitlements := plans.Entitlements{
+		Catalog: catalog,
+		PlanOf: func(context.Context, domain.WorkspaceID) (string, error) {
+			return "local", nil
+		},
+	}
 	// Build each use case on its repository and the local edition's driven
-	// ports: workspace.Local{} (the one local workspace, ADR 5), system.Clock{}
-	// and system.UUIDs{}. See docs/workspaces.md.
+	// ports: workspace.Local{} (the one local workspace, ADR 5), the local
+	// plan's entitlements, system.Clock{} and system.UUIDs{}. See
+	// docs/workspaces.md.
 	// sample:start
-	a.Items = app.NewItemService(items, workspace.Local{}, system.Clock{}, system.UUIDs{})
+	a.Items = app.NewItemService(items, workspace.Local{}, entitlements, system.Clock{}, system.UUIDs{})
 	// sample:end
 	return a, nil
 }

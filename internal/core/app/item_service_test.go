@@ -17,14 +17,16 @@ import (
 const workspace domain.WorkspaceID = "ws-a"
 
 func newService() (*app.ItemService, *testsupport.FixedClock) {
-	return newServiceWith(memory.NewItemRepository(), testsupport.FixedWorkspace(workspace))
+	return newServiceWith(memory.NewItemRepository(), testsupport.FixedWorkspace(workspace), testsupport.FixedEntitlements{})
 }
 
-// newServiceWith builds the service on the given repository and resolver, with
-// a fixed clock and sequential IDs.
-func newServiceWith(repo ports.ItemRepository, workspaces ports.WorkspaceResolver) (*app.ItemService, *testsupport.FixedClock) {
+// newServiceWith builds the service on the given repository, resolver and
+// entitlements, with a fixed clock and sequential IDs.
+func newServiceWith(
+	repo ports.ItemRepository, workspaces ports.WorkspaceResolver, entitlements ports.Entitlements,
+) (*app.ItemService, *testsupport.FixedClock) {
 	clock := testsupport.NewFixedClock(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
-	return app.NewItemService(repo, workspaces, clock, testsupport.NewSequentialIDs("item")), clock
+	return app.NewItemService(repo, workspaces, entitlements, clock, testsupport.NewSequentialIDs("item")), clock
 }
 
 func TestCreateItem_PutsTheItemInTheCurrentWorkspace(t *testing.T) {
@@ -67,6 +69,29 @@ func TestCreateItem_ValidationErrorIsNotPersisted(t *testing.T) {
 	items, _ := svc.ListItems(ctx)
 	if len(items) != 0 {
 		t.Errorf("expected no items, got %d", len(items))
+	}
+}
+
+func TestCreateItem_AtTheLimitIsRefusedAndSavesNothing(t *testing.T) {
+	free := testsupport.FixedEntitlements{
+		Plan:   "free",
+		Limits: map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.BlockNew}},
+	}
+	svc, _ := newServiceWith(memory.NewItemRepository(), testsupport.FixedWorkspace(workspace), free)
+	ctx := context.Background()
+	for _, name := range []string{"First", "Second", "Third"} {
+		if _, err := svc.CreateItem(ctx, name); err != nil {
+			t.Fatalf("CreateItem(%q): %v", name, err)
+		}
+	}
+
+	_, err := svc.CreateItem(ctx, "Fourth")
+	var limitErr *domain.LimitError
+	if !errors.As(err, &limitErr) || limitErr.Limit != "items" || limitErr.Max != 3 || limitErr.ReadOnly {
+		t.Fatalf("err = %v, want the limit of 3 items reached", err)
+	}
+	if items, _ := svc.ListItems(ctx); len(items) != 3 {
+		t.Errorf("got %d items, want 3", len(items))
 	}
 }
 
@@ -154,7 +179,7 @@ func TestUseCases_WithoutAWorkspaceAreRefusedBeforeStorage(t *testing.T) {
 	for name, call := range cases {
 		t.Run(name, func(t *testing.T) {
 			repo := &untouchedRepo{}
-			svc, _ := newServiceWith(repo, testsupport.NoWorkspace{})
+			svc, _ := newServiceWith(repo, testsupport.NoWorkspace{}, testsupport.FixedEntitlements{})
 
 			if err := call(context.Background(), svc); !errors.Is(err, domain.ErrNoWorkspace) {
 				t.Errorf("err = %v, want ErrNoWorkspace", err)

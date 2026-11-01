@@ -13,10 +13,11 @@ import (
 
 // ItemService implements ports.ItemService.
 type ItemService struct {
-	repo       ports.ItemRepository
-	workspaces ports.WorkspaceResolver
-	clock      ports.Clock
-	ids        ports.IDGenerator
+	repo         ports.ItemRepository
+	workspaces   ports.WorkspaceResolver
+	entitlements ports.Entitlements
+	clock        ports.Clock
+	ids          ports.IDGenerator
 }
 
 var _ ports.ItemService = (*ItemService)(nil)
@@ -25,15 +26,21 @@ var _ ports.ItemService = (*ItemService)(nil)
 func NewItemService(
 	repo ports.ItemRepository,
 	workspaces ports.WorkspaceResolver,
+	entitlements ports.Entitlements,
 	clock ports.Clock,
 	ids ports.IDGenerator,
 ) *ItemService {
-	return &ItemService{repo: repo, workspaces: workspaces, clock: clock, ids: ids}
+	return &ItemService{repo: repo, workspaces: workspaces, entitlements: entitlements, clock: clock, ids: ids}
 }
 
 func (s *ItemService) CreateItem(ctx context.Context, name string) (domain.Item, error) {
 	workspace, err := s.workspaces.CurrentWorkspace(ctx)
 	if err != nil {
+		return domain.Item{}, err
+	}
+	entitlements, _ := s.entitlements.For(ctx, workspace)
+	existing, _ := s.repo.FindAll(ctx, workspace)
+	if err := entitlements.CheckCreate("items", len(existing)); err != nil {
 		return domain.Item{}, err
 	}
 	item, err := domain.NewItem(workspace, s.ids.NewID(), name, s.clock.Now())
