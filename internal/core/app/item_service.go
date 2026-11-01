@@ -38,10 +38,13 @@ const itemsLimit = "items"
 
 // itemUsage returns the workspace's entitlements and how many items it has,
 // for checking the items limit.
-func (s *ItemService) itemUsage(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, int) {
-	entitlements, _ := s.entitlements.For(ctx, workspace)
+func (s *ItemService) itemUsage(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, int, error) {
+	entitlements, err := s.entitlements.For(ctx, workspace)
+	if err != nil {
+		return domain.Entitlements{}, 0, err
+	}
 	existing, _ := s.repo.FindAll(ctx, workspace)
-	return entitlements, len(existing)
+	return entitlements, len(existing), nil
 }
 
 func (s *ItemService) CreateItem(ctx context.Context, name string) (domain.Item, error) {
@@ -49,7 +52,10 @@ func (s *ItemService) CreateItem(ctx context.Context, name string) (domain.Item,
 	if err != nil {
 		return domain.Item{}, err
 	}
-	entitlements, count := s.itemUsage(ctx, workspace)
+	entitlements, count, err := s.itemUsage(ctx, workspace)
+	if err != nil {
+		return domain.Item{}, err
+	}
 	if err := entitlements.CheckCreate(itemsLimit, count); err != nil {
 		return domain.Item{}, err
 	}
@@ -88,7 +94,10 @@ func (s *ItemService) RenameItem(ctx context.Context, id, name string) (domain.I
 	if err != nil {
 		return domain.Item{}, err
 	}
-	entitlements, count := s.itemUsage(ctx, workspace)
+	entitlements, count, err := s.itemUsage(ctx, workspace)
+	if err != nil {
+		return domain.Item{}, err
+	}
 	if err := entitlements.CheckChange(itemsLimit, count); err != nil {
 		return domain.Item{}, err
 	}

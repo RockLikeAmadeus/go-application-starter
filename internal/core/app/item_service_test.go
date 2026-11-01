@@ -80,22 +80,29 @@ func freePlan(whenOver domain.OverLimit) testsupport.FixedEntitlements {
 	}
 }
 
-// overTheFreePlan returns a service on freePlan(whenOver) whose workspace
-// already has four items, made before the limit applied, and those items.
-func overTheFreePlan(t *testing.T, whenOver domain.OverLimit) (*app.ItemService, []domain.Item) {
+// serviceWithItems returns a service on entitlements whose workspace already
+// has the named items, made on a plan with no limits, and those items.
+func serviceWithItems(t *testing.T, entitlements ports.Entitlements, names ...string) (*app.ItemService, []domain.Item) {
 	t.Helper()
 	repo := memory.NewItemRepository()
 	unlimited, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), testsupport.FixedEntitlements{})
 	var items []domain.Item
-	for _, name := range []string{"First", "Second", "Third", "Fourth"} {
+	for _, name := range names {
 		item, err := unlimited.CreateItem(context.Background(), name)
 		if err != nil {
 			t.Fatalf("CreateItem(%q): %v", name, err)
 		}
 		items = append(items, item)
 	}
-	svc, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), freePlan(whenOver))
+	svc, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), entitlements)
 	return svc, items
+}
+
+// overTheFreePlan returns a service on freePlan(whenOver) whose workspace
+// already has four items, and those items.
+func overTheFreePlan(t *testing.T, whenOver domain.OverLimit) (*app.ItemService, []domain.Item) {
+	t.Helper()
+	return serviceWithItems(t, freePlan(whenOver), "First", "Second", "Third", "Fourth")
 }
 
 func TestCreateItem_AtTheLimitIsRefusedAndSavesNothing(t *testing.T) {
@@ -175,6 +182,44 @@ func TestDeleteItem_OverAReadOnlyLimitWorks(t *testing.T) {
 	}
 	if _, err := svc.GetItem(ctx, last.ID); !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("GetItem after delete err = %v, want ErrNotFound", err)
+	}
+}
+
+// errPlans is the error unavailablePlans fails with.
+var errPlans = errors.New("plans unavailable")
+
+// unavailablePlans is a ports.Entitlements whose lookup always fails.
+type unavailablePlans struct{}
+
+func (unavailablePlans) For(context.Context, domain.WorkspaceID) (domain.Entitlements, error) {
+	return domain.Entitlements{}, errPlans
+}
+
+func TestUseCases_WhenThePlanCantBeLookedUpAreRefusedAndSaveNothing(t *testing.T) {
+	cases := map[string]func(context.Context, *app.ItemService, domain.Item) error{
+		"CreateItem": func(ctx context.Context, s *app.ItemService, _ domain.Item) error {
+			_, err := s.CreateItem(ctx, "Second")
+			return err
+		},
+		"RenameItem": func(ctx context.Context, s *app.ItemService, existing domain.Item) error {
+			_, err := s.RenameItem(ctx, existing.ID, "Renamed")
+			return err
+		},
+	}
+	for name, call := range cases {
+		t.Run(name, func(t *testing.T) {
+			svc, made := serviceWithItems(t, unavailablePlans{}, "First")
+			ctx := context.Background()
+			existing := made[0]
+
+			if err := call(ctx, svc, existing); !errors.Is(err, errPlans) {
+				t.Fatalf("err = %v, want %v", err, errPlans)
+			}
+			items, _ := svc.ListItems(ctx)
+			if len(items) != 1 || items[0] != existing {
+				t.Errorf("items = %+v, want only %+v", items, existing)
+			}
+		})
 	}
 }
 

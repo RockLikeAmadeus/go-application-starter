@@ -95,7 +95,11 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
     - **Red:** `TestDeleteItem_OverAReadOnlyLimitWorks`: four items, then a read-only limit of 3; deleting one must work. It passed straight away, since `DeleteItem` has no limit check. Kept as a guard, at Alec's choice: it pins that deleting always works, which is how a workspace gets back within a read-only limit.
     - **Green:** nothing to do.
     - **Refactor:** the rename and delete tests' shared setup (four items made on an unlimited plan, then a service on `freePlan(whenOver)` over the same repository) moved into `overTheFreePlan(t, whenOver)`.
-14. [ ] **app, entitlements errors:** when `ports.Entitlements` fails, `CreateItem` and `RenameItem` return the error and save nothing.
+14. [x] **app, entitlements errors:** when `ports.Entitlements` fails, `CreateItem` and `RenameItem` return the error and save nothing.
+    - **Red:** `TestUseCases_WhenThePlanCantBeLookedUpAreRefusedAndSaveNothing`, a table test over `CreateItem` and `RenameItem` with a test-local `unavailablePlans` fake: each must return its error and leave the one existing item as it was. Both failed with `nil`: the error was dropped and the empty plan let them through.
+    - **Green:** `itemUsage` returns `For`'s error, and both use cases return it before checking the limit. Unwrapped, as `CreateItem` returns the resolver's.
+    - **Refactor:** the setup shared by three tests (items made on an unlimited plan, then a service on another plan) became `serviceWithItems(t, entitlements, names...)`; `overTheFreePlan` now calls it. The count's error is task 14b's (see the log).
+14b. [ ] **app, count errors:** when counting the items (`FindAll`) fails, `CreateItem` and `RenameItem` return the error, wrapped as `count items: …`, and save nothing.
 15. [ ] **API, `GET /api/v1/entitlements`:** `api/openapi.yaml` + `task gen`; the handler returns the current entitlements (`httpapi.Options.Entitlements`).
 16. [ ] **httpclient, `CurrentEntitlements`** maps the response back to `domain.Entitlements`.
 17. [ ] **API, limit errors:** `problem.go` maps `*LimitError` to 403 with limit, max and read-only (the item endpoints' responses in `openapi.yaml`, inside sample blocks).
@@ -111,4 +115,5 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
 - 2026-11-01: task 5 split into 5a (answers the workspace's entitlements) and 5b (fails closed), one test each. The `testsupport` fake for `ports.Entitlements` moves to task 11, where `ItemService` first needs one; 5a's fake is local to its test.
 - 2026-11-01: the shipped plans file holds only `local` after task 10, which is all its test demands. `free` (with the sample item limit inside sample markers) and `pro` are added in task 21, which checks `--remove-sample` strips the limit and leaves valid JSON.
 - 2026-11-01: task 11 wires the plans adapter into `bootstrap.NewEmbedded` early, because `NewItemService` now needs a `ports.Entitlements` and production code can't use a `testsupport` fake: the shipped catalog, with `"local"` as a literal for every workspace, and `Default`'s error returned. Task 19 still adds `LocalPlan`, `STARTER_PLANS_FILE`, failing fast on an unknown plan, and `App.Entitlements`.
+- 2026-11-01: task 14b added, at Alec's choice: `itemUsage` still ignored `FindAll`'s error, so a storage failure would count 0 items and let a create through the limit. It needs its own test.
 - 2026-11-01: task 9 split the same way: 9a (answers the workspace's plan) and 9b (an unknown plan, or `PlanOf` failing, is an error).
