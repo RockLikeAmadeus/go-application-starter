@@ -20,6 +20,19 @@ paths:
                 $ref: "#/components/schemas/Connection"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/entitlements:
+    get:
+      operationId: getEntitlements
+      tags: [entitlements]
+      responses:
+        "200":
+          description: The current workspace's plan and what it allows.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entitlements"
+        default:
+          $ref: "#/components/responses/Problem"
   # sample:start
   /api/v1/items:
     get:
@@ -117,6 +130,33 @@ components:
             True when the app reaches its data over the network (the server).
             False when the data is on this device (the desktop app's local-only
             mode), so a lost connection doesn't matter.
+    Entitlements:
+      type: object
+      required: [plan, limits]
+      properties:
+        plan:
+          type: string
+          description: The name of the plan the workspace is on.
+        limits:
+          type: object
+          description: The plan's limits, by name (e.g. "items"). A limit that isn't here doesn't apply.
+          additionalProperties:
+            $ref: "#/components/schemas/Limit"
+    Limit:
+      type: object
+      required: [max, whenOver]
+      properties:
+        max:
+          type: integer
+          minimum: 0
+          description: How many the plan allows.
+        whenOver:
+          type: string
+          enum: [block-new, read-only]
+          description: |
+            What happens at or over the limit. block-new: no new ones can be
+            added. read-only: no new ones either, and over the limit the
+            existing ones can't be changed, only deleted.
     # sample:start
     Item:
       type: object

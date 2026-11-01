@@ -1,13 +1,16 @@
 package httpapi_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"testing/fstest"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 // The web app manifest's type must not depend on the host's MIME tables:
@@ -66,4 +69,34 @@ func connectionRequired(t *testing.T, opts httpapi.Options) bool {
 		t.Fatalf("body = %s, want a required field", rec.Body)
 	}
 	return *body.Required
+}
+
+// fixedEntitlements is a ports.EntitlementsService that always answers the
+// same entitlements.
+type fixedEntitlements domain.Entitlements
+
+func (e fixedEntitlements) CurrentEntitlements(context.Context) (domain.Entitlements, error) {
+	return domain.Entitlements(e), nil
+}
+
+func TestEntitlementsAreTheCurrentWorkspacesPlanAndLimits(t *testing.T) {
+	free := fixedEntitlements{
+		Plan:   "free",
+		Limits: map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.BlockNew}},
+	}
+	rec := httptest.NewRecorder()
+	httpapi.NewHandler(httpapi.Options{Entitlements: free}).
+		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	var got, want any
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode %q: %v", rec.Body.String(), err)
+	}
+	_ = json.Unmarshal([]byte(`{"plan":"free","limits":{"items":{"max":3,"whenOver":"block-new"}}}`), &want)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("body = %s, want %v", rec.Body, want)
+	}
 }

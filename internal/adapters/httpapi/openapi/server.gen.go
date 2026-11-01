@@ -16,12 +16,39 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for LimitWhenOver.
+const (
+	BlockNew LimitWhenOver = "block-new"
+	ReadOnly LimitWhenOver = "read-only"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhenOver enum.
+func (e LimitWhenOver) Valid() bool {
+	switch e {
+	case BlockNew:
+		return true
+	case ReadOnly:
+		return true
+	default:
+		return false
+	}
+}
+
 // Connection defines model for Connection.
 type Connection struct {
 	// Required True when the app reaches its data over the network (the server).
 	// False when the data is on this device (the desktop app's local-only
 	// mode), so a lost connection doesn't matter.
 	Required bool `json:"required"`
+}
+
+// Entitlements defines model for Entitlements.
+type Entitlements struct {
+	// Limits The plan's limits, by name (e.g. "items"). A limit that isn't here doesn't apply.
+	Limits map[string]Limit `json:"limits"`
+
+	// Plan The name of the plan the workspace is on.
+	Plan string `json:"plan"`
 }
 
 // Item defines model for Item.
@@ -41,6 +68,22 @@ type ItemInput struct {
 type ItemList struct {
 	Items []Item `json:"items"`
 }
+
+// Limit defines model for Limit.
+type Limit struct {
+	// Max How many the plan allows.
+	Max int `json:"max"`
+
+	// WhenOver What happens at or over the limit. block-new: no new ones can be
+	// added. read-only: no new ones either, and over the limit the
+	// existing ones can't be changed, only deleted.
+	WhenOver LimitWhenOver `json:"whenOver"`
+}
+
+// LimitWhenOver What happens at or over the limit. block-new: no new ones can be
+// added. read-only: no new ones either, and over the limit the
+// existing ones can't be changed, only deleted.
+type LimitWhenOver string
 
 // Problem defines model for Problem.
 type Problem struct {
@@ -66,6 +109,9 @@ type ServerInterface interface {
 
 	// (GET /api/v1/connection)
 	GetConnection(w http.ResponseWriter, r *http.Request)
+
+	// (GET /api/v1/entitlements)
+	GetEntitlements(w http.ResponseWriter, r *http.Request)
 
 	// (GET /api/v1/items)
 	ListItems(w http.ResponseWriter, r *http.Request)
@@ -97,6 +143,20 @@ func (siw *ServerInterfaceWrapper) GetConnection(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetConnection(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetEntitlements operation middleware
+func (siw *ServerInterfaceWrapper) GetEntitlements(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetEntitlements(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -333,6 +393,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	}
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/connection", wrapper.GetConnection)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/entitlements", wrapper.GetEntitlements)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/items", wrapper.ListItems)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/items", wrapper.CreateItem)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/items/{id}", wrapper.DeleteItem)
@@ -371,6 +432,44 @@ type GetConnectiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetConnectiondefaultApplicationProblemPlusJSONResponse) VisitGetConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEntitlementsRequestObject struct {
+}
+
+type GetEntitlementsResponseObject interface {
+	VisitGetEntitlementsResponse(w http.ResponseWriter) error
+}
+
+type GetEntitlements200JSONResponse Entitlements
+
+func (response GetEntitlements200JSONResponse) VisitGetEntitlementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEntitlementsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetEntitlementsdefaultApplicationProblemPlusJSONResponse) VisitGetEntitlementsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -577,6 +676,9 @@ type StrictServerInterface interface {
 	// (GET /api/v1/connection)
 	GetConnection(ctx context.Context, request GetConnectionRequestObject) (GetConnectionResponseObject, error)
 
+	// (GET /api/v1/entitlements)
+	GetEntitlements(ctx context.Context, request GetEntitlementsRequestObject) (GetEntitlementsResponseObject, error)
+
 	// (GET /api/v1/items)
 	ListItems(ctx context.Context, request ListItemsRequestObject) (ListItemsResponseObject, error)
 
@@ -649,6 +751,30 @@ func (sh *strictHandler) GetConnection(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetConnectionResponseObject); ok {
 		if err := validResponse.VisitGetConnectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetEntitlements operation middleware
+func (sh *strictHandler) GetEntitlements(w http.ResponseWriter, r *http.Request) {
+	var request GetEntitlementsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEntitlements(ctx, request.(GetEntitlementsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEntitlements")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetEntitlementsResponseObject); ok {
+		if err := validResponse.VisitGetEntitlementsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

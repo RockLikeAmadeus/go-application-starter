@@ -20,6 +20,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEntitlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/items": {
         parameters: {
             query?: never;
@@ -65,6 +81,25 @@ export interface components {
              *     mode), so a lost connection doesn't matter.
              */
             required: boolean;
+        };
+        Entitlements: {
+            /** @description The name of the plan the workspace is on. */
+            plan: string;
+            /** @description The plan's limits, by name (e.g. "items"). A limit that isn't here doesn't apply. */
+            limits: {
+                [key: string]: components["schemas"]["Limit"];
+            };
+        };
+        Limit: {
+            /** @description How many the plan allows. */
+            max: number;
+            /**
+             * @description What happens at or over the limit. block-new: no new ones can be
+             *     added. read-only: no new ones either, and over the limit the
+             *     existing ones can't be changed, only deleted.
+             * @enum {string}
+             */
+            whenOver: "block-new" | "read-only";
         };
         Item: {
             id: string;
@@ -124,6 +159,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Connection"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getEntitlements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The current workspace's plan and what it allows. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Entitlements"];
                 };
             };
             default: components["responses"]["Problem"];

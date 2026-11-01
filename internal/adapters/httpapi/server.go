@@ -18,7 +18,10 @@ type Options struct {
 	// sample:start
 	Items ports.ItemService
 	// sample:end
-	Logger *slog.Logger
+	// Entitlements answers GET /api/v1/entitlements: the current
+	// workspace's plan and its limits.
+	Entitlements ports.EntitlementsService
+	Logger       *slog.Logger
 	// WebAssets is the built SPA (web/dist). When nil, "/" serves a hint page.
 	WebAssets fs.FS
 	// LocalData is set when the data is on the same device as the web app

@@ -17,12 +17,39 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for LimitWhenOver.
+const (
+	BlockNew LimitWhenOver = "block-new"
+	ReadOnly LimitWhenOver = "read-only"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhenOver enum.
+func (e LimitWhenOver) Valid() bool {
+	switch e {
+	case BlockNew:
+		return true
+	case ReadOnly:
+		return true
+	default:
+		return false
+	}
+}
+
 // Connection defines model for Connection.
 type Connection struct {
 	// Required True when the app reaches its data over the network (the server).
 	// False when the data is on this device (the desktop app's local-only
 	// mode), so a lost connection doesn't matter.
 	Required bool `json:"required"`
+}
+
+// Entitlements defines model for Entitlements.
+type Entitlements struct {
+	// Limits The plan's limits, by name (e.g. "items"). A limit that isn't here doesn't apply.
+	Limits map[string]Limit `json:"limits"`
+
+	// Plan The name of the plan the workspace is on.
+	Plan string `json:"plan"`
 }
 
 // Item defines model for Item.
@@ -42,6 +69,22 @@ type ItemInput struct {
 type ItemList struct {
 	Items []Item `json:"items"`
 }
+
+// Limit defines model for Limit.
+type Limit struct {
+	// Max How many the plan allows.
+	Max int `json:"max"`
+
+	// WhenOver What happens at or over the limit. block-new: no new ones can be
+	// added. read-only: no new ones either, and over the limit the
+	// existing ones can't be changed, only deleted.
+	WhenOver LimitWhenOver `json:"whenOver"`
+}
+
+// LimitWhenOver What happens at or over the limit. block-new: no new ones can be
+// added. read-only: no new ones either, and over the limit the
+// existing ones can't be changed, only deleted.
+type LimitWhenOver string
 
 // Problem defines model for Problem.
 type Problem struct {
@@ -139,6 +182,9 @@ type ClientInterface interface {
 	// GetConnection performs a GET /api/v1/connection (the `GetConnection` operationId) request.
 	GetConnection(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetEntitlements performs a GET /api/v1/entitlements (the `GetEntitlements` operationId) request.
+	GetEntitlements(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListItems performs a GET /api/v1/items (the `ListItems` operationId) request.
 	ListItems(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -168,6 +214,19 @@ type ClientInterface interface {
 // GetConnection performs a GET /api/v1/connection (the `GetConnection` operationId) request.
 func (c *Client) GetConnection(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetConnectionRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetEntitlements performs a GET /api/v1/entitlements (the `GetEntitlements` operationId) request.
+func (c *Client) GetEntitlements(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEntitlementsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -283,6 +342,33 @@ func NewGetConnectionRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/connection")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetEntitlementsRequest constructs an http.Request for the GetEntitlements method
+func NewGetEntitlementsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/entitlements")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -531,6 +617,11 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetConnectionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConnectionResponse, error)
 
+	// GetEntitlementsWithResponse performs a GET /api/v1/entitlements (the `GetEntitlements` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetEntitlementsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEntitlementsResponse, error)
+
 	// ListItemsWithResponse performs a GET /api/v1/items (the `ListItems` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -609,6 +700,54 @@ func (r GetConnectionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetConnectionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetEntitlementsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Entitlements
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetEntitlementsResponse) GetJSON200() *Entitlements {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetEntitlementsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetEntitlementsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEntitlementsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEntitlementsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetEntitlementsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -859,6 +998,17 @@ func (c *ClientWithResponses) GetConnectionWithResponse(ctx context.Context, req
 	return ParseGetConnectionResponse(rsp)
 }
 
+// GetEntitlementsWithResponse performs a GET /api/v1/entitlements (the `GetEntitlements` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetEntitlementsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEntitlementsResponse, error) {
+	rsp, err := c.GetEntitlements(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEntitlementsResponse(rsp)
+}
+
 // ListItemsWithResponse performs a GET /api/v1/items (the `ListItems` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -952,6 +1102,39 @@ func ParseGetConnectionResponse(rsp *http.Response) (*GetConnectionResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Connection
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetEntitlementsResponse parses an HTTP response from a GetEntitlementsWithResponse call
+func ParseGetEntitlementsResponse(rsp *http.Response) (*GetEntitlementsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEntitlementsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Entitlements
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
