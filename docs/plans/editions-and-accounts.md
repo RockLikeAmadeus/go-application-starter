@@ -76,6 +76,7 @@ This file, [ADR 5](../adr/0005-hosted-and-local-editions.md), and a merge of the
 - This is the existing "Authentication behind a port" TODO item.
 - The OIDC adapter and the dev-only fake login.
 - Auth middleware that sets the workspace, and a personal workspace created at first login.
+- Sign-in is optional on the server. With it off, the server is a self-hosted local edition: it uses the `Local` resolver, as it does today.
 - SPA login and logout. The isolation scenarios run on the http driver.
 - Remove "Authentication and authorization" from SPEC.md §6.
 
@@ -99,3 +100,4 @@ This file, [ADR 5](../adr/0005-hosted-and-local-editions.md), and a merge of the
 ## Plan changes
 - 2026-10-31: plan created from the design discussion.
 - 2026-10-31: step 1 refines how the workspace reaches the core: use cases ask a driven port, `ports.WorkspaceResolver`, instead of reading the context directly. bootstrap plugs in a fixed local resolver for the local edition, and the hosted edition's resolver reads what the auth middleware put in the context. Missing workspaces are refused. The API doesn't expose the workspace yet.
+- 2026-11-01: the server can also run as a self-hosted local edition, with sign-in off (step 8). Recorded in ADR 5. SPEC.md, CLAUDE.md and README.md now describe which clients run in which edition, marking the parts still to build as planned.

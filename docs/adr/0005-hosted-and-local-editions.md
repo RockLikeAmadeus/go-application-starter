@@ -11,8 +11,10 @@ A product built from this template may be sold as a hosted service: many users, 
 
 ### Two editions, chosen at the composition root
 
-- The **hosted edition** is multi-user, with Postgres on a server, reached by the web app, and by the desktop and mobile apps in remote mode (ADR 4).
+- The **hosted edition** is multi-user, with Postgres on a server. It's reached by the web app, by the CLI and TUI after `starter login`, and by the desktop and mobile apps in remote mode (ADR 4).
 - The **local edition** is single-user, with plain text or SQLite in a data folder the user chooses: the CLI, the TUI, and the desktop and mobile apps in local mode.
+- **The server can run as either edition.** With sign-in on, it is the hosted edition. With sign-in off, it is a single-user local edition, for someone hosting it for themselves (a home server or NAS). It uses the same fixed local workspace as the desktop app, and the web app works the same either way.
+- Each copy of a front-end uses one edition, never both.
 - The core never knows which edition it's in. `internal/bootstrap` plugs in the adapters for one or the other, as it already does for storage.
 
 ### Data belongs to a workspace

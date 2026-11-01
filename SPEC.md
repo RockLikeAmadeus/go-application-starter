@@ -8,13 +8,15 @@ _One paragraph: who the users are, what problem this solves, and what success lo
 
 ## 2. Users and front-ends
 
-| Persona | Front-end | Notes |
-|---|---|---|
-| _e.g. End user_ | Web (React SPA) | |
-| _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Embedded or `--server` mode |
-| _e.g. Integrations_ | REST API (`api/openapi.yaml`) | |
-| _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | The web app in its own window, with its data on the computer (§4.6) |
-| _e.g. Single user on an Android phone_ | Mobile app (Android) | The web app as a phone app, with its data on the phone (§4.7) |
+| Persona | Front-end | Editions (§3) | Notes |
+|---|---|---|---|
+| _e.g. End user_ | Web (React SPA) | Hosted, with sign-in (planned). Or local: a self-hosted server for one user, with no sign-in (works today) | Installable (§4.5) |
+| _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in a folder. Hosted, after `starter login --server …` (planned) | Today `--server` reaches only a server without sign-in |
+| _e.g. Integrations_ | REST API (`api/openapi.yaml`) | Whichever edition the server runs | |
+| _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | Local, with its data on the computer (§4.6). Hosted, in remote mode (planned) | The web app in its own window |
+| _e.g. Single user on an Android phone_ | Mobile app (Android) | Local, with its data on the phone (§4.7). Hosted, in remote mode (planned) | The web app as a phone app |
+
+Each copy of a front-end uses one edition, never both. Nothing is synced or moved between local and hosted data. The planned parts are being built step by step: see [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md) and [ADR 5](docs/adr/0005-hosted-and-local-editions.md).
 
 ## 3. Glossary (ubiquitous language)
 
@@ -24,10 +26,10 @@ Use these terms consistently in code, Gherkin, and UI copy.
 |---|---|
 | **Theme** | The colour scheme of the web app: **dark** or **light**. Independent of the style. |
 | **Style** | A named look for the web app: its layout, fonts, shape and density. Independent of the theme; every style works in dark and light. |
-| **Desktop app** | The web app packaged as a program for the user's computer. It keeps its own data and needs no server. |
+| **Desktop app** | The web app packaged as a program for the user's computer. In the local edition it keeps its own data and needs no server. Working on hosted data instead (remote mode) is planned. |
 | **Data folder** | The folder where the desktop app or the mobile app keeps its data: on the user's computer, or in the app's private storage on the phone. |
-| **Mobile app** | The web app packaged as an app for the user's phone (Android for now). It keeps its own data on the phone and needs no server. |
-| **Edition** | How a copy of the product runs. The **hosted edition** serves many users from a server, each with an account. The **local edition** is for one user, with data on their own device and no account. Both run the same app (planned: ADR 5). |
+| **Mobile app** | The web app packaged as an app for the user's phone (Android for now). In the local edition it keeps its own data on the phone and needs no server. Working on hosted data instead (remote mode) is planned. |
+| **Edition** | How a copy of the product runs. The **hosted edition** serves many users from a server, each signing in to an account (planned). The **local edition** is for one user, with no account: data on their own device, or on a server they host for themselves. Both run the same app, and each copy uses one edition only. |
 | **Workspace** | The space a piece of data belongs to. In the hosted edition, each user has their own workspace. The local edition has exactly one. |
 | **Plan** | What a workspace is allowed to do: which features it has and what its limits are (for example, free or paid). |
 | **Feature** | A capability that a plan turns on or off. |
@@ -130,7 +132,7 @@ Users can install the web app on their phone or computer, so it opens from the h
 
 ### 4.6 Use the desktop app
 
-Users can run the app as a program on their own computer, so they can use it without a server, an account or a connection.
+Users can run the app as a program on their own computer, so they can use it without a server, an account or a connection. This section describes the desktop app in the local edition. Working on hosted data instead (remote mode) is planned: see [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
 
 **Rules**
 - The desktop app shows the same app as the web app, with the same styles and themes, in its own window.
@@ -156,7 +158,7 @@ Users can run the app as a program on their own computer, so they can use it wit
 
 ### 4.7 Use the mobile app
 
-Users can install the app on their Android phone and use it without a server, an account or a connection.
+Users can install the app on their Android phone and use it without a server, an account or a connection. This section describes the mobile app in the local edition. Working on hosted data instead (remote mode) is planned: see [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
 
 **Rules**
 - The mobile app shows the same app as the web app on a phone (§4.4), with the same styles and themes.
@@ -198,11 +200,11 @@ All data belongs to a workspace, so that when one server serves many users, nobo
 |---|---|
 | Availability | _e.g. best effort; single instance while on plain-text storage_ |
 | Data | _e.g. data survives restarts; backups via volume snapshots_ |
-| Security | _e.g. no auth yet; see "Out of scope"_ |
+| Security | _e.g. no sign-in yet; see "Out of scope". Planned: sign-in for the hosted edition. A self-hosted server for one user (local edition) keeps running without sign-in_ |
 | Accessibility | Web UI is keyboard navigable, and controls have accessible names (also used by tests) |
 | TUI navigation | Every list or selectable view supports Vim keys alongside the arrow keys: `j` down, `k` up |
 
 ## 6. Out of scope (for now)
 
 - Authentication and authorization (planned: hosted edition, [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md))
-- Multi-instance deployments (blocked by the jsonfile adapter; see ADR 0003)
+- Multi-instance deployments (blocked by the jsonfile adapter; see ADR 0003). Planned for the hosted edition, with the Postgres adapter ([`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md), step 7)

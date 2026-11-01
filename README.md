@@ -1,6 +1,10 @@
 # go-application-starter
 
-A template for multi-front-end applications: a **hexagonal Go core** driven by a **React web app** (through a REST API), a **Cobra CLI**, and a **Bubble Tea TUI**, with swappable storage. It is built **BDD outside-in (Godog + playwright-bdd) with a TDD inner loop**, and set up for agentic development with Claude Code.
+A template for multi-front-end applications: a **hexagonal Go core** driven by a **React web app** (through a REST API), a **Cobra CLI**, a **Bubble Tea TUI**, and **desktop and Android apps** that run the same web app and API in-process (Wails), with swappable storage. It is built **BDD outside-in (Godog + playwright-bdd) with a TDD inner loop**, and set up for agentic development with Claude Code.
+
+The app comes in two editions, from the same core ([ADR 5](docs/adr/0005-hosted-and-local-editions.md)):
+- **Local** (works today): one user, no sign-in, data on their own device or on a server they host for themselves.
+- **Hosted** (planned, see [the plan](docs/plans/editions-and-accounts.md)): many users signing in to their own workspaces, with features and limits set by paid plans.
 
 <!-- sample:start -->
 It ships as a working *walking skeleton*: one tiny `Item` domain wired end to end through every layer, tested at every level, and deployable from CI.
@@ -11,12 +15,16 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
  CLI / TUI ──HTTP──┤ (--server mode)
                    ▼
             httpapi adapter ──► driving ports ◄── CLI / TUI (embedded mode)
-                                       │
-                                  core (domain + app)
-                                       │
+                   ▲                   │
+ Desktop / Android ┘              core (domain + app)
+ (in-process, no port)                 │
                                driven ports
                               ┌────────┴────────┐
-                           memory            jsonfile   (← add SQL/NoSQL here)
+                           memory            jsonfile   (← SQLite, Postgres planned)
+
+ Local edition:  CLI / TUI embedded, desktop and Android apps, a self-hosted server
+ Hosted edition: the web app on a hosted server with sign-in, plus the CLI / TUI and
+                 the desktop and Android apps connected to it (all planned)
 ```
 
 ## Prerequisites

@@ -8,6 +8,13 @@ A walking skeleton for a multi-front-end application. It uses a hexagonal (ports
 <!-- sample:start -->
 
 The sample domain is `Item`; replace it when starting a real product.
+
+The app comes in two **editions** (ADR 5), built step by step from `docs/plans/editions-and-accounts.md`. Most of it is still planned:
+- **Local edition:** one user, one workspace, no sign-in. This is the CLI and TUI (embedded), the desktop and Android apps, and a self-hosted single-user server. All of these work today.
+- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. This is the web app on a hosted server, the CLI and TUI after `starter login`, and the desktop and Android apps in remote mode. All planned.
+
+Each copy uses one edition, and nothing syncs between them. Outside `internal/bootstrap` and `desktop.Open`, never assume local storage or a single user.
+
 <!-- sample:end -->
 
 ## Workflow: BDD outside, TDD inside
@@ -67,7 +74,7 @@ internal/core/domain             entities, value rules, domain errors (stdlib on
 internal/core/ports              interfaces: driving (…Service) + driven (…Repository, Clock, IDGenerator)
 internal/core/app                use cases implementing driving ports (orchestration only)
 internal/adapters/httpapi        REST server (generated strict interface from OpenAPI) + SPA serving
-internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --server mode
+internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --server mode (later, desktop and mobile remote mode too)
 internal/adapters/cli, tui       Cobra / Bubble Tea + Lip Gloss
 internal/adapters/desktop        desktop app wiring with no Wails import: data folder, storage, in-process handler
 internal/adapters/mobile         Android wiring on top of desktop's, no Wails import: the page handler and Serve, the API bridge
@@ -75,7 +82,7 @@ internal/adapters/storage/*      memory, jsonfile, + storagetest contract suite
 internal/bootstrap               composition root: the only place that picks adapters
 web/                             Vite + React + TS + Tailwind + TanStack Query
 mobile/android                   Wails' generated Gradle project for the Android app (see docs/mobile.md)
-features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, http, desktop and mobile drivers (`@desktop` and `@mobile` scenarios run only on their own driver)
+features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, http, desktop and mobile drivers (`@desktop` and `@mobile` scenarios run only on their own driver; `@workspaces` ones only on memory and jsonfile)
 web/e2e                          playwright-bdd browser journeys
 test/packaging                   package check: builds the Linux packages and the Windows setup program and inspects them (build tag `packaging`, `task test:package`)
 ```
@@ -130,7 +137,7 @@ test/packaging                   package check: builds the Linux packages and th
 - The desktop app (`cmd/desktop`, build tag `desktop`) uses Wails v3. On Linux it needs GTK 4 and WebKitGTK 6.0: `sudo apt install libgtk-4-dev libwebkitgtk-6.0-dev` in a real terminal. Without them, the build fails with "Package 'gtk4' … not found". Wails' older GTK 3 stack (`-tags gtk3`) is dropped in Wails v3.1, so don't rely on it. Plain `go build ./...` and `task check` skip `cmd/desktop`, so they don't need these packages.
 - Linux packages (`build/desktop/linux/`, `task package:desktop:linux`): the desktop file and icons are installed under the app ID (`com.example.starter`, set in `cmd/desktop`), so the desktop can match the window to them, but their sources keep generic names, because `task rename` rewrites names inside files and moves only `cmd/<slug>`. Package versions come from `VERSION`: a release tag (`v1.2.3`) loses its `v`, anything else becomes `0.0.0`. The AppImage bundles every WebKitGTK on the build machine, so build it where only WebKitGTK 6.0 is installed (not `libwebkit2gtk-4.1-dev`). `task test:package` runs the package check (`test/packaging`, build tag `packaging`); it takes a few minutes, mostly the AppImage.
 - Windows setup program (`build/desktop/windows/`, `task package:desktop:windows`): built on Linux. The program cross-compiles with `CGO_ENABLED=0` (only `go build` gets `GOOS=windows`: set for the whole task, `go tool wails3` would build a Windows `wails3.exe`). Its icon, manifest and version info go in through `cmd/desktop/rsrc_windows_amd64.syso`, which the task writes and deletes (gitignored); the WebView2 bootstrapper is written beside `installer.nsi` for `makensis` the same way. `info.json` is a template (`@VERSION@`) and the one source of the product name, publisher and copyright for both the program and the setup program. It installs for the current user (`WAILS_INSTALL_SCOPE=user`: `%LOCALAPPDATA%\Programs`, no admin prompt) and keeps the items in `%AppData%\starter`; its uninstaller deletes only WebView2's `%AppData%\starter-desktop.exe`. `wails_tools.nsh` is Wails' generated file: replace it, don't edit it, on a Wails upgrade. The package check reads what the setup program does from `bin/windows/makensis.log` (`makensis -V4`), because the script inside it is compressed. It's unsigned, so Windows SmartScreen warns before it runs ("More info" → "Run anyway").
-- The desktop app keeps its data on the computer (`httpapi.Options.LocalData`), so `GET /api/v1/connection` answers `{"required": false}`. The SPA then hides the offline notice and keeps TanStack Query online (`useConnectionRequired`, `useLocalDataOnline`). New offline behaviour in the SPA must respect that answer. The desktop handler answers `/sw.js` with 404, so the service worker never runs there.
+- In the local edition, the desktop app keeps its data on the computer (`httpapi.Options.LocalData`; remote mode, which is planned, will leave it unset), so `GET /api/v1/connection` answers `{"required": false}`. The SPA then hides the offline notice and keeps TanStack Query online (`useConnectionRequired`, `useLocalDataOnline`). New offline behaviour in the SPA must respect that answer. The desktop handler answers `/sw.js` with 404, so the service worker never runs there.
 - The Android app (`cmd/mobile`, build tag `android`) uses Wails v3 mobile, which is experimental. Building it needs a JDK, the Android SDK and the NDK (`docs/mobile.md`); `go build ./...` and `task check` skip it. Lint it with `GOOS=android GOARCH=arm64 CGO_ENABLED=1 CC=<NDK clang> golangci-lint run --build-tags android ./cmd/mobile/...`.
 - On Android, the SPA's `/api` requests go over the Wails bridge (`apiFetch` → `bridgeFetch` → `main.Bridge.Serve` → `mobile.Serve`), because Wails' Android page path turns every request into a body-less `GET` and drops non-200 statuses. `mobile.AssetHandler` answers `/api/*` on the page path with 404, so a request that misses the bridge fails instead of silently succeeding. Don't rename `Bridge` or move it out of `cmd/mobile`'s package `main`: `client.ts` calls it by that name. `apiFetch` checks for `window.wails.invokeAsync` before importing `@wailsio/runtime`, because the import replaces `window.wails`.
 - Keep `@wailsio/runtime` in `web/package.json` (pinned exactly), the Wails module in `go.mod` and wails3 in `tools/go.mod` on the same version. `mobile/android` is generated by wails3 with a few hand edits; `docs/mobile.md` says how to regenerate it on upgrade. Its Java package must stay `com.wails.app` (the Go library's JNI names depend on it); only `applicationId` is ours.
