@@ -42,9 +42,9 @@ func TestParse_IgnoresFullLineComments(t *testing.T) {
 			// The free plan.
 			"free": {
 				"limits": {
-					// sample:start
+					// The items limit.
 					"items": {"max": 3, "whenOver": "block-new"}
-					// sample:end
+					// The end of the limits.
 				}
 			}
 		}

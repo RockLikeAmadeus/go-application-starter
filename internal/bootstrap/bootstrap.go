@@ -26,7 +26,8 @@ type App struct {
 	// sample:start
 	Items ports.ItemService
 	// sample:end
-	close func() error
+	Entitlements ports.EntitlementsService
+	close        func() error
 }
 
 // Close releases resources such as storage locks.
@@ -60,18 +61,11 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	default:
 		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
 	}
-	// The local edition's workspace is on the local plan, from the plans file
-	// built into the binary.
-	catalog, err := plans.Default()
+	entitlements, err := localEntitlements()
 	if err != nil {
 		return nil, err
 	}
-	entitlements := plans.Entitlements{
-		Catalog: catalog,
-		PlanOf: func(context.Context, domain.WorkspaceID) (string, error) {
-			return "local", nil
-		},
-	}
+	a.Entitlements = app.NewEntitlementsService(entitlements, workspace.Local{})
 	// Build each use case on its repository and the local edition's driven
 	// ports: workspace.Local{} (the one local workspace, ADR 5), the local
 	// plan's entitlements, system.Clock{} and system.UUIDs{}. See
@@ -80,6 +74,21 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	a.Items = app.NewItemService(items, workspace.Local{}, entitlements, system.Clock{}, system.UUIDs{})
 	// sample:end
 	return a, nil
+}
+
+// localEntitlements answers the local plan, from the plans file built into
+// the binary, for every workspace: the local edition has only one.
+func localEntitlements() (plans.Entitlements, error) {
+	catalog, err := plans.Default()
+	if err != nil {
+		return plans.Entitlements{}, err
+	}
+	return plans.Entitlements{
+		Catalog: catalog,
+		PlanOf: func(context.Context, domain.WorkspaceID) (string, error) {
+			return "local", nil
+		},
+	}, nil
 }
 
 // NewRemote returns an App whose driving ports talk to a server over HTTP.
