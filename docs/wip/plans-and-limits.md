@@ -75,7 +75,10 @@ Step 2 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
      - **Red:** `TestEntitlements_AnswersThePlanTheWorkspaceIsOn`: two workspaces on two plans; `For(ws-a)` must give `free`'s entitlements. It failed with empty entitlements against a stub. Compile stub: `plans.Entitlements{Catalog, PlanOf}`, asserted to satisfy `ports.Entitlements`.
      - **Green:** `For` asks `PlanOf` and looks the plan up in the catalog. `PlanOf`'s error and a missing plan are ignored until 9b.
      - **Refactor:** doc comments on the fields and `For`, saying who supplies `PlanOf`: the local edition (its one plan), the acceptance tests (a map), and later `ChangePlan`'s stored plans. Nothing else was worth changing.
-   - [ ] **9b.** An unknown plan name, or an error from `PlanOf`, is an error.
+   - [x] **9b.** An unknown plan name, or an error from `PlanOf`, is an error.
+     - **Red:** `TestEntitlements_RefusesAPlanItCantAnswer`: a plan the catalog doesn't have (`gold`) must give an error naming it; `PlanOf`'s error must come back as is. Both returned `nil`.
+     - **Green:** `For` returns `PlanOf`'s error, then refuses a missing plan with `plan "gold" isn't in the plans file`.
+     - **Refactor:** `For`'s doc comment now says how it fails. Nothing else: `PlanOf`'s error stays unwrapped, as use cases return the resolver's, since wrapping would add nothing a caller needs yet.
 10. [ ] **plans adapter, shipped file:** the embedded default loads and has a `local` plan with no limits.
 11. [ ] **app, `CreateItem` at the limit** is refused with `LimitError` and saves nothing. `NewItemService` takes `ports.Entitlements`; existing tests use an unlimited fake.
 12. [ ] **app, `RenameItem` over a `read-only` limit** is refused and saves nothing; over `block-new` it works.

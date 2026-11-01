@@ -92,8 +92,16 @@ type Entitlements struct {
 
 var _ ports.Entitlements = Entitlements{}
 
-// For returns the entitlements of the plan the workspace is on.
+// For returns the entitlements of the plan the workspace is on. It returns
+// PlanOf's error as is, and refuses a plan the catalog doesn't have.
 func (e Entitlements) For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error) {
-	plan, _ := e.PlanOf(ctx, workspace)
-	return e.Catalog[plan], nil
+	plan, err := e.PlanOf(ctx, workspace)
+	if err != nil {
+		return domain.Entitlements{}, err
+	}
+	entitlements, ok := e.Catalog[plan]
+	if !ok {
+		return domain.Entitlements{}, fmt.Errorf("plan %q isn't in the plans file", plan)
+	}
+	return entitlements, nil
 }

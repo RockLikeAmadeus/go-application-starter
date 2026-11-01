@@ -2,6 +2,7 @@ package plans_test
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -116,5 +117,37 @@ func TestEntitlements_AnswersThePlanTheWorkspaceIsOn(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, free) {
 		t.Errorf("For(ws-a) = %+v, want %+v", got, free)
+	}
+}
+
+func TestEntitlements_RefusesAPlanItCantAnswer(t *testing.T) {
+	lookupFailed := errors.New("lookup failed")
+	cases := map[string]struct {
+		planOf func(context.Context, domain.WorkspaceID) (string, error)
+		check  func(t *testing.T, err error)
+	}{
+		"a plan the catalog doesn't have": {
+			planOf: func(context.Context, domain.WorkspaceID) (string, error) { return "gold", nil },
+			check: func(t *testing.T, err error) {
+				if err == nil || !strings.Contains(err.Error(), `plan "gold"`) {
+					t.Errorf("err = %v, want one naming plan \"gold\"", err)
+				}
+			},
+		},
+		"PlanOf failing": {
+			planOf: func(context.Context, domain.WorkspaceID) (string, error) { return "", lookupFailed },
+			check: func(t *testing.T, err error) {
+				if !errors.Is(err, lookupFailed) {
+					t.Errorf("err = %v, want %v", err, lookupFailed)
+				}
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			adapter := plans.Entitlements{Catalog: plans.Catalog{"free": {Plan: "free"}}, PlanOf: tc.planOf}
+			_, err := adapter.For(context.Background(), "ws-a")
+			tc.check(t, err)
+		})
 	}
 }
