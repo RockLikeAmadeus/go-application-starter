@@ -1,6 +1,7 @@
 ---
 description: TDD loop — one red → green → refactor cycle for the next task, without stopping between steps, then commit and push it
 argument-hint: "[optional: behaviour to specify; default: the next open task in docs/wip/]"
+allowed-tools: Bash(git add:*), Bash(git commit:*), Bash(git push:*)
 ---
 
 One full **red → green → refactor** cycle, for:
@@ -27,7 +28,7 @@ Anything with a conventional answer, or that the code, CLAUDE.md or the `docs/wi
 
 **Finish.** `task lint`, `task test` and the acceptance run above, all green.
 
-**Commit and push.** Running `/iterate` is my explicit request to commit its cycle, so when the cycle went cleanly, stage everything (`git add -A`), commit, and push to the current branch's upstream. "Cleanly" means:
+**Commit and push.** Running `/iterate` is my explicit request to commit its cycle, so when the cycle went cleanly, stage everything (`git add -A`), commit, and push to the current branch's upstream. Run them as three separate, plain commands (`git add -A`; `git commit -F <message file in the scratchpad>`; `git push`), not chained with `&&` or piped, so they match the `allowed-tools` above and don't prompt. "Cleanly" means:
 - the cycle ran to the end: red failed for the right reason, then green, then refactor;
 - the finishing checks above are all green;
 - nothing is left open for me: any question I answered during the cycle is settled.

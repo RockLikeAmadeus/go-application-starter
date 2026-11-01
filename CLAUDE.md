@@ -48,7 +48,7 @@ This is still the template and has no users, so don't build backwards compatibil
 
 Never skip a step or merge steps unless I ask. Never write production code without a failing test that demands it.
 
-Never stage, commit, push or pull unless I explicitly ask. That includes `git add`, `git mv` and `git rm`, which stage changes. Running `/iterate` is such a request, for its own cycle only (see `.claude/commands/iterate.md`). `/red`, `/green`, `/refactor` and `/feature` leave everything unstaged. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
+Never stage, commit, push or pull unless I explicitly ask. That includes `git add`, `git mv` and `git rm`, which stage changes. Running `/iterate` is such a request, for its own cycle only (see `.claude/commands/iterate.md`, whose `allowed-tools` lets it run `git add`, `git commit` and `git push` without a prompt). `/red`, `/green`, `/refactor` and `/feature` leave everything unstaged. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
 
 ## Commands
 

@@ -25,9 +25,6 @@
       "Bash(git show:*)"
     ],
     "ask": [
-      "Bash(git push:*)",
-      "Bash(git commit:*)",
-      "Bash(git add:*)",
       "Bash(git stage:*)",
       "Bash(git mv:*)",
       "Bash(git rm:*)",
