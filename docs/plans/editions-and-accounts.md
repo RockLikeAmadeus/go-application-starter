@@ -107,3 +107,8 @@ SPEC.md §4.8 · [`features/workspaces.feature`](../../features/workspaces.featu
 - 2026-10-31: step 1 refines how the workspace reaches the core: use cases ask a driven port, `ports.WorkspaceResolver`, instead of reading the context directly. bootstrap plugs in a fixed local resolver for the local edition, and the hosted edition's resolver reads what the auth middleware put in the context. Missing workspaces are refused. The API doesn't expose the workspace yet.
 - 2026-11-01: the server can also run as a self-hosted local edition, with sign-in off (step 8). Recorded in ADR 5. SPEC.md, CLAUDE.md and README.md now describe which clients run in which edition, marking the parts still to build as planned.
 - 2026-11-01: no backwards compatibility while this is still the template, which has no users. Data saved before a change isn't migrated: step 1 drops its "old records read as local" task, and step 5 no longer migrates the v1 `items.json`. Products built from the template handle their own compatibility.
+- 2026-11-01: after step 1, more of the workspace work now survives `--remove-sample`, so template users don't redo it for each entity:
+  - a generic port, `ports.WorkspaceRepository[T]`, which `ItemRepository` now embeds;
+  - a generic isolation suite, `storagetest.RunWorkspaceIsolation`, which the Item contract now calls instead of its own isolation cases;
+  - a guide with a checklist, `docs/workspaces.md`, linked from CLAUDE.md's workspace rule, the port and `/feature`'s planning step;
+  - a comment in `bootstrap.NewEmbedded`, outside the sample block, naming `workspace.Local{}` beside the clock and IDs.

@@ -25,23 +25,40 @@ type ItemService interface {
 	DeleteItem(ctx context.Context, id string) error
 }
 
-// ItemRepository is the driven port for persisting Items. Every
-// implementation must pass the contract suite in adapters/storage/storagetest.
+// ItemRepository is the driven port for persisting Items. FindAll orders them
+// by CreatedAt, then ID. Every implementation must pass
+// storagetest.RunItemRepositoryContract, which includes the workspace
+// isolation suite.
 type ItemRepository interface {
-	// Save inserts or replaces the item with the same ID.
-	Save(ctx context.Context, item domain.Item) error
-	// FindByID returns domain.ErrNotFound when the workspace has no item with
-	// the given ID, including when the item belongs to another workspace.
-	FindByID(ctx context.Context, workspace domain.WorkspaceID, id string) (domain.Item, error)
-	// FindAll returns the workspace's items ordered by CreatedAt, then ID.
-	FindAll(ctx context.Context, workspace domain.WorkspaceID) ([]domain.Item, error)
-	// Delete returns domain.ErrNotFound, and deletes nothing, when the
-	// workspace has no item with the given ID, including when the item belongs
-	// to another workspace.
-	Delete(ctx context.Context, workspace domain.WorkspaceID, id string) error
+	WorkspaceRepository[domain.Item]
 }
 
 // sample:end
+
+// WorkspaceRepository is the shape of a driven port for an entity whose records
+// belong to a workspace (ADR 5). Declare an entity's repository by embedding
+// it, and add any methods the entity needs:
+//
+//	type WidgetRepository interface {
+//		WorkspaceRepository[domain.Widget]
+//	}
+//
+// Every implementation must pass storagetest.RunWorkspaceIsolation. See
+// docs/workspaces.md.
+type WorkspaceRepository[T any] interface {
+	// Save inserts or replaces the record with the same ID. The record keeps
+	// the workspace it carries.
+	Save(ctx context.Context, record T) error
+	// FindByID returns domain.ErrNotFound when the workspace has no record with
+	// the given ID, including when the record belongs to another workspace.
+	FindByID(ctx context.Context, workspace domain.WorkspaceID, id string) (T, error)
+	// FindAll returns the workspace's records, and none from other workspaces.
+	FindAll(ctx context.Context, workspace domain.WorkspaceID) ([]T, error)
+	// Delete returns domain.ErrNotFound, and deletes nothing, when the
+	// workspace has no record with the given ID, including when the record
+	// belongs to another workspace.
+	Delete(ctx context.Context, workspace domain.WorkspaceID, id string) error
+}
 
 // WorkspaceResolver tells a use case which workspace the current request
 // works in.

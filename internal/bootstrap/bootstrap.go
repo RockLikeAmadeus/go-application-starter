@@ -57,6 +57,9 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	default:
 		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
 	}
+	// Build each use case on its repository and the local edition's driven
+	// ports: workspace.Local{} (the one local workspace, ADR 5), system.Clock{}
+	// and system.UUIDs{}. See docs/workspaces.md.
 	// sample:start
 	a.Items = app.NewItemService(items, workspace.Local{}, system.Clock{}, system.UUIDs{})
 	// sample:end

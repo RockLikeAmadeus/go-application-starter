@@ -10,7 +10,6 @@ Feature: Keep each workspace's data separate
   # workspace. The local edition's single workspace is covered by every other
   # feature, which runs without naming a workspace.
 
-  @wip
   Scenario: Each workspace lists only its own items
     Given workspace "Alpha" has an item named "Widget"
     And workspace "Beta" has an item named "Gadget"
@@ -19,7 +18,6 @@ Feature: Keep each workspace's data separate
     And workspace "Beta" has the items:
       | Gadget |
 
-  @wip
   Scenario Outline: Another workspace's item can't be reached
     Given workspace "Alpha" has an item named "Widget"
     When someone in workspace "Beta" tries to <action> the item "Widget" from workspace "Alpha"
@@ -33,7 +31,6 @@ Feature: Keep each workspace's data separate
       | rename |
       | delete |
 
-  @wip
   Scenario Outline: Nothing can be done without a workspace
     When someone with no workspace tries to <action>
     Then they are told they have no workspace
