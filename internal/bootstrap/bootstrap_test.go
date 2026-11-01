@@ -2,6 +2,7 @@ package bootstrap_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
@@ -25,5 +26,21 @@ func TestNewEmbedded_IsOnTheLocalPlan(t *testing.T) {
 	}
 	if got.Plan != "local" || len(got.Limits) != 0 {
 		t.Errorf("CurrentEntitlements = %+v, want the local plan with no limits", got)
+	}
+}
+
+// A build whose local plan isn't in the plans file fails at start, naming
+// the plan, rather than on the first request.
+func TestNewEmbedded_RefusesALocalPlanThePlansFileDoesntHave(t *testing.T) {
+	defer func(plan string) { bootstrap.LocalPlan = plan }(bootstrap.LocalPlan)
+	bootstrap.LocalPlan = "gold"
+
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageMemory})
+	if err == nil {
+		_ = a.Close()
+		t.Fatal("NewEmbedded succeeded, want an error naming the gold plan")
+	}
+	if !strings.Contains(err.Error(), `"gold"`) {
+		t.Errorf("err = %v, want it to name the gold plan", err)
 	}
 }

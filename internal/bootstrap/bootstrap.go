@@ -20,6 +20,14 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
+// LocalPlan names the plan the local edition is on, from the plans file. A
+// build picks another with
+//
+//	go build -ldflags "-X github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap.LocalPlan=<plan>"
+//
+// NewEmbedded fails if the plans file has no such plan.
+var LocalPlan = "local"
+
 // App is the wired application handed to a driving adapter: one driving port
 // per capability.
 type App struct {
@@ -76,17 +84,21 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	return a, nil
 }
 
-// localEntitlements answers the local plan, from the plans file built into
-// the binary, for every workspace: the local edition has only one.
+// localEntitlements answers LocalPlan, from the plans file built into the
+// binary, for every workspace: the local edition has only one. It refuses a
+// LocalPlan the file doesn't have.
 func localEntitlements() (plans.Entitlements, error) {
 	catalog, err := plans.Default()
 	if err != nil {
 		return plans.Entitlements{}, err
 	}
+	if _, ok := catalog[LocalPlan]; !ok {
+		return plans.Entitlements{}, fmt.Errorf("local plan %q isn't in the plans file", LocalPlan)
+	}
 	return plans.Entitlements{
 		Catalog: catalog,
 		PlanOf: func(context.Context, domain.WorkspaceID) (string, error) {
-			return "local", nil
+			return LocalPlan, nil
 		},
 	}, nil
 }
