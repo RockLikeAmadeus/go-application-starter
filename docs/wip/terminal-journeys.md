@@ -83,7 +83,10 @@
    - No red: the Items screen (the terminal app's first screen) already adds items this way, so the scenario passed as soon as its two steps existed; kept as the guard. Checked it can fail: pressing `esc` instead of `enter` (the add is cancelled) failed "the terminal app lists" (then restored).
    - The When step waits for each mode: "a add" (browsing), `a`, "New item:", type, `enter`, then "a add" again. So the name the Then step waits for is the list's, not the input line's, which shows the typed name too.
    - Refactor: nothing worth changing (two short steps, shaped like the others). `task test:init`: only "The new project is healthy" with the sample kept fails, on task 11's still-undefined journeys. Journeys: 7 passed, 2 undefined.
-11. [ ] Sample: scenario outline "Move through the items" passes, both rows (`j`/`k`, `down`/`up`).
+11. [x] Sample: scenario outline "Move through the items" passes, both rows (`j`/`k`, `down`/`up`).
+   - No red: the Items screen already moves with `j`/`k` and the arrows, so both rows passed as soon as the three steps existed (`iHaveAddedTheItems`, with the command line before the app opens; `iPress`, which first waits for a selected row, so the list has loaded and the key isn't lost; `isSelected`, which waits for `> <name>`). Kept as the guard. Checked it can fail: with `iPress` not pressing, both rows failed (then restored). 5 runs in 5 under `-race`.
+   - Refactor: the marker is a named `selectionMark` ("> ", as `selectedRow` draws it), and `selected(name)` builds on it.
+   - All 9 journeys pass (31 steps), and `task test:init` passes in full (17 scenarios), now that none is undefined. Note for task 12: `go test` prints nothing but "ok" for a passing package; give the task `-v` if the journeys' output should show.
 12. [ ] Wiring: `task e2e:terminal`, in `task check` and CI; `unix` build tag; `SampleFiles` entries; `task test:init` (the trimmed project's terminal journeys still run and pass).
 13. [ ] Docs: CLAUDE.md (Commands table, Architecture's `test/terminal`, Testing conventions), `features/README.md` (where terminal journeys live), README's test commands, `docs/template.md` if it lists test layers; tick the TODO item with the tool comparison in one line.
 14. [ ] Finish: `task check`, `task test:init`, `task test:rename`, remove `@wip`, tick the TODO item, delete this file.
