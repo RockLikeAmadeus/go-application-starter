@@ -42,3 +42,16 @@ func writeSettings(t *testing.T, content string) string {
 	}
 	return file
 }
+
+func TestTheEnvironmentOverridesTheSettingsFile(t *testing.T) {
+	file := writeSettings(t, `data_dir = "/srv/work-data"`)
+	env := envOf(map[string]string{"STARTER_DATA_DIR": "/tmp/scratch"})
+
+	cfg, err := config.Load(config.Env{Getenv: env}, file)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.DataDir != "/tmp/scratch" {
+		t.Errorf("DataDir = %q, want the environment's %q", cfg.DataDir, "/tmp/scratch")
+	}
+}
