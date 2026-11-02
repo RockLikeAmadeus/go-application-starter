@@ -84,3 +84,13 @@ func TestStarterConfigFileNamesAnotherSettingsFile(t *testing.T) {
 		t.Errorf("LocalConfigFile = %q, want %q", got, want)
 	}
 }
+
+func TestWithoutTheDefaultSettingsFileThereIsNone(t *testing.T) {
+	got, err := config.LocalConfigFile(config.Env{Getenv: envOf(nil), UserConfigDir: configDirAt(t.TempDir())})
+	if err != nil {
+		t.Fatalf("LocalConfigFile: %v", err)
+	}
+	if got != "" {
+		t.Errorf("LocalConfigFile = %q, want none", got)
+	}
+}

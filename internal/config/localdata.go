@@ -1,7 +1,10 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 )
 
@@ -27,7 +30,8 @@ func LocalDataDir(getenv func(string) string, userConfigDir func() (string, erro
 // LocalConfigFile returns the local edition's settings file on this
 // computer, which the desktop app, the CLI and the TUI share:
 // STARTER_CONFIG_FILE when set, else config.toml in the app's folder in the
-// user's settings folder. Load fails if a file named this way is missing.
+// user's settings folder. Load fails if a file named this way is missing,
+// but the default one is optional: without it, there is none ("").
 func LocalConfigFile(env Env) (string, error) {
 	if file := env.Getenv("STARTER_CONFIG_FILE"); file != "" {
 		return file, nil
@@ -36,5 +40,9 @@ func LocalConfigFile(env Env) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(configDir, appFolder, "config.toml"), nil
+	file := filepath.Join(configDir, appFolder, "config.toml")
+	if _, err := os.Stat(file); errors.Is(err, fs.ErrNotExist) {
+		return "", nil
+	}
+	return file, nil
 }

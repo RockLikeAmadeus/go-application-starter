@@ -45,7 +45,10 @@
    - Red: `TestStarterConfigFileNamesAnotherSettingsFile` failed with `LocalConfigFile = "<settings>/starter/config.toml", want "/srv/starter/settings.toml"`.
    - Green: `LocalConfigFile` returns `STARTER_CONFIG_FILE` when set.
    - Refactor: the doc comment covers it, and says `Load` fails on a missing named file. That part needs no code: koanf's file provider can't read a missing file, and task 2's wrapping names it. Not unit-tested separately (it would pass straight away, like tasks 3 and 5); the CLI's `--config` (task 9) is the natural place to pin it.
-   6c. [ ] When the default settings file doesn't exist, there is none (`""`), so `Load` uses the environment and defaults only.
+   6c. [x] When the default settings file doesn't exist, there is none (`""`), so `Load` uses the environment and defaults only.
+   - Red: `TestWithoutTheDefaultSettingsFileThereIsNone` failed with `LocalConfigFile = "<settings>/starter/config.toml", want none`.
+   - Green: `LocalConfigFile` returns `""` when `os.Stat` says the default file doesn't exist. Any other error (say, no permission) keeps the path, so `Load` fails naming the file instead of silently skipping it.
+   - Refactor: the doc comment says the default file is optional. Left: wrapping `UserConfigDir`'s error (see 6a); still no test asks for it, and the CLI and desktop app report it as it is.
 7. [ ] `config.LocalDataDir` uses the loaded `data_dir` (from the file or env) before the settings folder.
 8. [ ] CLI: `NewRootCmd` takes `config.Env` instead of `localDataDir`; commands load the local settings file. Update `cmd/starter`, the test helpers and `runCommandLine`. Scenarios "chooses the data folder" and "doesn't know stops it" should pass.
 9. [ ] CLI: `--config` names the settings file for one command.
