@@ -27,6 +27,8 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Theme** | The colour scheme of the web app: **dark** or **light**. Independent of the style. |
 | **Style** | A named look for the web app: its layout, fonts, shape and density. Independent of the theme; every style works in dark and light. |
 | **Desktop app** | The web app packaged as a program for the user's computer. In the local edition it keeps its own data and needs no server. Working on hosted data instead (remote mode) is planned. |
+| **Command line** | The `starter` program's commands (the CLI), run one at a time in a terminal. |
+| **Terminal app** | The full-screen app the command line opens with `starter tui` (the TUI), worked with the keyboard. |
 | **Settings file** | An optional file of the app's settings (such as the data folder) on the user's computer, shared by the desktop app and the command line. |
 | **Data folder** | The folder where the local edition keeps its data: on the user's computer, shared by the desktop app and the command line, or in the app's private storage on the phone. |
 | **Mobile app** | The web app packaged as an app for the user's phone (Android for now). In the local edition it keeps its own data on the phone and needs no server. Working on hosted data instead (remote mode) is planned. |
@@ -57,7 +59,7 @@ Users can create, list, rename and delete items.
 - Names are at most 200 characters.
 - Items are listed oldest first.
 
-**Specification:** [`features/items.feature`](features/items.feature) · UI journeys: [`web/e2e/features/items.feature`](web/e2e/features/items.feature)
+**Specification:** [`features/items.feature`](features/items.feature) · UI journeys: [`web/e2e/features/items.feature`](web/e2e/features/items.feature) · terminal journeys: [`test/terminal/features/items.feature`](test/terminal/features/items.feature)
 <!-- sample:end -->
 
 <!-- /feature adds new capability sections below this line -->
@@ -275,6 +277,29 @@ Users of the local edition can keep their settings in a settings file, so they d
 - The settings file has `colour = "blue"` → the app doesn't start, and says `colour` isn't a setting it knows.
 
 **Specification:** [`features/settings-file.feature`](features/settings-file.feature). These scenarios run only on the desktop driver, on a temporary settings folder. Every setting, its environment variable and its option are listed in [docs/configuration.md](docs/configuration.md).
+
+### 4.13 Use the command line and the terminal app
+
+Users who live in a terminal can do their work with the command line, one command at a time, or in the terminal app, full screen and by keyboard. Both are the installed `starter` program, and work on the same data as the other front ends (§4.11).
+
+**Rules**
+- Each command prints its result, or says what went wrong. A command that fails ends with an error status, so scripts can tell.
+- A command the program doesn't know fails, saying so.
+- The terminal app fills the terminal, says how to quit it, and leaves the terminal as it found it when the user quits.
+- In every list, the terminal app moves with the arrow keys and with Vim's `j` and `k` (§5).
+- Connected to a server (`--server`), both work on the server's data instead of the computer's.
+
+**Examples**
+- User runs `starter info` → it names the data folder.
+- User runs `starter --server http://localhost:8080 info` → it names the server.
+- User runs `starter frobnicate` → it says the command is unknown, and ends with an error status.
+- User runs `starter tui`, then presses `q` → the terminal shows what it showed before.
+<!-- sample:start -->
+- User runs `starter item add "Widget"`, then `starter item list` → "Widget" is listed.
+- User opens the terminal app, presses `a`, types "Widget" and presses Enter → "Widget" is listed.
+<!-- sample:end -->
+
+**Specification:** the business rules are in [`features/`](features/), run against the driving ports. These journeys only prove the wiring: they run the built programs in a terminal, as a user would. [`test/terminal/features/command-line.feature`](test/terminal/features/command-line.feature), [`test/terminal/features/terminal-app.feature`](test/terminal/features/terminal-app.feature).
 
 ## 5. Non-functional requirements
 
