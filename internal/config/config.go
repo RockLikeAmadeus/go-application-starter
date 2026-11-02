@@ -35,6 +35,9 @@ type Config struct {
 	// PlansFile replaces the plans file built into the binary (plans_file;
 	// STARTER_PLANS_FILE). Empty means the built-in one.
 	PlansFile string
+	// Sources says where each setting came from, by its key in the settings
+	// file.
+	Sources map[string]string
 }
 
 // Env is the computer the app runs on, as configuration sees it. Getenv
@@ -47,23 +50,35 @@ type Env struct {
 
 // Load reads the configuration and validates it. Each setting comes from
 // env's STARTER_* variable (or PORT) when set, else from its key in the TOML
-// settingsFile, else from its default. settingsFile "" means none.
+// settingsFile, else from its default, and Sources records which.
+// settingsFile "" means none.
 func Load(env Env, settingsFile string) (Config, error) {
 	k, err := readSettingsFile(settingsFile)
 	if err != nil {
 		return Config{}, err
 	}
-	setting := func(envKey, key, fallback string) string {
-		return getenv(env.Getenv, envKey, getenv(k.String, key, fallback))
+	sources := map[string]string{}
+	setting := func(key, fallback string) string {
+		if v := env.Getenv(envVars[key]); v != "" {
+			sources[key] = "environment (" + envVars[key] + ")"
+			return v
+		}
+		if v := k.String(key); v != "" {
+			sources[key] = "settings file"
+			return v
+		}
+		sources[key] = "built in"
+		return fallback
 	}
 	cfg := Config{
-		Storage:   Storage(setting("STARTER_STORAGE", "storage", string(StorageJSONFile))),
-		DataDir:   setting("STARTER_DATA_DIR", "data_dir", "./data"),
-		ServerURL: setting("STARTER_SERVER_URL", "server_url", ""),
-		LogFormat: setting("STARTER_LOG_FORMAT", "log_format", "text"),
-		PlansFile: setting("STARTER_PLANS_FILE", "plans_file", ""),
+		Sources:   sources,
+		Storage:   Storage(setting("storage", string(StorageJSONFile))),
+		DataDir:   setting("data_dir", "./data"),
+		ServerURL: setting("server_url", ""),
+		LogFormat: setting("log_format", "text"),
+		PlansFile: setting("plans_file", ""),
 	}
-	port, err := strconv.Atoi(setting("PORT", "port", "8080"))
+	port, err := strconv.Atoi(setting("port", "8080"))
 	if err != nil {
 		return Config{}, fmt.Errorf("PORT: %w", err)
 	}
@@ -83,10 +98,15 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// settingKeys are the keys a settings file may hold.
-var settingKeys = map[string]bool{
-	"storage": true, "data_dir": true, "port": true,
-	"server_url": true, "log_format": true, "plans_file": true,
+// envVars are the settings, by their key in a settings file, each with the
+// environment variable that overrides it.
+var envVars = map[string]string{
+	"storage":    "STARTER_STORAGE",
+	"data_dir":   "STARTER_DATA_DIR",
+	"port":       "PORT",
+	"server_url": "STARTER_SERVER_URL",
+	"log_format": "STARTER_LOG_FORMAT",
+	"plans_file": "STARTER_PLANS_FILE",
 }
 
 // readSettingsFile reads the TOML settings file at path, refusing any key
@@ -100,17 +120,9 @@ func readSettingsFile(path string) (*koanf.Koanf, error) {
 		return nil, fmt.Errorf("read the settings file %s: %w", path, err)
 	}
 	for _, key := range k.Keys() {
-		if !settingKeys[key] {
+		if _, ok := envVars[key]; !ok {
 			return nil, fmt.Errorf("settings file %s: unknown setting %q", path, key)
 		}
 	}
 	return k, nil
-}
-
-// getenv returns lookup(key), or fallback when that's empty.
-func getenv(lookup func(string) string, key, fallback string) string {
-	if v := lookup(key); v != "" {
-		return v
-	}
-	return fallback
 }

@@ -74,3 +74,27 @@ func TestASettingsFileThatIsntTOMLFailsNamingTheFile(t *testing.T) {
 		t.Errorf("Load error = %v, want one naming %s", err, file)
 	}
 }
+
+func TestLoadSaysWhereEachSettingCameFrom(t *testing.T) {
+	file := writeSettings(t, `
+storage = "memory"
+data_dir = "/srv/work-data"
+`)
+	env := envOf(map[string]string{"STARTER_DATA_DIR": "/tmp/scratch"})
+
+	cfg, err := config.Load(config.Env{Getenv: env}, file)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	want := map[string]string{
+		"storage":    "settings file",
+		"data_dir":   "environment (STARTER_DATA_DIR)",
+		"log_format": "built in",
+		"port":       "built in",
+	}
+	for key, source := range want {
+		if got := cfg.Sources[key]; got != source {
+			t.Errorf("Sources[%q] = %q, want %q", key, got, source)
+		}
+	}
+}

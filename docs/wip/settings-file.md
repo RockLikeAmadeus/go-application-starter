@@ -61,7 +61,10 @@
    - Red: the `--config` flag was registered with nothing behind it, so the test failed on the missing behaviour rather than an unknown flag. `TestConfigNamesTheSettingsFileForOneCommand` (`data_dir` in a `work.toml` outside the settings folder) failed with `Data folder: <settings>/starter`.
    - Green: `openApp` reads the `--config` file when given, else `config.LocalConfigFile(env)`.
    - Refactor: that choice is `settingsFileFor(configFile, env)`; the flag's variable is `configFile`, after the option; the two settings-file tests share `writeSettings(t, path, content)`. Left: a missing `--config` file failing, naming it, isn't unit-tested at the CLI: `Load` already does it (koanf can't read the file; task 2's wrapping names it), so a test would pass straight away.
-10. [ ] `config`: `Load` reports each setting's source (built in, settings file, environment variable by name).
+10. [x] `config`: `Load` reports each setting's source (built in, settings file, environment variable by name).
+   - Red: `Config.Sources map[string]string` (by the setting's key in the file) added, unset. `TestLoadSaysWhereEachSettingCameFrom` (`storage` in the file, `STARTER_DATA_DIR` set, `log_format` and `port` neither) failed with every source `""`.
+   - Green: `Load`'s `setting` lookup records `environment (<VAR>)`, `settings file` or `built in` as it picks each value. One map rather than separate koanf instances per layer (the plan's idea): the lookup already visits the layers in order.
+   - Refactor: one table, `envVars` (key → environment variable), replaces `settingKeys` and the variable names in `Load`'s calls; `readSettingsFile` checks keys against it; the unused `getenv` helper is gone. Left: `LocalDataDir` still checks `STARTER_DATA_DIR` before the file itself; it returns a folder, not a `Config`, and the CLI (task 12) will mark `data_dir`'s source from what it chose.
 11. [ ] CLI: `starter info` prints `Settings file: <path>` or `none`.
 12. [ ] CLI: `starter info` lists each setting with its value and source; flags show as `option (--…)`. Scenario "where a setting came from" should pass.
 13. [ ] Desktop: `desktop.Open` loads the local settings file (data folder, plans file). Scenario "desktop app uses the settings file's data folder" should pass.
