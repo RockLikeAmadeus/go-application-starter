@@ -1,3 +1,5 @@
+//go:build unix
+
 // Package term runs a program in a pseudo-terminal and reads its screen as a
 // user would see it, for the journeys in test/terminal.
 package term

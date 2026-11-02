@@ -29,13 +29,15 @@ jobs:
         with:
           version: v2.15
       - name: Unit tests
-        run: go test -race ./internal/... ./scripts/internal/... ./scripts/rename/
+        run: go test -race ./internal/... ./scripts/internal/... ./scripts/rename/ ./test/terminal/term/...
       # template:start
       - name: Init tool unit tests
         run: go test -race ./scripts/initproject/
       # template:end
       - name: Acceptance tests (Godog)
         run: go test ./test/acceptance/ -count=1 --godog.format=pretty
+      - name: Terminal journeys (Godog)
+        run: go test ./test/terminal/ -count=1 --godog.format=pretty
 
   web:
     name: Web (lint, typecheck, unit)

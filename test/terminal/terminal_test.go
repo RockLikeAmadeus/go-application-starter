@@ -1,3 +1,5 @@
+//go:build unix
+
 // Package terminal runs the command line and terminal app journeys in
 // test/terminal/features on the built programs, in a terminal, as a user
 // would. Business rules are specified in /features (test/acceptance).

@@ -284,7 +284,7 @@ tasks:
 
   test:go:
     cmds:
-      - go test -race ./internal/... ./scripts/internal/... ./scripts/rename/ {{.CLI_ARGS}}
+      - go test -race ./internal/... ./scripts/internal/... ./scripts/rename/ ./test/terminal/term/... {{.CLI_ARGS}}
       # template:start
       - go test -race ./scripts/initproject/ {{.CLI_ARGS}}
       # template:end
@@ -321,6 +321,11 @@ tasks:
     cmds:
       - pnpm --dir web e2e {{.CLI_ARGS}}
 
+  e2e:terminal:
+    desc: "Terminal journeys (Godog): the built starter and server programs, run in a terminal (Unix only; e.g. task e2e:terminal -- --godog.tags=@wip)"
+    cmds:
+      - go test ./test/terminal/ -count=1 {{.CLI_ARGS}}
+
   check:
     desc: Everything CI runs, in order
     cmds:
@@ -328,6 +333,7 @@ tasks:
       - task: lint
       - task: test
       - task: accept
+      - task: e2e:terminal
       - task: e2e
 
   # ---------------------------------------------------------------- docker

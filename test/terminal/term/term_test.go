@@ -1,3 +1,5 @@
+//go:build unix
+
 package term_test
 
 import (
