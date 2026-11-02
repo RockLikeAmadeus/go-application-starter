@@ -13,5 +13,5 @@ Rules:
 3. Do **not** modify the test, unless it has an outright bug. If it does, stop and tell me.
 4. Run the full unit suite for the affected side (`task test:go` and/or `task test:web`). Every test must pass. If you broke something, fix the production code minimally.
 5. If an `@wip` acceptance scenario may now pass, run `task accept -- --godog.tags=@wip` and report the result. Do not chase it further.
-6. Update the `docs/wip/` file: tick off or annotate the item this step advanced, and if the plan changed, revise the list and log why. Under that item, record the refactoring opportunities from step 7 as a **For refactor:** note, so `/refactor` can pick them up after a cleared context.
+6. Update the `docs/wip/` file: tick off or annotate the item this step advanced, and if the plan changed, revise the list and log why. Under that item, record the refactoring opportunities from step 7 as a **For refactor:** note, so `/refactor` can pick them up after a cleared context. Keep both short: one line for the change, and the opportunities as a brief list. Details belong in the commit message; only a decision or plan change that a later step needs gets more, in the file's Decisions or "Changes to the plan" section.
 7. STOP. Summarise the change in 1–3 lines and list any obvious refactoring opportunities for `/refactor`. Do not refactor.

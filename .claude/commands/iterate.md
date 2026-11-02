@@ -29,6 +29,10 @@ Anything with a conventional answer, or that the code, CLAUDE.md or the `docs/wi
 
 **Finish.** `task lint`, `task test` and the acceptance run above, all green.
 
+**Run each check once per state of the code.** While working, run the narrowest test that covers the change. Run `task test` and the acceptance run once after green: refactor's opening check reuses those results instead of running them again. Refactor's small steps re-run only the tests they touch. At the finish, run only what the refactor could have affected since green: if it changed nothing, that's `task lint`; if it changed only one package's tests, that package's tests and `task lint`. Otherwise run the full finishing checks. Slow, separate checks (`task test:init`, `task e2e:terminal`) run once, when the cycle touched what they cover.
+
+**Keep the `docs/wip/` notes short**, as `red.md`, `green.md` and `refactor.md` say: one line per step. This cycle's commit message holds the detail.
+
 **Commit and push.** Running `/iterate` is my explicit request to commit its cycle, so when the cycle went cleanly, stage everything (`git add -A`), commit, and push to the current branch's upstream. Run them as three separate, plain commands (`git add -A`; `git commit -F <message file in the scratchpad>`; `git push`), not chained with `&&` or piped, so they match the `allowed-tools` above and don't prompt. "Cleanly" means:
 - the cycle ran to the end: red failed for the right reason (or the test passed straight away and was kept as a guard, as above), then green, then refactor;
 - the finishing checks above are all green;
