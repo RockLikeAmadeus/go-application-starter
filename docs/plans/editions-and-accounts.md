@@ -53,9 +53,14 @@ SPEC.md §4.8 · [`features/workspaces.feature`](../../features/workspaces.featu
 - Users see no change. Left for step 8: mapping `ErrNoWorkspace` to HTTP, and running the isolation scenarios on the http driver.
 
 ### 2. Plans and entitlements — in progress ([docs/wip/plans-and-limits.md](../wip/plans-and-limits.md))
-- The plans config (format and location to decide in the `/feature`), the `Entitlements` port and its config adapter, and the local plan chosen at build time.
-- `GET /api/v1/entitlements` (`api/openapi.yaml`, then `task gen`). `httpclient` maps it back.
-- Sample: a limit on items on the free plan, with the over-limit behaviour set per limit. Inside the sample blocks, so `--remove-sample` strips it. Run `task test:init`.
+SPEC.md §4.9 · [`features/plans.feature`](../../features/plans.feature) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Features and limits come from plans".
+- **Domain:** `Entitlements` (a plan's name and its limits) with `CheckCreate` and `CheckChange`, `Limit` (built with `NewLimit`), and `LimitError`. Over a `block-new` limit nothing new can be added; over a `read-only` one nothing can be changed either. Deleting always works.
+- **Ports and use case:** the driven `ports.Entitlements` and the driving `ports.EntitlementsService` (`CurrentEntitlements`, failing closed without a workspace).
+- **Plans file:** `internal/adapters/plans` reads `plans.jsonc` (JSON with full-line comments, built in, with `local`, `free` and `pro`), or `STARTER_PLANS_FILE`'s file. The local plan is `bootstrap.LocalPlan`, set at build time. A bad file or an unknown local plan fails at start.
+- **API:** `GET /api/v1/entitlements`, and a limit error as a 403 problem with `limit`, `max` and `readOnly`; `httpclient` maps both back. The server, desktop and Android apps serve it, and remote mode reads it.
+- **Sample:** `ItemService` checks the items limit when creating and renaming, and refuses when the plan or the count can't be looked up. `free` has the sample items limit (3, block-new), inside a sample block. `task test:init` passes.
+- **Acceptance:** the harness has its own plans; `@plans` scenarios run on memory, jsonfile and http. Desktop and mobile check they're on the local plan.
+- Found along the way, and fixed: template code that depended on sample code (now a rule in CLAUDE.md); `/readyz` and generic UI helpers in the sample are TODO.md items.
 
 ### 3. Sample paid feature: CSV export of items — not started
 - On/off gating end to end: the use case checks the entitlement. In the web app, CLI and TUI it's shown locked or hidden, as config says per feature.

@@ -88,10 +88,11 @@ internal/adapters/desktop        desktop app wiring with no Wails import: data f
 internal/adapters/mobile         Android wiring on top of desktop's, no Wails import: the page handler and Serve, the API bridge
 internal/adapters/storage/*      memory, jsonfile, + storagetest contract suite
 internal/adapters/workspace      ports.WorkspaceResolver: Local (the local edition's one workspace), FromContext (set with WithID)
+internal/adapters/plans          ports.Entitlements from the plans file (plans.jsonc, built in; STARTER_PLANS_FILE replaces it)
 internal/bootstrap               composition root: the only place that picks adapters
 web/                             Vite + React + TS + Tailwind + TanStack Query
 mobile/android                   Wails' generated Gradle project for the Android app (see docs/mobile.md)
-features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, http, desktop and mobile drivers (`@desktop` and `@mobile` scenarios run only on their own driver; `@workspaces` ones only on memory and jsonfile)
+features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, http, desktop and mobile drivers (`@desktop` and `@mobile` scenarios run only on their own driver; `@workspaces` ones only on memory and jsonfile; `@plans` ones only on memory, jsonfile and http)
 web/e2e                          playwright-bdd browser journeys
 test/packaging                   package check: builds the Linux packages and the Windows setup program and inspects them (build tag `packaging`, `task test:package`)
 ```
@@ -103,7 +104,8 @@ test/packaging                   package check: builds the Linux packages and th
 - UIs call the core **only** through driving ports (the `…Service` interfaces in `ports`). Never put business logic in handlers, Cobra commands, Bubble Tea models or React components.
 - A new storage backend implements the `…Repository` ports and **must** run each one's contract suite from `storagetest` in its tests. Wire it in `internal/bootstrap`.
 - Data belongs to a workspace (ADR 5). Use cases get the current one from `ports.WorkspaceResolver` and pass it **explicitly** to every repository call. A workspace-scoped entity's repository port embeds `ports.WorkspaceRepository[T]`, treats another workspace's record as missing (`ErrNotFound`), and every adapter's contract tests run `storagetest.RunWorkspaceIsolation`, plus an isolation case for each extra query. With no workspace, a use case returns `domain.ErrNoWorkspace` before touching storage. `bootstrap` wires `workspace.Local`; tests use `testsupport.FixedWorkspace` or `NoWorkspace`. **Adding an entity: follow the checklist in `docs/workspaces.md`.**
-- Domain errors (`domain.ErrNotFound`, `*domain.ValidationError`, `domain.ErrNoWorkspace`) are the shared language. `httpapi/problem.go` maps them to HTTP, and `httpclient` maps them back. (`ErrNoWorkspace` isn't mapped yet: nothing over HTTP can lack a workspace until sign-in exists.)
+- Plans set a workspace's limits (ADR 5). A use case that a limit gates asks `ports.Entitlements` for the workspace's plan, counts, and checks with the domain's rules before saving: `Entitlements.CheckCreate` before adding one, `CheckChange` before changing one. Deleting is never limited, so a workspace over a read-only limit can get back within it. If the plan or the count can't be looked up, refuse the change: a failed lookup must never mean "no limits". Front ends read the plan through `ports.EntitlementsService` (`GET /api/v1/entitlements`). `bootstrap` wires the local plan; tests use `testsupport.FixedEntitlements`.
+- Domain errors (`domain.ErrNotFound`, `*domain.ValidationError`, `*domain.LimitError`, `domain.ErrNoWorkspace`) are the shared language. `httpapi/problem.go` maps them to HTTP, and `httpclient` maps them back. (`ErrNoWorkspace` isn't mapped yet: nothing over HTTP can lack a workspace until sign-in exists.)
 - Time and IDs come from `ports.Clock` / `ports.IDGenerator`. Use `internal/testsupport` fakes in tests.
 
 ### API contract
@@ -141,6 +143,7 @@ test/packaging                   package check: builds the Linux packages and th
 
 ## Gotchas
 
+- The local edition's plan is `bootstrap.LocalPlan`: `local`, unless a build sets another with `-ldflags "-X <module>/internal/bootstrap.LocalPlan=<plan>"`. The plans come from `internal/adapters/plans/plans.jsonc`, built into the binary, unless `STARTER_PLANS_FILE` names another file. An unknown local plan or a bad plans file fails at start. The file is JSON with full-line `//` comments only: a comment after a value is a parse error.
 - The jsonfile adapter locks its data directory. Running the server and an embedded CLI against the same `./data` fails fast with "data directory is locked". Use `--server http://localhost:8080` for the CLI instead. The desktop app locks its data folder the same way, so a second copy, or the CLI pointed at that folder, fails fast.
 - The server embeds the SPA only when built with `-tags embedweb` after `pnpm build` (`task build` does both). Otherwise `/` shows a hint page.
 - Dev-only Go tools (oapi-codegen for `task gen`, Air for `task dev`) live in `tools/go.mod` so their dependencies stay out of the app's `go.mod`. Add one with `cd tools && go get -tool <pkg>@<version>`, and run it with `go tool -modfile=tools/go.mod <name>`.
