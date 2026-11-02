@@ -62,12 +62,15 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 		}
 		if serverURL != "" {
 			cfg.ServerURL = serverURL
+			chosenByOption(cfg, "server_url", "server")
 		}
 		if storage != "" {
 			cfg.Storage = config.Storage(storage)
+			chosenByOption(cfg, "storage", "storage")
 		}
 		if dataDir != "" {
 			cfg.DataDir = dataDir
+			chosenByOption(cfg, "data_dir", "data-dir")
 		} else if keepsDataInAFolder(cfg) {
 			cfg.DataDir, err = config.LocalDataDir(env, settingsFile)
 			if err != nil {
@@ -90,6 +93,11 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 	root.AddCommand(newItemCmd(openApp))
 	// sample:end
 	return root
+}
+
+// chosenByOption records that the option --flag chose cfg's setting key.
+func chosenByOption(cfg config.Config, key, flag string) {
+	cfg.Sources[key] = "option (--" + flag + ")"
 }
 
 // settingsFileFor returns the settings file a command reads: the one

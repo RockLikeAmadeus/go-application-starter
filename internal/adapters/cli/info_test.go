@@ -110,19 +110,14 @@ func TestWithoutTheLocalDataFolderCommandsFailSayingWhy(t *testing.T) {
 }
 
 func TestInfoWithAServerNamesTheServer(t *testing.T) {
-	core, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageMemory})
-	if err != nil {
-		t.Fatalf("wire the server's core: %v", err)
-	}
-	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core.Entitlements}))
-	defer srv.Close()
+	srv := testServer(t)
 
-	out, err := runCLI(t, "--server", srv.URL, "info")
+	out, err := runCLI(t, "--server", srv, "info")
 	if err != nil {
 		t.Fatalf("info: %v", err)
 	}
-	if !strings.Contains(out, "Server: "+srv.URL) {
-		t.Errorf("info output doesn't name the server %s:\n%s", srv.URL, out)
+	if !strings.Contains(out, "Server: "+srv) {
+		t.Errorf("info output doesn't name the server %s:\n%s", srv, out)
 	}
 }
 
@@ -219,4 +214,49 @@ func TestInfoListsEachSettingWithItsSource(t *testing.T) {
 			t.Errorf("info output doesn't list %q:\n%s", want, out)
 		}
 	}
+}
+
+func TestInfoSaysWhichSettingsAnOptionChose(t *testing.T) {
+	srv := testServer(t)
+	data := t.TempDir()
+
+	tests := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{"--storage and --data-dir", []string{"--storage", "jsonfile", "--data-dir", data}, []string{
+			`  storage = "jsonfile"  # option (--storage)` + "\n",
+			`  data_dir = ` + strconv.Quote(data) + `  # option (--data-dir)` + "\n",
+		}},
+		{"--server", []string{"--server", srv}, []string{
+			`  server_url = ` + strconv.Quote(srv) + `  # option (--server)` + "\n",
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := runCLI(t, append(tt.args, "info")...)
+			if err != nil {
+				t.Fatalf("info: %v", err)
+			}
+			for _, want := range tt.want {
+				if !strings.Contains(out, want) {
+					t.Errorf("info output doesn't list %q:\n%s", want, out)
+				}
+			}
+		})
+	}
+}
+
+// testServer starts a server, with only the entitlements behind it, for the
+// test, and returns its URL.
+func testServer(t *testing.T) string {
+	t.Helper()
+	core, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageMemory})
+	if err != nil {
+		t.Fatalf("wire the server's core: %v", err)
+	}
+	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core.Entitlements}))
+	t.Cleanup(srv.Close)
+	return srv.URL
 }

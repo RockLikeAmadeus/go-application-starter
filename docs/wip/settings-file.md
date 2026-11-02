@@ -74,7 +74,10 @@
    - Red: `TestInfoListsEachSettingWithItsSource` (`log_format` in the file, `STARTER_DATA_DIR` set, `port` neither) failed: `info` listed no settings.
    - Green: `Config.Settings()` lists `Setting{Key, Value, Source}` in the file's order (`Value` a string or an int); `info` prints them.
    - Refactor: `tomlValue` formats a value (strings quoted); the doc comment mentions the list. `@wip`: 4 of 5 pass; only the desktop app's (task 13) is left. Left: `Settings()` repeats the six keys (beside `envVars`), since each needs its own field; fine at six.
-   12b. [ ] CLI: a setting an option chose shows as `option (--storage)` (`--storage`, `--data-dir`, `--server`). Also: with memory storage or a server, `data_dir` shows `Load`'s server default `./data`, which no command uses; decide then whether to show it.
+   12b. [x] CLI: a setting an option chose shows as `option (--storage)` (`--storage`, `--data-dir`, `--server`).
+   - Red: `TestInfoSaysWhichSettingsAnOptionChose`, a table (`--storage` with `--data-dir`, and `--server` against a test server), failed: each setting still showed the source `Load` gave it.
+   - Green: `openApp` sets the setting's source as it applies each option.
+   - Refactor: `chosenByOption(cfg, key, flag)` writes `option (--flag)`; the two server tests share `testServer(t)`. Decided to leave: with memory storage or a server, `data_dir` still shows `Load`'s `./data  # built in`. It is the configuration's real value, and the `Data:`/`Server:` line below says no folder is used; hiding it would make the list's shape depend on other settings.
 13. [ ] Desktop: `desktop.Open` loads the local settings file (data folder, plans file). Scenario "desktop app uses the settings file's data folder" should pass.
 14. [ ] Server: `cmd/server` loads `STARTER_CONFIG_FILE` when set, else no file.
 15. [ ] Docs: new `docs/configuration.md` (every key, env var and option, precedence, file locations, a commented example), ADR 6, README's configuration paragraph (link), `docs/data-locations.md` ("Other files the app reads"), CLAUDE.md Gotchas (where the file is, strictness, the server reads one only when named). `.env.example` needs a hand check by the user (Claude can't read it here).
