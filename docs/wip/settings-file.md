@@ -21,7 +21,10 @@
 - **Shown failing (2026-11-02):** "The settings file chooses the data folder" (the CLI names `<settings>/starter`), "The desktop app uses the settings file's data folder" (no `.lock` in `work-data`), "The command line says where a setting came from" (no `STARTER_DATA_DIR` in `info`), "A settings file with a setting the app doesn't know stops it" (the command line worked). "A setting chosen when starting overrides the settings file" already passes, since nothing reads the file yet; it guards the precedence once the file is read.
 
 ## Tasks
-1. [ ] Refactor, then red: `config.Load(env Env)` reads the environment through `env.Getenv` instead of `os` (`cmd/server` and the CLI pass `os.Getenv`). First red: `Load` reads `STARTER_STORAGE` from the injected env (new `internal/config/config_test.go`).
+1. [x] Refactor, then red: `config.Load(env Env)` reads the environment through `env.Getenv` instead of `os` (`cmd/server` and the CLI pass `os.Getenv`). First red: `Load` reads `STARTER_STORAGE` from the injected env (new `internal/config/config_test.go`).
+   - Red: `config.Env{Getenv}` and `Load(env Env)` added, unused, so the test compiled (`cmd/server` and the CLI's `openApp` pass `config.Env{Getenv: os.Getenv}`). `TestLoadReadsTheEnvironmentItIsGiven` failed with `Storage = "jsonfile", want "memory"`.
+   - Green: `Load` reads every variable through `env.Getenv`; the `getenv` helper takes the lookup function; `internal/config` no longer imports `os`.
+   - Refactor: doc comments on `Load` and `getenv`. `Env` gets `UserConfigDir` in task 6, when something needs it. The CLI still passes `os.Getenv` itself until task 8.
 2. [ ] `config`: values from a TOML settings file are used (koanf: file provider + TOML parser, unmarshalled into `Config`).
 3. [ ] `config`: env vars override the settings file.
 4. [ ] `config`: an unknown key fails, naming the file and the key.

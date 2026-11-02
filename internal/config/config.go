@@ -4,7 +4,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 )
 
@@ -31,15 +30,23 @@ type Config struct {
 	PlansFile string
 }
 
-func Load() (Config, error) {
+// Env is the computer the app runs on, as configuration sees it. Getenv
+// reads the environment (os.Getenv in production).
+type Env struct {
+	Getenv func(string) string
+}
+
+// Load reads the configuration from env's STARTER_* variables and PORT,
+// using the defaults for any that aren't set, and validates it.
+func Load(env Env) (Config, error) {
 	cfg := Config{
-		Storage:   Storage(getenv("STARTER_STORAGE", string(StorageJSONFile))),
-		DataDir:   getenv("STARTER_DATA_DIR", "./data"),
-		ServerURL: os.Getenv("STARTER_SERVER_URL"),
-		LogFormat: getenv("STARTER_LOG_FORMAT", "text"),
-		PlansFile: os.Getenv("STARTER_PLANS_FILE"),
+		Storage:   Storage(getenv(env.Getenv, "STARTER_STORAGE", string(StorageJSONFile))),
+		DataDir:   getenv(env.Getenv, "STARTER_DATA_DIR", "./data"),
+		ServerURL: env.Getenv("STARTER_SERVER_URL"),
+		LogFormat: getenv(env.Getenv, "STARTER_LOG_FORMAT", "text"),
+		PlansFile: env.Getenv("STARTER_PLANS_FILE"),
 	}
-	port, err := strconv.Atoi(getenv("PORT", "8080"))
+	port, err := strconv.Atoi(getenv(env.Getenv, "PORT", "8080"))
 	if err != nil {
 		return Config{}, fmt.Errorf("PORT: %w", err)
 	}
@@ -59,8 +66,9 @@ func (c Config) Validate() error {
 	return nil
 }
 
-func getenv(key, fallback string) string {
-	if v, ok := os.LookupEnv(key); ok && v != "" {
+// getenv returns lookup(key), or fallback when that's empty.
+func getenv(lookup func(string) string, key, fallback string) string {
+	if v := lookup(key); v != "" {
 		return v
 	}
 	return fallback

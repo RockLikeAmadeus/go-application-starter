@@ -6,6 +6,7 @@ package cli
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -47,7 +48,7 @@ func NewRootCmd(newApp AppFactory, localDataDir func() (string, error), out io.W
 
 	// openApp loads config, applies flag overrides and wires the app.
 	openApp := func() (*bootstrap.App, config.Config, error) {
-		cfg, err := config.Load()
+		cfg, err := config.Load(config.Env{Getenv: os.Getenv})
 		if err != nil {
 			return nil, cfg, err
 		}
