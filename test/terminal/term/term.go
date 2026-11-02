@@ -27,6 +27,9 @@ type Terminal struct {
 	cmd *exec.Cmd
 	pty *os.File
 
+	exited  chan struct{} // closed once the program has exited
+	waitErr error         // cmd.Wait's result, set before exited closes
+
 	mu  sync.Mutex // guards emu: vt.SafeEmulator doesn't guard String
 	emu *vt.Emulator
 }
@@ -37,10 +40,18 @@ func Start(cmd *exec.Cmd) (*Terminal, error) {
 	if err != nil {
 		return nil, err
 	}
-	t := &Terminal{cmd: cmd, pty: f, emu: vt.NewEmulator(cols, rows)}
+	t := &Terminal{cmd: cmd, pty: f, exited: make(chan struct{}), emu: vt.NewEmulator(cols, rows)}
 	go t.showOutput()
 	go t.sendInput()
+	go t.waitForExit()
 	return t, nil
+}
+
+// waitForExit waits for the program once, for every Wait, since a command can
+// be waited for only once.
+func (t *Terminal) waitForExit() {
+	t.waitErr = t.cmd.Wait()
+	close(t.exited)
 }
 
 // showOutput draws what the program prints on the screen, until the terminal
@@ -117,15 +128,13 @@ func (t *Terminal) Press(key string) error {
 // Wait waits for the program to exit and returns its exit status. If it
 // doesn't exit within timeout, it returns an error.
 func (t *Terminal) Wait(timeout time.Duration) (int, error) {
-	done := make(chan error, 1)
-	go func() { done <- t.cmd.Wait() }()
 	select {
-	case err := <-done:
+	case <-t.exited:
 		var exit *exec.ExitError
-		if errors.As(err, &exit) {
+		if errors.As(t.waitErr, &exit) {
 			return exit.ExitCode(), nil
 		}
-		return 0, err
+		return 0, t.waitErr
 	case <-time.After(timeout):
 		return 0, t.errorWithScreen(fmt.Sprintf("the program didn't exit within %s", timeout))
 	}

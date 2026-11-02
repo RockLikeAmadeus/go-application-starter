@@ -40,7 +40,7 @@
      Red: `TestPressFailsOnAKeyItDoesNotKnow` (`Press("pgdn")` must return an error naming `"pgdn"`). `Press` now returns an `error`; with the stub's `nil`, it failed with "returned no error".
      Green: a name that isn't in `namedKeys` and isn't a single character returns an "unknown key" error, and nothing is sent.
      Refactor: the other tests check `Press`'s error, so a bad name fails at once instead of timing out in `WaitFor`. Journeys: still 9 undefined.
-4. [ ] `term`: `Wait()` returns the program's exit status; `AltScreen()` says whether the terminal is still on the alternate screen. Split over cycles (2026-11-02), as task 3 was: `Wait` takes a timeout, as `WaitFor` does, so a journey whose program never exits fails instead of hanging the run.
+4. [x] `term`: `Wait()` returns the program's exit status; `AltScreen()` says whether the terminal is still on the alternate screen. Split over cycles (2026-11-02), as task 3 was: `Wait` takes a timeout, as `WaitFor` does, so a journey whose program never exits fails instead of hanging the run.
    - [x] 4a. `Wait(timeout)` returns the program's exit status.
      Red: `TestWaitReturnsTheExitStatus` (`exit 3`). The stub returned 0: "exit status = 0, want 3".
      Green: the `Terminal` keeps the `*exec.Cmd`; `Wait` calls `cmd.Wait` and turns an `*exec.ExitError` into its exit code. The timeout isn't used yet (4b). (A first green also had the timeout branch; it was cut back, since no test asked for it.)
@@ -57,7 +57,10 @@
      Red: `TestCloseStopsAProgramThatIgnoresHangUp` (`trap '' HUP; printf ready; sleep 30`; after `Close`, `Wait(2s)` must return). Closing the pty alone hangs the program up, which this one ignores, so `Wait` timed out.
      Green: `Close` kills the program (ignoring the error, which only says it has already exited), then closes the pty.
      Refactor: nothing worth changing (two lines). Journeys: still 9 undefined.
-   - [ ] 4e. A second `Wait` (e.g. after a timeout, or after `Close`) returns the first one's result instead of `cmd.Wait`'s "Wait was already called" (left over from 4b).
+   - [x] 4e. A second `Wait` (e.g. after a timeout, or after `Close`) returns the first one's result instead of `cmd.Wait`'s "Wait was already called" (left over from 4b).
+     Red: `TestWaitAgainAfterATimeoutReturnsTheExitStatus` (`read line; printf bye; exit 4`: a `Wait` that times out, Enter, then a second `Wait` must return 4). Its first version, without "bye" and the 100 ms pause, passed most runs: two `cmd.Wait` calls raced to reap the program, and the loser got "waitid: no child processes" (1–3 failures in 10 under `-race`). With the pause, the first `Wait` has reaped it, and it failed 10 times in 10 with "exec: Wait was already called".
+     Green: `Start` waits for the program once, in a goroutine that stores `cmd.Wait`'s result and closes `exited`; `Wait` selects on `exited` or the timeout.
+     Refactor: that goroutine is the `waitForExit` method, beside `showOutput` and `sendInput`. The test's pause stays: it's what made the red reliable, and it costs 100 ms. Journeys: still 9 undefined.
 5. [ ] Runner: build `starter` once (in `TestMain`), a fresh computer per scenario; scenario "The command line says where my data is" passes (`--data-dir`).
 6. [ ] Template: start the built server on a free port with memory storage and wait for `/readyz`; scenario "The command line works on a server's data" passes.
 7. [ ] Template: scenario "A command the command line doesn't know fails" passes (exit status and message).

@@ -151,3 +151,26 @@ func TestCloseStopsAProgramThatIgnoresHangUp(t *testing.T) {
 		t.Fatalf("the program was still running after Close: %v", err)
 	}
 }
+
+func TestWaitAgainAfterATimeoutReturnsTheExitStatus(t *testing.T) {
+	tm := start(t, "read line; printf bye; exit 4")
+	if _, err := tm.Wait(200 * time.Millisecond); err == nil {
+		t.Fatal("the first Wait returned no error, but the program was waiting for a line")
+	}
+
+	if err := tm.Press("enter"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tm.WaitFor("bye", 2*time.Second); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(100 * time.Millisecond) // the program has exited, and the first Wait has seen it
+
+	status, err := tm.Wait(2 * time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status != 4 {
+		t.Errorf("exit status = %d, want 4", status)
+	}
+}
