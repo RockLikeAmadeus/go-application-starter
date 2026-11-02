@@ -82,6 +82,9 @@ func initializeScenario(sc *godog.ScenarioContext) {
 	sc.Step(`^the project has no sample Item capability$`, p.hasNoSample)
 	sc.Step(`^the specification has no sample Item capability$`, p.specHasNoSample)
 	sc.Step(`^the project builds and its Go tests pass$`, p.buildsAndPasses)
+	sc.Step(`^the terminal app keeps its error and selection styles$`, p.keepsTUIStyles)
+	sc.Step(`^the web app keeps its error message$`, p.keepsWebErrorMessage)
+	sc.Step(`^the project's Go code passes the linters$`, p.passesGoLint)
 	sc.Step(`^the init tool and its documentation are gone$`, p.toolIsGone)
 	sc.Step(`^the project records module "([^"]*)" and name "([^"]*)"$`, p.records)
 	sc.Step(`^the project can still be renamed$`, p.canBeRenamed)
@@ -258,6 +261,29 @@ func (p *project) buildsAndPasses() error {
 		if out, err := run(p.dir, "go", args...); err != nil {
 			return fmt.Errorf("go %s: %w\n%s", strings.Join(args, " "), err, firstLines(out, 40))
 		}
+	}
+	return nil
+}
+
+func (p *project) keepsTUIStyles() error {
+	for _, style := range []string{"errorStyle", "selectedStyle"} {
+		if err := p.allContain(map[string]string{"internal/adapters/tui/styles.go": style}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *project) keepsWebErrorMessage() error {
+	if !p.exists("web/src/components/ErrorMessage.tsx") {
+		return errors.New("web/src/components/ErrorMessage.tsx does not exist")
+	}
+	return nil
+}
+
+func (p *project) passesGoLint() error {
+	if out, err := run(p.dir, "golangci-lint", "run", "./..."); err != nil {
+		return fmt.Errorf("golangci-lint: %w\n%s", err, firstLines(out, 40))
 	}
 	return nil
 }

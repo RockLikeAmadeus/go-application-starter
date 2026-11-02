@@ -27,6 +27,7 @@ task init -- --module github.com/you/tasks --name "Acme Tasks" --remove-sample
   - The slug without its hyphens ends the app ID that the Android app and the desktop app's Linux window use: `com.example.acmetasks`.
 - No trace of the template's name is left: not its module path, not "starter", and not `STARTER_`.
 - The sample **Item** capability stays unless `--remove-sample` is given. With it, Item is removed from every layer and from `SPEC.md`, and the project still builds and passes its tests.
+  - What the front ends share stays, so your first screen doesn't have to rebuild it: the terminal app's error and selection styles, and the web app's error message. The project still passes the Go linters.
 - The tool removes itself when it finishes: its code, this page and the `init` task.
 - It refuses to run, and changes nothing, when:
   - the input is invalid (a flag is missing, the module path is invalid, the name has no letters or digits, or it contains a double quote or backslash);
@@ -35,6 +36,7 @@ task init -- --module github.com/you/tasks --name "Acme Tasks" --remove-sample
 **Examples**
 - `--name "Acme"` → brand "Acme", command `acme`, variables `ACME_…`.
 - `--name "Acme Tasks"` → brand "Acme Tasks", command `acme-tasks`, variables `ACME_TASKS_…`.
+- `--remove-sample` → the Items screens go, but the TUI's `errorStyle` and `selectedStyle` and the web app's `ErrorMessage` stay.
 - `--name "!!!"` → refused: the name needs a letter or digit.
 - Uncommitted changes → refused: commit or stash first.
 

@@ -33,6 +33,17 @@ Feature: Make the template mine
     Then the project has no sample Item capability
     And the specification has no sample Item capability
 
+  @wip
+  Scenario: Removing the sample keeps what the front ends share
+    When I make it mine with module "example.com/acme/tasks" and name "Acme", removing the sample
+    Then the terminal app keeps its error and selection styles
+    And the web app keeps its error message
+
+  @wip
+  Scenario: The project without the sample passes the Go linters
+    When I make it mine with module "example.com/acme/tasks" and name "Acme", removing the sample
+    Then the project's Go code passes the linters
+
   Scenario Outline: The new project is healthy
     When I make it mine with module "example.com/acme/tasks" and name "Acme"<removal>
     Then the project builds and its Go tests pass

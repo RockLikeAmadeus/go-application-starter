@@ -151,7 +151,7 @@ func (m Model) View() tea.View {
 		b.WriteString(helpStyle.Render("↑/↓ move • a add • r rename • d delete • q quit"))
 	}
 	if m.err != nil {
-		b.WriteString("\n" + errorStyle.Render("Error: "+m.err.Error()))
+		b.WriteString("\n" + errorLine(m.err))
 	}
 
 	v := tea.NewView(frameStyle.Render(b.String()))
