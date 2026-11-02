@@ -13,14 +13,20 @@ const appFolder = "starter"
 
 // LocalDataDir returns the local edition's data folder on this computer,
 // which the desktop app, the CLI and the TUI share: STARTER_DATA_DIR when set,
-// else the app's folder in the user's settings folder. getenv reads the
-// environment (os.Getenv in production) and userConfigDir finds the user's
-// settings folder (os.UserConfigDir in production).
-func LocalDataDir(getenv func(string) string, userConfigDir func() (string, error)) (string, error) {
-	if dir := getenv("STARTER_DATA_DIR"); dir != "" {
+// else data_dir in the TOML settingsFile ("" for none), else the app's folder
+// in the user's settings folder.
+func LocalDataDir(env Env, settingsFile string) (string, error) {
+	if dir := env.Getenv("STARTER_DATA_DIR"); dir != "" {
 		return dir, nil
 	}
-	configDir, err := userConfigDir()
+	k, err := readSettingsFile(settingsFile)
+	if err != nil {
+		return "", err
+	}
+	if dir := k.String("data_dir"); dir != "" {
+		return dir, nil
+	}
+	configDir, err := env.UserConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("find the data folder: %w", err)
 	}

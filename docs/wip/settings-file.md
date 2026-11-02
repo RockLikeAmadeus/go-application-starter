@@ -49,7 +49,10 @@
    - Red: `TestWithoutTheDefaultSettingsFileThereIsNone` failed with `LocalConfigFile = "<settings>/starter/config.toml", want none`.
    - Green: `LocalConfigFile` returns `""` when `os.Stat` says the default file doesn't exist. Any other error (say, no permission) keeps the path, so `Load` fails naming the file instead of silently skipping it.
    - Refactor: the doc comment says the default file is optional. Left: wrapping `UserConfigDir`'s error (see 6a); still no test asks for it, and the CLI and desktop app report it as it is.
-7. [ ] `config.LocalDataDir` uses the loaded `data_dir` (from the file or env) before the settings folder.
+7. [x] `config.LocalDataDir` uses the loaded `data_dir` (from the file or env) before the settings folder.
+   - Red: `LocalDataDir(env Env, settingsFile string)` replaced `(getenv, userConfigDir)`, with `settingsFile` unused; every caller (`desktop.Open`, `cmd/starter`, the acceptance steps, the tests) passes `""` for now. It takes the file rather than `Load`'s `DataDir`, whose default is the server's `./data` and can't be told from a chosen value. `TestLocalDataDirUsesTheSettingsFilesDataDir` failed with `LocalDataDir = "/home/someone/.config/starter", want "/srv/work-data"`.
+   - Green: after `STARTER_DATA_DIR`, it reads the file with `readSettingsFile` (so an unknown key or bad TOML fails here too) and uses its `data_dir`.
+   - Refactor: gofmt on the two callers whose lines grew; the doc comment states the new order. Left: the file is read twice when a front end calls both `Load` and `LocalDataDir`, and `STARTER_DATA_DIR` before the file repeats `Load`'s lookup. Task 10 (sources) reshapes `Load`; merging them waits for it.
 8. [ ] CLI: `NewRootCmd` takes `config.Env` instead of `localDataDir`; commands load the local settings file. Update `cmd/starter`, the test helpers and `runCommandLine`. Scenarios "chooses the data folder" and "doesn't know stops it" should pass.
 9. [ ] CLI: `--config` names the settings file for one command.
 10. [ ] `config`: `Load` reports each setting's source (built in, settings file, environment variable by name).

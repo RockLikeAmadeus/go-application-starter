@@ -12,7 +12,7 @@ import (
 func TestLocalDataDirUsesStarterDataDirWhenSet(t *testing.T) {
 	env := envOf(map[string]string{"STARTER_DATA_DIR": "/srv/starter-data"})
 
-	got, err := config.LocalDataDir(env, configDirAt("/home/someone/.config"))
+	got, err := config.LocalDataDir(config.Env{Getenv: env, UserConfigDir: configDirAt("/home/someone/.config")}, "")
 	if err != nil {
 		t.Fatalf("LocalDataDir: %v", err)
 	}
@@ -22,7 +22,7 @@ func TestLocalDataDirUsesStarterDataDirWhenSet(t *testing.T) {
 }
 
 func TestLocalDataDirFallsBackToUserConfigDir(t *testing.T) {
-	got, err := config.LocalDataDir(envOf(nil), configDirAt("/home/someone/.config"))
+	got, err := config.LocalDataDir(config.Env{Getenv: envOf(nil), UserConfigDir: configDirAt("/home/someone/.config")}, "")
 	if err != nil {
 		t.Fatalf("LocalDataDir: %v", err)
 	}
@@ -35,9 +35,22 @@ func TestLocalDataDirReturnsTheUserConfigDirError(t *testing.T) {
 	errNoHome := errors.New("neither $XDG_CONFIG_HOME nor $HOME are defined")
 	userConfigDir := func() (string, error) { return "", errNoHome }
 
-	_, err := config.LocalDataDir(envOf(nil), userConfigDir)
+	_, err := config.LocalDataDir(config.Env{Getenv: envOf(nil), UserConfigDir: userConfigDir}, "")
 	if !errors.Is(err, errNoHome) {
 		t.Errorf("LocalDataDir error = %v, want %v", err, errNoHome)
+	}
+}
+
+func TestLocalDataDirUsesTheSettingsFilesDataDir(t *testing.T) {
+	file := writeSettings(t, `data_dir = "/srv/work-data"`)
+	env := config.Env{Getenv: envOf(nil), UserConfigDir: configDirAt("/home/someone/.config")}
+
+	got, err := config.LocalDataDir(env, file)
+	if err != nil {
+		t.Fatalf("LocalDataDir: %v", err)
+	}
+	if want := "/srv/work-data"; got != want {
+		t.Errorf("LocalDataDir = %q, want %q", got, want)
 	}
 }
 

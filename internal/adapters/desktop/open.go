@@ -29,7 +29,7 @@ type App struct {
 // (os.UserConfigDir on the desktop). webAssets is the built web app
 // (web.Assets() in production).
 func Open(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS) (*App, error) {
-	dir, err := config.LocalDataDir(getenv, userConfigDir)
+	dir, err := config.LocalDataDir(config.Env{Getenv: getenv, UserConfigDir: userConfigDir}, "")
 	if err != nil {
 		return nil, err
 	}
