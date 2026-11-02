@@ -2,14 +2,18 @@ package bootstrap_test
 
 import (
 	"context"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
 
 // The local edition's one workspace is on the local plan.
@@ -88,4 +92,28 @@ func writePlansFile(t *testing.T, content string) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+// With --server, the CLI and TUI see the plan of the workspace the server
+// puts them in.
+func TestNewRemote_IsOnTheServersPlan(t *testing.T) {
+	pro := domain.Entitlements{Plan: "pro", Limits: map[string]domain.Limit{}}
+	core := app.NewEntitlementsService(testsupport.FixedEntitlements(pro), testsupport.FixedWorkspace("ws-a"))
+	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core}))
+	t.Cleanup(srv.Close)
+
+	a, err := bootstrap.NewRemote(srv.URL)
+	if err != nil {
+		t.Fatalf("NewRemote: %v", err)
+	}
+	if a.Entitlements == nil {
+		t.Fatal("the App has no Entitlements")
+	}
+	got, err := a.Entitlements.CurrentEntitlements(context.Background())
+	if err != nil {
+		t.Fatalf("CurrentEntitlements: %v", err)
+	}
+	if got.Plan != "pro" {
+		t.Errorf("plan = %q, want the server's %q", got.Plan, "pro")
+	}
 }

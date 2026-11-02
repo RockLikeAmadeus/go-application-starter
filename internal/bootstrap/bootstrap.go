@@ -113,6 +113,11 @@ func NewRemote(serverURL string) (*App, error) {
 	}
 	a.Items = svc
 	// sample:end
+	entitlements, err := httpclient.NewEntitlementsService(serverURL)
+	if err != nil {
+		return nil, fmt.Errorf("create API client: %w", err)
+	}
+	a.Entitlements = entitlements
 	return a, nil
 }
 
