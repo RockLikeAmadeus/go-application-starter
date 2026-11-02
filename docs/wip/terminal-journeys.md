@@ -53,7 +53,11 @@
      Red: `TestAltScreenIsOnWhileTheProgramUsesIt` (the program switches with `ESC [?1049h` and prints "full-screen"). The stub's `false` failed it.
      Green: `AltScreen` is the emulator's `IsAltScreen`, under the lock.
      Refactor: nothing worth changing (three lines, shaped like `Screen`). Journeys: still 9 undefined.
-   - [ ] 4d. `Close` stops the program if it's still running, and closes the emulator, so `sendInput` ends (left over from 3a).
+   - [x] 4d. `Close` stops the program if it's still running.
+     Red: `TestCloseStopsAProgramThatIgnoresHangUp` (`trap '' HUP; printf ready; sleep 30`; after `Close`, `Wait(2s)` must return). Closing the pty alone hangs the program up, which this one ignores, so `Wait` timed out.
+     Green: `Close` kills the program (ignoring the error, which only says it has already exited), then closes the pty.
+     Refactor: nothing worth changing (two lines). Journeys: still 9 undefined.
+   - [ ] 4e. A second `Wait` (e.g. after a timeout, or after `Close`) returns the first one's result instead of `cmd.Wait`'s "Wait was already called" (left over from 4b).
 5. [ ] Runner: build `starter` once (in `TestMain`), a fresh computer per scenario; scenario "The command line says where my data is" passes (`--data-dir`).
 6. [ ] Template: start the built server on a free port with memory storage and wait for `/readyz`; scenario "The command line works on a server's data" passes.
 7. [ ] Template: scenario "A command the command line doesn't know fails" passes (exit status and message).
@@ -66,3 +70,5 @@
 14. [ ] Finish: `task check`, `task test:init`, `task test:rename`, remove `@wip`, tick the TODO item, delete this file.
 
 ## Changes to the plan
+- 2026-11-02: tasks 3 and 4 split into one cycle per behaviour (3a–3c, 4a–4e), since each named several. 4b (`Wait`'s timeout) and 3c (unknown keys) got their own tests. 4e (a second `Wait`) came out of 4b.
+- 2026-11-02, 4d: dropped "`Close` closes the emulator, so `sendInput` ends". `vt.Emulator.Close` sets a `closed` flag that `Read` checks without a lock, so closing it while `sendInput` reads is a data race (`-race` fails). The cost is one idle goroutine per terminal, in a test process: accepted.

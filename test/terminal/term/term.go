@@ -145,7 +145,8 @@ func (t *Terminal) errorWithScreen(what string) error {
 	return fmt.Errorf("%s; the screen shows:\n%s", what, t.Screen())
 }
 
-// Close frees the terminal.
+// Close stops the program, if it's still running, and frees the terminal.
 func (t *Terminal) Close() error {
+	_ = t.cmd.Process.Kill() // fails only if the program has already exited
 	return t.pty.Close()
 }

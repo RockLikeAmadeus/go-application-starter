@@ -136,3 +136,18 @@ func TestAltScreenIsOnWhileTheProgramUsesIt(t *testing.T) {
 		t.Error("AltScreen() = false while the program is on the alternate screen")
 	}
 }
+
+func TestCloseStopsAProgramThatIgnoresHangUp(t *testing.T) {
+	tm := start(t, `trap '' HUP; printf ready; sleep 30`)
+	if err := tm.WaitFor("ready", 2*time.Second); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := tm.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := tm.Wait(2 * time.Second); err != nil {
+		t.Fatalf("the program was still running after Close: %v", err)
+	}
+}
