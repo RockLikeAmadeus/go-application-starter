@@ -16,9 +16,10 @@ import (
 // AppFactory builds the application for a command. Tests substitute their own.
 type AppFactory func(cfg config.Config) (*bootstrap.App, error)
 
-// appOpener opens the application. Commands call it only when they run, so
-// --help and --version work without wiring anything.
-type appOpener func() (*bootstrap.App, error)
+// appOpener opens the application, and says which configuration it opened
+// it with. Commands call it only when they run, so --help and --version work
+// without wiring anything.
+type appOpener func() (*bootstrap.App, config.Config, error)
 
 // Version is set at build time via -ldflags "-X .../cli.Version=v1.2.3".
 var Version = "dev"
@@ -44,10 +45,10 @@ func NewRootCmd(newApp AppFactory, out io.Writer) *cobra.Command {
 	root.PersistentFlags().StringVar(&storage, "storage", "", "storage adapter for embedded mode: jsonfile|memory (env STARTER_STORAGE)")
 
 	// openApp loads config, applies flag overrides and wires the app.
-	openApp := func() (*bootstrap.App, error) {
+	openApp := func() (*bootstrap.App, config.Config, error) {
 		cfg, err := config.Load()
 		if err != nil {
-			return nil, err
+			return nil, cfg, err
 		}
 		if serverURL != "" {
 			cfg.ServerURL = serverURL
@@ -59,16 +60,17 @@ func NewRootCmd(newApp AppFactory, out io.Writer) *cobra.Command {
 			cfg.Storage = config.Storage(storage)
 		}
 		if err := cfg.Validate(); err != nil {
-			return nil, err
+			return nil, cfg, err
 		}
 		app, err := newApp(cfg)
 		if err != nil {
-			return nil, fmt.Errorf("start application: %w", err)
+			return nil, cfg, fmt.Errorf("start application: %w", err)
 		}
-		return app, nil
+		return app, cfg, nil
 	}
 
 	root.AddCommand(newTUICmd(openApp))
+	root.AddCommand(newInfoCmd(openApp))
 	// sample:start
 	root.AddCommand(newItemCmd(openApp))
 	// sample:end
@@ -78,7 +80,7 @@ func NewRootCmd(newApp AppFactory, out io.Writer) *cobra.Command {
 // withApp opens the app for the duration of a command.
 func withApp(open appOpener, fn func(cmd *cobra.Command, args []string, app *bootstrap.App) error) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		app, err := open()
+		app, _, err := open()
 		if err != nil {
 			return err
 		}

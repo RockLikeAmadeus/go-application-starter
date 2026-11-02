@@ -1,0 +1,26 @@
+package cli
+
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+)
+
+// newInfoCmd shows where the data is: it opens the app, as any command that
+// uses the data does, and names the data folder it opened.
+func newInfoCmd(open appOpener) *cobra.Command {
+	return &cobra.Command{
+		Use:   "info",
+		Short: "Show where the data is",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			app, cfg, err := open()
+			if err != nil {
+				return err
+			}
+			defer app.Close()
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Data folder: %s\n", cfg.DataDir)
+			return err
+		},
+	}
+}
