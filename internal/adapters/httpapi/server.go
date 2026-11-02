@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"log/slog"
@@ -22,6 +23,8 @@ type Options struct {
 	// workspace's plan and its limits.
 	Entitlements ports.EntitlementsService
 	Logger       *slog.Logger
+	// Ready reports whether storage can be reached, for GET /readyz.
+	Ready func(context.Context) error
 	// WebAssets is the built SPA (web/dist). When nil, "/" serves a hint page.
 	WebAssets fs.FS
 	// LocalData is set when the data is on the same device as the web app
@@ -43,6 +46,13 @@ func NewHandler(opts Options) http.Handler {
 		_, _ = w.Write([]byte("ok"))
 	})
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+		if opts.Ready != nil {
+			if err := opts.Ready(r.Context()); err != nil {
+				log.ErrorContext(r.Context(), "not ready", "err", err)
+				http.Error(w, "storage unavailable", http.StatusServiceUnavailable)
+				return
+			}
+		}
 		// sample:start
 		if _, err := opts.Items.ListItems(r.Context()); err != nil {
 			http.Error(w, "storage unavailable", http.StatusServiceUnavailable)

@@ -1,11 +1,15 @@
 package httpapi_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -30,6 +34,29 @@ func TestServesWebAppManifestAsManifestJSON(t *testing.T) {
 	}
 	if got, want := rec.Header().Get("Content-Type"), "application/manifest+json"; got != want {
 		t.Errorf("Content-Type = %q, want %q", got, want)
+	}
+}
+
+// Readiness comes from storage, not from any one kind of data, so it works
+// without the sample's items.
+func TestReadyzIsUnavailableAndLogsWhyWhenStorageIsNotReady(t *testing.T) {
+	var logs bytes.Buffer
+	handler := httpapi.NewHandler(httpapi.Options{
+		Logger: slog.New(slog.NewTextHandler(&logs, nil)),
+		Ready:  func(context.Context) error { return errors.New("disk on fire") },
+	})
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/readyz", nil))
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
+	}
+	if got := rec.Body.String(); !strings.Contains(got, "storage unavailable") {
+		t.Errorf("body = %q, want it to say storage unavailable", got)
+	}
+	if !strings.Contains(logs.String(), "disk on fire") {
+		t.Errorf("logs = %q, want the readiness error", logs.String())
 	}
 }
 
