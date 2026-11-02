@@ -7,7 +7,7 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 ## The rules behind every case
 
 - **One data folder per copy.** The core keeps its data through a storage adapter, which `internal/bootstrap` picks. With `jsonfile` (the default), the data is plain JSON in a **data folder**: one file per kind of record (the sample's is `items.json`), plus a `.lock` file (see [ADR 3](adr/0003-plain-text-storage.md)). With `memory`, nothing is written: the data is lost when the process ends.
-- **`STARTER_DATA_DIR` always wins.** When it's set, every front end uses that folder. The CLI's `--data-dir` flag does the same for one command.
+- **Choosing another folder.** `data_dir` in the settings file chooses the folder for every front end that reads that file ([docs/configuration.md](configuration.md)). `STARTER_DATA_DIR` overrides the file, and the CLI's `--data-dir` overrides both for one command.
 - **One process per folder.** While a copy has a data folder open, it holds a lock on `.lock`. A second process that opens the same folder fails fast with "data directory is locked". The lock uses `flock`, so it works on Linux and macOS. On Windows nothing is locked, so don't open one folder from two copies there.
 - **Temporary files.** Saving writes a `<file>.*.tmp` beside each JSON file and renames it over the file. The server's readiness check writes and removes `.ready-*.tmp`. Only a crash at the wrong moment leaves either one behind.
 - **Nothing syncs.** Each copy has its own data. Copying a data folder (or putting it in a cloud-synced folder) works, but don't let two devices use it at the same time ([ADR 5](adr/0005-hosted-and-local-editions.md)).
@@ -17,15 +17,15 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 
 | How it runs | Where the data is | Chosen by |
 |---|---|---|
-| Server (`bin/server`, `task run:server`) | `./data`, relative to the folder it was started in | `STARTER_DATA_DIR`, `STARTER_STORAGE` |
+| Server (`bin/server`, `task run:server`) | `./data`, relative to the folder it was started in | `STARTER_DATA_DIR`, `STARTER_STORAGE`, or the settings file `STARTER_CONFIG_FILE` names |
 | `task dev` | `./data` in the repository (gitignored) | as for the server |
 | Docker (`task docker:up`) | `/data` in the container, on the named volume `app-data` | `Dockerfile`, `docker-compose.yml` |
 | Fly.io (staging, production) | `/data`, on the Fly volume `app_data` | `fly.staging.toml`, `fly.production.toml` |
-| CLI and TUI, on their own | The desktop app's data folder (below), wherever they're run from | `--data-dir`, `STARTER_DATA_DIR`, `--storage` |
+| CLI and TUI, on their own | The desktop app's data folder (below), wherever they're run from | `--data-dir`, `STARTER_DATA_DIR`, the settings file, `--storage` |
 | CLI and TUI with `--server` | On that server: nothing is stored locally | `--server`, `STARTER_SERVER_URL` |
-| Desktop app, Linux | `~/.config/starter` (`$XDG_CONFIG_HOME/starter`) | `STARTER_DATA_DIR` |
-| Desktop app, Windows | `%AppData%\starter` (`C:\Users\<you>\AppData\Roaming\starter`) | `STARTER_DATA_DIR` |
-| Desktop app, macOS (not tried yet) | `~/Library/Application Support/starter` | `STARTER_DATA_DIR` |
+| Desktop app, Linux | `~/.config/starter` (`$XDG_CONFIG_HOME/starter`) | the settings file, `STARTER_DATA_DIR` |
+| Desktop app, Windows | `%AppData%\starter` (`C:\Users\<you>\AppData\Roaming\starter`) | the settings file, `STARTER_DATA_DIR` |
+| Desktop app, macOS (not tried yet) | `~/Library/Application Support/starter` | the settings file, `STARTER_DATA_DIR` |
 | Android app | `/data/data/com.example.starter/files/starter`, the app's private storage | fixed |
 | Web app in a browser | On the server it was loaded from | — |
 | Browser e2e tests (`task e2e`) | In memory, never on disk | `STARTER_STORAGE=memory` in `web/playwright.config.ts` |
@@ -33,10 +33,10 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 
 ## The server
 
-`cmd/server` reads its settings from the environment (`internal/config`):
+`cmd/server` reads its settings from the environment, over the settings file `STARTER_CONFIG_FILE` names, if any ([docs/configuration.md](configuration.md)):
 
-- `STARTER_STORAGE` is `jsonfile` (the default) or `memory`.
-- `STARTER_DATA_DIR` is the data folder, `./data` by default. That path is relative to the process's working folder, not to the binary, so start the server from the same place each time, or set an absolute path.
+- `STARTER_STORAGE` (`storage` in the file) is `jsonfile` (the default) or `memory`.
+- `STARTER_DATA_DIR` (`data_dir`) is the data folder, `./data` by default. That path is relative to the process's working folder, not to the binary, so start the server from the same place each time, or set an absolute path.
 
 **In Docker**, the image sets `STARTER_STORAGE=jsonfile` and `STARTER_DATA_DIR=/data`, and declares `/data` a volume. `docker-compose.yml` mounts the named volume `app-data` there, so the data survives `docker compose down` and rebuilds. Docker prefixes the volume's name with the Compose project's (`docker volume ls`), and `docker compose down -v` deletes it.
 
@@ -50,15 +50,25 @@ On their own (embedded), the CLI and TUI run the core in-process and open the da
 
 1. `--data-dir`, for one command;
 2. `STARTER_DATA_DIR`, as for the desktop app;
-3. `starter` in the user's settings folder: `~/.config/starter` on Linux, `%AppData%\starter` on Windows, `~/Library/Application Support/starter` on macOS.
+3. `data_dir` in the settings file (`config.toml` beside the default folder, or the one `STARTER_CONFIG_FILE` or `--config` names), as for the desktop app;
+4. `starter` in the user's settings folder: `~/.config/starter` on Linux, `%AppData%\starter` on Windows, `~/Library/Application Support/starter` on macOS.
 
-`starter info` says which folder that is, and the workspace's plan:
+`starter info` says which folder that is, where each setting came from, and the workspace's plan:
 
 ```console
 $ starter info
+Settings file: none
+  storage = "jsonfile"  # built in
+  data_dir = "./data"  # built in
+  port = 8080  # built in
+  server_url = ""  # built in
+  log_format = "text"  # built in
+  plans_file = ""  # built in
 Data folder: /home/you/.config/starter
 Plan: local
 ```
+
+(`data_dir`'s built-in value is the server's; the line below it is the folder actually used.)
 
 With `--storage memory`, nothing is saved: `starter info` says the data is kept in memory, and no folder is looked up.
 
@@ -68,7 +78,7 @@ During development, `task run:cli` and `task run:tui` use the same folder as `ta
 
 ## The desktop app
 
-The desktop app (`cmd/desktop`) always uses `jsonfile`. Its data folder, which the CLI and TUI share, is `STARTER_DATA_DIR` when set, and otherwise `starter` inside the user's settings folder (Go's `os.UserConfigDir`; see `internal/config/localdata.go`):
+The desktop app (`cmd/desktop`) always uses `jsonfile`. Its data folder, which the CLI and TUI share, is `STARTER_DATA_DIR` when set, else `data_dir` in the settings file (`config.toml` in the folder below, or the one `STARTER_CONFIG_FILE` names), and otherwise `starter` inside the user's settings folder (Go's `os.UserConfigDir`; see `internal/config/localdata.go`):
 
 | OS | Data folder |
 |---|---|
@@ -105,5 +115,6 @@ The browser keeps two settings per site in local storage: `theme` and `style`. T
 
 ## Other files the app reads
 
+- **The settings file.** Optional: `config.toml` in the app's folder in the user's settings folder, beside the default data folder (`~/.config/starter/config.toml` on Linux), for the CLI, TUI and desktop app. `STARTER_CONFIG_FILE` names another, and the server reads one only then. Nothing writes to it. See [docs/configuration.md](configuration.md).
 - **The plans file.** The plans are built into the binary (`internal/adapters/plans/plans.jsonc`). `STARTER_PLANS_FILE` names a file to read instead. Nothing writes to it.
 - **Logs** go to standard output (`STARTER_LOG_FORMAT`), never to a file. In Docker or on Fly.io, the platform keeps them.
