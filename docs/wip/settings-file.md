@@ -35,7 +35,8 @@
    - Red: `TestASettingTheAppDoesntKnowFailsNamingTheFileAndSetting` (`colour = "blue"`) failed with `Load error = <nil>, want one naming <file> and "colour"`.
    - Green: after loading, any key outside the six settings fails with `settings file <path>: unknown setting "colour"`. A TOML table's keys come out dotted (`a.b`), so they're refused too.
    - Refactor: reading and checking the file moved into `readSettingsFile(path)`, with the keys in `settingKeys`. Left: the six keys also appear in `Load`'s lookups; task 10 (sources) will want one table of settings anyway, so merging them waits for it. `@wip` progress unchanged (nothing passes a file to `Load` until task 8).
-5. [ ] `config`: bad TOML fails, naming the file.
+5. [x] `config`: bad TOML fails, naming the file.
+   - Red: `TestASettingsFileThatIsntTOMLFailsNamingTheFile` (an unterminated string) passed straight away: task 2 already wraps koanf's read error as `read the settings file <path>: …`. Kept as a guard (chosen 2026-11-02) for SPEC §4.12's rule. No green or refactor.
 6. [ ] `config.LocalConfigFile(env)`: `STARTER_CONFIG_FILE`, else `<settings folder>/starter/config.toml`; a missing default file means no file, a missing named file is an error.
 7. [ ] `config.LocalDataDir` uses the loaded `data_dir` (from the file or env) before the settings folder.
 8. [ ] CLI: `NewRootCmd` takes `config.Env` instead of `localDataDir`; commands load the local settings file. Update `cmd/starter`, the test helpers and `runCommandLine`. Scenarios "chooses the data folder" and "doesn't know stops it" should pass.
@@ -49,5 +50,6 @@
 16. [ ] Finish: `task check`, `task test:init`, `task test:rename` (the path contains the slug), by hand (`starter info` with and without a file; the desktop app with `data_dir` set; `task dev` unaffected), remove `@wip`, tick the TODO item, delete this file.
 
 ## Changes to the plan
+- 2026-11-02, task 5: passed straight away (task 2's error wrapping); kept as a guard.
 - 2026-11-02, task 2: the simplest green (env, else file, else default per setting) already makes env override the file, so task 3's test will probably pass straight away; decide then whether to keep it as a guard. It did; kept as a guard.
 - 2026-11-02, task 2: values aren't unmarshalled into `Config` (the plan said so); a lookup per setting is simpler.

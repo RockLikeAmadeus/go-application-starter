@@ -65,3 +65,12 @@ func TestASettingTheAppDoesntKnowFailsNamingTheFileAndSetting(t *testing.T) {
 		t.Errorf("Load error = %v, want one naming %s and %q", err, file, "colour")
 	}
 }
+
+func TestASettingsFileThatIsntTOMLFailsNamingTheFile(t *testing.T) {
+	file := writeSettings(t, `data_dir = "/srv/work-data`)
+
+	_, err := config.Load(config.Env{Getenv: envOf(nil)}, file)
+	if err == nil || !strings.Contains(err.Error(), file) {
+		t.Errorf("Load error = %v, want one naming %s", err, file)
+	}
+}
