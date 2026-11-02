@@ -55,8 +55,10 @@ var SampleFiles = []string{
 
 	// Specifications
 	"features/items.feature",
+	"features/plans.feature",
 	"features/workspaces.feature",
 	"test/acceptance/item_steps.go",
+	"test/acceptance/plan_steps.go",
 	"test/acceptance/workspace_steps.go",
 	"web/e2e/features/items.feature",
 	"web/e2e/steps/items.steps.ts",
