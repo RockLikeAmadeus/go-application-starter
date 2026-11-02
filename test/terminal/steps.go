@@ -57,14 +57,8 @@ func initializeScenario(sc *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	sc.Step(`^my data is in the folder "([^"]*)"$`, j.myDataIsInTheFolder)
-	sc.Step(`^I ask the command line where my data is$`, j.iAskTheCommandLineWhereMyDataIs)
-	sc.Step(`^it says my data is in the folder "([^"]*)"$`, j.itSaysMyDataIsInTheFolder)
-	sc.Step(`^a server is running$`, j.aServerIsRunning)
-	sc.Step(`^I ask the command line where my data is, connected to the server$`, j.iAskTheCommandLineWhereMyDataIsConnectedToTheServer)
-	sc.Step(`^it says my data is on the server$`, j.itSaysMyDataIsOnTheServer)
-	sc.Step(`^I give the command line the command "([^"]*)"$`, j.iGiveTheCommandLineTheCommand)
-	sc.Step(`^it fails, saying "([^"]*)"$`, j.itFailsSaying)
+	j.registerCommandLineSteps(sc)
+	j.registerTerminalAppSteps(sc)
 }
 
 // run starts the starter program with args in a new terminal, on this
@@ -99,22 +93,6 @@ func (j *journey) env() []string {
 	return env
 }
 
-func (j *journey) myDataIsInTheFolder(folder string) error {
-	j.dataDir = folder
-	return nil
-}
-
-func (j *journey) iAskTheCommandLineWhereMyDataIs() error {
-	return j.run("--data-dir", j.dataDir, "info")
-}
-
-func (j *journey) itSaysMyDataIsInTheFolder(folder string) error {
-	if err := j.term.WaitFor("Data folder: "+folder, timeout); err != nil {
-		return err
-	}
-	return j.succeeds()
-}
-
 // succeeds checks the program ended with a success status.
 func (j *journey) succeeds() error {
 	return j.exitStatus(func(status int) bool { return status == 0 }, "0")
@@ -131,17 +109,6 @@ func (j *journey) exitStatus(ok func(status int) bool, want string) error {
 		return fmt.Errorf("exit status = %d, want %s; the screen shows:\n%s", status, want, j.term.Screen())
 	}
 	return nil
-}
-
-func (j *journey) iGiveTheCommandLineTheCommand(command string) error {
-	return j.run(command)
-}
-
-func (j *journey) itFailsSaying(message string) error {
-	if err := j.term.WaitFor(message, timeout); err != nil {
-		return err
-	}
-	return j.exitStatus(func(status int) bool { return status != 0 }, "a failure")
 }
 
 // startServer starts the built server for this scenario and sets serverURL.
@@ -199,19 +166,4 @@ func ready(url string, timeout time.Duration) bool {
 		}
 	}
 	return false
-}
-
-func (j *journey) aServerIsRunning() error {
-	return j.startServer()
-}
-
-func (j *journey) iAskTheCommandLineWhereMyDataIsConnectedToTheServer() error {
-	return j.run("--server", j.serverURL, "info")
-}
-
-func (j *journey) itSaysMyDataIsOnTheServer() error {
-	if err := j.term.WaitFor("Server: "+j.serverURL, timeout); err != nil {
-		return err
-	}
-	return j.succeeds()
 }

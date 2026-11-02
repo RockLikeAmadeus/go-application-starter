@@ -72,7 +72,9 @@
 7. [x] Template: scenario "A command the command line doesn't know fails" passes (exit status and message).
    - No red: `starter frobnicate` already says `unknown command "frobnicate"` and exits 1, and the harness needed nothing new, so the scenario passed as soon as its two steps existed (`iGiveTheCommandLineTheCommand`, and `itFailsSaying`: wait for the message, then a non-zero status). Kept as the journey's guard and committed as `test:` (decided 2026-11-02). `itFailsSaying` is template code; task 9's "reports a mistake" reuses it.
    - Refactor: `succeeds` and `itFailsSaying` check the status through one `exitStatus` helper, which shows the screen on a mismatch. Journeys: 3 passed, 6 undefined.
-8. [ ] Template: scenario "Open and quit the terminal app" passes ("q quit", `q`, exit 0, off the alternate screen).
+8. [x] Template: scenario "Open and quit the terminal app" passes ("q quit", `q`, exit 0, off the alternate screen).
+   - No red: `starter tui` already shows "q quit", quits on `q` with status 0 and leaves the alternate screen, and the `term` helper drives it as is (5 runs in 5 under `-race`). The scenario passed as soon as its four steps existed. "The terminal shows what it showed before" checks status 0, off the alternate screen, and "q quit" gone (each scenario's terminal starts empty). Kept as the guard, committed as `test:` (decided 2026-11-02).
+   - Refactor: the steps are split by feature, as in `test/acceptance`: `command_line_steps.go` (`registerCommandLineSteps`) and `terminal_app_steps.go` (`registerTerminalAppSteps`); `steps.go` keeps the `journey`, its hooks and the harness (run, env, exit status, server). Task 9's `item_steps.go` registers the same way, in a sample block. Journeys: 4 passed, 5 undefined.
 9. [ ] Sample: `item_steps.go` (in `SampleFiles`, registered in a sample block); scenarios "Add an item with the command line" and "The command line reports a mistake" pass.
 10. [ ] Sample: scenario "Add an item in the terminal app" passes (`a`, type, `enter`).
 11. [ ] Sample: scenario outline "Move through the items" passes, both rows (`j`/`k`, `down`/`up`).
