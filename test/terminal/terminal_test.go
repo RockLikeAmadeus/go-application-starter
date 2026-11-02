@@ -4,7 +4,10 @@
 package terminal
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/cucumber/godog"
@@ -26,7 +29,30 @@ func init() {
 
 func TestMain(m *testing.M) {
 	pflag.Parse()
-	os.Exit(m.Run())
+	bin, err := os.MkdirTemp("", "starter-journeys-")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	starter = filepath.Join(bin, "starter")
+	if err := build(starter, "../../cmd/starter"); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		_ = os.RemoveAll(bin)
+		os.Exit(1)
+	}
+	code := m.Run()
+	_ = os.RemoveAll(bin)
+	os.Exit(code)
+}
+
+// build builds the program in pkg to out, as a user would install it.
+func build(out, pkg string) error {
+	cmd := exec.Command("go", "build", "-o", out, pkg)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("building %s: %w", pkg, err)
+	}
+	return nil
 }
 
 // TestJourneys runs every journey in features.
@@ -35,7 +61,7 @@ func TestJourneys(t *testing.T) {
 	o.TestingT = t
 	suite := godog.TestSuite{
 		Name:                "terminal",
-		ScenarioInitializer: func(*godog.ScenarioContext) {},
+		ScenarioInitializer: initializeScenario,
 		Options:             &o,
 	}
 	if suite.Run() != 0 {
