@@ -27,6 +27,7 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Theme** | The colour scheme of the web app: **dark** or **light**. Independent of the style. |
 | **Style** | A named look for the web app: its layout, fonts, shape and density. Independent of the theme; every style works in dark and light. |
 | **Desktop app** | The web app packaged as a program for the user's computer. In the local edition it keeps its own data and needs no server. Working on hosted data instead (remote mode) is planned. |
+| **Settings file** | An optional file of the app's settings (such as the data folder) on the user's computer, shared by the desktop app and the command line. |
 | **Data folder** | The folder where the local edition keeps its data: on the user's computer, shared by the desktop app and the command line, or in the app's private storage on the phone. |
 | **Mobile app** | The web app packaged as an app for the user's phone (Android for now). In the local edition it keeps its own data on the phone and needs no server. Working on hosted data instead (remote mode) is planned. |
 | **Edition** | How a copy of the product runs. The **hosted edition** serves many users from a server, each signing in to an account (planned). The **local edition** is for one user, with no account: data on their own device, or on a server they host for themselves. Both run the same app, and each copy uses one edition only. |
@@ -138,7 +139,7 @@ Users can run the app as a program on their own computer, so they can use it wit
 **Rules**
 - The desktop app shows the same app as the web app, with the same styles and themes, in its own window.
 - It keeps the user's data in a data folder on their computer. It needs no server and no connection, and it doesn't open a network port.
-- By default the data folder is the user's settings folder for the app (on Linux, `~/.config/starter`). The user can choose another one when they start the app.
+- By default the data folder is the user's settings folder for the app (on Linux, `~/.config/starter`). The user can choose another one in the settings file (§4.12), or when they start the app.
 - Data is still there after the app is closed and opened again.
 - Only one copy of the app can use a data folder at a time. A second copy says the data is already in use, and doesn't start.
 - In local-only mode, it never says it is offline, because it doesn't need a connection.
@@ -253,6 +254,27 @@ On one computer, the desktop app, the CLI and the TUI are one local edition, so 
 - User runs `starter --data-dir ~/work-data info` → it names `~/work-data`.
 
 **Specification:** [`features/local-data.feature`](features/local-data.feature). These scenarios run only on the desktop driver, which opens the desktop app on a temporary settings folder and runs the command line beside it. Where each front end keeps its data, on each OS, is in [docs/data-locations.md](docs/data-locations.md).
+
+### 4.12 Keep settings in a settings file
+
+Users of the local edition can keep their settings in a settings file, so they don't have to set them each time they start the app. The desktop app, the CLI and the TUI read the same file. Whoever runs a server can give it one too.
+
+**Rules**
+- The settings file is optional. Without one, the app uses its built-in defaults.
+- By default it's `config.toml` in the user's settings folder for the app (on Linux, `~/.config/starter/config.toml`). `STARTER_CONFIG_FILE`, or `--config` for one command, names another one.
+- It can hold any of the app's settings: the data folder, the storage, the server to connect to, the log format, the plans file and the port.
+- A setting chosen when the app is started overrides the settings file: an environment variable over the file, and a command-line option over both.
+- `starter info` says which settings file was read, and where each setting came from: built in, the settings file, an environment variable or a command-line option.
+- A settings file the app can't understand (a mistake in it, or a setting it doesn't know) stops the app at start, saying which file and which setting. The app never starts on settings it ignored.
+- A named settings file that doesn't exist is a mistake too. The default one may be missing.
+- A server reads a settings file only when `STARTER_CONFIG_FILE` names one, never the user's settings folder.
+
+**Examples**
+- The settings file says the data folder is `~/work-data` → the desktop app and `starter info` both use `~/work-data`.
+- The settings file says `~/work-data`, and the app is started with `STARTER_DATA_DIR=/tmp/scratch` → it uses `/tmp/scratch`, and `starter info` says that came from `STARTER_DATA_DIR`.
+- The settings file has `colour = "blue"` → the app doesn't start, and says `colour` isn't a setting it knows.
+
+**Specification:** [`features/settings-file.feature`](features/settings-file.feature). These scenarios run only on the desktop driver, on a temporary settings folder. Every setting, its environment variable and its option are listed in [docs/configuration.md](docs/configuration.md).
 
 ## 5. Non-functional requirements
 
