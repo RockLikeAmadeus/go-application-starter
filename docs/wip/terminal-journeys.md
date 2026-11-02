@@ -49,7 +49,10 @@
      Red: `TestWaitFailsWithTheScreenWhenTheProgramKeepsRunning` (`printf hello; sleep 5`, `Wait(300ms)`): it blocked the whole 5 s and returned no error.
      Green: `Wait` runs `cmd.Wait` in a goroutine and races it against the timeout; on timeout the error shows the screen.
      Refactor: `WaitFor` and `Wait` build their errors with one helper, `errorWithScreen` ("…; the screen shows:" and the screen). Journeys: still 9 undefined. Left for 4d: after a timeout, the goroutine still waits on the program, so a second `Wait` would call `cmd.Wait` twice ("Wait was already called"); `Close` should end the program, and a later `Wait` should reuse the first one's result.
-   - [ ] 4c. `AltScreen()` says whether the terminal is on the alternate screen.
+   - [x] 4c. `AltScreen()` says whether the terminal is on the alternate screen.
+     Red: `TestAltScreenIsOnWhileTheProgramUsesIt` (the program switches with `ESC [?1049h` and prints "full-screen"). The stub's `false` failed it.
+     Green: `AltScreen` is the emulator's `IsAltScreen`, under the lock.
+     Refactor: nothing worth changing (three lines, shaped like `Screen`). Journeys: still 9 undefined.
    - [ ] 4d. `Close` stops the program if it's still running, and closes the emulator, so `sendInput` ends (left over from 3a).
 5. [ ] Runner: build `starter` once (in `TestMain`), a fresh computer per scenario; scenario "The command line says where my data is" passes (`--data-dir`).
 6. [ ] Template: start the built server on a free port with memory storage and wait for `/readyz`; scenario "The command line works on a server's data" passes.

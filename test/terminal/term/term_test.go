@@ -125,3 +125,14 @@ func TestWaitFailsWithTheScreenWhenTheProgramKeepsRunning(t *testing.T) {
 		t.Errorf("error %q doesn't show the screen", err)
 	}
 }
+
+func TestAltScreenIsOnWhileTheProgramUsesIt(t *testing.T) {
+	tm := start(t, `printf '\033[?1049h'; printf full-screen; sleep 5`)
+	if err := tm.WaitFor("full-screen", 2*time.Second); err != nil {
+		t.Fatal(err)
+	}
+
+	if !tm.AltScreen() {
+		t.Error("AltScreen() = false while the program is on the alternate screen")
+	}
+}

@@ -131,6 +131,14 @@ func (t *Terminal) Wait(timeout time.Duration) (int, error) {
 	}
 }
 
+// AltScreen says whether the terminal is showing the alternate screen, the one
+// full-screen programs draw on and leave when they exit.
+func (t *Terminal) AltScreen() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.emu.IsAltScreen()
+}
+
 // errorWithScreen is an error saying what went wrong, then showing the screen,
 // so a failed journey shows what the user would have seen.
 func (t *Terminal) errorWithScreen(what string) error {
