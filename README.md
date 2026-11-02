@@ -54,8 +54,8 @@ task check     # codegen drift, lint, unit, acceptance, e2e: everything CI runs
 
 ```sh
 task dev                         # API on :8080 + Vite on :5173, opened in your browser; both reload on save
-task run:cli -- --help           # CLI, embedded core, data in ./data (add --server http://localhost:8080 to use a running server)
-task run:tui                     # terminal UI (also accepts --server)
+task run:cli -- --help           # CLI, embedded core, data in the desktop app's folder (task run:cli -- info names it; add --server http://localhost:8080 to use a running server)
+task run:tui                     # terminal UI, on the same data as the CLI (also accepts --server)
 task run:desktop                 # desktop app in a native window, data in your settings folder (needs the desktop build deps)
 task mobile:android:run          # Android app on the emulator or a phone, data on the device (needs the Android tools, see docs/mobile.md)
 task test                        # unit tests (Go + web)

@@ -21,7 +21,7 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 | `task dev` | `./data` in the repository (gitignored) | as for the server |
 | Docker (`task docker:up`) | `/data` in the container, on the named volume `app-data` | `Dockerfile`, `docker-compose.yml` |
 | Fly.io (staging, production) | `/data`, on the Fly volume `app_data` | `fly.staging.toml`, `fly.production.toml` |
-| CLI and TUI, on their own | `./data`, relative to the folder they're run in | `--data-dir`, `STARTER_DATA_DIR`, `--storage` |
+| CLI and TUI, on their own | The desktop app's data folder (below), wherever they're run from | `--data-dir`, `STARTER_DATA_DIR`, `--storage` |
 | CLI and TUI with `--server` | On that server: nothing is stored locally | `--server`, `STARTER_SERVER_URL` |
 | Desktop app, Linux | `~/.config/starter` (`$XDG_CONFIG_HOME/starter`) | `STARTER_DATA_DIR` |
 | Desktop app, Windows | `%AppData%\starter` (`C:\Users\<you>\AppData\Roaming\starter`) | `STARTER_DATA_DIR` |
@@ -46,13 +46,29 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 
 ## The CLI and the TUI
 
-On their own (embedded), the CLI and TUI run the core in-process and open the data folder themselves, with the server's settings. The default is again `./data` **in the folder you run the command from**. Running the CLI in two different folders shows two different sets of data. Set `STARTER_DATA_DIR` (or pass `--data-dir`) to use one folder from anywhere.
+On their own (embedded), the CLI and TUI run the core in-process and open the data folder themselves. They use **the desktop app's data folder** (see the next section), so the three share one set of data, and the folder you run a command from makes no difference (SPEC.md §4.11). The folder is, in order:
 
-Because of the lock, the CLI can't open the folder a running server or desktop app is using. Point it at the server instead: `starter --server http://localhost:8080 …`. With `--server` (or `STARTER_SERVER_URL`), the CLI and TUI store nothing locally.
+1. `--data-dir`, for one command;
+2. `STARTER_DATA_DIR`, as for the desktop app;
+3. `starter` in the user's settings folder: `~/.config/starter` on Linux, `%AppData%\starter` on Windows, `~/Library/Application Support/starter` on macOS.
+
+`starter info` says which folder that is, and the workspace's plan:
+
+```console
+$ starter info
+Data folder: /home/you/.config/starter
+Plan: local
+```
+
+With `--storage memory`, nothing is saved: `starter info` says the data is kept in memory, and no folder is looked up.
+
+Because of the lock, the CLI and TUI can't open the folder while the desktop app (or a server) has it open: they say "data directory is locked" and change nothing. Close the app first, or point the CLI at a running server: `starter --server http://localhost:8080 …`. With `--server` (or `STARTER_SERVER_URL`), the CLI and TUI store nothing locally, and `starter info` names the server instead.
+
+During development, `task run:cli` and `task run:tui` use the same folder as `task run:desktop`: your real one. `task dev`'s server keeps the repository's `./data`.
 
 ## The desktop app
 
-The desktop app (`cmd/desktop`) always uses `jsonfile`. Its data folder is `STARTER_DATA_DIR` when set, and otherwise `starter` inside the user's settings folder (Go's `os.UserConfigDir`; see `internal/config/localdata.go`):
+The desktop app (`cmd/desktop`) always uses `jsonfile`. Its data folder, which the CLI and TUI share, is `STARTER_DATA_DIR` when set, and otherwise `starter` inside the user's settings folder (Go's `os.UserConfigDir`; see `internal/config/localdata.go`):
 
 | OS | Data folder |
 |---|---|
