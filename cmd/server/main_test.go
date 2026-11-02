@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
@@ -30,5 +31,21 @@ func TestServerIsNotReadyOnceItsDataFolderIsRemoved(t *testing.T) {
 
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
+	}
+}
+
+func TestTheServerReadsTheSettingsFileStarterConfigFileNames(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "server.toml")
+	if err := os.WriteFile(file, []byte("port = 9090\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := map[string]string{"STARTER_CONFIG_FILE": file}
+
+	cfg, err := loadConfig(config.Env{Getenv: func(key string) string { return env[key] }})
+	if err != nil {
+		t.Fatalf("loadConfig: %v", err)
+	}
+	if cfg.Port != 9090 {
+		t.Errorf("Port = %d, want the settings file's 9090", cfg.Port)
 	}
 }

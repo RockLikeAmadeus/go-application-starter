@@ -86,7 +86,10 @@
    - Red: `TestOpenUsesTheSettingsFilesPlansFile` names a broken plans file in the settings file (not an `items` limit: `open_test.go` is template code); `Open` succeeded instead of refusing it.
    - Green: `Open` takes the rest of its configuration from `config.Load(env, settingsFile)`, with storage forced to `jsonfile` and the data folder from `LocalDataDir`. Side effects, accepted: the desktop app now also honours `STARTER_PLANS_FILE`, and refuses a bad `STARTER_STORAGE`, `STARTER_LOG_FORMAT` or `PORT` (as `Load` validates them), like the CLI. `server_url` is read but unused until remote mode.
    - Refactor: the desktop tests share `writeSettings(t, settings, content)` (`helpers_test.go`); `Open`'s doc comment says it uses `config.Load`. Left: the CLI and `Open` both run `LocalConfigFile` → `Load` → `LocalDataDir`, but the CLI applies its options in between; not worth a shared helper for two callers.
-14. [ ] Server: `cmd/server` loads `STARTER_CONFIG_FILE` when set, else no file.
+14. [x] Server: `cmd/server` loads `STARTER_CONFIG_FILE` when set, else no file.
+   - Red: loading moved out of `run()` into `loadConfig(env config.Env)` (behaviour unchanged), since `run` listens. `TestTheServerReadsTheSettingsFileStarterConfigFileNames` (`port = 9090` in the named file) failed with `Port = 8080`.
+   - Green: `loadConfig` passes `STARTER_CONFIG_FILE` to `config.Load` (`""` when unset: no file).
+   - Refactor: `loadConfig`'s doc comment says why the server never looks in the user's settings folder. Left: the "listening" log line doesn't name the settings file; that would be new behaviour, not a refactor, and logs are a separate TODO item (observability).
 15. [ ] Docs: new `docs/configuration.md` (every key, env var and option, precedence, file locations, a commented example), ADR 6, README's configuration paragraph (link), `docs/data-locations.md` ("Other files the app reads"), CLAUDE.md Gotchas (where the file is, strictness, the server reads one only when named). `.env.example` needs a hand check by the user (Claude can't read it here).
 16. [ ] Finish: `task check`, `task test:init`, `task test:rename` (the path contains the slug), by hand (`starter info` with and without a file; the desktop app with `data_dir` set; `task dev` unaffected), remove `@wip`, tick the TODO item, delete this file.
 

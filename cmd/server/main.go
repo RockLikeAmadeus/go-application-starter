@@ -26,7 +26,7 @@ func main() {
 }
 
 func run() error {
-	cfg, err := config.Load(config.Env{Getenv: os.Getenv}, "")
+	cfg, err := loadConfig(config.Env{Getenv: os.Getenv})
 	if err != nil {
 		return err
 	}
@@ -67,6 +67,14 @@ func run() error {
 		}
 	}
 	return nil
+}
+
+// loadConfig loads the server's configuration: from the settings file
+// STARTER_CONFIG_FILE names, if any, under the environment. Unlike the
+// local front ends, the server never looks in the user's settings folder,
+// so a developer's own settings file doesn't redirect `task dev`'s server.
+func loadConfig(env config.Env) (config.Config, error) {
+	return config.Load(env, env.Getenv("STARTER_CONFIG_FILE"))
 }
 
 // handlerOptions configures the HTTP handler from the wired application.
