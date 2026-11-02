@@ -32,6 +32,11 @@ type harness struct {
 	// sample:start
 	items ports.ItemService
 	// sample:end
+	entitlements ports.EntitlementsService
+	// plans sets the plans the core answers. Only the drivers that wire the
+	// core themselves set it: the desktop and mobile apps are on the local
+	// plan.
+	plans   *testPlans
 	clock   *testsupport.FixedClock
 	cleanup func()
 	// reopen closes the desktop or mobile app and opens it again on the same
@@ -73,18 +78,33 @@ func newHarness() *harness {
 	}
 }
 
+// usePlans gives the harness its own plans, and the entitlements use case on
+// them, in the workspace that workspaces resolves.
+func (h *harness) usePlans(workspaces ports.WorkspaceResolver) error {
+	p, err := newTestPlans()
+	if err != nil {
+		return err
+	}
+	h.plans = p
+	h.entitlements = app.NewEntitlementsService(p, workspaces)
+	return nil
+}
+
 // sample:start
 
 // newItems builds the Item use cases on repo, driven by the harness's clock,
 // in the workspace that workspaces resolves.
 func (h *harness) newItems(repo ports.ItemRepository, workspaces ports.WorkspaceResolver) *app.ItemService {
-	return app.NewItemService(repo, workspaces, testsupport.FixedEntitlements{}, h.clock, testsupport.NewSequentialIDs("item"))
+	return app.NewItemService(repo, workspaces, h.plans, h.clock, testsupport.NewSequentialIDs("item"))
 }
 
 // sample:end
 
 func startMemory() (*harness, error) {
 	h := newHarness()
+	if err := h.usePlans(workspace.FromContext{}); err != nil {
+		return nil, err
+	}
 	// sample:start
 	h.items = h.newItems(memory.NewItemRepository(), workspace.FromContext{})
 	// sample:end
@@ -105,6 +125,10 @@ func startJSONFile() (*harness, error) {
 		store.Close()
 		os.RemoveAll(dir)
 	}
+	if err := h.usePlans(workspace.FromContext{}); err != nil {
+		h.cleanup()
+		return nil, err
+	}
 	// sample:start
 	h.items = h.newItems(jsonfile.NewItemRepository(store), workspace.FromContext{})
 	// sample:end
@@ -113,10 +137,13 @@ func startJSONFile() (*harness, error) {
 
 func startHTTP() (*harness, error) {
 	h := newHarness()
-	var opts httpapi.Options
-	// sample:start
 	// Nothing over HTTP carries a workspace yet, so the server is the local
 	// edition, as cmd/server is.
+	if err := h.usePlans(workspace.Local{}); err != nil {
+		return nil, err
+	}
+	opts := httpapi.Options{Entitlements: h.entitlements}
+	// sample:start
 	opts.Items = h.newItems(memory.NewItemRepository(), workspace.Local{})
 	// sample:end
 	srv := httptest.NewServer(httpapi.NewHandler(opts))
@@ -131,6 +158,11 @@ func startHTTP() (*harness, error) {
 // driveOverHTTP points the harness's driving ports at the server at url,
 // through the HTTP client adapter.
 func (h *harness) driveOverHTTP(url string) error {
+	entitlements, err := httpclient.NewEntitlementsService(url)
+	if err != nil {
+		return err
+	}
+	h.entitlements = entitlements
 	// sample:start
 	client, err := httpclient.New(url)
 	if err != nil {
@@ -242,9 +274,15 @@ func (m *mobileApp) open(h *harness) error {
 		return err
 	}
 	m.app = app
-	// sample:start
 	// The bridge ignores the host: only the path and query reach mobile.Serve.
-	client, err := httpclient.New("http://mobile.invalid", apiclient.WithHTTPClient(bridge{app.API}))
+	const host = "http://mobile.invalid"
+	entitlements, err := httpclient.NewEntitlementsService(host, apiclient.WithHTTPClient(bridge{app.API}))
+	if err != nil {
+		return err
+	}
+	h.entitlements = entitlements
+	// sample:start
+	client, err := httpclient.New(host, apiclient.WithHTTPClient(bridge{app.API}))
 	if err != nil {
 		return err
 	}

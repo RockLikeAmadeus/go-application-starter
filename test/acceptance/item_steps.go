@@ -18,6 +18,7 @@ func (w *world) registerItemSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^I create an item named "([^"]*)"$`, w.anItemNamed)
 	sc.Step(`^I try to create an item named "([^"]*)"$`, w.iTryToCreateAnItemNamed)
 	sc.Step(`^I rename "([^"]*)" to "([^"]*)"$`, w.iRename)
+	sc.Step(`^I try to rename "([^"]*)" to "([^"]*)"$`, w.iTryToRename)
 	sc.Step(`^I delete "([^"]*)"$`, w.iDelete)
 	sc.Step(`^I try to delete an item that does not exist$`, w.iTryToDeleteAMissingItem)
 	sc.Step(`^the items are:$`, w.theItemsAre)
@@ -45,6 +46,16 @@ func (w *world) iRename(ctx context.Context, from, to string) error {
 	w.clock.Advance(time.Second)
 	_, err = w.items.RenameItem(ctx, item.ID, to)
 	return err
+}
+
+func (w *world) iTryToRename(ctx context.Context, from, to string) error {
+	item, err := w.findByName(ctx, from)
+	if err != nil {
+		return err
+	}
+	w.clock.Advance(time.Second)
+	_, w.lastErr = w.items.RenameItem(ctx, item.ID, to)
+	return nil
 }
 
 func (w *world) iDelete(ctx context.Context, name string) error {
