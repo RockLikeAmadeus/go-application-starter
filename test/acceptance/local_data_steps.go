@@ -55,14 +55,14 @@ func (w *world) itNamesTheDesktopAppsDataFolder() error {
 	if err != nil {
 		return err
 	}
-	return w.commandLineNamed(want)
+	return w.commandLineSaid(want)
 }
 
 func (w *world) itNamesTheDataFolder(name string) error {
 	if w.local == nil {
 		return errNoLocalComputer
 	}
-	return w.commandLineNamed(filepath.Join(w.local.dir, name))
+	return w.commandLineSaid(filepath.Join(w.local.dir, name))
 }
 
 // runCommandLine runs the CLI, as cmd/starter wires it, on the desktop app's
@@ -80,12 +80,13 @@ func (w *world) runCommandLine(ctx context.Context, args ...string) error {
 	return nil
 }
 
-func (w *world) commandLineNamed(folder string) error {
+// commandLineSaid checks that the command line succeeded and printed text.
+func (w *world) commandLineSaid(text string) error {
 	if w.lastErr != nil {
 		return fmt.Errorf("the command line failed: %w", w.lastErr)
 	}
-	if !strings.Contains(w.cliOut, folder) {
-		return fmt.Errorf("the command line said:\n%s\nwant it to name %s", w.cliOut, folder)
+	if !strings.Contains(w.cliOut, text) {
+		return fmt.Errorf("the command line said:\n%s\nwant it to say %q", w.cliOut, text)
 	}
 	return nil
 }

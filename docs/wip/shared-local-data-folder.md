@@ -47,7 +47,10 @@
    - Red: `TestInfoWithMemoryStorageSaysTheDataIsNotSaved` (`--storage memory info`, with `noLocalDataDir`) failed with `the local data folder was looked up…` and `info: no local data folder in this test`. Decided (no question needed, as for `--server` in task 7): memory storage needs no folder, so it mustn't look one up either.
    - Green: `openApp` applies `--storage` before choosing the data folder, and looks the local one up only for jsonfile; `info` prints `Data: kept in memory, not saved` for memory storage.
    - Refactor: the condition is named `keepsDataInAFolder(cfg)` (not on a server, not only in memory), and `info` picks its first line with a `switch`; its doc comment mentions the memory case. `@wip` progress unchanged (3 pass, 1 undefined).
-9. [ ] Sample: define `I list the items from the command line` and `the command line shows "…"` in `test/acceptance/item_steps.go`, through `runCommandLine`. No production code.
+9. [x] Sample: define `I list the items from the command line` and `the command line shows "…"` in `test/acceptance/item_steps.go`, through `runCommandLine`. No production code.
+   - Red: the sample scenario "Items added in the desktop app are seen from the command line" was undefined (`step is undefined: the command line shows "Widget"`).
+   - Green: the two steps in `item_steps.go` run `item list` through `runCommandLine` and check its output. All four `@wip` scenarios pass on the desktop driver.
+   - Refactor: `commandLineNamed` (`local_data_steps.go`) became the template helper `commandLineSaid(text)`, which the local-data steps and the sample's `theCommandLineShows` both use. `task test:init` passes (the sample now calls a template helper; nothing template calls sample code).
 10. [ ] Docs: `docs/data-locations.md` (the CLI and TUI rows and section, `starter info`), CLAUDE.md (the Gotcha about the jsonfile lock: the CLI and the desktop app now share a folder by default), README (CLI usage, `starter info`). Check `.env.example`'s `STARTER_DATA_DIR` comment.
 11. [ ] Finish: run `starter tui` and `starter info` by hand, `task check`, `task test:init` (new template code beside sample code), remove the `@wip` tags, delete this file.
 

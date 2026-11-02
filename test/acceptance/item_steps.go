@@ -12,7 +12,8 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
-// registerItemSteps binds the steps of features/items.feature.
+// registerItemSteps binds the steps of features/items.feature, and the item
+// steps of features/local-data.feature.
 func (w *world) registerItemSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^an item named "([^"]*)"$`, w.anItemNamed)
 	sc.Step(`^I create an item named "([^"]*)"$`, w.anItemNamed)
@@ -24,6 +25,16 @@ func (w *world) registerItemSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^the items are:$`, w.theItemsAre)
 	sc.Step(`^there are no items$`, w.thereAreNoItems)
 	sc.Step(`^I am told the item was not found$`, w.iAmToldNotFound)
+	sc.Step(`^I list the items from the command line$`, w.iListTheItemsFromTheCommandLine)
+	sc.Step(`^the command line shows "([^"]*)"$`, w.theCommandLineShows)
+}
+
+func (w *world) iListTheItemsFromTheCommandLine(ctx context.Context) error {
+	return w.runCommandLine(ctx, "item", "list")
+}
+
+func (w *world) theCommandLineShows(name string) error {
+	return w.commandLineSaid(name)
 }
 
 func (w *world) anItemNamed(ctx context.Context, name string) error {
