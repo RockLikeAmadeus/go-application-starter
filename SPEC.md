@@ -34,6 +34,7 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Plan** | What a workspace is allowed to do: which features it has and what its limits are (for example, free or paid). |
 | **Feature** | A capability that a plan turns on or off. |
 | **Limit** | A number a plan sets, such as how many items a workspace may have. |
+| **Ready** | A server is ready when it can reach its data, so it can serve requests. |
 
 <!-- sample:start -->
 The sample capability (§4.1) adds one term:
@@ -213,6 +214,23 @@ Each workspace is on a **plan**, which sets its limits: for example, how many it
 
 **Specification:** [`features/plans.feature`](features/plans.feature). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
 <!-- sample:end -->
+
+### 4.10 Tell when the server is ready
+
+The server says whether it is **ready**: whether it can reach its data and so serve requests. That way a deployment only sends users to a server that can serve them, and a broken one is noticed. This is for whoever runs the server, not its users. It doesn't depend on which kinds of data the product has.
+
+**Rules**
+- A server that can reach its data is ready.
+- A server that can't reach its data isn't ready, and it says that the data is unavailable.
+- Readiness is checked every time it's asked about, so a server whose data comes back is ready again without a restart.
+- A server that keeps its data in memory is always ready.
+
+**Examples**
+- The server has just started on its data folder → ready.
+- The data folder is removed while the server runs → not ready: the data is unavailable.
+- The data folder is put back → ready again.
+
+**Specification:** [`features/readiness.feature`](features/readiness.feature). These scenarios run only on the server driver, which wires the server as `cmd/server` does, on a data folder the tests can remove.
 
 ## 5. Non-functional requirements
 
