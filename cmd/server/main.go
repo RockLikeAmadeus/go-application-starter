@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -38,15 +39,8 @@ func run() error {
 	defer application.Close()
 
 	srv := &http.Server{
-		Addr: fmt.Sprintf(":%d", cfg.Port),
-		Handler: httpapi.NewHandler(httpapi.Options{
-			// sample:start
-			Items: application.Items,
-			// sample:end
-			Entitlements: application.Entitlements,
-			Logger:       log,
-			WebAssets:    web.Assets(),
-		}),
+		Addr:              fmt.Sprintf(":%d", cfg.Port),
+		Handler:           httpapi.NewHandler(handlerOptions(application, log)),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -73,4 +67,17 @@ func run() error {
 		}
 	}
 	return nil
+}
+
+// handlerOptions configures the HTTP handler from the wired application.
+func handlerOptions(application *bootstrap.App, log *slog.Logger) httpapi.Options {
+	return httpapi.Options{
+		// sample:start
+		Items: application.Items,
+		// sample:end
+		Entitlements: application.Entitlements,
+		Ready:        application.Ready,
+		Logger:       log,
+		WebAssets:    web.Assets(),
+	}
 }
