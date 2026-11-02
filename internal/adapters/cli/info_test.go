@@ -175,3 +175,28 @@ func writeSettings(t *testing.T, path, content string) {
 		t.Fatal(err)
 	}
 }
+
+func TestInfoNamesTheSettingsFile(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "work.toml")
+	writeSettings(t, file, `storage = "memory"`)
+
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"named with --config", []string{"--config", file}, "Settings file: " + file + "\n"},
+		{"none", nil, "Settings file: none\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := runCLI(t, append(tt.args, "--storage", "memory", "info")...)
+			if err != nil {
+				t.Fatalf("info: %v", err)
+			}
+			if !strings.Contains(out, tt.want) {
+				t.Errorf("info output doesn't say %q:\n%s", tt.want, out)
+			}
+		})
+	}
+}

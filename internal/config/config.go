@@ -35,6 +35,8 @@ type Config struct {
 	// PlansFile replaces the plans file built into the binary (plans_file;
 	// STARTER_PLANS_FILE). Empty means the built-in one.
 	PlansFile string
+	// SettingsFile is the settings file Load read, or "" for none.
+	SettingsFile string
 	// Sources says where each setting came from, by its key in the settings
 	// file.
 	Sources map[string]string
@@ -71,12 +73,13 @@ func Load(env Env, settingsFile string) (Config, error) {
 		return fallback
 	}
 	cfg := Config{
-		Sources:   sources,
-		Storage:   Storage(setting("storage", string(StorageJSONFile))),
-		DataDir:   setting("data_dir", "./data"),
-		ServerURL: setting("server_url", ""),
-		LogFormat: setting("log_format", "text"),
-		PlansFile: setting("plans_file", ""),
+		SettingsFile: settingsFile,
+		Sources:      sources,
+		Storage:      Storage(setting("storage", string(StorageJSONFile))),
+		DataDir:      setting("data_dir", "./data"),
+		ServerURL:    setting("server_url", ""),
+		LogFormat:    setting("log_format", "text"),
+		PlansFile:    setting("plans_file", ""),
 	}
 	port, err := strconv.Atoi(setting("port", "8080"))
 	if err != nil {
