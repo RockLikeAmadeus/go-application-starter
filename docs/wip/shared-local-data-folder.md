@@ -25,7 +25,9 @@
    - Green: `info` (`internal/adapters/cli/info.go`) opens the app and prints `Data folder: <dir>`.
    - Refactor: green passed the opened config to `info` through a variable that `openApp` wrote into. Now `appOpener` returns the config it opened the app with, `info` reads it directly, and `withApp` ignores it, so the other commands are unchanged. `@wip` progress: "The command line uses the data folder I choose" passes; the other two template scenarios still fail (the CLI's default is `./data`, task 5).
    - **Watch out until task 5:** the `@wip` scenarios that run the CLI without `--data-dir` open `./data` relative to `test/acceptance`, so a `@wip` run leaves a `test/acceptance/data/` folder (just a `.lock`). Delete it after each run.
-3. [ ] CLI: `starter info` fails with `jsonfile.ErrLocked` while another program has the data folder open (open a `jsonfile.Store` on it first).
+3. [x] CLI: `starter info` fails with `jsonfile.ErrLocked` while another program has the data folder open (open a `jsonfile.Store` on it first).
+   - Red: `TestInfoSaysTheDataIsInUseWhileAnotherProgramHasItOpen` passed straight away: `info` opens the data through `openApp`, like every command, and `jsonfile.Open` already refuses a locked folder. Kept as a guard (chosen 2026-11-02), so `info` can't later name the folder without opening it. No green or refactor.
+   - It relies on the lock, which only Unix has (see the Windows-lock item in TODO.md); CI runs on Linux.
 4. [ ] CLI: `starter info` prints the workspace's plan (`local`), through `app.Entitlements`.
 5. [ ] CLI: without `--data-dir`, commands use the folder from the new `NewRootCmd` dependency (the `AppFactory` receives it as `cfg.DataDir`). Update `cmd/starter`, the sample's `run` helper and `runCommandLine` (pass `config.LocalDataDir(w.local.getenv, w.local.userConfigDir)`). The first two template scenarios should pass after this.
 6. [ ] CLI: when the settings folder can't be found, a command that needs the data fails, saying so ("find the data folder: …").
@@ -36,3 +38,4 @@
 11. [ ] Finish: run `starter tui` and `starter info` by hand, `task check`, `task test:init` (new template code beside sample code), remove the `@wip` tags, delete this file.
 
 ## Changes to the plan
+- 2026-11-02, task 3: its test passed without production code (the lock comes with opening the app). Kept as a guard rather than dropped.

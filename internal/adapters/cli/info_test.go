@@ -3,10 +3,12 @@ package cli_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 )
 
@@ -29,5 +31,19 @@ func TestInfoNamesTheDataFolder(t *testing.T) {
 	}
 	if !strings.Contains(out, dir) {
 		t.Errorf("info output doesn't name the data folder %s:\n%s", dir, out)
+	}
+}
+
+func TestInfoSaysTheDataIsInUseWhileAnotherProgramHasItOpen(t *testing.T) {
+	dir := t.TempDir()
+	other, err := jsonfile.Open(dir)
+	if err != nil {
+		t.Fatalf("open the data folder first: %v", err)
+	}
+	defer other.Close()
+
+	_, err = runCLI(t, "--data-dir", dir, "--storage", "jsonfile", "info")
+	if !errors.Is(err, jsonfile.ErrLocked) {
+		t.Errorf("info error = %v, want %v", err, jsonfile.ErrLocked)
 	}
 }
