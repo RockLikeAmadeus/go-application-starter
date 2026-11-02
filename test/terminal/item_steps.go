@@ -7,6 +7,8 @@ import "github.com/cucumber/godog"
 func (j *journey) registerItemSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^I add an item named "([^"]*)" with the command line$`, j.iAddAnItemNamedWithTheCommandLine)
 	sc.Step(`^the command line lists "([^"]*)"$`, j.theCommandLineLists)
+	sc.Step(`^I add an item named "([^"]*)" in the terminal app$`, j.iAddAnItemNamedInTheTerminalApp)
+	sc.Step(`^the terminal app lists "([^"]*)"$`, j.theTerminalAppLists)
 }
 
 // iAddAnItemNamedWithTheCommandLine runs the command and waits for it to end,
@@ -27,4 +29,28 @@ func (j *journey) theCommandLineLists(name string) error {
 		return err
 	}
 	return j.succeeds()
+}
+
+// iAddAnItemNamedInTheTerminalApp adds the item on the Items screen, and waits
+// until the screen is back to browsing, so the name it then shows is the
+// list's, not what was typed.
+func (j *journey) iAddAnItemNamedInTheTerminalApp(name string) error {
+	if err := j.term.WaitFor("a add", timeout); err != nil {
+		return err
+	}
+	if err := j.term.Press("a"); err != nil {
+		return err
+	}
+	if err := j.term.WaitFor("New item:", timeout); err != nil {
+		return err
+	}
+	j.term.Type(name)
+	if err := j.term.Press("enter"); err != nil {
+		return err
+	}
+	return j.term.WaitFor("a add", timeout)
+}
+
+func (j *journey) theTerminalAppLists(name string) error {
+	return j.term.WaitFor(name, timeout)
 }
