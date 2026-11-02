@@ -3,9 +3,12 @@
 package term
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/charmbracelet/x/vt"
 	"github.com/creack/pty"
@@ -56,6 +59,19 @@ func (t *Terminal) Screen() string {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	return t.emu.String()
+}
+
+// WaitFor returns once the screen shows text. If it doesn't within timeout,
+// the error shows the screen as it was.
+func (t *Terminal) WaitFor(text string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for !strings.Contains(t.Screen(), text) {
+		if time.Now().After(deadline) {
+			return fmt.Errorf("the screen didn't show %q within %s; it shows:\n%s", text, timeout, t.Screen())
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	return nil
 }
 
 // Close frees the terminal.
