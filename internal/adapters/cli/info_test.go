@@ -47,3 +47,13 @@ func TestInfoSaysTheDataIsInUseWhileAnotherProgramHasItOpen(t *testing.T) {
 		t.Errorf("info error = %v, want %v", err, jsonfile.ErrLocked)
 	}
 }
+
+func TestInfoNamesTheWorkspacesPlan(t *testing.T) {
+	out, err := runCLI(t, "--data-dir", t.TempDir(), "--storage", "jsonfile", "info")
+	if err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	if !strings.Contains(out, "Plan: "+bootstrap.LocalPlan) {
+		t.Errorf("info output doesn't name the plan %q:\n%s", bootstrap.LocalPlan, out)
+	}
+}

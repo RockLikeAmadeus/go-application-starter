@@ -28,7 +28,10 @@
 3. [x] CLI: `starter info` fails with `jsonfile.ErrLocked` while another program has the data folder open (open a `jsonfile.Store` on it first).
    - Red: `TestInfoSaysTheDataIsInUseWhileAnotherProgramHasItOpen` passed straight away: `info` opens the data through `openApp`, like every command, and `jsonfile.Open` already refuses a locked folder. Kept as a guard (chosen 2026-11-02), so `info` can't later name the folder without opening it. No green or refactor.
    - It relies on the lock, which only Unix has (see the Windows-lock item in TODO.md); CI runs on Linux.
-4. [ ] CLI: `starter info` prints the workspace's plan (`local`), through `app.Entitlements`.
+4. [x] CLI: `starter info` prints the workspace's plan (`local`), through `app.Entitlements`.
+   - Red: `TestInfoNamesTheWorkspacesPlan` failed with `info output doesn't name the plan "local"` (only the `Data folder:` line was printed).
+   - Green: `info` asks `app.Entitlements.CurrentEntitlements` and prints `Plan: <plan>` after the data folder.
+   - Refactor: the command's doc comment and `Short` help now mention the plan. Left: the output is two `Label: value` lines from one `Fprintf`; a table helper would be premature until task 7 or 8 changes the first line. `@wip` progress unchanged (1 passes, 2 fail on the `./data` default, 1 undefined).
 5. [ ] CLI: without `--data-dir`, commands use the folder from the new `NewRootCmd` dependency (the `AppFactory` receives it as `cfg.DataDir`). Update `cmd/starter`, the sample's `run` helper and `runCommandLine` (pass `config.LocalDataDir(w.local.getenv, w.local.userConfigDir)`). The first two template scenarios should pass after this.
 6. [ ] CLI: when the settings folder can't be found, a command that needs the data fails, saying so ("find the data folder: …").
 7. [ ] CLI: with `--server`, the settings folder isn't looked up (a failing lookup doesn't matter), and `starter info` names the server instead of a data folder.
