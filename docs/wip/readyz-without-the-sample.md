@@ -21,7 +21,9 @@
 2. [x] jsonfile: an open `Store` is ready — `TestStoreIsReadyWhileItsDataDirectoryIsThere`.
    - Green: `Ready` returns `os.Stat(s.dir)`'s error. Its `*fs.PathError` already names the folder and the cause ("stat <dir>: no such file or directory").
    - Refactor: moved the "ready" test before the "not ready" one, so they read happy path first. `Ready` itself is left alone, because task 3 replaces its body.
-3. [ ] jsonfile: a `Store` whose data folder is read-only isn't ready, which brings in the decided check (create and remove a temp file in the folder). The test makes the folder `0o500` (restored in cleanup, so `t.TempDir` can delete it) and skips when run as root, which ignores permissions, and on Windows.
+3. [x] jsonfile: a `Store` whose data folder is read-only isn't ready — `TestStoreIsNotReadyWhenItsDataDirectoryIsReadOnly`. It makes the folder `0o500` (restored in cleanup, so `t.TempDir` can delete it) and skips as root, which ignores permissions, and on Windows.
+   - Green: `Ready` creates `.ready-*.tmp` in the folder with `os.CreateTemp`, closes it and removes it, returning the first error. The errors are `*fs.PathError`s, so they name the file and the cause.
+   - Refactor: `Ready`'s doc comment now says what ready means: the folder can be written, checked afresh each time. The test discards the cleanup's `os.Chmod` error explicitly (`_ =`), for errcheck. Left alone: wrapping its errors (e.g. "check data dir: %w"), because nothing reads them yet. Task 4 logs them, and that's the place to judge whether they read well. Also left: sharing code with `writeTable`'s temp file, which also writes, syncs and renames, so there's too little in common.
 4. [ ] httpapi: `/readyz` answers 503 `storage unavailable` when `Options.Ready` fails, and logs the error — `server_test.go`, with no `Items` set.
 5. [ ] httpapi: `/readyz` answers 200 `ready` with no `Ready` and no `Items` (today it panics into a 500). This removes the sample `ListItems` check.
 6. [ ] bootstrap: `NewEmbedded` on jsonfile gives an `App.Ready` that fails once the data folder is removed. On memory, it's ready — `bootstrap_test.go`.

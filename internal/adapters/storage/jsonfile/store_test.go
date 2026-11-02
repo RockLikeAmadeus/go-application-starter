@@ -50,3 +50,22 @@ func TestStoreIsNotReadyOnceItsDataDirectoryIsRemoved(t *testing.T) {
 		t.Error("Ready error = nil, want an error once the data directory is gone")
 	}
 }
+
+func TestStoreIsNotReadyWhenItsDataDirectoryIsReadOnly(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("directory permissions don't make a folder read-only on windows")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("root can write to a read-only directory")
+	}
+	dir := t.TempDir()
+	store := openStore(t, dir)
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) }) // so t.TempDir can remove it
+
+	if err := store.Ready(t.Context()); err == nil {
+		t.Error("Ready error = nil, want an error while the data directory is read-only")
+	}
+}
