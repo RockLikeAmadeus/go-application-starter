@@ -60,6 +60,19 @@ func TestReadyzIsUnavailableAndLogsWhyWhenStorageIsNotReady(t *testing.T) {
 	}
 }
 
+// Storage with nothing to check, such as memory, is always ready.
+func TestReadyzIsReadyWithNoReadinessCheck(t *testing.T) {
+	rec := httptest.NewRecorder()
+	httpapi.NewHandler(httpapi.Options{}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/readyz", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Body.String(); got != "ready" {
+		t.Errorf("body = %q, want %q", got, "ready")
+	}
+}
+
 // The server is reached over the network, so by default the web app must
 // treat a lost connection as losing its data.
 func TestConnectionIsRequiredByDefault(t *testing.T) {

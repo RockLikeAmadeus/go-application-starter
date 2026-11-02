@@ -23,7 +23,8 @@ type Options struct {
 	// workspace's plan and its limits.
 	Entitlements ports.EntitlementsService
 	Logger       *slog.Logger
-	// Ready reports whether storage can be reached, for GET /readyz.
+	// Ready reports whether storage can be reached, for GET /readyz. When
+	// nil, the server is always ready (as with memory storage).
 	Ready func(context.Context) error
 	// WebAssets is the built SPA (web/dist). When nil, "/" serves a hint page.
 	WebAssets fs.FS
@@ -39,6 +40,10 @@ func NewHandler(opts Options) http.Handler {
 	if log == nil {
 		log = slog.Default()
 	}
+	ready := opts.Ready
+	if ready == nil {
+		ready = func(context.Context) error { return nil }
+	}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
@@ -46,19 +51,11 @@ func NewHandler(opts Options) http.Handler {
 		_, _ = w.Write([]byte("ok"))
 	})
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
-		if opts.Ready != nil {
-			if err := opts.Ready(r.Context()); err != nil {
-				log.ErrorContext(r.Context(), "not ready", "err", err)
-				http.Error(w, "storage unavailable", http.StatusServiceUnavailable)
-				return
-			}
-		}
-		// sample:start
-		if _, err := opts.Items.ListItems(r.Context()); err != nil {
+		if err := ready(r.Context()); err != nil {
+			log.ErrorContext(r.Context(), "not ready", "err", err)
 			http.Error(w, "storage unavailable", http.StatusServiceUnavailable)
 			return
 		}
-		// sample:end
 		_, _ = w.Write([]byte("ready"))
 	})
 
