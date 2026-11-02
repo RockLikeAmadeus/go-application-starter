@@ -9,14 +9,12 @@ Feature: Plans and limits
   # test/acceptance). The desktop and mobile apps are on the local plan
   # (desktop.feature, mobile.feature).
 
-  @wip
   Scenario: A workspace can see its plan and its limits
     Given the "free" plan allows 3 items, and blocks new ones when over
     And my workspace is on the "free" plan
     Then my workspace's plan is "free"
     And its item limit is 3, which blocks new ones when over
 
-  @wip
   Scenario: Items can be created up to the limit
     Given the "free" plan allows 3 items, and blocks new ones when over
     And my workspace is on the "free" plan
@@ -28,7 +26,6 @@ Feature: Plans and limits
       | Second |
       | Third  |
 
-  @wip
   Scenario Outline: At the limit, a new item is refused
     Given the "free" plan allows 3 items, and <behaviour> when over
     And my workspace is on the "free" plan
@@ -47,7 +44,6 @@ Feature: Plans and limits
       | blocks new ones           |
       | makes them read only      |
 
-  @wip
   Scenario: A plan without an item limit allows any number of items
     Given the "pro" plan has no item limit
     And my workspace is on the "pro" plan
@@ -61,7 +57,6 @@ Feature: Plans and limits
       | Third  |
       | Fourth |
 
-  @wip
   Scenario: Over a limit that blocks new ones, items can still be changed and deleted
     Given the "pro" plan has no item limit
     And the "free" plan allows 3 items, and blocks new ones when over
@@ -78,7 +73,6 @@ Feature: Plans and limits
       | Third   |
       | Fourth  |
 
-  @wip
   Scenario: Over a limit that makes them read only, items can't be changed
     Given the "pro" plan has no item limit
     And the "free" plan allows 3 items, and makes them read only when over
@@ -96,7 +90,6 @@ Feature: Plans and limits
       | Third  |
       | Fourth |
 
-  @wip
   Scenario: Over a limit that makes them read only, items can still be deleted
     Given the "pro" plan has no item limit
     And the "free" plan allows 3 items, and makes them read only when over
@@ -112,7 +105,6 @@ Feature: Plans and limits
       | Second |
       | Third  |
 
-  @wip
   Scenario: Back within a read-only limit, items can be changed again
     Given the "pro" plan has no item limit
     And the "free" plan allows 3 items, and makes them read only when over

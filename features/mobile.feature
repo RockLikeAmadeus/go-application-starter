@@ -17,6 +17,5 @@ Feature: Use the mobile app
       | Widget |
   # sample:end
 
-  @wip
   Scenario: The mobile app is on the local plan
     Then my workspace's plan is "local"

@@ -52,7 +52,7 @@ SPEC.md §4.8 · [`features/workspaces.feature`](../../features/workspaces.featu
 - **Acceptance:** the workspace scenarios run on the memory and jsonfile drivers, which use `FromContext`. A `Before` hook puts every other scenario in the local workspace. The http, desktop and mobile drivers stay on `Local` until sign-in (step 8).
 - Users see no change. Left for step 8: mapping `ErrNoWorkspace` to HTTP, and running the isolation scenarios on the http driver.
 
-### 2. Plans and entitlements — in progress ([docs/wip/plans-and-limits.md](../wip/plans-and-limits.md))
+### 2. Plans and entitlements — done
 SPEC.md §4.9 · [`features/plans.feature`](../../features/plans.feature) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Features and limits come from plans".
 - **Domain:** `Entitlements` (a plan's name and its limits) with `CheckCreate` and `CheckChange`, `Limit` (built with `NewLimit`), and `LimitError`. Over a `block-new` limit nothing new can be added; over a `read-only` one nothing can be changed either. Deleting always works.
 - **Ports and use case:** the driven `ports.Entitlements` and the driving `ports.EntitlementsService` (`CurrentEntitlements`, failing closed without a workspace).
@@ -118,3 +118,8 @@ SPEC.md §4.9 · [`features/plans.feature`](../../features/plans.feature) · [AD
   - a guide with a checklist, `docs/workspaces.md`, linked from CLAUDE.md's workspace rule, the port and `/feature`'s planning step;
   - a comment in `bootstrap.NewEmbedded`, outside the sample block, naming `workspace.Local{}` beside the clock and IDs.
 - 2026-11-01: step 2 covers limits only. On/off features, with show-locked or hide, move to step 3, where CSV export is their first user. The plans file is JSON with full-line `//` comments, so it can carry sample markers.
+- 2026-11-01: step 2 finished. Along the way:
+  - `NewRemote` reads the server's plan too, so the CLI and TUI with `--server` see it.
+  - The item endpoints keep their `default` problem response, which covers the limit's 403, rather than listing it.
+  - `free` and `pro` ship in the plans file as example data, for sign-in (step 8) to put hosted workspaces on.
+  - Template code had come to depend on sample code (`bootstrap`'s plans, httpclient's `toError`). Both are fixed, CLAUDE.md now says to keep machinery in template code with one thin sample use, and to run `task test:init` whenever a cycle touches a sample boundary. The other cases found are TODO.md items (`/readyz`, generic UI helpers).
