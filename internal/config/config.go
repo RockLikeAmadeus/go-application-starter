@@ -47,11 +47,9 @@ type Env struct {
 // env's STARTER_* variable (or PORT) when set, else from its key in the TOML
 // settingsFile, else from its default. settingsFile "" means none.
 func Load(env Env, settingsFile string) (Config, error) {
-	k := koanf.New(".")
-	if settingsFile != "" {
-		if err := k.Load(file.Provider(settingsFile), toml.Parser()); err != nil {
-			return Config{}, fmt.Errorf("read the settings file %s: %w", settingsFile, err)
-		}
+	k, err := readSettingsFile(settingsFile)
+	if err != nil {
+		return Config{}, err
 	}
 	setting := func(envKey, key, fallback string) string {
 		return getenv(env.Getenv, envKey, getenv(k.String, key, fallback))
@@ -81,6 +79,30 @@ func (c Config) Validate() error {
 		return fmt.Errorf("unknown log format %q", c.LogFormat)
 	}
 	return nil
+}
+
+// settingKeys are the keys a settings file may hold.
+var settingKeys = map[string]bool{
+	"storage": true, "data_dir": true, "port": true,
+	"server_url": true, "log_format": true, "plans_file": true,
+}
+
+// readSettingsFile reads the TOML settings file at path, refusing any key
+// that isn't a setting. An empty path reads nothing.
+func readSettingsFile(path string) (*koanf.Koanf, error) {
+	k := koanf.New(".")
+	if path == "" {
+		return k, nil
+	}
+	if err := k.Load(file.Provider(path), toml.Parser()); err != nil {
+		return nil, fmt.Errorf("read the settings file %s: %w", path, err)
+	}
+	for _, key := range k.Keys() {
+		if !settingKeys[key] {
+			return nil, fmt.Errorf("settings file %s: unknown setting %q", path, key)
+		}
+	}
+	return k, nil
 }
 
 // getenv returns lookup(key), or fallback when that's empty.

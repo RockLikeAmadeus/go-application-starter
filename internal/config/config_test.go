@@ -3,6 +3,7 @@ package config_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -53,5 +54,14 @@ func TestTheEnvironmentOverridesTheSettingsFile(t *testing.T) {
 	}
 	if cfg.DataDir != "/tmp/scratch" {
 		t.Errorf("DataDir = %q, want the environment's %q", cfg.DataDir, "/tmp/scratch")
+	}
+}
+
+func TestASettingTheAppDoesntKnowFailsNamingTheFileAndSetting(t *testing.T) {
+	file := writeSettings(t, `colour = "blue"`)
+
+	_, err := config.Load(config.Env{Getenv: envOf(nil)}, file)
+	if err == nil || !strings.Contains(err.Error(), file) || !strings.Contains(err.Error(), "colour") {
+		t.Errorf("Load error = %v, want one naming %s and %q", err, file, "colour")
 	}
 }

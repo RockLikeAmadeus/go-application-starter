@@ -31,7 +31,10 @@
    - Refactor: the package, `Config` field and `Load` doc comments name each setting's key in the file and the order (env, file, default).
 3. [x] `config`: env vars override the settings file.
    - Red: `TestTheEnvironmentOverridesTheSettingsFile` passed straight away, as the plan log predicted: task 2's lookup checks the environment first. Kept as a guard (chosen 2026-11-02), pinning the deliberate env-over-file order against later rewrites. No green or refactor.
-4. [ ] `config`: an unknown key fails, naming the file and the key.
+4. [x] `config`: an unknown key fails, naming the file and the key.
+   - Red: `TestASettingTheAppDoesntKnowFailsNamingTheFileAndSetting` (`colour = "blue"`) failed with `Load error = <nil>, want one naming <file> and "colour"`.
+   - Green: after loading, any key outside the six settings fails with `settings file <path>: unknown setting "colour"`. A TOML table's keys come out dotted (`a.b`), so they're refused too.
+   - Refactor: reading and checking the file moved into `readSettingsFile(path)`, with the keys in `settingKeys`. Left: the six keys also appear in `Load`'s lookups; task 10 (sources) will want one table of settings anyway, so merging them waits for it. `@wip` progress unchanged (nothing passes a file to `Load` until task 8).
 5. [ ] `config`: bad TOML fails, naming the file.
 6. [ ] `config.LocalConfigFile(env)`: `STARTER_CONFIG_FILE`, else `<settings folder>/starter/config.toml`; a missing default file means no file, a missing named file is an error.
 7. [ ] `config.LocalDataDir` uses the loaded `data_dir` (from the file or env) before the settings folder.
