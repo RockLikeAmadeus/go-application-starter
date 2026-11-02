@@ -61,7 +61,7 @@ Users can create, list, rename and delete items.
 
 <!-- /feature adds new capability sections below this line -->
 
-### 4.2 Choose a theme _(web only)_
+### 4.2 Choose a theme _(web, desktop, and mobile only)_
 
 Users can switch the web app between a dark and a light theme, so it suits their eyes and surroundings.
 
@@ -76,7 +76,7 @@ Users can switch the web app between a dark and a light theme, so it suits their
 
 **Specification:** [`web/e2e/features/theme.feature`](web/e2e/features/theme.feature). This is a presentation concern with no core behaviour, so there are no Godog scenarios.
 
-### 4.3 Choose a style _(web only)_
+### 4.3 Choose a style _(web, desktop, and mobile only)_
 
 Users can switch the web app between styles, so it suits how they like to work: compact and dense, or roomy and soft.
 
