@@ -133,7 +133,7 @@ func (m Model) View() tea.View {
 	}
 	for i, it := range m.list {
 		if i == m.cursor && m.mode == modeBrowse {
-			b.WriteString(selectedStyle.Render("> "+it.Name) + "\n")
+			b.WriteString(selectedRow(it.Name) + "\n")
 		} else {
 			b.WriteString(itemStyle.Render(it.Name) + "\n")
 		}

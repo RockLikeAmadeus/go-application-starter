@@ -12,3 +12,11 @@ func TestErrorLineShowsTheMessageInTheErrorStyle(t *testing.T) {
 		t.Errorf("errorLine = %q, want %q", got, want)
 	}
 }
+
+func TestSelectedRowMarksTheTextInTheSelectedStyle(t *testing.T) {
+	got := selectedRow("Milk")
+
+	if want := selectedStyle.Render("> Milk"); got != want {
+		t.Errorf("selectedRow = %q, want %q", got, want)
+	}
+}
