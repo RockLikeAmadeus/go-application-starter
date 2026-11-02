@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import type { Item } from "../../api/client";
+import { ErrorMessage } from "../../components/ErrorMessage";
 import { useCreateItem, useDeleteItem, useItems, useRenameItem } from "./queries";
 
 export function ItemsPage() {
@@ -139,13 +140,5 @@ function RenameForm({ item, onDone }: { item: Item; onDone: () => void }) {
       </form>
       {renameItem.error && <ErrorMessage error={renameItem.error} />}
     </>
-  );
-}
-
-function ErrorMessage({ error }: { error: Error }) {
-  return (
-    <p role="alert" className="text-sm text-danger">
-      {error.message}
-    </p>
   );
 }

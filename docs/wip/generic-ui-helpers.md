@@ -24,7 +24,10 @@
    - Red: `TestSelectedRowMarksTheTextInTheSelectedStyle` failed with `selectedRow = "", want "\x1b[1;38;2;124;58;237m> Milk\x1b[m"`.
    - Green: `selectedRow` returns `selectedStyle.Render("> " + text)`.
    - Refactor: `selectedStyle` joined the template styles (next to `itemStyle`, the unselected row), the now-empty sample block and its markers went, `selectedRow` got a doc comment and normal formatting, and `items.go` calls it. `@wip` progress: the first scenario's TUI step passes; it now fails on `web/src/components/ErrorMessage.tsx does not exist` (task 3). Lint on the trimmed project still reports only `define` (task 4).
-3. [ ] Web: `ErrorMessage` in `web/src/components/ErrorMessage.tsx` shows the error's message as an alert (`ErrorMessage.test.tsx`). `ItemsPage` imports it and drops its local copy.
+3. [x] Web: `ErrorMessage` in `web/src/components/ErrorMessage.tsx` shows the error's message as an alert (`ErrorMessage.test.tsx`). `ItemsPage` imports it and drops its local copy.
+   - Red: "shows the error's message as an alert" (`web/src/components/ErrorMessage.test.tsx`) failed with `Unable to find an accessible element with the role "alert"` against a stub returning `null`.
+   - Green: `ErrorMessage` renders the Items page's markup unchanged: `<p role="alert" className="text-sm text-danger">` with the message.
+   - Refactor: `ItemsPage` imports the shared `ErrorMessage` and its local copy is gone; its own alert test still passes. `@wip` progress: "Removing the sample keeps what the front ends share" passes; only the lint scenario fails, on `define` (task 4).
 4. [ ] Acceptance: template step `the "<plan>" plan has no limits` in `test/acceptance/entitlements_steps.go`, calling `testPlans.define`; `features/plans.feature` uses it, and the sample's "has no item limit" step goes. Red is the `@wip` lint scenario.
 5. [ ] Docs: CLAUDE.md (Architecture: `web/src/components/` for shared web components; TUI conventions: shared styles and helpers in `styles.go`, outside sample blocks), and `docs/template.md`'s "Leave something behind" paragraph (`task test:init` now also lints the trimmed project).
 6. [ ] Finish: full `task test:init`, `task check`, remove the `@wip` tags, tick the TODO item, delete this file.
