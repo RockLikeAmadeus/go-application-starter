@@ -17,10 +17,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	localDataDir := func() (string, error) {
-		return config.LocalDataDir(config.Env{Getenv: os.Getenv, UserConfigDir: os.UserConfigDir}, "")
-	}
-	if err := cli.NewRootCmd(bootstrap.New, localDataDir, os.Stdout).ExecuteContext(ctx); err != nil {
+	env := config.Env{Getenv: os.Getenv, UserConfigDir: os.UserConfigDir}
+	if err := cli.NewRootCmd(bootstrap.New, env, os.Stdout).ExecuteContext(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}

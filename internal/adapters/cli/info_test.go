@@ -5,6 +5,9 @@ import (
 	"context"
 	"errors"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -15,19 +18,18 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
-// runCLI executes the CLI with args, as cmd/starter wires it. args choose
-// a data folder or a server, so the local data folder is never looked up.
+// runCLI executes the CLI with args, as cmd/starter wires it, on a computer
+// with an empty environment and settings folder.
 func runCLI(t *testing.T, args ...string) (string, error) {
 	t.Helper()
-	return runCLIWith(t, noLocalDataDir(t), args...)
+	return runCLIWith(t, computer(t.TempDir(), nil), args...)
 }
 
-// runCLIWith executes the CLI with args, finding the local data folder with
-// localDataDir.
-func runCLIWith(t *testing.T, localDataDir func() (string, error), args ...string) (string, error) {
+// runCLIWith executes the CLI with args on the computer env.
+func runCLIWith(t *testing.T, env config.Env, args ...string) (string, error) {
 	t.Helper()
 	var out bytes.Buffer
-	cmd := cli.NewRootCmd(bootstrap.New, localDataDir, &out)
+	cmd := cli.NewRootCmd(bootstrap.New, env, &out)
 	cmd.SetArgs(args)
 	err := cmd.ExecuteContext(context.Background())
 	return out.String(), err
@@ -69,24 +71,24 @@ func TestInfoNamesTheWorkspacesPlan(t *testing.T) {
 	}
 }
 
-// noLocalDataDir stands in for the local data folder in tests that don't use
-// it, failing the test if it is looked up.
-func noLocalDataDir(t *testing.T) func() (string, error) {
-	return func() (string, error) {
-		t.Error("the local data folder was looked up, though the test doesn't use it")
-		return "", errors.New("no local data folder in this test")
+// computer stands in for the user's computer: an environment holding vars,
+// and the settings folder settings.
+func computer(settings string, vars map[string]string) config.Env {
+	return config.Env{
+		Getenv:        func(key string) string { return vars[key] },
+		UserConfigDir: func() (string, error) { return settings, nil },
 	}
 }
 
 func TestWithoutDataDirCommandsUseTheLocalDataFolder(t *testing.T) {
-	t.Setenv("STARTER_DATA_DIR", "")
-	local := t.TempDir()
+	settings := t.TempDir()
+	local := filepath.Join(settings, "starter")
 	var opened string
 	newApp := func(cfg config.Config) (*bootstrap.App, error) {
 		opened = cfg.DataDir
 		return bootstrap.New(cfg)
 	}
-	cmd := cli.NewRootCmd(newApp, func() (string, error) { return local, nil }, &bytes.Buffer{})
+	cmd := cli.NewRootCmd(newApp, computer(settings, nil), &bytes.Buffer{})
 	cmd.SetArgs([]string{"--storage", "jsonfile", "info"})
 
 	if err := cmd.ExecuteContext(context.Background()); err != nil {
@@ -99,7 +101,9 @@ func TestWithoutDataDirCommandsUseTheLocalDataFolder(t *testing.T) {
 
 func TestWithoutTheLocalDataFolderCommandsFailSayingWhy(t *testing.T) {
 	errNoHome := errors.New("find the data folder: neither $XDG_CONFIG_HOME nor $HOME are defined")
-	_, err := runCLIWith(t, func() (string, error) { return "", errNoHome }, "--storage", "jsonfile", "info")
+	env := computer("", nil)
+	env.UserConfigDir = func() (string, error) { return "", errNoHome }
+	_, err := runCLIWith(t, env, "--storage", "jsonfile", "info")
 	if !errors.Is(err, errNoHome) {
 		t.Errorf("info error = %v, want %v", err, errNoHome)
 	}
@@ -129,5 +133,25 @@ func TestInfoWithMemoryStorageSaysTheDataIsNotSaved(t *testing.T) {
 	}
 	if !strings.Contains(out, "Data: kept in memory, not saved") || strings.Contains(out, "Data folder") {
 		t.Errorf("info output doesn't say the data is kept in memory:\n%s", out)
+	}
+}
+
+func TestCommandsUseTheLocalSettingsFile(t *testing.T) {
+	settings := t.TempDir()
+	data := filepath.Join(t.TempDir(), "work-data")
+	file := filepath.Join(settings, "starter", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(file, []byte("data_dir = "+strconv.Quote(data)+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runCLIWith(t, computer(settings, nil), "info")
+	if err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	if !strings.Contains(out, "Data folder: "+data) {
+		t.Errorf("info output doesn't name the settings file's data folder %s:\n%s", data, out)
 	}
 }

@@ -6,7 +6,6 @@ package cli
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -25,9 +24,11 @@ type appOpener func() (*bootstrap.App, config.Config, error)
 // Version is set at build time via -ldflags "-X .../cli.Version=v1.2.3".
 var Version = "dev"
 
-// NewRootCmd builds the command tree. localDataDir finds the local data
-// folder, which commands use unless --data-dir names another.
-func NewRootCmd(newApp AppFactory, localDataDir func() (string, error), out io.Writer) *cobra.Command {
+// NewRootCmd builds the command tree. env is the computer the CLI runs on
+// (config.Env, with os.Getenv and os.UserConfigDir in production): its
+// environment, and its local data folder, which commands use unless
+// --data-dir names another.
+func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command {
 	var (
 		serverURL string
 		dataDir   string
@@ -46,9 +47,14 @@ func NewRootCmd(newApp AppFactory, localDataDir func() (string, error), out io.W
 	root.PersistentFlags().StringVar(&dataDir, "data-dir", "", "data folder for embedded mode (default: the local data folder the desktop app uses; env STARTER_DATA_DIR)")
 	root.PersistentFlags().StringVar(&storage, "storage", "", "storage adapter for embedded mode: jsonfile|memory (env STARTER_STORAGE)")
 
-	// openApp loads config, applies flag overrides and wires the app.
+	// openApp loads config (the local settings file, then the environment),
+	// applies flag overrides and wires the app.
 	openApp := func() (*bootstrap.App, config.Config, error) {
-		cfg, err := config.Load(config.Env{Getenv: os.Getenv}, "")
+		settingsFile, err := config.LocalConfigFile(env)
+		if err != nil {
+			return nil, config.Config{}, err
+		}
+		cfg, err := config.Load(env, settingsFile)
 		if err != nil {
 			return nil, cfg, err
 		}
@@ -61,7 +67,7 @@ func NewRootCmd(newApp AppFactory, localDataDir func() (string, error), out io.W
 		if dataDir != "" {
 			cfg.DataDir = dataDir
 		} else if keepsDataInAFolder(cfg) {
-			cfg.DataDir, err = localDataDir()
+			cfg.DataDir, err = config.LocalDataDir(env, settingsFile)
 			if err != nil {
 				return nil, cfg, err
 			}
