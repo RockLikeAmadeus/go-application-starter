@@ -89,6 +89,34 @@ func Load(env Env, settingsFile string) (Config, error) {
 	return cfg, cfg.Validate()
 }
 
+// Setting is one setting's key in the settings file, its value (a string or
+// an int) and where it came from.
+type Setting struct {
+	Key    string
+	Value  any
+	Source string
+}
+
+// Settings lists c's settings, in the order a settings file would.
+func (c Config) Settings() []Setting {
+	values := []struct {
+		key   string
+		value any
+	}{
+		{"storage", string(c.Storage)},
+		{"data_dir", c.DataDir},
+		{"port", c.Port},
+		{"server_url", c.ServerURL},
+		{"log_format", c.LogFormat},
+		{"plans_file", c.PlansFile},
+	}
+	settings := make([]Setting, len(values))
+	for i, v := range values {
+		settings[i] = Setting{Key: v.key, Value: v.value, Source: c.Sources[v.key]}
+	}
+	return settings
+}
+
 func (c Config) Validate() error {
 	switch c.Storage {
 	case StorageMemory, StorageJSONFile:

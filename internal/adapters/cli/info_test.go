@@ -200,3 +200,23 @@ func TestInfoNamesTheSettingsFile(t *testing.T) {
 		})
 	}
 }
+
+func TestInfoListsEachSettingWithItsSource(t *testing.T) {
+	settings := t.TempDir()
+	writeSettings(t, filepath.Join(settings, "starter", "config.toml"), `log_format = "json"`)
+	data := t.TempDir()
+
+	out, err := runCLIWith(t, computer(settings, map[string]string{"STARTER_DATA_DIR": data}), "info")
+	if err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	for _, want := range []string{
+		`  log_format = "json"  # settings file` + "\n",
+		`  data_dir = ` + strconv.Quote(data) + `  # environment (STARTER_DATA_DIR)` + "\n",
+		`  port = 8080  # built in` + "\n",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("info output doesn't list %q:\n%s", want, out)
+		}
+	}
+}

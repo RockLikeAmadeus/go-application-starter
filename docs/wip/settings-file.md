@@ -69,13 +69,19 @@
    - Red: `TestInfoNamesTheSettingsFile`, a table (`--config <file>`, and no file), failed in both cases: `info` printed only the data line and the plan.
    - Green: `Load` keeps the file it read in `Config.SettingsFile`; `info` prints `Settings file: <path or none>` first.
    - Refactor: where the data is moved into `dataLocation(cfg)`, making room for task 12's list; `newInfoCmd`'s doc comment names the settings file. Left for task 15: `docs/data-locations.md`'s sample `starter info` output lacks the new line.
-12. [ ] CLI: `starter info` lists each setting with its value and source; flags show as `option (--…)`. Scenario "where a setting came from" should pass.
+12. [x] 12a. CLI: `starter info` lists each setting with its value and source. Scenario "where a setting came from" should pass.
+   - Format (decided here): under `Settings file:`, each setting as the file would write it, with its source as a comment: `  data_dir = "/x"  # environment (STARTER_DATA_DIR)`, so a line can be copied into the file.
+   - Red: `TestInfoListsEachSettingWithItsSource` (`log_format` in the file, `STARTER_DATA_DIR` set, `port` neither) failed: `info` listed no settings.
+   - Green: `Config.Settings()` lists `Setting{Key, Value, Source}` in the file's order (`Value` a string or an int); `info` prints them.
+   - Refactor: `tomlValue` formats a value (strings quoted); the doc comment mentions the list. `@wip`: 4 of 5 pass; only the desktop app's (task 13) is left. Left: `Settings()` repeats the six keys (beside `envVars`), since each needs its own field; fine at six.
+   12b. [ ] CLI: a setting an option chose shows as `option (--storage)` (`--storage`, `--data-dir`, `--server`). Also: with memory storage or a server, `data_dir` shows `Load`'s server default `./data`, which no command uses; decide then whether to show it.
 13. [ ] Desktop: `desktop.Open` loads the local settings file (data folder, plans file). Scenario "desktop app uses the settings file's data folder" should pass.
 14. [ ] Server: `cmd/server` loads `STARTER_CONFIG_FILE` when set, else no file.
 15. [ ] Docs: new `docs/configuration.md` (every key, env var and option, precedence, file locations, a commented example), ADR 6, README's configuration paragraph (link), `docs/data-locations.md` ("Other files the app reads"), CLAUDE.md Gotchas (where the file is, strictness, the server reads one only when named). `.env.example` needs a hand check by the user (Claude can't read it here).
 16. [ ] Finish: `task check`, `task test:init`, `task test:rename` (the path contains the slug), by hand (`starter info` with and without a file; the desktop app with `data_dir` set; `task dev` unaffected), remove `@wip`, tick the TODO item, delete this file.
 
 ## Changes to the plan
+- 2026-11-02, task 12: split into 12a (list with sources from `Load`) and 12b (options mark their settings), one test each.
 - 2026-11-02, task 6: split into 6a (the default path), 6b (`STARTER_CONFIG_FILE`) and 6c (a missing default file), one test each.
 - 2026-11-02, task 5: passed straight away (task 2's error wrapping); kept as a guard.
 - 2026-11-02, task 2: the simplest green (env, else file, else default per setting) already makes env override the file, so task 3's test will probably pass straight away; decide then whether to keep it as a guard. It did; kept as a guard.

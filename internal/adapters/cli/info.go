@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/spf13/cobra"
 
@@ -10,7 +11,7 @@ import (
 
 // newInfoCmd shows where the settings and the data are: it opens the app, as
 // any command that uses the data does, and names the settings file it read
-// (or none), the data folder it opened (or the server it uses, or says the
+// (or none), lists each setting with where it came from, the data folder it opened (or the server it uses, or says the
 // data is only in memory) and the workspace's plan.
 func newInfoCmd(open appOpener) *cobra.Command {
 	return &cobra.Command{
@@ -32,7 +33,12 @@ func newInfoCmd(open appOpener) *cobra.Command {
 			if settingsFile == "" {
 				settingsFile = "none"
 			}
-			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Settings file: %s\n%s: %s\nPlan: %s\n", settingsFile, where, place, entitlements.Plan)
+			out := cmd.OutOrStdout()
+			fmt.Fprintf(out, "Settings file: %s\n", settingsFile)
+			for _, s := range cfg.Settings() {
+				fmt.Fprintf(out, "  %s = %s  # %s\n", s.Key, tomlValue(s.Value), s.Source)
+			}
+			_, err = fmt.Fprintf(out, "%s: %s\nPlan: %s\n", where, place, entitlements.Plan)
 			return err
 		},
 	}
@@ -48,4 +54,13 @@ func dataLocation(cfg config.Config) (where, place string) {
 		return "Data", "kept in memory, not saved"
 	}
 	return "Data folder", cfg.DataDir
+}
+
+// tomlValue writes a setting's value as a settings file would: a string
+// quoted, a number as it is.
+func tomlValue(v any) string {
+	if s, ok := v.(string); ok {
+		return strconv.Quote(s)
+	}
+	return fmt.Sprint(v)
 }
