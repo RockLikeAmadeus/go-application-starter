@@ -110,3 +110,18 @@ func TestWaitReturnsTheExitStatus(t *testing.T) {
 		t.Errorf("exit status = %d, want 3", status)
 	}
 }
+
+func TestWaitFailsWithTheScreenWhenTheProgramKeepsRunning(t *testing.T) {
+	tm := start(t, "printf hello; sleep 5")
+	if err := tm.WaitFor("hello", 2*time.Second); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := tm.Wait(300 * time.Millisecond)
+	if err == nil {
+		t.Fatal("Wait returned no error, but the program was still running")
+	}
+	if !strings.Contains(err.Error(), "hello") {
+		t.Errorf("error %q doesn't show the screen", err)
+	}
+}

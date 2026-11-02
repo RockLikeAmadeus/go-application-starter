@@ -78,7 +78,7 @@ func (t *Terminal) WaitFor(text string, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for !strings.Contains(t.Screen(), text) {
 		if time.Now().After(deadline) {
-			return fmt.Errorf("the screen didn't show %q within %s; it shows:\n%s", text, timeout, t.Screen())
+			return t.errorWithScreen(fmt.Sprintf("the screen didn't show %q within %s", text, timeout))
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
@@ -117,12 +117,24 @@ func (t *Terminal) Press(key string) error {
 // Wait waits for the program to exit and returns its exit status. If it
 // doesn't exit within timeout, it returns an error.
 func (t *Terminal) Wait(timeout time.Duration) (int, error) {
-	err := t.cmd.Wait()
-	var exit *exec.ExitError
-	if errors.As(err, &exit) {
-		return exit.ExitCode(), nil
+	done := make(chan error, 1)
+	go func() { done <- t.cmd.Wait() }()
+	select {
+	case err := <-done:
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			return exit.ExitCode(), nil
+		}
+		return 0, err
+	case <-time.After(timeout):
+		return 0, t.errorWithScreen(fmt.Sprintf("the program didn't exit within %s", timeout))
 	}
-	return 0, err
+}
+
+// errorWithScreen is an error saying what went wrong, then showing the screen,
+// so a failed journey shows what the user would have seen.
+func (t *Terminal) errorWithScreen(what string) error {
+	return fmt.Errorf("%s; the screen shows:\n%s", what, t.Screen())
 }
 
 // Close frees the terminal.

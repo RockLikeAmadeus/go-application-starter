@@ -45,7 +45,10 @@
      Red: `TestWaitReturnsTheExitStatus` (`exit 3`). The stub returned 0: "exit status = 0, want 3".
      Green: the `Terminal` keeps the `*exec.Cmd`; `Wait` calls `cmd.Wait` and turns an `*exec.ExitError` into its exit code. The timeout isn't used yet (4b). (A first green also had the timeout branch; it was cut back, since no test asked for it.)
      Refactor: nothing worth changing (`Wait` is six lines; its unused timeout is 4b's). Journeys: still 9 undefined.
-   - [ ] 4b. `Wait` returns an error, with the screen, when the program doesn't exit within the timeout.
+   - [x] 4b. `Wait` returns an error, with the screen, when the program doesn't exit within the timeout.
+     Red: `TestWaitFailsWithTheScreenWhenTheProgramKeepsRunning` (`printf hello; sleep 5`, `Wait(300ms)`): it blocked the whole 5 s and returned no error.
+     Green: `Wait` runs `cmd.Wait` in a goroutine and races it against the timeout; on timeout the error shows the screen.
+     Refactor: `WaitFor` and `Wait` build their errors with one helper, `errorWithScreen` ("…; the screen shows:" and the screen). Journeys: still 9 undefined. Left for 4d: after a timeout, the goroutine still waits on the program, so a second `Wait` would call `cmd.Wait` twice ("Wait was already called"); `Close` should end the program, and a later `Wait` should reuse the first one's result.
    - [ ] 4c. `AltScreen()` says whether the terminal is on the alternate screen.
    - [ ] 4d. `Close` stops the program if it's still running, and closes the emulator, so `sendInput` ends (left over from 3a).
 5. [ ] Runner: build `starter` once (in `TestMain`), a fresh computer per scenario; scenario "The command line says where my data is" passes (`--data-dir`).
