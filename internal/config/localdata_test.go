@@ -69,3 +69,18 @@ func TestLocalConfigFileIsConfigTomlInTheAppsSettingsFolder(t *testing.T) {
 		t.Errorf("LocalConfigFile = %q, want %q", got, want)
 	}
 }
+
+func TestStarterConfigFileNamesAnotherSettingsFile(t *testing.T) {
+	env := config.Env{
+		Getenv:        envOf(map[string]string{"STARTER_CONFIG_FILE": "/srv/starter/settings.toml"}),
+		UserConfigDir: configDirAt(t.TempDir()),
+	}
+
+	got, err := config.LocalConfigFile(env)
+	if err != nil {
+		t.Fatalf("LocalConfigFile: %v", err)
+	}
+	if want := "/srv/starter/settings.toml"; got != want {
+		t.Errorf("LocalConfigFile = %q, want %q", got, want)
+	}
+}

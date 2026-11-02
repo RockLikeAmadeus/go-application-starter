@@ -41,7 +41,10 @@
    - Red: `Env` gained `UserConfigDir` and `LocalConfigFile` a stub returning `""`, so the test compiled. `TestLocalConfigFileIsConfigTomlInTheAppsSettingsFolder` failed with `LocalConfigFile = "", want "<settings>/starter/config.toml"`.
    - Green: it joins `env.UserConfigDir()` with `starter/config.toml` (no existence check yet: 6c).
    - Refactor: doc comment; the app's folder name is `appFolder`, shared with `LocalDataDir`. Left: wrapping `UserConfigDir`'s error like `LocalDataDir` does ("find the data folder: …"): no test asks for it yet, and 6c touches the same lines.
-   6b. [ ] `STARTER_CONFIG_FILE` names another settings file, which `Load` then requires (a missing named file fails, naming it).
+   6b. [x] `STARTER_CONFIG_FILE` names another settings file, which `Load` then requires (a missing named file fails, naming it).
+   - Red: `TestStarterConfigFileNamesAnotherSettingsFile` failed with `LocalConfigFile = "<settings>/starter/config.toml", want "/srv/starter/settings.toml"`.
+   - Green: `LocalConfigFile` returns `STARTER_CONFIG_FILE` when set.
+   - Refactor: the doc comment covers it, and says `Load` fails on a missing named file. That part needs no code: koanf's file provider can't read a missing file, and task 2's wrapping names it. Not unit-tested separately (it would pass straight away, like tasks 3 and 5); the CLI's `--config` (task 9) is the natural place to pin it.
    6c. [ ] When the default settings file doesn't exist, there is none (`""`), so `Load` uses the environment and defaults only.
 7. [ ] `config.LocalDataDir` uses the loaded `data_dir` (from the file or env) before the settings folder.
 8. [ ] CLI: `NewRootCmd` takes `config.Env` instead of `localDataDir`; commands load the local settings file. Update `cmd/starter`, the test helpers and `runCommandLine`. Scenarios "chooses the data folder" and "doesn't know stops it" should pass.

@@ -25,9 +25,13 @@ func LocalDataDir(getenv func(string) string, userConfigDir func() (string, erro
 }
 
 // LocalConfigFile returns the local edition's settings file on this
-// computer, which the desktop app, the CLI and the TUI share: config.toml in
-// the app's folder in the user's settings folder.
+// computer, which the desktop app, the CLI and the TUI share:
+// STARTER_CONFIG_FILE when set, else config.toml in the app's folder in the
+// user's settings folder. Load fails if a file named this way is missing.
 func LocalConfigFile(env Env) (string, error) {
+	if file := env.Getenv("STARTER_CONFIG_FILE"); file != "" {
+		return file, nil
+	}
 	configDir, err := env.UserConfigDir()
 	if err != nil {
 		return "", err
