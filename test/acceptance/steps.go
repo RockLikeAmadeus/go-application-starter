@@ -15,6 +15,8 @@ import (
 type world struct {
 	*harness
 	lastErr error
+	// cliOut is what the command line last printed.
+	cliOut string
 }
 
 func initializeScenario(d driver) func(*godog.ScenarioContext) {
@@ -37,6 +39,7 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 
 		sc.Step(`^I am told the "([^"]*)" is invalid$`, w.iAmToldTheFieldIsInvalid)
 		w.registerDesktopSteps(sc)
+		w.registerLocalDataSteps(sc)
 		w.registerMobileSteps(sc)
 		w.registerEntitlementsSteps(sc)
 		w.registerReadinessSteps(sc)

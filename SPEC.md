@@ -11,7 +11,7 @@ _One paragraph: who the users are, what problem this solves, and what success lo
 | Persona | Front-end | Editions (§3) | Notes |
 |---|---|---|---|
 | _e.g. End user_ | Web (React SPA) | Hosted, with sign-in (planned). Or local: a self-hosted server for one user, with no sign-in (works today) | Installable (§4.5) |
-| _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in a folder. Hosted, after `starter login --server …` (planned) | Today `--server` reaches only a server without sign-in |
+| _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in the desktop app's data folder (§4.11). Hosted, after `starter login --server …` (planned) | Today `--server` reaches only a server without sign-in |
 | _e.g. Integrations_ | REST API (`api/openapi.yaml`) | Whichever edition the server runs | |
 | _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | Local, with its data on the computer (§4.6). Hosted, in remote mode (planned) | The web app in its own window |
 | _e.g. Single user on an Android phone_ | Mobile app (Android) | Local, with its data on the phone (§4.7). Hosted, in remote mode (planned) | The web app as a phone app |
@@ -27,7 +27,7 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Theme** | The colour scheme of the web app: **dark** or **light**. Independent of the style. |
 | **Style** | A named look for the web app: its layout, fonts, shape and density. Independent of the theme; every style works in dark and light. |
 | **Desktop app** | The web app packaged as a program for the user's computer. In the local edition it keeps its own data and needs no server. Working on hosted data instead (remote mode) is planned. |
-| **Data folder** | The folder where the desktop app or the mobile app keeps its data: on the user's computer, or in the app's private storage on the phone. |
+| **Data folder** | The folder where the local edition keeps its data: on the user's computer, shared by the desktop app and the command line, or in the app's private storage on the phone. |
 | **Mobile app** | The web app packaged as an app for the user's phone (Android for now). In the local edition it keeps its own data on the phone and needs no server. Working on hosted data instead (remote mode) is planned. |
 | **Edition** | How a copy of the product runs. The **hosted edition** serves many users from a server, each signing in to an account (planned). The **local edition** is for one user, with no account: data on their own device, or on a server they host for themselves. Both run the same app, and each copy uses one edition only. |
 | **Workspace** | The space a piece of data belongs to. In the hosted edition, each user has their own workspace. The local edition has exactly one. |
@@ -231,6 +231,28 @@ The server says whether it is **ready**: whether it can reach its data and so se
 - The data folder is put back → ready again.
 
 **Specification:** [`features/readiness.feature`](features/readiness.feature). These scenarios run only on the server driver, which wires the server as `cmd/server` does, on a data folder the tests can remove.
+
+### 4.11 Share local data between the desktop app and the command line
+
+On one computer, the desktop app, the CLI and the TUI are one local edition, so they work on the same data. A user who adds something in one finds it in the others, whichever folder they ran the command in. The command line can also say where that data is.
+
+**Rules**
+- By default the CLI and the TUI use the desktop app's data folder (§4.6): the user's settings folder for the app (on Linux, `~/.config/starter`). The folder they're run from makes no difference.
+- The user can choose another data folder, for one command or for all of them, as for the desktop app.
+- Only one program can use a data folder at a time. While the desktop app is open, the command line says the data is already in use, and changes nothing.
+- `starter info` says which data folder the command line uses, and the workspace's plan.
+- Connected to a server (`--server`), the command line uses that server's data, and keeps none on the computer.
+- The server isn't part of this: it keeps its data where it's configured to (by default `./data`, where it was started).
+
+**Examples**
+<!-- sample:start -->
+- User adds "Widget" in the desktop app, closes it, and lists items with `starter item list` → "Widget" is there.
+<!-- sample:end -->
+- User runs `starter info` from any folder on Linux → it names `~/.config/starter`.
+- User runs `starter info` while the desktop app is open → it says the data is already in use.
+- User runs `starter --data-dir ~/work-data info` → it names `~/work-data`.
+
+**Specification:** [`features/local-data.feature`](features/local-data.feature). These scenarios run only on the desktop driver, which opens the desktop app on a temporary settings folder and runs the command line beside it. Where each front end keeps its data, on each OS, is in [docs/data-locations.md](docs/data-locations.md).
 
 ## 5. Non-functional requirements
 

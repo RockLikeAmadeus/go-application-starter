@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -47,6 +48,12 @@ type harness struct {
 	// openCopy tries to open a second copy of the desktop app on the same
 	// data folder, closing it again if it opens. Only the desktop driver sets it.
 	openCopy func() error
+	// closeApp closes the desktop app, releasing its data folder. Only the
+	// desktop driver sets it.
+	closeApp func()
+	// local is the computer the desktop app runs on, where the command line
+	// runs beside it. Only the desktop driver sets it.
+	local *localComputer
 	// server is the running server, as cmd/server wires it. Only the server
 	// driver sets it.
 	server *testServer
@@ -225,17 +232,19 @@ func (s *testServer) readiness() (int, string, error) {
 	return resp.StatusCode, string(body), err
 }
 
-// startDesktop opens the desktop app's wiring on a temporary data folder and
-// drives it over HTTP, as the desktop window's SPA does.
+// startDesktop opens the desktop app's wiring on a temporary settings
+// folder, with no data folder chosen, and drives it over HTTP, as the desktop
+// window's SPA does.
 func startDesktop() (*harness, error) {
 	dir, err := os.MkdirTemp("", "acceptance-desktop-*")
 	if err != nil {
 		return nil, err
 	}
-	env := map[string]string{"STARTER_DATA_DIR": dir}
-	app := &desktopApp{getenv: func(key string) string { return env[key] }}
+	local := &localComputer{dir: dir, env: map[string]string{}}
+	app := &desktopApp{getenv: local.getenv, userConfigDir: local.userConfigDir}
 
 	h := newHarness()
+	h.local = local
 	h.cleanup = func() {
 		app.close()
 		os.RemoveAll(dir)
@@ -245,12 +254,13 @@ func startDesktop() (*harness, error) {
 		return app.open(h)
 	}
 	h.openCopy = func() error {
-		second, err := desktop.Open(app.getenv, os.UserConfigDir, nil)
+		second, err := desktop.Open(app.getenv, app.userConfigDir, nil)
 		if err != nil {
 			return err
 		}
 		return second.Close()
 	}
+	h.closeApp = app.close
 	if err := app.open(h); err != nil {
 		h.cleanup()
 		return nil, err
@@ -259,17 +269,31 @@ func startDesktop() (*harness, error) {
 }
 
 // desktopApp is one copy of the desktop app, opened on the data folder that
-// getenv names and served over HTTP.
+// getenv and userConfigDir lead to, and served over HTTP.
 type desktopApp struct {
-	getenv func(string) string
-	app    *desktop.App
-	srv    *httptest.Server
+	getenv        func(string) string
+	userConfigDir func() (string, error)
+	app           *desktop.App
+	srv           *httptest.Server
+}
+
+// localComputer is the user's computer, as the desktop app and the command
+// line see it: an environment and a settings folder, inside dir.
+type localComputer struct {
+	dir string
+	env map[string]string
+}
+
+func (c *localComputer) getenv(key string) string { return c.env[key] }
+
+func (c *localComputer) userConfigDir() (string, error) {
+	return filepath.Join(c.dir, "settings"), nil
 }
 
 // open opens the app and points h's driving ports at it. The scenarios drive
 // the API only, so the app is opened without the web app.
 func (d *desktopApp) open(h *harness) error {
-	app, err := desktop.Open(d.getenv, os.UserConfigDir, nil)
+	app, err := desktop.Open(d.getenv, d.userConfigDir, nil)
 	if err != nil {
 		return err
 	}
