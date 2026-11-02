@@ -51,7 +51,12 @@ func (w *world) itNamesTheDesktopAppsDataFolder() error {
 	if w.local == nil {
 		return errNoLocalComputer
 	}
-	want, err := config.LocalDataDir(config.Env{Getenv: w.local.getenv, UserConfigDir: w.local.userConfigDir}, "")
+	env := w.local.configEnv()
+	settingsFile, err := config.LocalConfigFile(env)
+	if err != nil {
+		return err
+	}
+	want, err := config.LocalDataDir(env, settingsFile)
 	if err != nil {
 		return err
 	}
@@ -72,8 +77,7 @@ func (w *world) runCommandLine(ctx context.Context, args ...string) error {
 		return errNoLocalComputer
 	}
 	var out bytes.Buffer
-	env := config.Env{Getenv: w.local.getenv, UserConfigDir: w.local.userConfigDir}
-	cmd := cli.NewRootCmd(bootstrap.New, env, &out)
+	cmd := cli.NewRootCmd(bootstrap.New, w.local.configEnv(), &out)
 	cmd.SetArgs(args)
 	w.lastErr = cmd.ExecuteContext(ctx)
 	w.cliOut = out.String()

@@ -23,13 +23,19 @@ type App struct {
 }
 
 // Open opens the desktop app's data folder (config.LocalDataDir:
-// STARTER_DATA_DIR, else the user's settings folder) and wires the core
+// STARTER_DATA_DIR, else data_dir in the local settings file, else the
+// user's settings folder) and wires the core
 // behind the server's HTTP handler. getenv reads the environment (os.Getenv
 // in production) and userConfigDir finds the user's settings folder
 // (os.UserConfigDir on the desktop). webAssets is the built web app
 // (web.Assets() in production).
 func Open(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS) (*App, error) {
-	dir, err := config.LocalDataDir(config.Env{Getenv: getenv, UserConfigDir: userConfigDir}, "")
+	env := config.Env{Getenv: getenv, UserConfigDir: userConfigDir}
+	settingsFile, err := config.LocalConfigFile(env)
+	if err != nil {
+		return nil, err
+	}
+	dir, err := config.LocalDataDir(env, settingsFile)
 	if err != nil {
 		return nil, err
 	}

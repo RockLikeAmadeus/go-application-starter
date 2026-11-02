@@ -290,6 +290,11 @@ func (c *localComputer) userConfigDir() (string, error) {
 	return filepath.Join(c.dir, "settings"), nil
 }
 
+// configEnv is the computer as configuration sees it.
+func (c *localComputer) configEnv() config.Env {
+	return config.Env{Getenv: c.getenv, UserConfigDir: c.userConfigDir}
+}
+
 // open opens the app and points h's driving ports at it. The scenarios drive
 // the API only, so the app is opened without the web app.
 func (d *desktopApp) open(h *harness) error {

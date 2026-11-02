@@ -78,12 +78,17 @@
    - Red: `TestInfoSaysWhichSettingsAnOptionChose`, a table (`--storage` with `--data-dir`, and `--server` against a test server), failed: each setting still showed the source `Load` gave it.
    - Green: `openApp` sets the setting's source as it applies each option.
    - Refactor: `chosenByOption(cfg, key, flag)` writes `option (--flag)`; the two server tests share `testServer(t)`. Decided to leave: with memory storage or a server, `data_dir` still shows `Load`'s `./data  # built in`. It is the configuration's real value, and the `Data:`/`Server:` line below says no folder is used; hiding it would make the list's shape depend on other settings.
-13. [ ] Desktop: `desktop.Open` loads the local settings file (data folder, plans file). Scenario "desktop app uses the settings file's data folder" should pass.
+13. [x] 13a. Desktop: `desktop.Open` uses the local settings file's data folder. Scenario "desktop app uses the settings file's data folder" should pass.
+   - Red: `TestOpenUsesTheSettingsFilesDataFolder` (`data_dir` in `<settings>/starter/config.toml`) failed: no `.lock` in that folder.
+   - Green: `Open` finds the file with `config.LocalConfigFile` and passes it to `config.LocalDataDir`. On Android (`mobile.Open`), the settings folder is the app's private storage, where no file exists, so nothing changes there.
+   - Refactor: `Open`'s doc comment gives the data folder's order; the acceptance desktop driver's `localComputer.configEnv()` replaces two hand-built `config.Env`s, and "it names the desktop app's data folder" passes the settings file too. `@wip`: all 5 pass.
+   13b. [ ] Desktop: the settings file's (and the environment's) `plans_file` reaches the desktop app. Today `Open` builds `config.Config{Storage, DataDir}` by hand, so it ignores `STARTER_PLANS_FILE` too. Likely: `config.Load` for the rest, with storage forced to `jsonfile` and the data folder from `LocalDataDir`.
 14. [ ] Server: `cmd/server` loads `STARTER_CONFIG_FILE` when set, else no file.
 15. [ ] Docs: new `docs/configuration.md` (every key, env var and option, precedence, file locations, a commented example), ADR 6, README's configuration paragraph (link), `docs/data-locations.md` ("Other files the app reads"), CLAUDE.md Gotchas (where the file is, strictness, the server reads one only when named). `.env.example` needs a hand check by the user (Claude can't read it here).
 16. [ ] Finish: `task check`, `task test:init`, `task test:rename` (the path contains the slug), by hand (`starter info` with and without a file; the desktop app with `data_dir` set; `task dev` unaffected), remove `@wip`, tick the TODO item, delete this file.
 
 ## Changes to the plan
+- 2026-11-02, task 13: split into 13a (data folder, which the scenario needs) and 13b (the plans file), one test each.
 - 2026-11-02, task 12: split into 12a (list with sources from `Load`) and 12b (options mark their settings), one test each.
 - 2026-11-02, task 6: split into 6a (the default path), 6b (`STARTER_CONFIG_FILE`) and 6c (a missing default file), one test each.
 - 2026-11-02, task 5: passed straight away (task 2's error wrapping); kept as a guard.

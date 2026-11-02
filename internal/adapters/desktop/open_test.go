@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"testing/fstest"
 
@@ -112,6 +113,28 @@ func TestOpenCreatesTheDataFolderUnderTheGivenSettingsFolder(t *testing.T) {
 
 	if _, err := os.Stat(filepath.Join(settings, "starter")); err != nil {
 		t.Errorf("data folder not created under the settings folder: %v", err)
+	}
+}
+
+func TestOpenUsesTheSettingsFilesDataFolder(t *testing.T) {
+	settings := t.TempDir()
+	data := filepath.Join(t.TempDir(), "work-data")
+	file := filepath.Join(settings, "starter", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(file, []byte("data_dir = "+strconv.Quote(data)+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
+
+	if _, err := os.Stat(filepath.Join(data, ".lock")); err != nil {
+		t.Errorf("the settings file's data folder %s isn't in use: %v", data, err)
 	}
 }
 
