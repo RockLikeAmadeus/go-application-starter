@@ -90,7 +90,7 @@ internal/adapters/storage/*      memory, jsonfile, + storagetest contract suite
 internal/adapters/workspace      ports.WorkspaceResolver: Local (the local edition's one workspace), FromContext (set with WithID)
 internal/adapters/plans          ports.Entitlements from the plans file (plans.jsonc, built in; STARTER_PLANS_FILE replaces it)
 internal/bootstrap               composition root: the only place that picks adapters
-web/                             Vite + React + TS + Tailwind + TanStack Query
+web/                             Vite + React + TS + Tailwind + TanStack Query; components every screen can use (e.g. `ErrorMessage`) go in web/src/components
 mobile/android                   Wails' generated Gradle project for the Android app (see docs/mobile.md)
 features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, http, desktop and mobile drivers (`@desktop` and `@mobile` scenarios run only on their own driver; `@workspaces` ones only on memory and jsonfile; `@plans` ones only on memory, jsonfile and http). `@server` ones (running the server, e.g. readiness) run only on the server driver, which runs nothing else
 web/e2e                          playwright-bdd browser journeys
@@ -116,6 +116,7 @@ test/packaging                   package check: builds the Linux packages and th
 
 - Vim navigation is required (see SPEC.md §5). Every list or selectable view binds `j`/`k` alongside `down`/`up`. Bind them only while browsing, never while a text input has focus, so users can still type those letters.
 - Cover the `j`/`k` bindings in each new view's tests.
+- Shared colours, styles and the helpers every screen uses (`errorLine`, `selectedRow`) live in `internal/adapters/tui/styles.go`, outside sample blocks. Give a style a small helper with its own test (`styles_test.go`), so it stays in use, and passes golangci-lint's `unused` check, when the sample is removed.
 <!-- sample:start -->
 - The Items screen (`internal/adapters/tui/items.go`) and its tests (`items_test.go`) show both.
 <!-- sample:end -->

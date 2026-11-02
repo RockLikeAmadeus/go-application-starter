@@ -72,7 +72,7 @@ a.Items = app.NewItemService(items, system.Clock{}, system.UUIDs{})
 
 **Code shared with `task rename`** lives in `scripts/internal/project`, which survives init. A rename rewrites every tracked file, that package included, so it must never mention the template's own names. The init tool reads them from `project.json` instead.
 
-**Leave something behind that still works.** When code is removed, whatever is left must still build, lint and pass its tests. For example, the TUI and the web app fall back to a "Nothing here yet." home screen when there is no Items page, and `features/README.md` keeps the `features/` folder from disappearing. To check, run `task test:init`: one scenario removes the sample and runs the Go build and tests on the result.
+**Leave something behind that still works.** When code is removed, whatever is left must still build, lint and pass its tests. For example, the TUI and the web app fall back to a "Nothing here yet." home screen when there is no Items page, and `features/README.md` keeps the `features/` folder from disappearing. Anything a later screen will need too, such as the TUI's error and selection styles or the web app's `ErrorMessage`, belongs in template code that the sample uses, not in the sample. Watch for code that only the sample calls: golangci-lint's `unused` check fails on it once the sample is gone. To check, run `task test:init`: its scenarios remove the sample, then run the Go build, tests and linters on the result and check that the shared helpers are still there.
 
 ## Specification
 
