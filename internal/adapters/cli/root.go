@@ -56,7 +56,7 @@ func NewRootCmd(newApp AppFactory, localDataDir func() (string, error), out io.W
 		}
 		if dataDir != "" {
 			cfg.DataDir = dataDir
-		} else {
+		} else if cfg.ServerURL == "" {
 			cfg.DataDir, err = localDataDir()
 			if err != nil {
 				return nil, cfg, err

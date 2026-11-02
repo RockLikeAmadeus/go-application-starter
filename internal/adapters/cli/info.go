@@ -7,8 +7,8 @@ import (
 )
 
 // newInfoCmd shows where the data is: it opens the app, as any command that
-// uses the data does, and names the data folder it opened and the
-// workspace's plan.
+// uses the data does, and names the data folder it opened (or the server it
+// uses) and the workspace's plan.
 func newInfoCmd(open appOpener) *cobra.Command {
 	return &cobra.Command{
 		Use:   "info",
@@ -24,7 +24,11 @@ func newInfoCmd(open appOpener) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Data folder: %s\nPlan: %s\n", cfg.DataDir, entitlements.Plan)
+			where, place := "Data folder", cfg.DataDir
+			if cfg.ServerURL != "" {
+				where, place = "Server", cfg.ServerURL
+			}
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\nPlan: %s\n", where, place, entitlements.Plan)
 			return err
 		},
 	}

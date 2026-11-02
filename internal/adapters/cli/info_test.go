@@ -4,17 +4,19 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
 // runCLI executes the CLI with args, as cmd/starter wires it. args choose
-// the data folder, so the local one is never looked up.
+// a data folder or a server, so the local data folder is never looked up.
 func runCLI(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 	return runCLIWith(t, noLocalDataDir(t), args...)
@@ -67,11 +69,11 @@ func TestInfoNamesTheWorkspacesPlan(t *testing.T) {
 	}
 }
 
-// noLocalDataDir stands in for the local data folder in tests that choose
-// their own, failing the test if it is looked up.
+// noLocalDataDir stands in for the local data folder in tests that don't use
+// it, failing the test if it is looked up.
 func noLocalDataDir(t *testing.T) func() (string, error) {
 	return func() (string, error) {
-		t.Error("the local data folder was looked up, though the test chose one")
+		t.Error("the local data folder was looked up, though the test doesn't use it")
 		return "", errors.New("no local data folder in this test")
 	}
 }
@@ -100,5 +102,22 @@ func TestWithoutTheLocalDataFolderCommandsFailSayingWhy(t *testing.T) {
 	_, err := runCLIWith(t, func() (string, error) { return "", errNoHome }, "--storage", "jsonfile", "info")
 	if !errors.Is(err, errNoHome) {
 		t.Errorf("info error = %v, want %v", err, errNoHome)
+	}
+}
+
+func TestInfoWithAServerNamesTheServer(t *testing.T) {
+	core, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageMemory})
+	if err != nil {
+		t.Fatalf("wire the server's core: %v", err)
+	}
+	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core.Entitlements}))
+	defer srv.Close()
+
+	out, err := runCLI(t, "--server", srv.URL, "info")
+	if err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	if !strings.Contains(out, "Server: "+srv.URL) {
+		t.Errorf("info output doesn't name the server %s:\n%s", srv.URL, out)
 	}
 }
