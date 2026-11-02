@@ -3,6 +3,7 @@
 package term
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -23,6 +24,7 @@ const (
 
 // Terminal is a program running in an 80×24 pseudo-terminal.
 type Terminal struct {
+	cmd *exec.Cmd
 	pty *os.File
 
 	mu  sync.Mutex // guards emu: vt.SafeEmulator doesn't guard String
@@ -35,7 +37,7 @@ func Start(cmd *exec.Cmd) (*Terminal, error) {
 	if err != nil {
 		return nil, err
 	}
-	t := &Terminal{pty: f, emu: vt.NewEmulator(cols, rows)}
+	t := &Terminal{cmd: cmd, pty: f, emu: vt.NewEmulator(cols, rows)}
 	go t.showOutput()
 	go t.sendInput()
 	return t, nil
@@ -110,6 +112,17 @@ func (t *Terminal) Press(key string) error {
 	}
 	t.emu.SendKey(vt.KeyPressEvent{Code: code})
 	return nil
+}
+
+// Wait waits for the program to exit and returns its exit status. If it
+// doesn't exit within timeout, it returns an error.
+func (t *Terminal) Wait(timeout time.Duration) (int, error) {
+	err := t.cmd.Wait()
+	var exit *exec.ExitError
+	if errors.As(err, &exit) {
+		return exit.ExitCode(), nil
+	}
+	return 0, err
 }
 
 // Close frees the terminal.

@@ -98,3 +98,15 @@ func TestPressFailsOnAKeyItDoesNotKnow(t *testing.T) {
 		t.Errorf("error %q doesn't name the key", err)
 	}
 }
+
+func TestWaitReturnsTheExitStatus(t *testing.T) {
+	tm := start(t, "exit 3")
+
+	status, err := tm.Wait(2 * time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status != 3 {
+		t.Errorf("exit status = %d, want 3", status)
+	}
+}

@@ -40,7 +40,14 @@
      Red: `TestPressFailsOnAKeyItDoesNotKnow` (`Press("pgdn")` must return an error naming `"pgdn"`). `Press` now returns an `error`; with the stub's `nil`, it failed with "returned no error".
      Green: a name that isn't in `namedKeys` and isn't a single character returns an "unknown key" error, and nothing is sent.
      Refactor: the other tests check `Press`'s error, so a bad name fails at once instead of timing out in `WaitFor`. Journeys: still 9 undefined.
-4. [ ] `term`: `Wait()` returns the program's exit status; `AltScreen()` says whether the terminal is still on the alternate screen.
+4. [ ] `term`: `Wait()` returns the program's exit status; `AltScreen()` says whether the terminal is still on the alternate screen. Split over cycles (2026-11-02), as task 3 was: `Wait` takes a timeout, as `WaitFor` does, so a journey whose program never exits fails instead of hanging the run.
+   - [x] 4a. `Wait(timeout)` returns the program's exit status.
+     Red: `TestWaitReturnsTheExitStatus` (`exit 3`). The stub returned 0: "exit status = 0, want 3".
+     Green: the `Terminal` keeps the `*exec.Cmd`; `Wait` calls `cmd.Wait` and turns an `*exec.ExitError` into its exit code. The timeout isn't used yet (4b). (A first green also had the timeout branch; it was cut back, since no test asked for it.)
+     Refactor: nothing worth changing (`Wait` is six lines; its unused timeout is 4b's). Journeys: still 9 undefined.
+   - [ ] 4b. `Wait` returns an error, with the screen, when the program doesn't exit within the timeout.
+   - [ ] 4c. `AltScreen()` says whether the terminal is on the alternate screen.
+   - [ ] 4d. `Close` stops the program if it's still running, and closes the emulator, so `sendInput` ends (left over from 3a).
 5. [ ] Runner: build `starter` once (in `TestMain`), a fresh computer per scenario; scenario "The command line says where my data is" passes (`--data-dir`).
 6. [ ] Template: start the built server on a free port with memory storage and wait for `/readyz`; scenario "The command line works on a server's data" passes.
 7. [ ] Template: scenario "A command the command line doesn't know fails" passes (exit status and message).
