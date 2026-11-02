@@ -61,6 +61,7 @@ task mobile:android:run          # Android app on the emulator or a phone, data 
 task test                        # unit tests (Go + web)
 task accept                      # Godog acceptance tests
 task e2e                         # browser tests against the real server binary
+task e2e:terminal                # terminal journeys: the built CLI and TUI in a terminal (Unix only)
 task gen                         # regenerate code after editing api/openapi.yaml
 task build                       # ./bin/server (with UI embedded) and ./bin/starter
 task build:desktop               # ./bin/starter-desktop (needs the desktop build deps)
@@ -86,12 +87,13 @@ Settings come from an optional TOML settings file, overridden by environment var
 
 Repeat red → green → refactor until `task accept` is green, then drop the `@wip` tag. See `CLAUDE.md` for the architecture rules Claude follows, and `.claude/settings.json` for permissions and the auto-format hook.
 
-### Two layers of Gherkin
+### Three layers of Gherkin
 
 - `features/*.feature` (**Godog**) holds the business rules in domain language. Each scenario runs against up to five drivers (in-memory core, jsonfile storage, the full HTTP server+client, the desktop app's wiring, and the mobile app's wiring across its bridge), all in-process and fast.
 - `web/e2e/features/*.feature` (**playwright-bdd**) holds a thin set of browser journeys proving the UI → API → core wiring.
+- `test/terminal/features/*.feature` (**Godog**, with `creack/pty` and `charmbracelet/x/vt`) holds a thin set of terminal journeys: the built `starter` program, in a real pseudo-terminal, proving the CLI's options, output and exit status, and the TUI's keys and screen, reach the core and back (also through `--server`).
 
-Keep the business rules in the first layer. Browser tests are slow and fragile, so they only prove the wiring.
+Keep the business rules in the first layer. Browser and terminal journeys are slower and more fragile, so they only prove the wiring.
 
 ## CI/CD
 
@@ -99,7 +101,7 @@ GitHub Actions, in `.github/workflows/`:
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| `ci.yml` | PRs, `main`, `v*` tags | Go lint/unit/acceptance, web lint/typecheck/unit, codegen drift, playwright-bdd e2e. Then builds the Docker image and, on push, publishes it to GHCR (`ghcr.io/<owner>/<repo>:sha-<sha>`) |
+| `ci.yml` | PRs, `main`, `v*` tags | Go lint/unit/acceptance/terminal journeys, web lint/typecheck/unit, codegen drift, playwright-bdd e2e. Then builds the Docker image and, on push, publishes it to GHCR (`ghcr.io/<owner>/<repo>:sha-<sha>`) |
 | `deploy.yml` | CI success on `main` → **staging**; on `v*` tag → **production** | `flyctl deploy --image …`, then a `/readyz` smoke test |
 | `release.yml` | `v*` tag | GoReleaser publishes CLI/TUI binaries for Linux, macOS and Windows |
 

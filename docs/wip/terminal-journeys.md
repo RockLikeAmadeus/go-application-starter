@@ -91,7 +91,8 @@
    - Red: no unit test covers Taskfile or CI wiring, so the red was the command itself: `task e2e:terminal` said `Task "e2e:terminal" does not exist`.
    - Green: `e2e:terminal` (`go test ./test/terminal/ -count=1 {{.CLI_ARGS}}`, no `-v`, like `accept`), run by `task check` after `accept`; CI's Go job runs it after the acceptance tests ("Terminal journeys (Godog)"). `test/terminal/term` joins `task test:go` and CI's unit tests (with `-race`). Every file in `test/terminal` and `term` has `//go:build unix`; on Windows, `./test/...` skips them. `SampleFiles` was done in task 9.
    - Refactor: `test:go` and CI name `./test/terminal/term/...`, not `./test/terminal/term/`: on a non-Unix machine the plain path is an error ("build constraints exclude all Go files"), the pattern just matches nothing. `task test:init` passes (17 scenarios).
-13. [ ] Docs: CLAUDE.md (Commands table, Architecture's `test/terminal`, Testing conventions), `features/README.md` (where terminal journeys live), README's test commands, `docs/template.md` if it lists test layers; tick the TODO item with the tool comparison in one line.
+13. [x] Docs: CLAUDE.md (Commands table, Architecture's `test/terminal`, Testing conventions), `features/README.md` (where terminal journeys live), README's test commands, `docs/template.md` if it lists test layers; tick the TODO item with the tool comparison in one line.
+   - No red: docs only (decided 2026-11-02). Done: CLAUDE.md, README (three Gherkin layers, `task e2e:terminal`, CI row), `features/README.md`, `/feature`'s journey rule, the TODO item's tools line (ticked in 14). `docs/template.md` lists no test layers: unchanged.
 14. [ ] Finish: `task check`, `task test:init`, `task test:rename`, remove `@wip`, tick the TODO item, delete this file.
 
 ## Changes to the plan

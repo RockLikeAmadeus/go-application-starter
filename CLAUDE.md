@@ -60,6 +60,7 @@ Never stage, commit, push or pull unless I explicitly ask. That includes `git ad
 | One Go test | `go test ./internal/core/app/ -run TestName` |
 | Acceptance (Godog) | `task accept` · only WIP: `task accept -- --godog.tags=@wip` · one driver: `task accept -- -run 'TestFeatures/memory'` |
 | Browser e2e (playwright-bdd) | `task e2e` (builds the SPA and starts the Go server itself) |
+| Terminal journeys (Godog) | `task e2e:terminal` (builds `starter` and `server`, runs them in a pseudo-terminal; Unix only) · only WIP: `task e2e:terminal -- --godog.tags=@wip` |
 | Lint / format | `task lint` · `task fmt` |
 | Regenerate API code | `task gen` (after editing `api/openapi.yaml`) |
 | Everything CI runs | `task check` |
@@ -94,6 +95,7 @@ web/                             Vite + React + TS + Tailwind + TanStack Query; 
 mobile/android                   Wails' generated Gradle project for the Android app (see docs/mobile.md)
 features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, http, desktop and mobile drivers (`@desktop` and `@mobile` scenarios run only on their own driver; `@workspaces` ones only on memory and jsonfile; `@plans` ones only on memory, jsonfile and http). `@server` ones (running the server, e.g. readiness) run only on the server driver, which runs nothing else
 web/e2e                          playwright-bdd browser journeys
+test/terminal                    Godog terminal journeys: the built CLI and TUI (and a server for --server) in a pseudo-terminal; term is the terminal helper (Unix only)
 test/packaging                   package check: builds the Linux packages and the Windows setup program and inspects them (build tag `packaging`, `task test:package`)
 ```
 
@@ -138,7 +140,8 @@ test/packaging                   package check: builds the Linux packages and th
 
 - Go: standard `testing`, table tests where useful, black-box `_test` packages by default. No assertion library.
 - Godog steps (`test/acceptance/steps.go`) are thin: they call the driving ports and assert. No business logic.
-- Gherkin in `features/` uses domain language and is UI-agnostic. `web/e2e/features/` holds only a few journeys that prove the wiring.
+- Gherkin in `features/` uses domain language and is UI-agnostic. `web/e2e/features/` (browser) and `test/terminal/features/` (CLI and TUI) hold only a few journeys that prove the wiring.
+- Terminal journeys run the built program as a user would, each scenario on its own computer: a temp `HOME`, no `STARTER_*` variables from your environment, and a server on memory storage when it needs one. Steps wait for what the screen shows (`term.WaitFor`) rather than pausing for a fixed time, and press keys by name (`term.Press`).
 - Web: Vitest + Testing Library, querying by role or label. Stub `fetch` rather than mocking modules.
 - E2E scenarios run in parallel against one server, so use unique names and don't assert on whole lists.
 

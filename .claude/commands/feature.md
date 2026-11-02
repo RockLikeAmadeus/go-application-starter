@@ -17,6 +17,7 @@ Follow these steps exactly, then STOP. Do **not** write production code.
    - Prefer `Scenario Outline` + `Examples` for rule variations.
    - Tag the new scenarios `@wip`.
    - Only add a browser journey under `web/e2e/features/` if the feature has user-visible UI wiring that the Godog layer cannot prove. Keep those few and thin.
+   - Likewise, only add a terminal journey under `test/terminal/features/` if the feature has CLI or TUI wiring the Godog layer cannot prove (options, output, exit status, keys). Keep those few and thin too.
 4. **Prove they fail.** Run `task accept -- --godog.tags=@wip` and confirm the new scenarios fail or are undefined for the *right* reason. Do not write step definitions that contain business logic.
 5. **Plan the inner loop.** Write a numbered TDD task list: the smallest sequence of unit-test-sized behaviours (domain → app/use case → ports → adapters → UI) that will turn the scenarios green. Each item should be a good argument for `/red`. If the feature adds a stored entity, or a new query on one, its data belongs to a workspace: plan the steps from the checklist in `docs/workspaces.md` (the entity's `WorkspaceID`, a port embedding `ports.WorkspaceRepository[T]`, `storagetest.RunWorkspaceIsolation` in each adapter, the fail-closed use-case test).
 6. **Save the plan.** Write `docs/wip/<feature-slug>.md` (see CLAUDE.md). It should contain:
