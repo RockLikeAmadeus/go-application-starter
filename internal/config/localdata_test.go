@@ -1,42 +1,42 @@
-package desktop_test
+package config_test
 
 import (
 	"errors"
 	"path/filepath"
 	"testing"
 
-	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/desktop"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
-func TestDataDirUsesStarterDataDirWhenSet(t *testing.T) {
+func TestLocalDataDirUsesStarterDataDirWhenSet(t *testing.T) {
 	env := envOf(map[string]string{"STARTER_DATA_DIR": "/srv/starter-data"})
 
-	got, err := desktop.DataDir(env, configDirAt("/home/someone/.config"))
+	got, err := config.LocalDataDir(env, configDirAt("/home/someone/.config"))
 	if err != nil {
-		t.Fatalf("DataDir: %v", err)
+		t.Fatalf("LocalDataDir: %v", err)
 	}
 	if want := "/srv/starter-data"; got != want {
-		t.Errorf("DataDir = %q, want %q", got, want)
+		t.Errorf("LocalDataDir = %q, want %q", got, want)
 	}
 }
 
-func TestDataDirFallsBackToUserConfigDir(t *testing.T) {
-	got, err := desktop.DataDir(envOf(nil), configDirAt("/home/someone/.config"))
+func TestLocalDataDirFallsBackToUserConfigDir(t *testing.T) {
+	got, err := config.LocalDataDir(envOf(nil), configDirAt("/home/someone/.config"))
 	if err != nil {
-		t.Fatalf("DataDir: %v", err)
+		t.Fatalf("LocalDataDir: %v", err)
 	}
 	if want := filepath.Join("/home/someone/.config", "starter"); got != want {
-		t.Errorf("DataDir = %q, want %q", got, want)
+		t.Errorf("LocalDataDir = %q, want %q", got, want)
 	}
 }
 
-func TestDataDirReturnsTheUserConfigDirError(t *testing.T) {
+func TestLocalDataDirReturnsTheUserConfigDirError(t *testing.T) {
 	errNoHome := errors.New("neither $XDG_CONFIG_HOME nor $HOME are defined")
 	userConfigDir := func() (string, error) { return "", errNoHome }
 
-	_, err := desktop.DataDir(envOf(nil), userConfigDir)
+	_, err := config.LocalDataDir(envOf(nil), userConfigDir)
 	if !errors.Is(err, errNoHome) {
-		t.Errorf("DataDir error = %v, want %v", err, errNoHome)
+		t.Errorf("LocalDataDir error = %v, want %v", err, errNoHome)
 	}
 }
 

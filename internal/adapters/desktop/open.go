@@ -1,3 +1,6 @@
+// Package desktop wires the desktop app: it picks the data folder and opens
+// the core behind the same HTTP handler the server uses. It has no Wails
+// dependency, so it is unit-testable; cmd/desktop only adds the window.
 package desktop
 
 import (
@@ -19,13 +22,14 @@ type App struct {
 	core *bootstrap.App
 }
 
-// Open opens the desktop app's data folder (see DataDir: STARTER_DATA_DIR,
-// else the user's settings folder) and wires the core behind the server's
-// HTTP handler. getenv reads the environment (os.Getenv in production) and
-// userConfigDir finds the user's settings folder (os.UserConfigDir on the
-// desktop). webAssets is the built web app (web.Assets() in production).
+// Open opens the desktop app's data folder (config.LocalDataDir:
+// STARTER_DATA_DIR, else the user's settings folder) and wires the core
+// behind the server's HTTP handler. getenv reads the environment (os.Getenv
+// in production) and userConfigDir finds the user's settings folder
+// (os.UserConfigDir on the desktop). webAssets is the built web app
+// (web.Assets() in production).
 func Open(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS) (*App, error) {
-	dir, err := DataDir(getenv, userConfigDir)
+	dir, err := config.LocalDataDir(getenv, userConfigDir)
 	if err != nil {
 		return nil, err
 	}

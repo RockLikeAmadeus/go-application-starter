@@ -52,7 +52,7 @@ Because of the lock, the CLI can't open the folder a running server or desktop a
 
 ## The desktop app
 
-The desktop app (`cmd/desktop`) always uses `jsonfile`. Its data folder is `STARTER_DATA_DIR` when set, and otherwise `starter` inside the user's settings folder (Go's `os.UserConfigDir`; see `internal/adapters/desktop/datadir.go`):
+The desktop app (`cmd/desktop`) always uses `jsonfile`. Its data folder is `STARTER_DATA_DIR` when set, and otherwise `starter` inside the user's settings folder (Go's `os.UserConfigDir`; see `internal/config/localdata.go`):
 
 | OS | Data folder |
 |---|---|

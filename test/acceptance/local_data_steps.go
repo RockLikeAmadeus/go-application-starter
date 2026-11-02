@@ -11,8 +11,8 @@ import (
 	"github.com/cucumber/godog"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli"
-	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/desktop"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
 // registerLocalDataSteps binds the steps of features/local-data.feature,
@@ -51,7 +51,7 @@ func (w *world) itNamesTheDesktopAppsDataFolder() error {
 	if w.local == nil {
 		return errNoLocalComputer
 	}
-	want, err := desktop.DataDir(w.local.getenv, w.local.userConfigDir)
+	want, err := config.LocalDataDir(w.local.getenv, w.local.userConfigDir)
 	if err != nil {
 		return err
 	}
