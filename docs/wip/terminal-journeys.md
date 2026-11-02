@@ -19,7 +19,11 @@
 - **Shown failing (2026-11-02):** all 9 scenarios undefined (31 steps), since no steps exist yet. `task accept`, `task test` and `task lint` are unaffected. `task test:init` fails until the journeys pass: its scenarios run `go test ./internal/... ./test/...` on the generated project, which includes `test/terminal` (as any feature's failing `@wip` scenarios in `test/acceptance` would). With `--remove-sample` it will also need task 12's `SampleFiles` entries.
 
 ## Tasks
-1. [ ] `term`: `Start` runs a program in a pseudo-terminal (80×24) and `Screen()` shows what it has printed (adds `creack/pty`, `charmbracelet/x/vt`). First red: `sh -c 'printf hello'` → the screen shows "hello".
+1. [x] `term`: `Start` runs a program in a pseudo-terminal (80×24) and `Screen()` shows what it has printed (adds `creack/pty`, `charmbracelet/x/vt`). First red: `sh -c 'printf hello'` → the screen shows "hello".
+   - Red: `TestScreenShowsWhatTheProgramPrinted` (`test/terminal/term/term_test.go`) polls `Screen()` for 5 s; it failed with an empty screen.
+   - Green: `Start(*exec.Cmd)` (an `*exec.Cmd`, so the runner can set the scenario's `HOME` and env) runs it with `pty.StartWithSize`; a goroutine copies the pty's output into a `vt.Emulator` under the `Terminal`'s own mutex (`vt.SafeEmulator` doesn't guard `String()`). `Screen()` is `String()` under that mutex; `Close()` closes the pty.
+   - Refactor: the size is named once (`cols`, `rows`); the copy loop is `showOutput`; `Close`'s doc no longer claims it stops the program. Journeys: still 9 undefined (no steps yet, as expected).
+   - Left for later tasks: the emulator's input side (`vt.Emulator.Read`, an unbuffered pipe) is unread, so a program that asks the terminal something (Bubble Tea does) blocks the emulator's `Write`, and the copy loop with it, while holding the lock. Task 3 must forward it to the pty. `Close()` doesn't stop or wait for the program (task 4). `test/terminal/term` isn't in `task test:go` yet: add `./test/terminal/term/` there in task 12 (it's fast, and a unit test).
 2. [ ] `term`: `WaitFor(text, timeout)` returns once the screen shows text; on timeout, its error includes the screen as it was.
 3. [ ] `term`: `Type(text)` and `Press(key)` (`enter`, `down`, `up`, `j`, `k`, `q`, …) send keys as a terminal would, through the emulator's encoding.
 4. [ ] `term`: `Wait()` returns the program's exit status; `AltScreen()` says whether the terminal is still on the alternate screen.
