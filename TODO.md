@@ -42,6 +42,7 @@ Work through them one at a time (each usually starts with `/feature`), tick them
   - structured `slog` logs with a request ID on every request;
   - a `/metrics` endpoint;
   - optional OpenTelemetry tracing.
+- [ ] **Automatic periodic data backups?**
 - [ ] **Security basics:**
   - security headers and a CSP on the server;
   - request size limits and rate limiting on the API;
