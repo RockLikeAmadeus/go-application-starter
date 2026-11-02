@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -48,4 +49,23 @@ func envOf(vars map[string]string) func(string) string {
 // configDirAt stands in for os.UserConfigDir, always finding dir.
 func configDirAt(dir string) func() (string, error) {
 	return func() (string, error) { return dir, nil }
+}
+
+func TestLocalConfigFileIsConfigTomlInTheAppsSettingsFolder(t *testing.T) {
+	settings := t.TempDir()
+	want := filepath.Join(settings, "starter", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(want), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(want, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := config.LocalConfigFile(config.Env{Getenv: envOf(nil), UserConfigDir: configDirAt(settings)})
+	if err != nil {
+		t.Fatalf("LocalConfigFile: %v", err)
+	}
+	if got != want {
+		t.Errorf("LocalConfigFile = %q, want %q", got, want)
+	}
 }

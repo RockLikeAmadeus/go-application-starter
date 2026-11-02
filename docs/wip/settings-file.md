@@ -37,7 +37,12 @@
    - Refactor: reading and checking the file moved into `readSettingsFile(path)`, with the keys in `settingKeys`. Left: the six keys also appear in `Load`'s lookups; task 10 (sources) will want one table of settings anyway, so merging them waits for it. `@wip` progress unchanged (nothing passes a file to `Load` until task 8).
 5. [x] `config`: bad TOML fails, naming the file.
    - Red: `TestASettingsFileThatIsntTOMLFailsNamingTheFile` (an unterminated string) passed straight away: task 2 already wraps koanf's read error as `read the settings file <path>: …`. Kept as a guard (chosen 2026-11-02) for SPEC §4.12's rule. No green or refactor.
-6. [ ] `config.LocalConfigFile(env)`: `STARTER_CONFIG_FILE`, else `<settings folder>/starter/config.toml`; a missing default file means no file, a missing named file is an error.
+6. [x] 6a. `config.LocalConfigFile(env)` is `<settings folder>/starter/config.toml`.
+   - Red: `Env` gained `UserConfigDir` and `LocalConfigFile` a stub returning `""`, so the test compiled. `TestLocalConfigFileIsConfigTomlInTheAppsSettingsFolder` failed with `LocalConfigFile = "", want "<settings>/starter/config.toml"`.
+   - Green: it joins `env.UserConfigDir()` with `starter/config.toml` (no existence check yet: 6c).
+   - Refactor: doc comment; the app's folder name is `appFolder`, shared with `LocalDataDir`. Left: wrapping `UserConfigDir`'s error like `LocalDataDir` does ("find the data folder: …"): no test asks for it yet, and 6c touches the same lines.
+   6b. [ ] `STARTER_CONFIG_FILE` names another settings file, which `Load` then requires (a missing named file fails, naming it).
+   6c. [ ] When the default settings file doesn't exist, there is none (`""`), so `Load` uses the environment and defaults only.
 7. [ ] `config.LocalDataDir` uses the loaded `data_dir` (from the file or env) before the settings folder.
 8. [ ] CLI: `NewRootCmd` takes `config.Env` instead of `localDataDir`; commands load the local settings file. Update `cmd/starter`, the test helpers and `runCommandLine`. Scenarios "chooses the data folder" and "doesn't know stops it" should pass.
 9. [ ] CLI: `--config` names the settings file for one command.
@@ -50,6 +55,7 @@
 16. [ ] Finish: `task check`, `task test:init`, `task test:rename` (the path contains the slug), by hand (`starter info` with and without a file; the desktop app with `data_dir` set; `task dev` unaffected), remove `@wip`, tick the TODO item, delete this file.
 
 ## Changes to the plan
+- 2026-11-02, task 6: split into 6a (the default path), 6b (`STARTER_CONFIG_FILE`) and 6c (a missing default file), one test each.
 - 2026-11-02, task 5: passed straight away (task 2's error wrapping); kept as a guard.
 - 2026-11-02, task 2: the simplest green (env, else file, else default per setting) already makes env override the file, so task 3's test will probably pass straight away; decide then whether to keep it as a guard. It did; kept as a guard.
 - 2026-11-02, task 2: values aren't unmarshalled into `Config` (the plan said so); a lookup per setting is simpler.

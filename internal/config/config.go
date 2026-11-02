@@ -38,9 +38,11 @@ type Config struct {
 }
 
 // Env is the computer the app runs on, as configuration sees it. Getenv
-// reads the environment (os.Getenv in production).
+// reads the environment (os.Getenv in production) and UserConfigDir finds
+// the user's settings folder (os.UserConfigDir in production).
 type Env struct {
-	Getenv func(string) string
+	Getenv        func(string) string
+	UserConfigDir func() (string, error)
 }
 
 // Load reads the configuration and validates it. Each setting comes from

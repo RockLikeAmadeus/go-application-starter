@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 )
 
+// appFolder is the app's folder in the user's settings folder.
+const appFolder = "starter"
+
 // LocalDataDir returns the local edition's data folder on this computer,
 // which the desktop app, the CLI and the TUI share: STARTER_DATA_DIR when set,
 // else the app's folder in the user's settings folder. getenv reads the
@@ -18,5 +21,16 @@ func LocalDataDir(getenv func(string) string, userConfigDir func() (string, erro
 	if err != nil {
 		return "", fmt.Errorf("find the data folder: %w", err)
 	}
-	return filepath.Join(configDir, "starter"), nil
+	return filepath.Join(configDir, appFolder), nil
+}
+
+// LocalConfigFile returns the local edition's settings file on this
+// computer, which the desktop app, the CLI and the TUI share: config.toml in
+// the app's folder in the user's settings folder.
+func LocalConfigFile(env Env) (string, error) {
+	configDir, err := env.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(configDir, appFolder, "config.toml"), nil
 }
