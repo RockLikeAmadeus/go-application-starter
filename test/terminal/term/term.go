@@ -97,14 +97,19 @@ func (t *Terminal) Type(text string) {
 
 // Press sends a key, as the terminal would encode it: one of namedKeys, or a
 // single character such as "j" or "q".
-func (t *Terminal) Press(key string) {
+func (t *Terminal) Press(key string) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	code, ok := namedKeys[key]
 	if !ok {
-		code = []rune(key)[0]
+		chars := []rune(key)
+		if len(chars) != 1 {
+			return fmt.Errorf("unknown key %q: use one of namedKeys or a single character", key)
+		}
+		code = chars[0]
 	}
 	t.emu.SendKey(vt.KeyPressEvent{Code: code})
+	return nil
 }
 
 // Close frees the terminal.

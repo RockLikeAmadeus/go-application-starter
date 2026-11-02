@@ -47,7 +47,9 @@ func TestTypedTextAndEnterReachTheProgram(t *testing.T) {
 	tm := start(t, `read line; printf 'got:%s' "$line"; sleep 5`)
 
 	tm.Type("hi")
-	tm.Press("enter")
+	if err := tm.Press("enter"); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := tm.WaitFor("got:hi", 2*time.Second); err != nil {
 		t.Fatal(err)
@@ -74,11 +76,25 @@ func TestPressSendsTheKeyAsATerminalWould(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			tm.Press(tt.key)
+			if err := tm.Press(tt.key); err != nil {
+				t.Fatal(err)
+			}
 
 			if err := tm.WaitFor(tt.bytes, 2*time.Second); err != nil {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestPressFailsOnAKeyItDoesNotKnow(t *testing.T) {
+	tm := start(t, "sleep 5")
+
+	err := tm.Press("pgdn")
+	if err == nil {
+		t.Fatal(`Press("pgdn") returned no error`)
+	}
+	if !strings.Contains(err.Error(), `"pgdn"`) {
+		t.Errorf("error %q doesn't name the key", err)
 	}
 }
