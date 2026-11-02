@@ -36,6 +36,23 @@ func TestNewEmbedded_IsOnTheLocalPlan(t *testing.T) {
 	}
 }
 
+// jsonfile storage is ready only while its data folder can be used.
+func TestNewEmbedded_OnJSONFileIsNotReadyOnceTheDataFolderIsRemoved(t *testing.T) {
+	dir := t.TempDir()
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	if err := os.RemoveAll(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := a.Ready(t.Context()); err == nil {
+		t.Error("Ready error = nil, want an error once the data folder is gone")
+	}
+}
+
 // A build whose local plan isn't in the plans file fails at start, naming
 // the plan, rather than on the first request.
 func TestNewEmbedded_RefusesALocalPlanThePlansFileDoesntHave(t *testing.T) {

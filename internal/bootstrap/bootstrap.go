@@ -36,6 +36,7 @@ type App struct {
 	// sample:end
 	Entitlements ports.EntitlementsService
 	close        func() error
+	ready        func(context.Context) error
 }
 
 // Close releases resources such as storage locks.
@@ -44,6 +45,15 @@ func (a *App) Close() error {
 		return nil
 	}
 	return a.close()
+}
+
+// Ready reports whether storage can be reached, for the server's /readyz.
+// Storage with nothing to check (memory) and a remote App are always ready.
+func (a *App) Ready(ctx context.Context) error {
+	if a.ready == nil {
+		return nil
+	}
+	return a.ready(ctx)
 }
 
 // NewEmbedded wires the core in-process with the configured storage adapter.
@@ -63,6 +73,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 			return nil, err
 		}
 		a.close = store.Close
+		a.ready = store.Ready
 		// sample:start
 		items = jsonfile.NewItemRepository(store)
 		// sample:end
