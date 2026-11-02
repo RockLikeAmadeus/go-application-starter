@@ -25,7 +25,10 @@
    - Red: `config.Env{Getenv}` and `Load(env Env)` added, unused, so the test compiled (`cmd/server` and the CLI's `openApp` pass `config.Env{Getenv: os.Getenv}`). `TestLoadReadsTheEnvironmentItIsGiven` failed with `Storage = "jsonfile", want "memory"`.
    - Green: `Load` reads every variable through `env.Getenv`; the `getenv` helper takes the lookup function; `internal/config` no longer imports `os`.
    - Refactor: doc comments on `Load` and `getenv`. `Env` gets `UserConfigDir` in task 6, when something needs it. The CLI still passes `os.Getenv` itself until task 8.
-2. [ ] `config`: values from a TOML settings file are used (koanf: file provider + TOML parser, unmarshalled into `Config`).
+2. [x] `config`: values from a TOML settings file are used (koanf: file provider + TOML parser, unmarshalled into `Config`).
+   - Red: `Load(env, settingsFile string)` got its new parameter (unused; callers pass `""`). `TestLoadUsesTheSettingsFile` (writes `storage` and `data_dir` to a temp `config.toml`) failed with `Storage, DataDir = "jsonfile", "./data", want "memory", "/srv/work-data"`.
+   - Green: koanf v2.4.1 (`providers/file` v1.2.1, `parsers/toml/v2` v2.2.2; `go mod tidy` also bumped the indirect `pelletier/go-toml/v2` to v2.4.3 and added `fsnotify`) loads the file; each setting is `getenv(env, STARTER_X, getenv(k.String, key, default))`. Not unmarshalled into `Config`: the per-setting fallback is simpler and already gives each setting one place (it will also suit sources, task 10). koanf's `String` formats a TOML number as text, so `port = 8081` works.
+   - Refactor: the package, `Config` field and `Load` doc comments name each setting's key in the file and the order (env, file, default).
 3. [ ] `config`: env vars override the settings file.
 4. [ ] `config`: an unknown key fails, naming the file and the key.
 5. [ ] `config`: bad TOML fails, naming the file.
@@ -42,3 +45,5 @@
 16. [ ] Finish: `task check`, `task test:init`, `task test:rename` (the path contains the slug), by hand (`starter info` with and without a file; the desktop app with `data_dir` set; `task dev` unaffected), remove `@wip`, tick the TODO item, delete this file.
 
 ## Changes to the plan
+- 2026-11-02, task 2: the simplest green (env, else file, else default per setting) already makes env override the file, so task 3's test will probably pass straight away; decide then whether to keep it as a guard.
+- 2026-11-02, task 2: values aren't unmarshalled into `Config` (the plan said so); a lookup per setting is simpler.
