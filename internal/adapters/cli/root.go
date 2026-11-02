@@ -30,9 +30,10 @@ var Version = "dev"
 // --data-dir names another.
 func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command {
 	var (
-		serverURL string
-		dataDir   string
-		storage   string
+		serverURL  string
+		dataDir    string
+		storage    string
+		configFile string
 	)
 
 	root := &cobra.Command{
@@ -45,12 +46,13 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 	root.SetOut(out)
 	root.PersistentFlags().StringVar(&serverURL, "server", "", "use a remote server at this URL instead of the embedded core (env STARTER_SERVER_URL)")
 	root.PersistentFlags().StringVar(&dataDir, "data-dir", "", "data folder for embedded mode (default: the local data folder the desktop app uses; env STARTER_DATA_DIR)")
+	root.PersistentFlags().StringVar(&configFile, "config", "", "settings file to read (default: config.toml in the app's settings folder; env STARTER_CONFIG_FILE)")
 	root.PersistentFlags().StringVar(&storage, "storage", "", "storage adapter for embedded mode: jsonfile|memory (env STARTER_STORAGE)")
 
 	// openApp loads config (the local settings file, then the environment),
 	// applies flag overrides and wires the app.
 	openApp := func() (*bootstrap.App, config.Config, error) {
-		settingsFile, err := config.LocalConfigFile(env)
+		settingsFile, err := settingsFileFor(configFile, env)
 		if err != nil {
 			return nil, config.Config{}, err
 		}
@@ -88,6 +90,15 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 	root.AddCommand(newItemCmd(openApp))
 	// sample:end
 	return root
+}
+
+// settingsFileFor returns the settings file a command reads: the one
+// --config names, else the local one (config.LocalConfigFile).
+func settingsFileFor(configFile string, env config.Env) (string, error) {
+	if configFile != "" {
+		return configFile, nil
+	}
+	return config.LocalConfigFile(env)
 }
 
 // keepsDataInAFolder reports whether cfg keeps the data in a data folder on

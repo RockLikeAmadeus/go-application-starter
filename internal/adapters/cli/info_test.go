@@ -139,13 +139,7 @@ func TestInfoWithMemoryStorageSaysTheDataIsNotSaved(t *testing.T) {
 func TestCommandsUseTheLocalSettingsFile(t *testing.T) {
 	settings := t.TempDir()
 	data := filepath.Join(t.TempDir(), "work-data")
-	file := filepath.Join(settings, "starter", "config.toml")
-	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(file, []byte("data_dir = "+strconv.Quote(data)+"\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	writeSettings(t, filepath.Join(settings, "starter", "config.toml"), "data_dir = "+strconv.Quote(data))
 
 	out, err := runCLIWith(t, computer(settings, nil), "info")
 	if err != nil {
@@ -153,5 +147,31 @@ func TestCommandsUseTheLocalSettingsFile(t *testing.T) {
 	}
 	if !strings.Contains(out, "Data folder: "+data) {
 		t.Errorf("info output doesn't name the settings file's data folder %s:\n%s", data, out)
+	}
+}
+
+func TestConfigNamesTheSettingsFileForOneCommand(t *testing.T) {
+	data := filepath.Join(t.TempDir(), "work-data")
+	file := filepath.Join(t.TempDir(), "work.toml")
+	writeSettings(t, file, "data_dir = "+strconv.Quote(data))
+
+	out, err := runCLI(t, "--config", file, "info")
+	if err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	if !strings.Contains(out, "Data folder: "+data) {
+		t.Errorf("info output doesn't name the --config file's data folder %s:\n%s", data, out)
+	}
+}
+
+// writeSettings writes a settings file at path with content, creating its
+// folder.
+func writeSettings(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content+"\n"), 0o600); err != nil {
+		t.Fatal(err)
 	}
 }
