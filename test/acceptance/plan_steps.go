@@ -14,7 +14,6 @@ import (
 // which only the drivers whose plans the tests set run.
 func (w *world) registerPlanSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^the "([^"]*)" plan allows (\d+) items, and (blocks new ones|makes them read only) when over$`, w.thePlanAllowsItems)
-	sc.Step(`^the "([^"]*)" plan has no item limit$`, w.thePlanHasNoItemLimit)
 	sc.Step(`^its item limit is (\d+), which (blocks new ones|makes them read only) when over$`, w.itsItemLimitIs)
 	sc.Step(`^I am told the limit of (\d+) items is reached$`, w.iAmToldTheLimitIsReached)
 	sc.Step(`^I am told items are read only while over the limit of (\d+)$`, w.iAmToldItemsAreReadOnly)
@@ -35,14 +34,6 @@ func (w *world) thePlanAllowsItems(plan string, max int, behaviour string) error
 		return err
 	}
 	w.plans.define(domain.Entitlements{Plan: plan, Limits: map[string]domain.Limit{"items": limit}})
-	return nil
-}
-
-func (w *world) thePlanHasNoItemLimit(plan string) error {
-	if w.plans == nil {
-		return errFixedPlans
-	}
-	w.plans.define(domain.Entitlements{Plan: plan, Limits: map[string]domain.Limit{}})
 	return nil
 }
 

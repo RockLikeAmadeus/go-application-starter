@@ -45,7 +45,7 @@ Feature: Plans and limits
       | makes them read only      |
 
   Scenario: A plan without an item limit allows any number of items
-    Given the "pro" plan has no item limit
+    Given the "pro" plan has no limits
     And my workspace is on the "pro" plan
     And an item named "First"
     And an item named "Second"
@@ -58,7 +58,7 @@ Feature: Plans and limits
       | Fourth |
 
   Scenario: Over a limit that blocks new ones, items can still be changed and deleted
-    Given the "pro" plan has no item limit
+    Given the "pro" plan has no limits
     And the "free" plan allows 3 items, and blocks new ones when over
     And my workspace is on the "pro" plan
     And an item named "First"
@@ -74,7 +74,7 @@ Feature: Plans and limits
       | Fourth  |
 
   Scenario: Over a limit that makes them read only, items can't be changed
-    Given the "pro" plan has no item limit
+    Given the "pro" plan has no limits
     And the "free" plan allows 3 items, and makes them read only when over
     And my workspace is on the "pro" plan
     And an item named "First"
@@ -91,7 +91,7 @@ Feature: Plans and limits
       | Fourth |
 
   Scenario: Over a limit that makes them read only, items can still be deleted
-    Given the "pro" plan has no item limit
+    Given the "pro" plan has no limits
     And the "free" plan allows 3 items, and makes them read only when over
     And my workspace is on the "pro" plan
     And an item named "First"
@@ -106,7 +106,7 @@ Feature: Plans and limits
       | Third  |
 
   Scenario: Back within a read-only limit, items can be changed again
-    Given the "pro" plan has no item limit
+    Given the "pro" plan has no limits
     And the "free" plan allows 3 items, and makes them read only when over
     And my workspace is on the "pro" plan
     And an item named "First"
