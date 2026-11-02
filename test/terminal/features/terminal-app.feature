@@ -3,7 +3,6 @@ Feature: The terminal app
   # work it with the keyboard, as a user would. What each screen does is
   # specified in /features and by the TUI's unit tests.
 
-  @wip
   Scenario: Open and quit the terminal app
     When I open the terminal app
     Then it says how to quit
