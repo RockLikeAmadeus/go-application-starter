@@ -83,16 +83,28 @@ func (t *Terminal) WaitFor(text string, timeout time.Duration) error {
 	return nil
 }
 
+// namedKeys are the keys Press knows by name.
+var namedKeys = map[string]rune{
+	"enter": vt.KeyEnter,
+	"down":  vt.KeyDown,
+	"up":    vt.KeyUp,
+}
+
 // Type sends text as if the user typed it.
 func (t *Terminal) Type(text string) {
 	t.emu.SendText(text)
 }
 
-// Press sends a key by name, as the terminal would encode it: "enter".
+// Press sends a key, as the terminal would encode it: one of namedKeys, or a
+// single character such as "j" or "q".
 func (t *Terminal) Press(key string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.emu.SendKey(vt.KeyPressEvent{Code: vt.KeyEnter})
+	code, ok := namedKeys[key]
+	if !ok {
+		code = []rune(key)[0]
+	}
+	t.emu.SendKey(vt.KeyPressEvent{Code: code})
 }
 
 // Close frees the terminal.

@@ -1,6 +1,7 @@
 package term_test
 
 import (
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
@@ -50,5 +51,34 @@ func TestTypedTextAndEnterReachTheProgram(t *testing.T) {
 
 	if err := tm.WaitFor("got:hi", 2*time.Second); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPressSendsTheKeyAsATerminalWould(t *testing.T) {
+	tests := []struct {
+		key   string
+		bytes string // as od prints them
+	}{
+		{"enter", "0d"},
+		{"down", "1b 5b 42"},
+		{"up", "1b 5b 41"},
+		{"j", "6a"},
+		{"k", "6b"},
+		{"q", "71"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.key, func(t *testing.T) {
+			n := len(strings.Fields(tt.bytes))
+			tm := start(t, fmt.Sprintf("stty raw -echo; printf ready; head -c %d | od -An -tx1; sleep 5", n))
+			if err := tm.WaitFor("ready", 2*time.Second); err != nil {
+				t.Fatal(err)
+			}
+
+			tm.Press(tt.key)
+
+			if err := tm.WaitFor(tt.bytes, 2*time.Second); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }

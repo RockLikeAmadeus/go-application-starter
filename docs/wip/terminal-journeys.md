@@ -32,7 +32,11 @@
    - [x] 3a. Red: `TestTypedTextAndEnterReachTheProgram` (`read line; printf 'got:%s' "$line"`; type "hi", press Enter, wait for "got:hi"). It failed with an empty screen (no-op stubs).
      Green: a goroutine copies the emulator's input side (`emu.Read`) to the pty, which also answers programs that ask the terminal something (task 1's left-over). `Type` is `emu.SendText`; `Press` sends `vt.KeyEnter` whatever the name, under the lock (`SendKey` reads the emulator's modes).
      Refactor: the forwarding goroutine is the `sendInput` method, beside `showOutput`, with why it must run (the emulator blocks until its answers are read). Left: `Press`'s hard-coded Enter (3b adds the names); `Close` leaves `sendInput` blocked on the emulator, so task 4 should close the emulator too when it makes `Close` stop the program. Journeys: still 9 undefined.
-   - [ ] 3b. `Press` sends `down`, `up`, `j`, `k`, `q` (and any other key the journeys use) by name, through `emu.SendKey`, so the cursor-keys mode is respected; an unknown name fails loudly.
+   - [x] 3b. `Press` sends `down`, `up`, `j`, `k`, `q` (and any other key the journeys use) by name, through `emu.SendKey`, so the cursor-keys mode is respected.
+     Red: `TestPressSendsTheKeyAsATerminalWould`, a table over `enter`, `down`, `up`, `j`, `k`, `q`: a raw-mode shell (`stty raw -echo`) prints the bytes it gets with `od`. All but `enter` failed, getting `0d` (Enter) from the hard-coded `Press`.
+     Green: `Press` looks the name up in a map of named keys (`enter`, `down`, `up`) and otherwise sends the name's first character as the key.
+     Refactor: the map is the package-level `namedKeys`, and `Press`'s doc says it takes one of those or a single character. Left: the first-character fallback, which 3c replaces. Journeys: still 9 undefined.
+   - [ ] 3c. `Press` with a name it doesn't know (e.g. `"pgdn"`, or a multi-character typo) fails loudly instead of sending its first character. Added 2026-11-02: 3b's single test covers the known names; this is a separate behaviour.
 4. [ ] `term`: `Wait()` returns the program's exit status; `AltScreen()` says whether the terminal is still on the alternate screen.
 5. [ ] Runner: build `starter` once (in `TestMain`), a fresh computer per scenario; scenario "The command line says where my data is" passes (`--data-dir`).
 6. [ ] Template: start the built server on a free port with memory storage and wait for `/readyz`; scenario "The command line works on a server's data" passes.
