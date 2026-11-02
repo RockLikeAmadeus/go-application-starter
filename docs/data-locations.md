@@ -1,0 +1,93 @@
+# Where the data lives
+
+This page lists where each part of the app keeps its data: the user's records, and the few smaller things kept beside them. Each depends on how the app is run and on which operating system.
+
+Names on this page are the project's own: the slug `starter`, the `STARTER_` environment variables and the app ID `com.example.starter`. `task init` and `task rename` keep them up to date (see [docs/template.md](template.md) and [docs/rename.md](rename.md)).
+
+## The rules behind every case
+
+- **One data folder per copy.** The core keeps its data through a storage adapter, which `internal/bootstrap` picks. With `jsonfile` (the default), the data is plain JSON in a **data folder**: one file per kind of record (the sample's is `items.json`), plus a `.lock` file (see [ADR 3](adr/0003-plain-text-storage.md)). With `memory`, nothing is written: the data is lost when the process ends.
+- **`STARTER_DATA_DIR` always wins.** When it's set, every front end uses that folder. The CLI's `--data-dir` flag does the same for one command.
+- **One process per folder.** While a copy has a data folder open, it holds a lock on `.lock`. A second process that opens the same folder fails fast with "data directory is locked". The lock uses `flock`, so it works on Linux and macOS. On Windows nothing is locked, so don't open one folder from two copies there.
+- **Temporary files.** Saving writes a `<file>.*.tmp` beside each JSON file and renames it over the file. The server's readiness check writes and removes `.ready-*.tmp`. Only a crash at the wrong moment leaves either one behind.
+- **Nothing syncs.** Each copy has its own data. Copying a data folder (or putting it in a cloud-synced folder) works, but don't let two devices use it at the same time ([ADR 5](adr/0005-hosted-and-local-editions.md)).
+- **Workspaces share the files.** Each record carries its `workspaceId`. A hosted server keeps every workspace's records in the same files, and the local edition's one workspace is just the only ID in them.
+
+## At a glance
+
+| How it runs | Where the data is | Chosen by |
+|---|---|---|
+| Server (`bin/server`, `task run:server`) | `./data`, relative to the folder it was started in | `STARTER_DATA_DIR`, `STARTER_STORAGE` |
+| `task dev` | `./data` in the repository (gitignored) | as for the server |
+| Docker (`task docker:up`) | `/data` in the container, on the named volume `app-data` | `Dockerfile`, `docker-compose.yml` |
+| Fly.io (staging, production) | `/data`, on the Fly volume `app_data` | `fly.staging.toml`, `fly.production.toml` |
+| CLI and TUI, on their own | `./data`, relative to the folder they're run in | `--data-dir`, `STARTER_DATA_DIR`, `--storage` |
+| CLI and TUI with `--server` | On that server: nothing is stored locally | `--server`, `STARTER_SERVER_URL` |
+| Desktop app, Linux | `~/.config/starter` (`$XDG_CONFIG_HOME/starter`) | `STARTER_DATA_DIR` |
+| Desktop app, Windows | `%AppData%\starter` (`C:\Users\<you>\AppData\Roaming\starter`) | `STARTER_DATA_DIR` |
+| Desktop app, macOS (not tried yet) | `~/Library/Application Support/starter` | `STARTER_DATA_DIR` |
+| Android app | `/data/data/com.example.starter/files/starter`, the app's private storage | fixed |
+| Web app in a browser | On the server it was loaded from | — |
+| Browser e2e tests (`task e2e`) | In memory, never on disk | `STARTER_STORAGE=memory` in `web/playwright.config.ts` |
+| Acceptance tests (`task accept`) | In memory, or a throwaway temp folder per scenario | `test/acceptance` |
+
+## The server
+
+`cmd/server` reads its settings from the environment (`internal/config`):
+
+- `STARTER_STORAGE` is `jsonfile` (the default) or `memory`.
+- `STARTER_DATA_DIR` is the data folder, `./data` by default. That path is relative to the process's working folder, not to the binary, so start the server from the same place each time, or set an absolute path.
+
+**In Docker**, the image sets `STARTER_STORAGE=jsonfile` and `STARTER_DATA_DIR=/data`, and declares `/data` a volume. `docker-compose.yml` mounts the named volume `app-data` there, so the data survives `docker compose down` and rebuilds. Docker prefixes the volume's name with the Compose project's (`docker volume ls`), and `docker compose down -v` deletes it.
+
+**On Fly.io**, both apps mount the Fly volume `app_data` at `/data`. Because of the lock, run one machine per volume.
+
+**Hosted edition (planned):** one server holds every workspace's data, in the same files, each record tagged with its workspace. A SQL adapter (planned) will move this into a database. The data folder then gives way to a connection string.
+
+## The CLI and the TUI
+
+On their own (embedded), the CLI and TUI run the core in-process and open the data folder themselves, with the server's settings. The default is again `./data` **in the folder you run the command from**. Running the CLI in two different folders shows two different sets of data. Set `STARTER_DATA_DIR` (or pass `--data-dir`) to use one folder from anywhere.
+
+Because of the lock, the CLI can't open the folder a running server or desktop app is using. Point it at the server instead: `starter --server http://localhost:8080 …`. With `--server` (or `STARTER_SERVER_URL`), the CLI and TUI store nothing locally.
+
+## The desktop app
+
+The desktop app (`cmd/desktop`) always uses `jsonfile`. Its data folder is `STARTER_DATA_DIR` when set, and otherwise `starter` inside the user's settings folder (Go's `os.UserConfigDir`; see `internal/adapters/desktop/datadir.go`):
+
+| OS | Data folder |
+|---|---|
+| Linux, including the AppImage | `$XDG_CONFIG_HOME/starter`, which is `~/.config/starter` when `XDG_CONFIG_HOME` isn't set |
+| Windows | `%AppData%\starter` |
+| macOS | `~/Library/Application Support/starter` |
+
+macOS is what Go's `os.UserConfigDir` returns there; the macOS app hasn't been built or tried yet.
+
+**Installing and uninstalling** never touch the data folder:
+- On Linux, the `.deb` and `.rpm` put the program in `/usr/bin/starter-desktop`, and the AppImage is one file wherever you keep it. Removing the package, or deleting the AppImage, leaves `~/.config/starter` alone.
+- On Windows, the setup program installs the program for the current user into `%LocalAppData%\Programs\Starter`. Uninstalling it leaves `%AppData%\starter` alone.
+
+**The web view's own data.** The window is a system web view, and it keeps its own data beside the app's: the chosen style and theme (local storage), plus caches. None of it is the user's records.
+
+| OS | Web view data | Removed on uninstall |
+|---|---|---|
+| Linux (WebKitGTK) | `~/.local/share/com.example.starter/` (local storage) and `~/.cache/com.example.starter/`, named after the app ID | No |
+| Windows (WebView2) | `%AppData%\starter-desktop.exe\` (named after the program) | Yes, by the uninstaller |
+| macOS (WKWebView) | Not checked yet | — |
+
+## The Android app
+
+The Android app (`cmd/mobile`) uses the desktop app's wiring, with the app's private storage in place of the settings folder: `/data/data/com.example.starter/files/starter`. Other apps can't read it, and neither can the user without root. A debug build can be inspected with `adb shell run-as com.example.starter ls files/starter` (see [docs/mobile.md](mobile.md)).
+
+- Updating the app (or `adb install -r`) keeps the data. Uninstalling it deletes the data, along with the WebView's own storage (the chosen style and theme).
+- The data belongs to the app ID. Changing `com.example.starter` after people have installed the app leaves their data behind in the old app.
+
+## The web app in a browser
+
+The SPA keeps no records itself: it reads and writes them through the server's API, so they live wherever that server keeps them (see above). The service worker caches only the built app, never `/api` ([docs/installable-app.md](installable-app.md)).
+
+The browser keeps two settings per site in local storage: `theme` and `style`. They belong to that browser and that site address, so another browser, a private window, or the same app on another address starts with the defaults. Clearing the site's data resets them, and leaves the records alone.
+
+## Other files the app reads
+
+- **The plans file.** The plans are built into the binary (`internal/adapters/plans/plans.jsonc`). `STARTER_PLANS_FILE` names a file to read instead. Nothing writes to it.
+- **Logs** go to standard output (`STARTER_LOG_FORMAT`), never to a file. In Docker or on Fly.io, the platform keeps them.

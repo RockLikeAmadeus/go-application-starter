@@ -72,7 +72,7 @@ task docker:up                   # production image locally on :8080
 task rename -- --name "New Name" # rebrand the project; --dry-run previews it (see docs/rename.md)
 ```
 
-Configuration is through environment variables (see `.env.example`): `STARTER_STORAGE` (`jsonfile` or `memory`), `STARTER_DATA_DIR`, `PORT`, `STARTER_LOG_FORMAT`, `STARTER_SERVER_URL`, and `STARTER_PLANS_FILE` (a plans file to use instead of the one built in, `internal/adapters/plans/plans.jsonc`).
+Configuration is through environment variables (see `.env.example`): `STARTER_STORAGE` (`jsonfile` or `memory`), `STARTER_DATA_DIR`, `PORT`, `STARTER_LOG_FORMAT`, `STARTER_SERVER_URL`, and `STARTER_PLANS_FILE` (a plans file to use instead of the one built in, `internal/adapters/plans/plans.jsonc`). Where each front end keeps its data, on each OS, is in [docs/data-locations.md](docs/data-locations.md).
 
 ## Development workflow (with Claude Code)
 
