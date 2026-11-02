@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -119,13 +120,7 @@ func TestOpenCreatesTheDataFolderUnderTheGivenSettingsFolder(t *testing.T) {
 func TestOpenUsesTheSettingsFilesDataFolder(t *testing.T) {
 	settings := t.TempDir()
 	data := filepath.Join(t.TempDir(), "work-data")
-	file := filepath.Join(settings, "starter", "config.toml")
-	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(file, []byte("data_dir = "+strconv.Quote(data)+"\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	writeSettings(t, settings, "data_dir = "+strconv.Quote(data))
 
 	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
 	if err != nil {
@@ -135,6 +130,24 @@ func TestOpenUsesTheSettingsFilesDataFolder(t *testing.T) {
 
 	if _, err := os.Stat(filepath.Join(data, ".lock")); err != nil {
 		t.Errorf("the settings file's data folder %s isn't in use: %v", data, err)
+	}
+}
+
+func TestOpenUsesTheSettingsFilesPlansFile(t *testing.T) {
+	settings := t.TempDir()
+	plans := filepath.Join(t.TempDir(), "plans.jsonc")
+	if err := os.WriteFile(plans, []byte(`{"plans": `), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	writeSettings(t, settings, "plans_file = "+strconv.Quote(plans))
+
+	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
+	if err == nil {
+		_ = app.Close()
+		t.Fatal("Open succeeded, want it to refuse the settings file's broken plans file")
+	}
+	if !strings.Contains(err.Error(), "plans file") {
+		t.Errorf("Open error = %v, want it to be about the plans file", err)
 	}
 }
 

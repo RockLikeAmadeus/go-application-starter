@@ -22,9 +22,10 @@ type App struct {
 	core *bootstrap.App
 }
 
-// Open opens the desktop app's data folder (config.LocalDataDir:
-// STARTER_DATA_DIR, else data_dir in the local settings file, else the
-// user's settings folder) and wires the core
+// Open loads the configuration from the local settings file and the
+// environment (config.Load), always with jsonfile storage, opens the desktop
+// app's data folder (config.LocalDataDir: STARTER_DATA_DIR, else data_dir in
+// the settings file, else the user's settings folder) and wires the core
 // behind the server's HTTP handler. getenv reads the environment (os.Getenv
 // in production) and userConfigDir finds the user's settings folder
 // (os.UserConfigDir on the desktop). webAssets is the built web app
@@ -35,11 +36,16 @@ func Open(getenv func(string) string, userConfigDir func() (string, error), webA
 	if err != nil {
 		return nil, err
 	}
-	dir, err := config.LocalDataDir(env, settingsFile)
+	cfg, err := config.Load(env, settingsFile)
 	if err != nil {
 		return nil, err
 	}
-	core, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
+	cfg.Storage = config.StorageJSONFile
+	cfg.DataDir, err = config.LocalDataDir(env, settingsFile)
+	if err != nil {
+		return nil, err
+	}
+	core, err := bootstrap.NewEmbedded(cfg)
 	if err != nil {
 		return nil, err
 	}
