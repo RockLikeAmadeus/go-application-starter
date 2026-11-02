@@ -41,10 +41,10 @@ Don't commit, and say why, when:
 
 Never pull, force-push or rewrite history. If the push is refused (for example, the remote has moved on), leave the commit in place and tell me.
 
-Then STOP after this one cycle, and show me:
+Then STOP after this one cycle, and show me, in this order:
 - the test, and the failure it showed before green;
 - the production change, in 1–3 lines;
 - what the refactor changed, or why nothing was worth changing;
-- the `@wip` scenarios' progress;
-- the commit and push (its hash and message), or why there wasn't one;
+- the checks: the finishing checks' results and the `@wip` scenarios' progress;
+- the commit and push: its hash and its full message, after the checks and before the next task (not only in an opening line), or why there wasn't one;
 - the next open task, as the suggested next `/iterate` (or `/red`).
