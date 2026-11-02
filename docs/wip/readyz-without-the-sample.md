@@ -43,7 +43,9 @@
 8. [x] cmd/server: pass `App.Ready` into `httpapi.Options` — `TestServerIsNotReadyOnceItsDataFolderIsRemoved` in the new `cmd/server/main_test.go` (package `main`, the first test under `cmd/`). Red stubbed `handlerOptions` to return empty `Options`: 200, want 503.
    - Green: `handlerOptions(application, log)` holds the options `run` built inline (the moved sample `Items` block, `Entitlements`, `Logger`, `WebAssets`) plus `Ready: application.Ready`, and `run` passes it to `httpapi.NewHandler`. Moving the options was part of green, not refactor, so that the test covers the server's real wiring.
    - Refactor: nothing worth changing. The acceptance server driver still repeats these options, because it can't import package `main`.
-9. [ ] desktop: `desktop.Open` passes `App.Ready` too — `open_test.go`: `/readyz` is 503 after the data folder is removed.
+9. [x] desktop: `desktop.Open` passes `App.Ready` too — `TestOpenIsNotReadyOnceTheDataFolderIsRemoved` in `open_test.go` (200, want 503 before green).
+   - Green: `Ready: core.Ready` in `desktop.Open`'s handler options. The Android app is built on `desktop.Open`, so it has the check as well; nothing else builds `httpapi.Options` outside tests and `cmd/server`.
+   - Refactor: nothing worth changing, one option in a list.
 10. [ ] Docs: `features/README.md`, the drivers comment in `test/acceptance/drivers.go` and CLAUDE.md's `features/ + test/acceptance` line name the `@server` tag and the server driver. CLAUDE.md's Architecture/Gotchas mention `Options.Ready` if useful.
 11. [ ] Finish: `task check`, `task test:init`, remove the `@wip` tags, tick the TODO.md item and delete this file.
 

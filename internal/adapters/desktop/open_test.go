@@ -50,6 +50,23 @@ func TestOpenServesNoServiceWorker(t *testing.T) {
 	}
 }
 
+// The desktop app serves the server's readiness probe too, and it asks the
+// data folder, so it isn't ready once that folder has gone.
+func TestOpenIsNotReadyOnceTheDataFolderIsRemoved(t *testing.T) {
+	dir := t.TempDir()
+	app := openAt(t, dir)
+	if err := os.RemoveAll(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	app.Handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/readyz", nil))
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("GET /readyz: status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
+	}
+}
+
 // The desktop app's icon is the web app's, which `pnpm icons` makes from
 // web/public/icon.svg. Opening on web/public itself checks that the icon Open
 // looks for is one that command makes.
