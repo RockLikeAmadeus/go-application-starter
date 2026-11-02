@@ -10,13 +10,15 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
-// runCLI executes the CLI with args, as cmd/starter wires it.
+// runCLI executes the CLI with args, as cmd/starter wires it. args choose
+// the data folder, so the local one is never looked up.
 func runCLI(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 	var out bytes.Buffer
-	cmd := cli.NewRootCmd(bootstrap.New, &out)
+	cmd := cli.NewRootCmd(bootstrap.New, noLocalDataDir(t), &out)
 	cmd.SetArgs(args)
 	err := cmd.ExecuteContext(context.Background())
 	return out.String(), err
@@ -55,5 +57,33 @@ func TestInfoNamesTheWorkspacesPlan(t *testing.T) {
 	}
 	if !strings.Contains(out, "Plan: "+bootstrap.LocalPlan) {
 		t.Errorf("info output doesn't name the plan %q:\n%s", bootstrap.LocalPlan, out)
+	}
+}
+
+// noLocalDataDir stands in for the local data folder in tests that choose
+// their own, failing the test if it is looked up.
+func noLocalDataDir(t *testing.T) func() (string, error) {
+	return func() (string, error) {
+		t.Error("the local data folder was looked up, though the test chose one")
+		return "", errors.New("no local data folder in this test")
+	}
+}
+
+func TestWithoutDataDirCommandsUseTheLocalDataFolder(t *testing.T) {
+	t.Setenv("STARTER_DATA_DIR", "")
+	local := t.TempDir()
+	var opened string
+	newApp := func(cfg config.Config) (*bootstrap.App, error) {
+		opened = cfg.DataDir
+		return bootstrap.New(cfg)
+	}
+	cmd := cli.NewRootCmd(newApp, func() (string, error) { return local, nil }, &bytes.Buffer{})
+	cmd.SetArgs([]string{"--storage", "jsonfile", "info"})
+
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	if opened != local {
+		t.Errorf("opened the data folder %q, want the local one %q", opened, local)
 	}
 }

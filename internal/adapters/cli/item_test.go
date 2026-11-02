@@ -17,7 +17,7 @@ import (
 func run(t *testing.T, dataDir string, args ...string) (string, error) {
 	t.Helper()
 	var out bytes.Buffer
-	cmd := cli.NewRootCmd(bootstrap.New, &out)
+	cmd := cli.NewRootCmd(bootstrap.New, noLocalDataDir(t), &out)
 	cmd.SetArgs(append([]string{"--data-dir", dataDir, "--storage", string(config.StorageJSONFile)}, args...))
 	err := cmd.ExecuteContext(context.Background())
 	return out.String(), err

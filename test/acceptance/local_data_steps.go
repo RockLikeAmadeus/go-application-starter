@@ -72,7 +72,8 @@ func (w *world) runCommandLine(ctx context.Context, args ...string) error {
 		return errNoLocalComputer
 	}
 	var out bytes.Buffer
-	cmd := cli.NewRootCmd(bootstrap.New, &out)
+	localDataDir := func() (string, error) { return config.LocalDataDir(w.local.getenv, w.local.userConfigDir) }
+	cmd := cli.NewRootCmd(bootstrap.New, localDataDir, &out)
 	cmd.SetArgs(args)
 	w.lastErr = cmd.ExecuteContext(ctx)
 	w.cliOut = out.String()
