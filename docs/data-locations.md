@@ -59,7 +59,7 @@ On their own (embedded), the CLI and TUI run the core in-process and open the da
 $ starter info
 Settings file: none
   storage = "jsonfile"  # built in
-  data_dir = "./data"  # built in
+  data_dir = "/home/you/.config/starter"  # built in
   port = 8080  # built in
   server_url = ""  # built in
   log_format = "text"  # built in
@@ -67,8 +67,6 @@ Settings file: none
 Data folder: /home/you/.config/starter
 Plan: local
 ```
-
-(`data_dir`'s built-in value is the server's; the line below it is the folder actually used.)
 
 With `--storage memory`, nothing is saved: `starter info` says the data is kept in memory, and no folder is looked up.
 

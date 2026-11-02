@@ -8,20 +8,17 @@ Feature: Keep settings in a settings file
   # which opens the desktop app on a temporary settings folder and runs the
   # command line beside it.
 
-  @wip
   Scenario: The settings file chooses the data folder
     Given my settings file chooses the data folder "work-data"
     When I close the desktop app
     And I ask the command line where my data is
     Then it names the data folder "work-data"
 
-  @wip
   Scenario: The desktop app uses the settings file's data folder
     Given my settings file chooses the data folder "work-data"
     When I close the desktop app and open it again
     Then the desktop app keeps its data in "work-data"
 
-  @wip
   Scenario: A setting chosen when starting overrides the settings file
     Given my settings file chooses the data folder "work-data"
     And I start with the data folder "scratch" chosen in the environment
@@ -29,7 +26,6 @@ Feature: Keep settings in a settings file
     And I ask the command line where my data is
     Then it names the data folder "scratch"
 
-  @wip
   Scenario: The command line says where a setting came from
     Given my settings file chooses the data folder "work-data"
     And I start with the data folder "scratch" chosen in the environment
@@ -37,7 +33,6 @@ Feature: Keep settings in a settings file
     And I ask the command line where my data is
     Then it says the data folder was chosen by "STARTER_DATA_DIR"
 
-  @wip
   Scenario: A settings file with a setting the app doesn't know stops it
     Given my settings file has the setting "colour" set to "blue"
     When I close the desktop app
