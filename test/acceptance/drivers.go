@@ -21,6 +21,8 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
@@ -45,6 +47,9 @@ type harness struct {
 	// openCopy tries to open a second copy of the desktop app on the same
 	// data folder, closing it again if it opens. Only the desktop driver sets it.
 	openCopy func() error
+	// server is the running server, as cmd/server wires it. Only the server
+	// driver sets it.
+	server *testServer
 }
 
 type driver struct {
@@ -62,13 +67,16 @@ type driver struct {
 // over HTTP can pick a workspace until sign-in exists, and the desktop and
 // mobile apps are the local edition. Scenarios that choose each workspace's
 // plan (@plans) run only where the tests wire the plans: the desktop and
-// mobile apps are on the local plan.
+// mobile apps are on the local plan. Scenarios about running the server
+// (@server) run only on the server driver, which runs nothing else: they
+// need its data folder, and the http driver covers the API.
 var drivers = []driver{
-	{name: "memory", start: startMemory, tags: "~@desktop && ~@mobile"},
-	{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile"},
-	{name: "http", start: startHTTP, tags: "~@desktop && ~@mobile && ~@workspaces"},
-	{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans"},
-	{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans"},
+	{name: "memory", start: startMemory, tags: "~@desktop && ~@mobile && ~@server"},
+	{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile && ~@server"},
+	{name: "http", start: startHTTP, tags: "~@desktop && ~@mobile && ~@workspaces && ~@server"},
+	{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server"},
+	{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server"},
+	{name: "server", start: startServer, tags: "@server"},
 }
 
 func newHarness() *harness {
@@ -171,6 +179,50 @@ func (h *harness) driveOverHTTP(url string) error {
 	h.items = client
 	// sample:end
 	return nil
+}
+
+// startServer wires the core as cmd/server does, on jsonfile storage in a
+// temporary data folder, and serves it over HTTP.
+func startServer() (*harness, error) {
+	dir, err := os.MkdirTemp("", "acceptance-server-*")
+	if err != nil {
+		return nil, err
+	}
+	core, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
+	if err != nil {
+		os.RemoveAll(dir)
+		return nil, err
+	}
+	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{
+		Entitlements: core.Entitlements,
+		Ready:        core.Ready,
+	}))
+	h := newHarness()
+	h.server = &testServer{url: srv.URL, dataDir: dir}
+	h.cleanup = func() {
+		srv.Close()
+		core.Close()
+		os.RemoveAll(dir)
+	}
+	return h, nil
+}
+
+// testServer is a running server and the data folder it keeps its data in.
+type testServer struct {
+	url     string
+	dataDir string
+}
+
+// readiness asks the server whether it is ready, as a deployment's probe
+// does, and returns the status and body of its answer.
+func (s *testServer) readiness() (int, string, error) {
+	resp, err := http.Get(s.url + "/readyz")
+	if err != nil {
+		return 0, "", err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	return resp.StatusCode, string(body), err
 }
 
 // startDesktop opens the desktop app's wiring on a temporary data folder and
