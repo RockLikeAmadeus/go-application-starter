@@ -46,7 +46,7 @@
 9. [x] desktop: `desktop.Open` passes `App.Ready` too — `TestOpenIsNotReadyOnceTheDataFolderIsRemoved` in `open_test.go` (200, want 503 before green).
    - Green: `Ready: core.Ready` in `desktop.Open`'s handler options. The Android app is built on `desktop.Open`, so it has the check as well; nothing else builds `httpapi.Options` outside tests and `cmd/server`.
    - Refactor: nothing worth changing, one option in a list.
-10. [ ] Docs: `features/README.md`, the drivers comment in `test/acceptance/drivers.go` and CLAUDE.md's `features/ + test/acceptance` line name the `@server` tag and the server driver. CLAUDE.md's Architecture/Gotchas mention `Options.Ready` if useful.
+10. [x] Docs: `features/README.md` and CLAUDE.md's `features/ + test/acceptance` line name the `@server` tag and the server driver (the drivers comment got it in task 7). CLAUDE.md's storage-backend rule now says to wire the backend's readiness check into `App.Ready`, and that readiness never comes from an entity. A docs-only cycle: no test, so no red or green.
 11. [ ] Finish: `task check`, `task test:init`, remove the `@wip` tags, tick the TODO.md item and delete this file.
 
 ## Changes to the plan
