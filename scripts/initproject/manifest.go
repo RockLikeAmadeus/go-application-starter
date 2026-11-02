@@ -62,6 +62,8 @@ var SampleFiles = []string{
 	"test/acceptance/workspace_steps.go",
 	"web/e2e/features/items.feature",
 	"web/e2e/steps/items.steps.ts",
+	"test/terminal/features/items.feature",
+	"test/terminal/item_steps.go",
 }
 
 // IsSample reports whether rel (slash-separated) is a SampleFiles entry or lies

@@ -34,9 +34,9 @@ func TestMain(m *testing.M) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	starter = filepath.Join(bin, "starter")
-	server = filepath.Join(bin, "server")
-	for out, pkg := range map[string]string{starter: "../../cmd/starter", server: "../../cmd/server"} {
+	cliProgram = filepath.Join(bin, "starter")
+	serverProgram = filepath.Join(bin, "server")
+	for out, pkg := range map[string]string{cliProgram: "../../cmd/starter", serverProgram: "../../cmd/server"} {
 		if err := build(out, pkg); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			_ = os.RemoveAll(bin)

@@ -17,8 +17,10 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/test/terminal/term"
 )
 
-// starter and server are the built programs the journeys run.
-var starter, server string
+// cliProgram and serverProgram are the built programs the journeys run:
+// cmd/starter and cmd/server. (Not named after the program: init renames
+// that word, and it may become something that isn't a Go name.)
+var cliProgram, serverProgram string
 
 // timeout is how long a journey waits for the terminal to show something.
 const timeout = 5 * time.Second
@@ -59,12 +61,15 @@ func initializeScenario(sc *godog.ScenarioContext) {
 
 	j.registerCommandLineSteps(sc)
 	j.registerTerminalAppSteps(sc)
+	// sample:start
+	j.registerItemSteps(sc)
+	// sample:end
 }
 
 // run starts the starter program with args in a new terminal, on this
 // scenario's computer.
 func (j *journey) run(args ...string) error {
-	cmd := exec.Command(starter, args...)
+	cmd := exec.Command(cliProgram, args...)
 	cmd.Dir = j.home
 	cmd.Env = j.env()
 	t, err := term.Start(cmd)
@@ -117,7 +122,7 @@ func (j *journey) startServer() error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(server)
+	cmd := exec.Command(serverProgram)
 	cmd.Dir = j.home
 	cmd.Env = append(j.env(), "STARTER_STORAGE=memory", fmt.Sprintf("PORT=%d", port))
 	cmd.Stdout, cmd.Stderr = &j.serverOut, &j.serverOut

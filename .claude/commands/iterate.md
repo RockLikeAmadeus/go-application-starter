@@ -19,17 +19,18 @@ Run the three steps below in order, each exactly as its own command would (`.cla
 
 **When to stop and ask me.** Ask only when the decision is genuinely mine, then carry on with my answer. Ask with the AskUserQuestion tool, and make each question stand on its own. Stop to ask when:
 - the task is ambiguous, or the decisions in the `docs/wip/` file don't settle how to do it;
-- the new test passes straight away (the behaviour may already exist; I decide whether to keep it as a guard, as `red.md` would report it);
 - making it pass needs more than the task describes, or changes the plan (a new port, a changed API contract, a dropped or reordered task);
 - an existing test has a bug, or something is red that this cycle didn't break;
 - a refactoring would change behaviour or a public contract.
 
 Anything with a conventional answer, or that the code, CLAUDE.md or the `docs/wip/` file settles, isn't a question: decide, and say so in the summary.
 
+**When the new test passes straight away.** If it passes because the behaviour already exists (not because the test is wrong: check it can fail, e.g. that it waits for or asserts the right thing), don't ask me: keep it as a guard. Skip green, since no production code is demanded, and still run refactor. Record in the `docs/wip/` file that there was no red, and why. Commit it as `test:` (or `feat:` if refactor changed production code). A test that passes only sometimes is not this case: make it fail reliably for the right reason, as `red.md` says.
+
 **Finish.** `task lint`, `task test` and the acceptance run above, all green.
 
 **Commit and push.** Running `/iterate` is my explicit request to commit its cycle, so when the cycle went cleanly, stage everything (`git add -A`), commit, and push to the current branch's upstream. Run them as three separate, plain commands (`git add -A`; `git commit -F <message file in the scratchpad>`; `git push`), not chained with `&&` or piped, so they match the `allowed-tools` above and don't prompt. "Cleanly" means:
-- the cycle ran to the end: red failed for the right reason, then green, then refactor;
+- the cycle ran to the end: red failed for the right reason (or the test passed straight away and was kept as a guard, as above), then green, then refactor;
 - the finishing checks above are all green;
 - nothing is left open for me: any question I answered during the cycle is settled.
 
@@ -42,7 +43,7 @@ Don't commit, and say why, when:
 Never pull, force-push or rewrite history. If the push is refused (for example, the remote has moved on), leave the commit in place and tell me.
 
 Then STOP after this one cycle, and show me, in this order:
-- the test, and the failure it showed before green;
+- the test, and the failure it showed before green (or why it passed straight away);
 - the production change, in 1–3 lines;
 - what the refactor changed, or why nothing was worth changing;
 - the checks: the finishing checks' results and the `@wip` scenarios' progress;
