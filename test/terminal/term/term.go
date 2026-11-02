@@ -4,6 +4,7 @@ package term
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -36,6 +37,7 @@ func Start(cmd *exec.Cmd) (*Terminal, error) {
 	}
 	t := &Terminal{pty: f, emu: vt.NewEmulator(cols, rows)}
 	go t.showOutput()
+	go t.sendInput()
 	return t, nil
 }
 
@@ -52,6 +54,13 @@ func (t *Terminal) showOutput() {
 			return
 		}
 	}
+}
+
+// sendInput sends the program what the terminal sends it: keys, and the
+// terminal's answers to the program's questions (the emulator blocks until
+// they're read), until the terminal closes.
+func (t *Terminal) sendInput() {
+	_, _ = io.Copy(t.pty, t.emu)
 }
 
 // Screen returns the text the terminal shows now.
@@ -72,6 +81,18 @@ func (t *Terminal) WaitFor(text string, timeout time.Duration) error {
 		time.Sleep(10 * time.Millisecond)
 	}
 	return nil
+}
+
+// Type sends text as if the user typed it.
+func (t *Terminal) Type(text string) {
+	t.emu.SendText(text)
+}
+
+// Press sends a key by name, as the terminal would encode it: "enter".
+func (t *Terminal) Press(key string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.emu.SendKey(vt.KeyPressEvent{Code: vt.KeyEnter})
 }
 
 // Close frees the terminal.

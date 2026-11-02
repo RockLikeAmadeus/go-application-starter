@@ -41,3 +41,14 @@ func TestWaitForFailsWithTheScreenWhenTheTextNeverShows(t *testing.T) {
 		}
 	}
 }
+
+func TestTypedTextAndEnterReachTheProgram(t *testing.T) {
+	tm := start(t, `read line; printf 'got:%s' "$line"; sleep 5`)
+
+	tm.Type("hi")
+	tm.Press("enter")
+
+	if err := tm.WaitFor("got:hi", 2*time.Second); err != nil {
+		t.Fatal(err)
+	}
+}
