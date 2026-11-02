@@ -14,6 +14,7 @@
 package jsonfile
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,6 +52,11 @@ func Open(dir string) (*Store, error) {
 // Close releases the directory lock.
 func (s *Store) Close() error {
 	return s.unlock()
+}
+
+// Ready reports whether the store can still use its data directory.
+func (s *Store) Ready(context.Context) error {
+	return errors.New("data directory unavailable")
 }
 
 type tableFile[R any] struct {

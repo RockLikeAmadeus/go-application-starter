@@ -2,6 +2,7 @@ package jsonfile_test
 
 import (
 	"errors"
+	"os"
 	"runtime"
 	"testing"
 
@@ -27,5 +28,17 @@ func TestOpenFailsWhenDirectoryIsLocked(t *testing.T) {
 
 	if _, err := jsonfile.Open(dir); !errors.Is(err, jsonfile.ErrLocked) {
 		t.Fatalf("second Open err = %v, want ErrLocked", err)
+	}
+}
+
+func TestStoreIsNotReadyOnceItsDataDirectoryIsRemoved(t *testing.T) {
+	dir := t.TempDir()
+	store := openStore(t, dir)
+	if err := os.RemoveAll(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := store.Ready(t.Context()); err == nil {
+		t.Error("Ready error = nil, want an error once the data directory is gone")
 	}
 }

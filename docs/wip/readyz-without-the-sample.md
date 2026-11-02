@@ -15,8 +15,10 @@
 - **The steps ask over HTTP** (`GET /readyz` with a plain `http.Client`), because readiness isn't a driving port: it's the HTTP adapter's probe. "Removing the data folder" is `os.RemoveAll` on the driver's temp folder, and "putting it back" is `os.MkdirAll`. The lock file goes with the folder. That's fine for these scenarios, and the store's `Close` must still not fail the cleanup (check in item 6).
 
 ## Tasks
-1. [ ] jsonfile: an open `Store` is ready (`Store.Ready(ctx)` returns nil) — `store_test.go`.
-2. [ ] jsonfile: a `Store` whose data folder has been removed isn't ready, and the error says why.
+1. [x] jsonfile: a `Store` whose data folder has been removed isn't ready — `TestStoreIsNotReadyOnceItsDataDirectoryIsRemoved` in `store_test.go`.
+   - Green: `(*Store).Ready` hard-codes `errors.New("data directory unavailable")`. Nothing calls it yet, so no other test notices. Task 2 forces the real check.
+   - Refactor: nothing worth changing. The method is three lines, and its error text gets settled in task 2, when the real check produces it.
+2. [ ] jsonfile: an open `Store` is ready (`Store.Ready(ctx)` returns nil), so `Ready` really checks the data folder (temp file created and removed, see Decisions), and its error names the folder and the cause.
 3. [ ] httpapi: `/readyz` answers 503 `storage unavailable` when `Options.Ready` fails, and logs the error — `server_test.go`, with no `Items` set.
 4. [ ] httpapi: `/readyz` answers 200 `ready` with no `Ready` and no `Items` (today it panics into a 500). This removes the sample `ListItems` check.
 5. [ ] bootstrap: `NewEmbedded` on jsonfile gives an `App.Ready` that fails once the data folder is removed. On memory, it's ready — `bootstrap_test.go`.
@@ -27,3 +29,4 @@
 10. [ ] Finish: `task check`, `task test:init`, remove the `@wip` tags, tick the TODO.md item and delete this file.
 
 ## Changes to the plan
+- 2026-11-01: swapped tasks 1 and 2 (user's choice). "An open store is ready" couldn't fail in red, because the zero-value stub (`return nil`) already passes it. "A removed folder isn't ready" goes first and is passed by a hard-coded error, which "an open store is ready" then fails against. "The error says why" moved to the new task 2, where the real check makes the error.
