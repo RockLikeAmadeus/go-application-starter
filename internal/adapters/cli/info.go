@@ -4,11 +4,13 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
 // newInfoCmd shows where the data is: it opens the app, as any command that
 // uses the data does, and names the data folder it opened (or the server it
-// uses) and the workspace's plan.
+// uses, or says the data is only in memory) and the workspace's plan.
 func newInfoCmd(open appOpener) *cobra.Command {
 	return &cobra.Command{
 		Use:   "info",
@@ -25,8 +27,11 @@ func newInfoCmd(open appOpener) *cobra.Command {
 				return err
 			}
 			where, place := "Data folder", cfg.DataDir
-			if cfg.ServerURL != "" {
+			switch {
+			case cfg.ServerURL != "":
 				where, place = "Server", cfg.ServerURL
+			case cfg.Storage == config.StorageMemory:
+				where, place = "Data", "kept in memory, not saved"
 			}
 			_, err = fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\nPlan: %s\n", where, place, entitlements.Plan)
 			return err

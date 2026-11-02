@@ -54,16 +54,16 @@ func NewRootCmd(newApp AppFactory, localDataDir func() (string, error), out io.W
 		if serverURL != "" {
 			cfg.ServerURL = serverURL
 		}
+		if storage != "" {
+			cfg.Storage = config.Storage(storage)
+		}
 		if dataDir != "" {
 			cfg.DataDir = dataDir
-		} else if cfg.ServerURL == "" {
+		} else if keepsDataInAFolder(cfg) {
 			cfg.DataDir, err = localDataDir()
 			if err != nil {
 				return nil, cfg, err
 			}
-		}
-		if storage != "" {
-			cfg.Storage = config.Storage(storage)
 		}
 		if err := cfg.Validate(); err != nil {
 			return nil, cfg, err
@@ -81,6 +81,12 @@ func NewRootCmd(newApp AppFactory, localDataDir func() (string, error), out io.W
 	root.AddCommand(newItemCmd(openApp))
 	// sample:end
 	return root
+}
+
+// keepsDataInAFolder reports whether cfg keeps the data in a data folder on
+// this computer: not on a server, and not only in memory.
+func keepsDataInAFolder(cfg config.Config) bool {
+	return cfg.ServerURL == "" && cfg.Storage == config.StorageJSONFile
 }
 
 // withApp opens the app for the duration of a command.

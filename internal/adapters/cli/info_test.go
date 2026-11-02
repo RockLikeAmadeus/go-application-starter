@@ -121,3 +121,13 @@ func TestInfoWithAServerNamesTheServer(t *testing.T) {
 		t.Errorf("info output doesn't name the server %s:\n%s", srv.URL, out)
 	}
 }
+
+func TestInfoWithMemoryStorageSaysTheDataIsNotSaved(t *testing.T) {
+	out, err := runCLI(t, "--storage", "memory", "info")
+	if err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	if !strings.Contains(out, "Data: kept in memory, not saved") || strings.Contains(out, "Data folder") {
+		t.Errorf("info output doesn't say the data is kept in memory:\n%s", out)
+	}
+}
