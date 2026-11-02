@@ -1,8 +1,11 @@
 package terminal
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,8 +17,8 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/test/terminal/term"
 )
 
-// starter is the built starter program the journeys run.
-var starter string
+// starter and server are the built programs the journeys run.
+var starter, server string
 
 // timeout is how long a journey waits for the terminal to show something.
 const timeout = 5 * time.Second
@@ -29,6 +32,11 @@ type journey struct {
 	dataDir string
 	// term is the terminal the program last ran in.
 	term *term.Terminal
+	// serverURL is the address of the server this scenario started, if any.
+	serverURL string
+	// serverCmd is that server's process, and serverOut what it has printed.
+	serverCmd *exec.Cmd
+	serverOut bytes.Buffer
 }
 
 func initializeScenario(sc *godog.ScenarioContext) {
@@ -39,17 +47,22 @@ func initializeScenario(sc *godog.ScenarioContext) {
 		j.home = home
 		return ctx, err
 	})
-	sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
+	// The After hook returns only its own errors: Godog keeps the step's.
+	sc.After(func(ctx context.Context, _ *godog.Scenario, _ error) (context.Context, error) {
 		if j.term != nil {
 			_ = j.term.Close()
 		}
+		j.stopServer()
 		_ = os.RemoveAll(j.home)
-		return ctx, err
+		return ctx, nil
 	})
 
 	sc.Step(`^my data is in the folder "([^"]*)"$`, j.myDataIsInTheFolder)
 	sc.Step(`^I ask the command line where my data is$`, j.iAskTheCommandLineWhereMyDataIs)
 	sc.Step(`^it says my data is in the folder "([^"]*)"$`, j.itSaysMyDataIsInTheFolder)
+	sc.Step(`^a server is running$`, j.aServerIsRunning)
+	sc.Step(`^I ask the command line where my data is, connected to the server$`, j.iAskTheCommandLineWhereMyDataIsConnectedToTheServer)
+	sc.Step(`^it says my data is on the server$`, j.itSaysMyDataIsOnTheServer)
 }
 
 // run starts the starter program with args in a new terminal, on this
@@ -110,4 +123,76 @@ func (j *journey) succeeds() error {
 		return fmt.Errorf("exit status = %d, want 0; the screen shows:\n%s", status, j.term.Screen())
 	}
 	return nil
+}
+
+// startServer starts the built server for this scenario and sets serverURL.
+func (j *journey) startServer() error {
+	port, err := freePort()
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command(server)
+	cmd.Dir = j.home
+	cmd.Env = append(j.env(), "STARTER_STORAGE=memory", fmt.Sprintf("PORT=%d", port))
+	cmd.Stdout, cmd.Stderr = &j.serverOut, &j.serverOut
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	j.serverCmd = cmd
+	j.serverURL = fmt.Sprintf("http://127.0.0.1:%d", port)
+	if !ready(j.serverURL, timeout) {
+		j.stopServer() // before reading what it printed
+		return fmt.Errorf("the server at %s wasn't ready within %s; it printed:\n%s", j.serverURL, timeout, j.serverOut.String())
+	}
+	return nil
+}
+
+// stopServer stops the scenario's server, if it's running.
+func (j *journey) stopServer() {
+	if j.serverCmd == nil {
+		return
+	}
+	_ = j.serverCmd.Process.Kill()
+	_ = j.serverCmd.Wait()
+	j.serverCmd = nil
+}
+
+// freePort returns a TCP port nothing is listening on now.
+func freePort() (int, error) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+// ready waits until the server at url says it's ready, and says whether it
+// did within timeout.
+func ready(url string, timeout time.Duration) bool {
+	for deadline := time.Now().Add(timeout); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
+		resp, err := http.Get(url + "/readyz")
+		if err == nil {
+			_ = resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (j *journey) aServerIsRunning() error {
+	return j.startServer()
+}
+
+func (j *journey) iAskTheCommandLineWhereMyDataIsConnectedToTheServer() error {
+	return j.run("--server", j.serverURL, "info")
+}
+
+func (j *journey) itSaysMyDataIsOnTheServer() error {
+	if err := j.term.WaitFor("Server: "+j.serverURL, timeout); err != nil {
+		return err
+	}
+	return j.succeeds()
 }

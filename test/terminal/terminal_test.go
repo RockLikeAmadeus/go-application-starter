@@ -35,10 +35,13 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	starter = filepath.Join(bin, "starter")
-	if err := build(starter, "../../cmd/starter"); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		_ = os.RemoveAll(bin)
-		os.Exit(1)
+	server = filepath.Join(bin, "server")
+	for out, pkg := range map[string]string{starter: "../../cmd/starter", server: "../../cmd/server"} {
+		if err := build(out, pkg); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			_ = os.RemoveAll(bin)
+			os.Exit(1)
+		}
 	}
 	code := m.Run()
 	_ = os.RemoveAll(bin)
