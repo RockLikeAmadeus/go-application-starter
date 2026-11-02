@@ -56,7 +56,8 @@ func (s *Store) Close() error {
 
 // Ready reports whether the store can still use its data directory.
 func (s *Store) Ready(context.Context) error {
-	return errors.New("data directory unavailable")
+	_, err := os.Stat(s.dir)
+	return err
 }
 
 type tableFile[R any] struct {

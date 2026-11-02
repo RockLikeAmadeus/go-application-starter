@@ -31,6 +31,14 @@ func TestOpenFailsWhenDirectoryIsLocked(t *testing.T) {
 	}
 }
 
+func TestStoreIsReadyWhileItsDataDirectoryIsThere(t *testing.T) {
+	store := openStore(t, t.TempDir())
+
+	if err := store.Ready(t.Context()); err != nil {
+		t.Errorf("Ready error = %v, want nil", err)
+	}
+}
+
 func TestStoreIsNotReadyOnceItsDataDirectoryIsRemoved(t *testing.T) {
 	dir := t.TempDir()
 	store := openStore(t, dir)

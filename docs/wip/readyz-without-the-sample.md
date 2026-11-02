@@ -18,15 +18,19 @@
 1. [x] jsonfile: a `Store` whose data folder has been removed isn't ready — `TestStoreIsNotReadyOnceItsDataDirectoryIsRemoved` in `store_test.go`.
    - Green: `(*Store).Ready` hard-codes `errors.New("data directory unavailable")`. Nothing calls it yet, so no other test notices. Task 2 forces the real check.
    - Refactor: nothing worth changing. The method is three lines, and its error text gets settled in task 2, when the real check produces it.
-2. [ ] jsonfile: an open `Store` is ready (`Store.Ready(ctx)` returns nil), so `Ready` really checks the data folder (temp file created and removed, see Decisions), and its error names the folder and the cause.
-3. [ ] httpapi: `/readyz` answers 503 `storage unavailable` when `Options.Ready` fails, and logs the error — `server_test.go`, with no `Items` set.
-4. [ ] httpapi: `/readyz` answers 200 `ready` with no `Ready` and no `Items` (today it panics into a 500). This removes the sample `ListItems` check.
-5. [ ] bootstrap: `NewEmbedded` on jsonfile gives an `App.Ready` that fails once the data folder is removed. On memory, it's ready — `bootstrap_test.go`.
-6. [ ] acceptance: the `server` driver (`@server` only, and `~@server` on the others) and the readiness steps, thin and with no sample block. The scenarios go green here. Check that cleanup tolerates the removed folder.
-7. [ ] cmd/server: pass `App.Ready` into `httpapi.Options`. Pull the handler's options into a small function with a test in `cmd/server` (`/readyz` is 503 after the data folder is removed), so the wiring is test-driven.
-8. [ ] desktop: `desktop.Open` passes `App.Ready` too — `open_test.go`: `/readyz` is 503 after the data folder is removed.
-9. [ ] Docs: `features/README.md`, the drivers comment in `test/acceptance/drivers.go` and CLAUDE.md's `features/ + test/acceptance` line name the `@server` tag and the server driver. CLAUDE.md's Architecture/Gotchas mention `Options.Ready` if useful.
-10. [ ] Finish: `task check`, `task test:init`, remove the `@wip` tags, tick the TODO.md item and delete this file.
+2. [x] jsonfile: an open `Store` is ready — `TestStoreIsReadyWhileItsDataDirectoryIsThere`.
+   - Green: `Ready` returns `os.Stat(s.dir)`'s error. Its `*fs.PathError` already names the folder and the cause ("stat <dir>: no such file or directory").
+   - Refactor: moved the "ready" test before the "not ready" one, so they read happy path first. `Ready` itself is left alone, because task 3 replaces its body.
+3. [ ] jsonfile: a `Store` whose data folder is read-only isn't ready, which brings in the decided check (create and remove a temp file in the folder). The test makes the folder `0o500` (restored in cleanup, so `t.TempDir` can delete it) and skips when run as root, which ignores permissions, and on Windows.
+4. [ ] httpapi: `/readyz` answers 503 `storage unavailable` when `Options.Ready` fails, and logs the error — `server_test.go`, with no `Items` set.
+5. [ ] httpapi: `/readyz` answers 200 `ready` with no `Ready` and no `Items` (today it panics into a 500). This removes the sample `ListItems` check.
+6. [ ] bootstrap: `NewEmbedded` on jsonfile gives an `App.Ready` that fails once the data folder is removed. On memory, it's ready — `bootstrap_test.go`.
+7. [ ] acceptance: the `server` driver (`@server` only, and `~@server` on the others) and the readiness steps, thin and with no sample block. The scenarios go green here. Check that cleanup tolerates the removed folder.
+8. [ ] cmd/server: pass `App.Ready` into `httpapi.Options`. Pull the handler's options into a small function with a test in `cmd/server` (`/readyz` is 503 after the data folder is removed), so the wiring is test-driven.
+9. [ ] desktop: `desktop.Open` passes `App.Ready` too — `open_test.go`: `/readyz` is 503 after the data folder is removed.
+10. [ ] Docs: `features/README.md`, the drivers comment in `test/acceptance/drivers.go` and CLAUDE.md's `features/ + test/acceptance` line name the `@server` tag and the server driver. CLAUDE.md's Architecture/Gotchas mention `Options.Ready` if useful.
+11. [ ] Finish: `task check`, `task test:init`, remove the `@wip` tags, tick the TODO.md item and delete this file.
 
 ## Changes to the plan
 - 2026-11-01: swapped tasks 1 and 2 (user's choice). "An open store is ready" couldn't fail in red, because the zero-value stub (`return nil`) already passes it. "A removed folder isn't ready" goes first and is passed by a hard-coded error, which "an open store is ready" then fails against. "The error says why" moved to the new task 2, where the real check makes the error.
+- 2026-11-01: added task 3, a read-only data folder isn't ready (user's choice). Tasks 1 and 2 are passed by `os.Stat`, which can't see a read-only folder or a full disk, and green stays minimal, so the decided temp-file check needs a test of its own. Later tasks move down one.
