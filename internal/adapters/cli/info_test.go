@@ -17,8 +17,15 @@ import (
 // the data folder, so the local one is never looked up.
 func runCLI(t *testing.T, args ...string) (string, error) {
 	t.Helper()
+	return runCLIWith(t, noLocalDataDir(t), args...)
+}
+
+// runCLIWith executes the CLI with args, finding the local data folder with
+// localDataDir.
+func runCLIWith(t *testing.T, localDataDir func() (string, error), args ...string) (string, error) {
+	t.Helper()
 	var out bytes.Buffer
-	cmd := cli.NewRootCmd(bootstrap.New, noLocalDataDir(t), &out)
+	cmd := cli.NewRootCmd(bootstrap.New, localDataDir, &out)
 	cmd.SetArgs(args)
 	err := cmd.ExecuteContext(context.Background())
 	return out.String(), err
@@ -85,5 +92,13 @@ func TestWithoutDataDirCommandsUseTheLocalDataFolder(t *testing.T) {
 	}
 	if opened != local {
 		t.Errorf("opened the data folder %q, want the local one %q", opened, local)
+	}
+}
+
+func TestWithoutTheLocalDataFolderCommandsFailSayingWhy(t *testing.T) {
+	errNoHome := errors.New("find the data folder: neither $XDG_CONFIG_HOME nor $HOME are defined")
+	_, err := runCLIWith(t, func() (string, error) { return "", errNoHome }, "--storage", "jsonfile", "info")
+	if !errors.Is(err, errNoHome) {
+		t.Errorf("info error = %v, want %v", err, errNoHome)
 	}
 }

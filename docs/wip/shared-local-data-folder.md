@@ -36,7 +36,9 @@
    - Red: `NewRootCmd(newApp, localDataDir, out)` got its new parameter (unused) so the test compiled; `cmd/starter` passes `config.LocalDataDir(os.Getenv, os.UserConfigDir)`, `runCommandLine` the local computer's, and the unit tests `noLocalDataDir(t)` (in `info_test.go`, also used by the sample's `run`), which fails the test if called. `TestWithoutDataDirCommandsUseTheLocalDataFolder` then failed with `opened the data folder "./data", want the local one "/tmp/…"`. (That run left `internal/adapters/cli/data/`, deleted.)
    - Green: `openApp` sets `cfg.DataDir` from `localDataDir()` when `--data-dir` isn't given.
    - Refactor: `--data-dir`'s help now says the default is the local data folder the desktop app uses. Left: `openApp` grows by one branch; extracting a "resolve the data folder" helper waits for task 7, which adds the `--server` case to the same spot. `config.Load`'s `./data` default is now only the server's: left, since `cmd/server` relies on it. `@wip` progress: all three template scenarios pass; the sample one is undefined (task 9).
-6. [ ] CLI: when the settings folder can't be found, a command that needs the data fails, saying so ("find the data folder: …").
+6. [x] CLI: when the settings folder can't be found, a command that needs the data fails, saying so ("find the data folder: …").
+   - Red: `TestWithoutTheLocalDataFolderCommandsFailSayingWhy` passed straight away: task 5's `openApp` already returns `localDataDir`'s error, and `config.LocalDataDir` adds the "find the data folder: …" wording (tested there). Kept as a guard (chosen 2026-11-02): it pins that a failed lookup stops the command instead of falling back to another folder. No green.
+   - Refactor (tests only): `runCLI` now delegates to a new `runCLIWith(t, localDataDir, args...)`, which this test uses instead of building the command itself.
 7. [ ] CLI: with `--server`, the settings folder isn't looked up (a failing lookup doesn't matter), and `starter info` names the server instead of a data folder.
 8. [ ] CLI: with `--storage memory`, `starter info` says the data is kept in memory and not saved, instead of naming a folder.
 9. [ ] Sample: define `I list the items from the command line` and `the command line shows "…"` in `test/acceptance/item_steps.go`, through `runCommandLine`. No production code.
@@ -45,3 +47,4 @@
 
 ## Changes to the plan
 - 2026-11-02, task 3: its test passed without production code (the lock comes with opening the app). Kept as a guard rather than dropped.
+- 2026-11-02, task 6: the same; its behaviour came with task 5. Kept as a guard.
