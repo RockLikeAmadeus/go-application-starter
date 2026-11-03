@@ -6,12 +6,14 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 
 ## The rules behind every case
 
-- **One data folder per copy.** The core keeps its data through a storage adapter, which `internal/bootstrap` picks. With `jsonfile` (the default), the data is plain JSON in a **data folder**: one file per kind of record (the sample's is `items.json`), plus a `.lock` file (see [ADR 3](adr/0003-plain-text-storage.md)). With `memory`, nothing is written: the data is lost when the process ends.
+- **One data folder per copy.** The core keeps its data through a storage adapter, which `internal/bootstrap` picks. With `jsonfile` (the default), the data is plain JSON in a **data folder**: one file per kind of record (the sample's is `items.json`), plus a `.lock` file (see [ADR 3](adr/0003-plain-text-storage.md)). With `sqlite`, it's one SQLite database in the data folder, `data.db`, with SQLite's `data.db-wal` and `data.db-shm` beside it (see [ADR 7](adr/0007-sqlite-storage.md)). With `memory`, nothing is written: the data is lost when the process ends.
 - **Choosing another folder.** `data_dir` in the settings file chooses the folder for every front end that reads that file ([docs/configuration.md](configuration.md)). `STARTER_DATA_DIR` overrides the file, and the CLI's `--data-dir` overrides both for one command.
-- **One process per folder.** While a copy has a data folder open, it holds a lock on `.lock`. A second process that opens the same folder fails fast with "data directory is locked". The lock uses `flock`, so it works on Linux and macOS. On Windows nothing is locked, so don't open one folder from two copies there.
-- **Temporary files.** Saving writes a `<file>.*.tmp` beside each JSON file and renames it over the file. The server's readiness check writes and removes `.ready-*.tmp`. Only a crash at the wrong moment leaves either one behind.
-- **Nothing syncs.** Each copy has its own data. Copying a data folder (or putting it in a cloud-synced folder) works, but don't let two devices use it at the same time ([ADR 5](adr/0005-hosted-and-local-editions.md)).
-- **Workspaces share the files.** Each record carries its `workspaceId`. A hosted server keeps every workspace's records in the same files, and the local edition's one workspace is just the only ID in them.
+- **One process per folder, with `jsonfile`.** While a copy has a data folder open, it holds a lock on `.lock`. A second process that opens the same folder fails fast with "data directory is locked". The lock uses `flock`, so it works on Linux and macOS. On Windows nothing is locked, so don't open one folder from two copies there.
+- **Several processes per folder, with `sqlite`.** There's no lock: the desktop app, the CLI and TUI, and several servers on one disk can all use `data.db` at once, and each sees what the others saved. They must be on the same computer (or disk): SQLite can't be shared over a network drive.
+- **Temporary files.** With `jsonfile`, saving writes a `<file>.*.tmp` beside each JSON file and renames it over the file. The server's readiness check writes and removes `.ready-*.tmp`. Only a crash at the wrong moment leaves either one behind.
+- **Newer data is refused.** With `sqlite`, opening the data brings its layout up to date with the app. Data saved by a newer version of the app isn't opened ("the data was saved by a newer version of the app") and is left unchanged.
+- **Nothing syncs.** Each copy has its own data. Copying a data folder (or putting it in a cloud-synced folder) works, but don't let two devices use it at the same time ([ADR 5](adr/0005-hosted-and-local-editions.md)). Don't put a `sqlite` data folder in a cloud-synced one at all: a sync service can damage the database. (A warning when the folder looks synced is planned.)
+- **Workspaces share the files.** Each record carries its `workspaceId` (in SQLite, a `workspace_id` column). A hosted server keeps every workspace's records in the same files, and the local edition's one workspace is just the only ID in them.
 
 ## At a glance
 
@@ -35,14 +37,14 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 
 `cmd/server` reads its settings from the environment, over the settings file `STARTER_CONFIG_FILE` names, if any ([docs/configuration.md](configuration.md)):
 
-- `STARTER_STORAGE` (`storage` in the file) is `jsonfile` (the default) or `memory`.
+- `STARTER_STORAGE` (`storage` in the file) is `jsonfile` (the default), `sqlite` or `memory`.
 - `STARTER_DATA_DIR` (`data_dir`) is the data folder, `./data` by default. That path is relative to the process's working folder, not to the binary, so start the server from the same place each time, or set an absolute path.
 
 **In Docker**, the image sets `STARTER_STORAGE=jsonfile` and `STARTER_DATA_DIR=/data`, and declares `/data` a volume. `docker-compose.yml` mounts the named volume `app-data` there, so the data survives `docker compose down` and rebuilds. Docker prefixes the volume's name with the Compose project's (`docker volume ls`), and `docker compose down -v` deletes it.
 
-**On Fly.io**, both apps mount the Fly volume `app_data` at `/data`. Because of the lock, run one machine per volume.
+**On Fly.io**, both apps mount the Fly volume `app_data` at `/data`. A Fly volume belongs to one machine, so run one machine per app, on `jsonfile` (because of the lock) or `sqlite` (which can't be shared between machines) alike.
 
-**Hosted edition (planned):** one server holds every workspace's data, in the same files, each record tagged with its workspace. A SQL adapter (planned) will move this into a database. The data folder then gives way to a connection string.
+**Hosted edition (planned):** one server holds every workspace's data, in the same files, each record tagged with its workspace. The Postgres adapter (planned) will move this into a database server. The data folder then gives way to a connection string.
 
 ## The CLI and the TUI
 
@@ -70,13 +72,13 @@ Plan: local
 
 With `--storage memory`, nothing is saved: `starter info` says the data is kept in memory, and no folder is looked up.
 
-Because of the lock, the CLI and TUI can't open the folder while the desktop app (or a server) has it open: they say "data directory is locked" and change nothing. Close the app first, or point the CLI at a running server: `starter --server http://localhost:8080 …`. With `--server` (or `STARTER_SERVER_URL`), the CLI and TUI store nothing locally, and `starter info` names the server instead.
+On `jsonfile`, because of the lock, the CLI and TUI can't open the folder while the desktop app (or a server) has it open: they say "data directory is locked" and change nothing. Close the app first, or point the CLI at a running server: `starter --server http://localhost:8080 …`. On `sqlite` (`storage = "sqlite"` in the settings file, which the desktop app reads too), there's no lock, so they can use the folder while the app is open. With `--server` (or `STARTER_SERVER_URL`), the CLI and TUI store nothing locally, and `starter info` names the server instead.
 
 During development, `task run:cli` and `task run:tui` use the same folder as `task run:desktop`: your real one. `task dev`'s server keeps the repository's `./data`.
 
 ## The desktop app
 
-The desktop app (`cmd/desktop`) always uses `jsonfile`. Its data folder, which the CLI and TUI share, is `STARTER_DATA_DIR` when set, else `data_dir` in the settings file (`config.toml` in the folder below, or the one `STARTER_CONFIG_FILE` names), and otherwise `starter` inside the user's settings folder (Go's `os.UserConfigDir`; see `internal/config/localdata.go`):
+The desktop app (`cmd/desktop`) uses `sqlite` when the settings say `storage = "sqlite"`, and `jsonfile` otherwise (never `memory`). Its data folder, which the CLI and TUI share, is `STARTER_DATA_DIR` when set, else `data_dir` in the settings file (`config.toml` in the folder below, or the one `STARTER_CONFIG_FILE` names), and otherwise `starter` inside the user's settings folder (Go's `os.UserConfigDir`; see `internal/config/localdata.go`):
 
 | OS | Data folder |
 |---|---|

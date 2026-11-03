@@ -29,3 +29,4 @@ YAML was considered. JSON was chosen because it needs only the standard library 
 - Every write rewrites the whole file. That is fine up to roughly 10k records per type, and beyond that it is the signal to migrate.
 - **Single writer only**: run exactly one server instance per volume (the Fly config enforces one machine). The CLI/TUI must use `--server` while the server holds the directory.
 - Migrating to a database means: add an adapter, pass the contract suite, and switch it in `internal/bootstrap`. The core does not change.
+- That's what SQLite storage did ([ADR 7](0007-sqlite-storage.md)): with `storage = "sqlite"`, several programs can share a data folder, so the single-writer limit applies to plain text only. Plain text stays the default.

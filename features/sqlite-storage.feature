@@ -8,21 +8,21 @@ Feature: Keep data in SQLite
   # the desktop ones run on the desktop driver, the server ones on the server
   # driver.
 
-  @desktop @wip
+  @desktop
   Scenario: The command line can use SQLite data while the desktop app is open
     Given the desktop app keeps its data in SQLite
     When I ask the command line where my data is
     Then it names the desktop app's data folder
 
   # sample:start
-  @desktop @wip
+  @desktop
   Scenario: Items added in the desktop app are seen from the command line while it is open
     Given the desktop app keeps its data in SQLite
     And an item named "Widget"
     When I list the items from the command line
     Then the command line shows "Widget"
 
-  @desktop @wip
+  @desktop
   Scenario: Items kept in SQLite are still there after the desktop app is reopened
     Given the desktop app keeps its data in SQLite
     And an item named "Widget"
@@ -31,12 +31,12 @@ Feature: Keep data in SQLite
       | Widget |
   # sample:end
 
-  @server @wip
+  @server
   Scenario: A server keeping its data in SQLite is ready
     Given the server keeps its data in SQLite
     Then the server says it is ready
 
-  @server @wip
+  @server
   Scenario: A server whose SQLite data is gone isn't ready
     Given the server keeps its data in SQLite
     When the server's data folder is removed

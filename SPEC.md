@@ -193,7 +193,7 @@ All data belongs to a workspace, so that when one server serves many users, nobo
 - Workspace Alpha has "Widget", and Beta has "Gadget" → Alpha lists only "Widget", and Beta only "Gadget".
 - Someone in Beta tries to rename or delete Alpha's "Widget" → they're told it wasn't found, and Alpha still has "Widget".
 
-**Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory and jsonfile drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition.
+**Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory, jsonfile and sqlite drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition.
 <!-- sample:end -->
 
 ### 4.9 Plans and limits
@@ -215,7 +215,7 @@ Each workspace is on a **plan**, which sets its limits: for example, how many it
 - The free plan allows 3 items and makes them read only when over. A workspace with 4 items moves to it → it can't rename an item, but can delete one; with 3 items left, it can rename again.
 - The pro plan has no item limit → a workspace on it can create a fourth item.
 
-**Specification:** [`features/plans.feature`](features/plans.feature). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
+**Specification:** [`features/plans.feature`](features/plans.feature). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile, sqlite and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
 <!-- sample:end -->
 
 ### 4.10 Tell when the server is ready
