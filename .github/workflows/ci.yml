@@ -104,7 +104,9 @@ jobs:
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
       - run: pnpm --dir web install --frozen-lockfile
-      - run: pnpm --dir web exec playwright install --with-deps chromium
+      # Every browser the e2e projects use (web/playwright.config.ts), as
+      # `task setup` installs them.
+      - run: pnpm --dir web exec playwright install --with-deps chromium webkit firefox
       - run: pnpm --dir web build
       - run: pnpm --dir web e2e
       - uses: actions/upload-artifact@v4
