@@ -77,3 +77,31 @@ func runSetterTests(t *testing.T, name string, set func(string, initproject.Opti
 		})
 	}
 }
+
+func TestSetInfoJSON(t *testing.T) {
+	o := initproject.Options{Publisher: `Acme "R&D" <Ltd>`}
+	const tmpl = "{\n\t\"fixed\": {\n\t\t\"file_version\": \"@VERSION@.0\"\n\t},\n\t\"info\": {\n\t\t\"0409\": {\n" +
+		"\t\t\t\"FileDescription\": \"Acme Tasks\",\n\t\t\t\"CompanyName\": \"Example\",\n\t\t\t\"LegalCopyright\": \"© Example\",\n" +
+		"\t\t\t\"ProductVersion\": \"@VERSION@\"\n\t\t}\n\t}\n}\n"
+	tests := []setterTest{
+		{
+			desc: "sets both values, JSON-escaped, keeping the rest",
+			in:   tmpl,
+			want: strings.NewReplacer(
+				`"CompanyName": "Example"`, `"CompanyName": "Acme \"R&D\" <Ltd>"`,
+				`"LegalCopyright": "© Example"`, `"LegalCopyright": "© Acme \"R&D\" <Ltd>"`,
+			).Replace(tmpl),
+		},
+		{
+			desc:    "no CompanyName",
+			in:      strings.Replace(tmpl, "\t\t\t\"CompanyName\": \"Example\",\n", "", 1),
+			wantErr: `no "CompanyName" line`,
+		},
+		{
+			desc:    "no LegalCopyright",
+			in:      strings.Replace(tmpl, "\t\t\t\"LegalCopyright\": \"© Example\",\n", "", 1),
+			wantErr: `no "LegalCopyright" line`,
+		},
+	}
+	runSetterTests(t, "SetInfoJSON", initproject.SetInfoJSON, o, tests)
+}

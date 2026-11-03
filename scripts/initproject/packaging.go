@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -42,4 +45,33 @@ func replaceLine(text, prefix, line string) (string, error) {
 // error, as in SetNFPMDetails.
 func SetDesktopComment(text string, o Options) (string, error) {
 	return replaceLine(text, "Comment=", "Comment="+o.Description)
+}
+
+// SetInfoJSON sets info.json's CompanyName to the publisher and LegalCopyright
+// to "© <publisher>", keeping the layout and every other value, including
+// FileDescription and the @VERSION@ placeholders. Values are JSON-escaped
+// without HTML escaping, so & < > stay as typed. A missing key is an error.
+func SetInfoJSON(text string, o Options) (string, error) {
+	text, err := setJSONString(text, "CompanyName", o.Publisher)
+	if err != nil {
+		return "", err
+	}
+	return setJSONString(text, "LegalCopyright", "© "+o.Publisher)
+}
+
+// setJSONString replaces the string value of the key on its own line, keeping
+// the line's indentation and trailing comma, and fails if there's no such line.
+func setJSONString(text, key, value string) (string, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(value); err != nil {
+		return "", err
+	}
+	encoded := strings.TrimSuffix(buf.String(), "\n")
+	re := regexp.MustCompile(`(?m)^(\s*"` + regexp.QuoteMeta(key) + `": )"[^\n]*?"(,?)$`)
+	if !re.MatchString(text) {
+		return "", fmt.Errorf("no %q line", key)
+	}
+	return re.ReplaceAllString(text, "${1}"+strings.ReplaceAll(encoded, "$", "$$")+"${2}"), nil
 }

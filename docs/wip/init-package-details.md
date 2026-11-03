@@ -34,7 +34,10 @@ TODO.md item: **Init asks for the app's description and publisher.**
    - Red: `TestSetDesktopComment` failed: the stub returned the text unchanged and no error for a missing key.
    - Green: `SetDesktopComment(text, Options)` sets `Comment=` through `replaceLine`, leaving `Comment[xx]=` alone.
    - Refactor: doc comment; `runSetterTests`/`setterTest` hold the table loop both setter tests share (ready for task 5).
-5. [ ] A pure function sets info.json's `CompanyName` and `LegalCopyright` (`© <publisher>`), keeping its layout, `FileDescription` and the `@VERSION@` placeholders; JSON-escaped, no HTML escaping (`&` stays `&`). Fails when a key is missing.
+5. [x] A pure function sets info.json's `CompanyName` and `LegalCopyright` (`© <publisher>`), keeping its layout, `FileDescription` and the `@VERSION@` placeholders; JSON-escaped, no HTML escaping (`&` stays `&`). Fails when a key is missing.
+   - Red: `TestSetInfoJSON` failed: the stub returned the text unchanged and no error for a missing key.
+   - Green: `SetInfoJSON(text, Options)` sets both values through `setJSONString` (indent and comma kept, encoder with HTML escaping off).
+   - Refactor: nothing worth changing (doc comments already written).
 6. [ ] `Run` applies 3–5 to the three files after renaming, and refuses before touching any file when one is missing or lacks a key. Add the placeholder `description:` and `Comment=` lines to the template's files.
 7. [ ] Docs and steps: README's "Using this as a template" command, the Taskfile `init` task's `desc`, TODO.md's template-user steps (drop the nfpm description/maintainer and info.json steps, keep `Categories` in the desktop file one), `test/packaging/nsis_test.go`'s "placeholders" comment, and the desktop packaging plan's mentions of these placeholders. Remove the `@wip` tags, run `task test:init`, `task test:rename` and `task check`, tick the TODO item, delete this file.
 
