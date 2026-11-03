@@ -143,7 +143,7 @@ Users can run the app as a program on their own computer, so they can use it wit
 - It keeps the user's data in a data folder on their computer. It needs no server and no connection, and it doesn't open a network port.
 - By default the data folder is the user's settings folder for the app (on Linux, `~/.config/starter`). The user can choose another one in the settings file (§4.12), or when they start the app.
 - Data is still there after the app is closed and opened again.
-- Only one copy of the app can use a data folder at a time. A second copy says the data is already in use, and doesn't start.
+- With plain-text storage (the default), only one copy of the app can use a data folder at a time. A second copy says the data is already in use, and doesn't start. SQLite storage (§4.14) has no such limit.
 - In local-only mode, it never says it is offline, because it doesn't need a connection.
 - It shows the product's icon, the same one as the installed web app (§4.5), in the taskbar or Dock. On Linux the icon comes from the installed app, so a copy that wasn't installed from a package may show a generic icon.
 - On Linux, users install it from a package for their system (`.deb` for Debian, Ubuntu and Pop!_OS; `.rpm` for Fedora and openSUSE), or run it as an AppImage with nothing to install. Once installed, it appears in the app list under the product's name and icon, and uninstalling it leaves the user's data folder alone.
@@ -242,7 +242,7 @@ On one computer, the desktop app, the CLI and the TUI are one local edition, so 
 **Rules**
 - By default the CLI and the TUI use the desktop app's data folder (§4.6): the user's settings folder for the app (on Linux, `~/.config/starter`). The folder they're run from makes no difference.
 - The user can choose another data folder, for one command or for all of them, as for the desktop app.
-- Only one program can use a data folder at a time. While the desktop app is open, the command line says the data is already in use, and changes nothing.
+- With plain-text storage (the default), only one program can use a data folder at a time. While the desktop app is open, the command line says the data is already in use, and changes nothing. With SQLite storage (§4.14), both can use it at once.
 - `starter info` says which data folder the command line uses, and the workspace's plan.
 - Connected to a server (`--server`), the command line uses that server's data, and keeps none on the computer.
 - The server isn't part of this: it keeps its data where it's configured to (by default `./data`, where it was started).
@@ -301,11 +301,34 @@ Users who live in a terminal can do their work with the command line, one comman
 
 **Specification:** the business rules are in [`features/`](features/), run against the driving ports. These journeys only prove the wiring: they run the built programs in a terminal, as a user would. [`test/terminal/features/command-line.feature`](test/terminal/features/command-line.feature), [`test/terminal/features/terminal-app.feature`](test/terminal/features/terminal-app.feature).
 
+### 4.14 Keep data in SQLite
+
+Data can be kept in a SQLite database instead of as plain text, so that several programs can use it at the same time: the desktop app and the command line on one computer, or several copies of a server on one disk. Plain text stays the default. This is step 6 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md); the hosted edition's database (Postgres) comes in step 7.
+
+**Rules**
+- The storage setting (§4.12) chooses how data is kept: `jsonfile` (plain text, the default), `sqlite` or `memory`. The server, the command line, the terminal app and the desktop app all honour it. The mobile app keeps plain text for now.
+- SQLite keeps all the data in one database file in the data folder.
+- Several programs can use the same SQLite data at once, and each sees what the others saved. (Plain-text data is still for one program at a time, §4.6 and §4.11.)
+- Opening the data brings its layout up to date with the app. Data saved by a newer version of the app, with a layout this one doesn't know, is refused rather than changed.
+- A server on SQLite is ready while it can reach its database, and not ready once the database is gone (§4.10).
+- Each workspace's data stays separate, as with every kind of storage (§4.8).
+- Don't keep SQLite data in a folder that a file-sync service (Dropbox, iCloud Drive, Syncthing, …) syncs: it can damage the database. A warning when the folder looks synced is planned.
+
+**Examples**
+- The settings file says `storage = "sqlite"` → the desktop app keeps its data in SQLite, and `starter info` works while the desktop app is open.
+<!-- sample:start -->
+- User adds "Widget" in the desktop app and, with it still open, runs `starter item list` → "Widget" is listed.
+<!-- sample:end -->
+- A server on SQLite whose data folder is removed → not ready: the data is unavailable.
+- A user opens data saved by a newer version of the app → it isn't opened, and they're told it's from a newer version.
+
+**Specification:** [`features/sqlite-storage.feature`](features/sqlite-storage.feature). Every other feature's business scenarios also run on SQLite storage. Refusing a newer layout is checked by unit tests.
+
 ## 5. Non-functional requirements
 
 | Area | Requirement |
 |---|---|
-| Availability | _e.g. best effort; single instance while on plain-text storage_ |
+| Availability | _e.g. best effort; single instance while on plain-text storage, several on one disk with SQLite_ |
 | Data | _e.g. data survives restarts; backups via volume snapshots_ |
 | Security | _e.g. no sign-in yet; see "Out of scope". Planned: sign-in for the hosted edition. A self-hosted server for one user (local edition) keeps running without sign-in_ |
 | Accessibility | Web UI is keyboard navigable, and controls have accessible names (also used by tests) |
@@ -314,4 +337,4 @@ Users who live in a terminal can do their work with the command line, one comman
 ## 6. Out of scope (for now)
 
 - Authentication and authorization (planned: hosted edition, [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md))
-- Multi-instance deployments (blocked by the jsonfile adapter; see ADR 0003). Planned for the hosted edition, with the Postgres adapter ([`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md), step 7)
+- Multi-machine deployments (plain text allows one instance, SQLite several on one disk; see ADR 0003). Planned for the hosted edition, with the Postgres adapter ([`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md), step 7)

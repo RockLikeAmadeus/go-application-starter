@@ -75,9 +75,11 @@ SPEC.md §4.9 · [`features/plans.feature`](../../features/plans.feature) · [AD
 - Detect conflict copies. Warn about a heartbeat lock file from another device.
 - Update ADR 3.
 
-### 6. SQLite adapter and migrations — not started
+### 6. SQLite adapter and migrations — in progress
+SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-storage.feature) · working notes: [`docs/wip/sqlite-storage.md`](../wip/sqlite-storage.md).
 - This is the existing "SQL storage adapter" TODO item. It passes every contract suite, including isolation.
-- The user chooses plain text or SQLite. SQLite warns when its folder looks synced.
+- The user chooses plain text or SQLite (`storage = "sqlite"`). SQLite has no lock: the desktop app, the CLI and TUI, and several servers on one disk can share it.
+- The warning when SQLite's folder looks synced is deferred to a follow-up.
 
 ### 7. Postgres adapter — not started
 - For the hosted edition. It shares the schema with SQLite where possible, and is tested against a Postgres container in CI.
@@ -100,6 +102,7 @@ SPEC.md §4.9 · [`features/plans.feature`](../../features/plans.feature) · [AD
 - Synced folders on Android (Storage Access Framework).
 - Teams: workspace members and roles.
 - A paid local licence key, behind the entitlements port.
+- SQLite warns when its data folder looks synced (Dropbox, iCloud Drive, Syncthing, …); perhaps with step 5's conflict-copy detection.
 
 ## Verification after every step
 - `task check`, plus `task accept` with the step's `@wip` scenarios passing on every relevant driver.
@@ -123,3 +126,4 @@ SPEC.md §4.9 · [`features/plans.feature`](../../features/plans.feature) · [AD
   - The item endpoints keep their `default` problem response, which covers the limit's 403, rather than listing it.
   - `free` and `pro` ship in the plans file as example data, for sign-in (step 8) to put hosted workspaces on.
   - Template code had come to depend on sample code (`bootstrap`'s plans, httpclient's `toError`). Both are fixed, CLAUDE.md now says to keep machinery in template code with one thin sample use, and to run `task test:init` whenever a cycle touches a sample boundary. The other cases found are TODO.md items (`/readyz`, generic UI helpers).
+- 2026-11-03: step 6 (SQLite) started before step 5, at the user's request; neither depends on the other. Its synced-folder warning moves to a follow-up. Decided: modernc.org/sqlite (pure Go), goose migrations, no lock (WAL), so SQLite lifts ADR 3's one-program limit.

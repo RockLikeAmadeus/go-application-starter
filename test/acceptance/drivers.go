@@ -195,21 +195,15 @@ func startServer() (*harness, error) {
 	if err != nil {
 		return nil, err
 	}
-	core, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
-	if err != nil {
-		os.RemoveAll(dir)
-		return nil, err
-	}
-	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{
-		Entitlements: core.Entitlements,
-		Ready:        core.Ready,
-	}))
 	h := newHarness()
-	h.server = &testServer{url: srv.URL, dataDir: dir}
+	h.server = &testServer{dataDir: dir}
 	h.cleanup = func() {
-		srv.Close()
-		core.Close()
+		h.server.stop()
 		os.RemoveAll(dir)
+	}
+	if err := h.server.start(config.StorageJSONFile); err != nil {
+		h.cleanup()
+		return nil, err
 	}
 	return h, nil
 }
@@ -218,6 +212,41 @@ func startServer() (*harness, error) {
 type testServer struct {
 	url     string
 	dataDir string
+	close   func()
+}
+
+// start wires the core as cmd/server does, on storage in the server's data
+// folder, and serves it over HTTP.
+func (s *testServer) start(storage config.Storage) error {
+	core, err := bootstrap.NewEmbedded(config.Config{Storage: storage, DataDir: s.dataDir})
+	if err != nil {
+		return err
+	}
+	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{
+		Entitlements: core.Entitlements,
+		Ready:        core.Ready,
+	}))
+	s.url = srv.URL
+	s.close = func() {
+		srv.Close()
+		core.Close()
+	}
+	return nil
+}
+
+// stop stops the server, if it is running.
+func (s *testServer) stop() {
+	if s.close != nil {
+		s.close()
+		s.close = nil
+	}
+}
+
+// restart stops the server and starts it again on storage, in the same data
+// folder.
+func (s *testServer) restart(storage config.Storage) error {
+	s.stop()
+	return s.start(storage)
 }
 
 // readiness asks the server whether it is ready, as a deployment's probe
