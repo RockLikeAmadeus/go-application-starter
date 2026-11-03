@@ -98,6 +98,35 @@ git tag -d v1.2.0                              # your local copy of the tag
 
 The Docker image stays in GHCR: delete it under the repository's **Packages** if you want it gone.
 
+### Trying a release with a test tag
+
+To check the whole release works, e.g. after changing `release.yml` or `.goreleaser.yml`, make a test release and delete it afterwards. It's public while it exists, so do it when you can watch it through.
+
+1. **Push your changes first.** The tag points at a commit, so the commit must be on GitHub: commit, `git push`, and wait for CI to go green.
+2. **Pick a version nobody will use**, such as `v0.0.1`. It must be plain numbers (`vX.Y.Z`), or the installers come out as `0.0.0`.
+3. **Make the tag and push it:**
+   ```sh
+   git tag v0.0.1
+   git push origin v0.0.1
+   ```
+4. **Watch the Release run.** Open the **Actions** tab and the newest **Release** run. Three jobs start together: `goreleaser` (a minute or two), `desktop-windows` (a few minutes) and `desktop-linux` (the slowest). When all three are green, `publish` runs, which takes a few seconds. CI runs too, as it does for any push.
+5. **Check the Release page.** On the repository's front page, click **Releases** (on the right), then `v0.0.1`. Under **Assets** you should see:
+   - six CLI downloads (`starter_…_linux_amd64.tar.gz` and so on; the two Windows ones are `.zip`) and `checksums.txt`
+   - the Linux packages: `starter-desktop_0.0.1_amd64.deb`, `starter-desktop-0.0.1-1.x86_64.rpm` and `starter-desktop-0.0.1-x86_64.AppImage`
+   - the Windows setup program: `starter-desktop-0.0.1-setup.exe`
+   - two **Source code** downloads, which GitHub adds to every Release
+
+   The version in each file name should be `0.0.1`. If you like, download one and install it, as in [Building the desktop installers by hand](#building-the-desktop-installers-by-hand).
+6. **Delete the test release**, so nobody mistakes it for a real version:
+   ```sh
+   gh release delete v0.0.1 --cleanup-tag --yes   # removes the Release and the tag on GitHub
+   git tag -d v0.0.1                              # removes the tag on your computer
+   ```
+   Check the **Releases** page is empty again.
+7. **Optionally, delete the Docker image** CI published for the tag. On the repository's front page, click the package under **Packages** (on the right), then **View and manage all versions**. Find the version tagged `0.0.1`, open its **⋯** menu and choose **Delete version**.
+
+**If something goes red:** open the failed job's log (see [When a run fails](#when-a-run-fails)). `publish` is skipped, so the installers aren't added: the Release has only the CLI downloads, or doesn't exist if `goreleaser` failed. Delete what's there as in step 6 (if there's no Release, `git push origin --delete v0.0.1` removes the tag on GitHub), fix the problem, push the fix, and start again from step 3. You can reuse the same tag name once it's deleted.
+
 ## Building the desktop installers by hand
 
 To build the desktop installers on GitHub without making a release, e.g. after changing `build/desktop/` or the Release workflow:
