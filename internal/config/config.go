@@ -17,6 +17,7 @@ type Storage string
 const (
 	StorageMemory   Storage = "memory"
 	StorageJSONFile Storage = "jsonfile"
+	StorageSQLite   Storage = "sqlite"
 )
 
 type Config struct {
@@ -119,9 +120,9 @@ func (c Config) Settings() []Setting {
 
 func (c Config) Validate() error {
 	switch c.Storage {
-	case StorageMemory, StorageJSONFile:
+	case StorageMemory, StorageJSONFile, StorageSQLite:
 	default:
-		return fmt.Errorf("unknown storage %q (want %q or %q)", c.Storage, StorageMemory, StorageJSONFile)
+		return fmt.Errorf("unknown storage %q (want %q, %q or %q)", c.Storage, StorageMemory, StorageJSONFile, StorageSQLite)
 	}
 	if c.LogFormat != "json" && c.LogFormat != "text" {
 		return fmt.Errorf("unknown log format %q", c.LogFormat)

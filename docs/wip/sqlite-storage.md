@@ -22,7 +22,7 @@ Temporary: delete this file in the same change that removes the `@wip` tags.
 - **Acceptance:** a new `sqlite` driver runs every business scenario (same tags as jsonfile: workspace and plan scenarios included). The `@wip` scenarios here run on the desktop driver (settings file → SQLite → reopen) and on the server driver (`testServer.restart` on SQLite). The server driver can now restart on another storage. That's a test-only change, already made.
 
 ## Tasks
-1. [ ] **config:** `storage = "sqlite"` is accepted (`config.StorageSQLite`), and the error for an unknown storage names all three.
+1. [x] **config:** `storage = "sqlite"` is accepted (`config.StorageSQLite`), and the error for an unknown storage names all three. Red: `undefined: config.StorageSQLite` (one test, `TestStorageAcceptsSQLite…`). Green: constant, `validate` case and error text. For refactor: none (`cli.keepsDataInAFolder` and `desktop.Open` need sqlite in tasks 7–8).
 2. [ ] **sqlite.Open(dir)** creates `<dir>/data.db`, turns on WAL, a busy timeout and foreign keys, and applies the embedded goose migrations. Opening it a second time in the same directory works (no lock), and `Close` releases it.
 3. [ ] **Newer data refused:** `Open` fails, naming a newer version of the app, when the database's migration version is ahead of the newest embedded migration.
 4. [ ] **Store.Ready** is nil on an open store, and fails once the data folder (and so the database file) is removed. It checks afresh each time.
