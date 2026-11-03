@@ -8,11 +8,18 @@ import (
 	"path/filepath"
 )
 
+// markers are the files or folders a sync service leaves at the top of the
+// folder it keeps in sync, each with the service's name.
+var markers = []struct{ name, service string }{
+	{".dropbox", "Dropbox"},
+	{".stfolder", "Syncthing"},
+}
+
 // Detect reports the sync service that seems to keep dir in sync, if any.
 func Detect(dir string) (service string, ok bool) {
 	for {
-		if _, err := os.Stat(filepath.Join(dir, ".dropbox")); err == nil {
-			return "Dropbox", true
+		if service, ok := markedBy(dir); ok {
+			return service, true
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
@@ -20,4 +27,14 @@ func Detect(dir string) (service string, ok bool) {
 		}
 		dir = parent
 	}
+}
+
+// markedBy reports the service whose marker dir holds, if any.
+func markedBy(dir string) (service string, ok bool) {
+	for _, m := range markers {
+		if _, err := os.Stat(filepath.Join(dir, m.name)); err == nil {
+			return m.service, true
+		}
+	}
+	return "", false
 }

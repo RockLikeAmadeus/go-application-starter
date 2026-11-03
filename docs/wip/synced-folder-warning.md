@@ -31,7 +31,10 @@
   - Green: `Detect` walks up from `dir` to the root, `Dropbox` at the first `.dropbox`.
   - Refactor: nothing; a marker table waits until task 2 brings a second marker.
   - Cycle 2, no red: `TestDetect_AFolderWithNoSignsAnywhereAboveItDoesNotLookSynced` passed at once (the walk already ends with `("", false)`), kept as a guard; a mutation always answering Dropbox made it fail. Refactor: a `folderInside` test helper.
-- [ ] 2. `Detect`: `.stfolder` above the folder → Syncthing.
+- [x] 2. `Detect`: `.stfolder` above the folder → Syncthing.
+  - Red: `TestDetect_AFolderInsideOneHoldingDotStfolderLooksSyncedBySyncthing` failed: `Detect` = `("", false)`, want `("Syncthing", true)`.
+  - Green: a second `os.Stat` check for `.stfolder` → `Syncthing`.
+  - Refactor: the two checks became a `markers` table read by `markedBy`; task 3's patterns will need a glob there.
 - [ ] 3. `Detect`: `.sync_*.db` or `._sync_*.db` above the folder → Nextcloud.
 - [ ] 4. `Detect`: folder names (table test): `Dropbox`, `OneDrive`, `OneDrive - Contoso`, `Google Drive`, `My Drive`, `iCloud Drive`, `iCloudDrive`, `Mobile Documents`.
 - [ ] 5. `Detect`: macOS `Library/CloudStorage/<Provider>-…` → that provider (`Dropbox-Personal` → Dropbox, `GoogleDrive-me@example.com` → Google Drive, `OneDrive-Personal` → OneDrive).

@@ -38,3 +38,16 @@ func TestDetect_AFolderWithNoSignsAnywhereAboveItDoesNotLookSynced(t *testing.T)
 		t.Errorf("Detect(%q) = (%q, true), want (\"\", false)", dir, service)
 	}
 }
+
+func TestDetect_AFolderInsideOneHoldingDotStfolderLooksSyncedBySyncthing(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, ".stfolder"), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	dir := folderInside(t, root)
+
+	service, ok := syncedfolder.Detect(dir)
+	if !ok || service != "Syncthing" {
+		t.Errorf("Detect(%q) = (%q, %v), want (%q, true)", dir, service, ok, "Syncthing")
+	}
+}
