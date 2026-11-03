@@ -26,7 +26,10 @@ TODO.md item: **Init asks for the app's description and publisher.**
    - Red: `TestParseArgsRefusesUnsafePackageDetails` failed: ParseArgs accepted every bad value (error = nil). Line breaks say `… must be one line`.
    - Green: ParseArgs checks the description, publisher and email after the module.
    - Refactor: `checkDetails` holds the detail checks, with `checkLine` for the description's and publisher's shared rule (fixing the stray backslash). Slug keeps its own check: refusing line breaks there would change the name's rule.
-3. [ ] A pure function sets nfpm.yaml's `description:` and `maintainer:` lines (quoted so any allowed text is valid YAML), keeping everything else; it fails when either key is missing.
+3. [x] A pure function sets nfpm.yaml's `description:` and `maintainer:` lines (quoted so any allowed text is valid YAML), keeping everything else; it fails when either key is missing.
+   - Red: `TestSetNFPMDetails` failed: the stub returned the text unchanged and no error for a missing key.
+   - Green: `SetNFPMDetails(text, Options)` in `packaging.go` rewrites both top-level lines, quoted.
+   - Refactor: `replaceLine(text, prefix, line)` holds the find-and-replace (ready for task 4's `Comment=`); doc comments added.
 4. [ ] A pure function sets the desktop file's `Comment=` line; it fails when the key is missing.
 5. [ ] A pure function sets info.json's `CompanyName` and `LegalCopyright` (`© <publisher>`), keeping its layout, `FileDescription` and the `@VERSION@` placeholders; JSON-escaped, no HTML escaping (`&` stays `&`). Fails when a key is missing.
 6. [ ] `Run` applies 3–5 to the three files after renaming, and refuses before touching any file when one is missing or lacks a key. Add the placeholder `description:` and `Comment=` lines to the template's files.
