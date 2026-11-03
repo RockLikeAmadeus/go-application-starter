@@ -37,12 +37,14 @@ Work through them one at a time (each usually starts with `/feature`), tick them
 - [ ] **Authentication behind a port.** An `Authenticator` port with a simple session or OIDC adapter, wired through the REST API, the SPA, and the CLI's `--server` mode. Currently listed in SPEC.md §6 "Out of scope". This is step 8 of the [editions plan](docs/plans/editions-and-accounts.md): OIDC plus a dev-only fake login, with CLI and TUI login in step 9.
 - [x] **Phone-width SPA layout.** The sidebar is a fixed `w-60`, so the app breaks on phones. Add a collapsible sidebar or bottom navigation, and check it in all three styles and both themes.
   - [x] Run `task test:init` to confirm `--remove-sample` still works now that the sidebar's content is shared with the phone menu (`SidebarContent` in `web/src/routes/Layout.tsx`). Passed on 2026-10-30.
-- [ ] **Universal application user stories that should survive `--remove-sample`** (each a separate /feature and should be designed such that template users can expand on them easily) 
+- [ ] **Universal application user stories that should survive `--remove-sample`** (each a separate /feature and should be designed such that template users can expand on them easily).  The idea is to have to do as little as possible from scratch for features that are common to utilities or consumer-focused software, so that template users can focus development primarily on their respective problem space. Each should be well-documented, and this documentation should be pointed to by a top-level guide for template users.
   - [ ] **Change application settings (e.g. theme, style, other domain-specific settings) from a settings menu in all clients**
   - [ ] **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the template users.
   - [ ] **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable.
-  - [ ] If possible, **basic record searching, sorting, and filtering functionality** that can be reused for any data entity in the application
+  - [ ] If possible, **basic record searching, sorting, and filtering functionality** that can be reused for as-yet-unimplemented and domain-specific data models in the application.
   - [ ] **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version.
+  - [ ] **Form validation helpers**
+  - [ ] **Other features along these same lines likely to be required by template users** that we brainstorm.
 
   
 
