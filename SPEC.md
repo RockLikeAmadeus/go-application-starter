@@ -193,7 +193,7 @@ All data belongs to a workspace, so that when one server serves many users, nobo
 - Workspace Alpha has "Widget", and Beta has "Gadget" → Alpha lists only "Widget", and Beta only "Gadget".
 - Someone in Beta tries to rename or delete Alpha's "Widget" → they're told it wasn't found, and Alpha still has "Widget".
 
-**Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory and jsonfile drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition.
+**Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory, jsonfile and sqlite drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition.
 <!-- sample:end -->
 
 ### 4.9 Plans and limits
@@ -215,7 +215,7 @@ Each workspace is on a **plan**, which sets its limits: for example, how many it
 - The free plan allows 3 items and makes them read only when over. A workspace with 4 items moves to it → it can't rename an item, but can delete one; with 3 items left, it can rename again.
 - The pro plan has no item limit → a workspace on it can create a fourth item.
 
-**Specification:** [`features/plans.feature`](features/plans.feature). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
+**Specification:** [`features/plans.feature`](features/plans.feature). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile, sqlite and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
 <!-- sample:end -->
 
 ### 4.10 Tell when the server is ready
@@ -312,7 +312,13 @@ Data can be kept in a SQLite database instead of as plain text, so that several 
 - Opening the data brings its layout up to date with the app. Data saved by a newer version of the app, with a layout this one doesn't know, is refused rather than changed.
 - A server on SQLite is ready while it can reach its database, and not ready once the database is gone (§4.10).
 - Each workspace's data stays separate, as with every kind of storage (§4.8).
-- Don't keep SQLite data in a folder that a file-sync service (Dropbox, iCloud Drive, Syncthing, …) syncs: it can damage the database. A warning when the folder looks synced is planned.
+- Don't keep SQLite data in a folder that a file-sync service (Dropbox, iCloud Drive, Google Drive, OneDrive, Syncthing, Nextcloud, …) syncs: it can damage the database. When the data folder looks synced, the app warns, naming the service, and keeps working:
+  - the desktop app (and the server's web app) shows the warning in its window;
+  - the command line prints it with every command, apart from the command's own output;
+  - the terminal app shows it on its screen;
+  - the server logs it when it starts.
+- Telling whether a folder is synced is a best guess, from the folder's path and the files a sync service leaves in it. A user whose folder looks synced but isn't (it's excluded from sync, say) can turn the warning off with the `ignore_synced_folder` setting.
+- Plain-text data in a synced folder gets no warning: it's safe there while one device at a time uses it (ADR 5).
 
 **Examples**
 - The settings file says `storage = "sqlite"` → the desktop app keeps its data in SQLite, and `starter info` works while the desktop app is open.
@@ -321,8 +327,11 @@ Data can be kept in a SQLite database instead of as plain text, so that several 
 <!-- sample:end -->
 - A server on SQLite whose data folder is removed → not ready: the data is unavailable.
 - A user opens data saved by a newer version of the app → it isn't opened, and they're told it's from a newer version.
+- The desktop app keeps SQLite data in `~/Dropbox/starter` → its window warns: "Your data folder looks synced by Dropbox. A sync service can damage SQLite data: move the data folder out of it, or keep your data as plain text." `starter item list` still lists the items, with the same warning beside them.
+- The same user sets `ignore_synced_folder = true` → no warning.
+- Plain-text data in `~/Dropbox/starter` → no warning.
 
-**Specification:** [`features/sqlite-storage.feature`](features/sqlite-storage.feature). Every other feature's business scenarios also run on SQLite storage. Refusing a newer layout is checked by unit tests.
+**Specification:** [`features/sqlite-storage.feature`](features/sqlite-storage.feature) and [`features/synced-folder.feature`](features/synced-folder.feature). Every other feature's business scenarios also run on SQLite storage. Refusing a newer layout, and which paths and files mean a synced folder, are checked by unit tests.
 
 ## 5. Non-functional requirements
 

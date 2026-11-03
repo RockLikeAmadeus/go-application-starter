@@ -34,6 +34,8 @@ type journey struct {
 	home string
 	// dataDir is the data folder the user has chosen, if any.
 	dataDir string
+	// settings are the user's own STARTER_* settings, as KEY=value.
+	settings []string
 	// term is the terminal the program last ran in.
 	term *term.Terminal
 	// serverURL is the address of the server this scenario started, if any.
@@ -73,7 +75,7 @@ func initializeScenario(sc *godog.ScenarioContext) {
 func (j *journey) run(args ...string) error {
 	cmd := exec.Command(cliProgram, args...)
 	cmd.Dir = j.home
-	cmd.Env = j.env()
+	cmd.Env = append(j.env(), j.settings...)
 	t, err := term.Start(cmd)
 	if err != nil {
 		return fmt.Errorf("starting starter %s: %w", strings.Join(args, " "), err)

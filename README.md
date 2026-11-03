@@ -19,8 +19,8 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
  Desktop / Android ┘              core (domain + app)
  (in-process, no port)                 │
                                driven ports
-                              ┌────────┴────────┐
-                           memory            jsonfile   (← SQLite, Postgres planned)
+                           ┌──────────┼──────────┐
+                        memory    jsonfile    sqlite   (← Postgres planned)
 
  Local edition:  CLI / TUI embedded, desktop and Android apps, a self-hosted server
  Hosted edition: the web app on a hosted server with sign-in, plus the CLI / TUI and
@@ -89,7 +89,7 @@ Repeat red → green → refactor until `task accept` is green, then drop the `@
 
 ### Three layers of Gherkin
 
-- `features/*.feature` (**Godog**) holds the business rules in domain language. Each scenario runs against up to five drivers (in-memory core, jsonfile storage, the full HTTP server+client, the desktop app's wiring, and the mobile app's wiring across its bridge), all in-process and fast.
+- `features/*.feature` (**Godog**) holds the business rules in domain language. Each scenario runs against up to six drivers (in-memory core, jsonfile storage, SQLite storage, the full HTTP server+client, the desktop app's wiring, and the mobile app's wiring across its bridge), all in-process and fast.
 - `web/e2e/features/*.feature` (**playwright-bdd**) holds a thin set of browser journeys proving the UI → API → core wiring.
 - `test/terminal/features/*.feature` (**Godog**, with `creack/pty` and `charmbracelet/x/vt`) holds a thin set of terminal journeys: the built `starter` program, in a real pseudo-terminal, proving the CLI's options, output and exit status, and the TUI's keys and screen, reach the core and back (also through `--server`).
 
@@ -130,7 +130,7 @@ Then, in GitHub, open **Settings → Environments** and:
 
 Fly must be able to pull the image from GHCR. The simplest option is to make the package public (**Package settings → Change visibility**). To keep it private, change `deploy.yml` to `flyctl deploy --remote-only` (Fly builds from source) instead of `--image`.
 
-> ⚠️ The `jsonfile` adapter requires **one machine per volume** (it takes an exclusive lock). Don't `fly scale count` above 1 until you've moved to a database adapter.
+> ⚠️ Both file-based adapters need **one machine per volume**: `jsonfile` takes an exclusive lock, and a `sqlite` database can't be shared between machines (several processes on one machine are fine; see [ADR 7](docs/adr/0007-sqlite-storage.md)). Don't `fly scale count` above 1 until you've moved to a database server such as Postgres (planned).
 
 ### Docker
 
@@ -147,7 +147,6 @@ Fly must be able to pull the image from GHCR. The simplest option is to make the
 ## Ideas not included (yet)
 
 - **Devcontainer** (`.devcontainer/`) so the toolchain is reproducible in Codespaces.
-- **SQLite adapter** as a second storage example. Run the contract suite, then switch it in `bootstrap`. This also removes the single-machine limit if you move to LiteFS or Postgres.
 - **OpenTelemetry** tracing and metrics around the driving ports.
 - **Auth** (OIDC) as HTTP middleware, plus a `Principal` passed through `context`.
 - **Conventional commits + release-please** for automatic changelogs and versions.

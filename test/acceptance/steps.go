@@ -15,8 +15,10 @@ import (
 type world struct {
 	*harness
 	lastErr error
-	// cliOut is what the command line last printed.
-	cliOut string
+	// cliOut is what the command line last printed, and cliErrOut what it
+	// last printed apart from that (its warnings).
+	cliOut    string
+	cliErrOut string
 }
 
 func initializeScenario(d driver) func(*godog.ScenarioContext) {
@@ -45,6 +47,7 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		w.registerEntitlementsSteps(sc)
 		w.registerReadinessSteps(sc)
 		w.registerSQLiteSteps(sc)
+		w.registerSyncedFolderSteps(sc)
 		// sample:start
 		w.registerItemSteps(sc)
 		w.registerPlanSteps(sc)

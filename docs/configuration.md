@@ -13,8 +13,8 @@ So the settings file holds what you want every time, and an environment variable
 
 | Key in the file | Environment variable | CLI option | Default | What it does |
 |---|---|---|---|---|
-| `storage` | `STARTER_STORAGE` | `--storage` | `jsonfile` | Where the core keeps its data: `jsonfile` (plain JSON in a data folder) or `memory` (lost when the process ends). The desktop app always uses `jsonfile`. |
-| `data_dir` | `STARTER_DATA_DIR` | `--data-dir` | see below | The data folder for `jsonfile`. |
+| `storage` | `STARTER_STORAGE` | `--storage` | `jsonfile` | Where the core keeps its data: `jsonfile` (plain JSON in a data folder, one program at a time), `sqlite` (one SQLite database, `data.db`, in the data folder, which several programs can use at once; [ADR 7](adr/0007-sqlite-storage.md)) or `memory` (lost when the process ends). The desktop app takes `jsonfile` or `sqlite`, and uses `jsonfile` for anything else. The Android app always uses `jsonfile`. |
+| `data_dir` | `STARTER_DATA_DIR` | `--data-dir` | see below | The data folder for `jsonfile` and `sqlite`. |
 | `port` | `PORT` | | `8080` | The port the server listens on. `PORT` has no prefix: it's the name cloud platforms set. |
 | `server_url` | `STARTER_SERVER_URL` | `--server` | none | Makes the CLI and TUI use a server at this URL instead of their own data. |
 | `log_format` | `STARTER_LOG_FORMAT` | | `text` | The server's log format: `text` or `json`. |
@@ -31,6 +31,10 @@ It's [TOML](https://toml.io): one `key = value` per line, strings in quotes, `#`
 
 # Keep the data in a synced folder (one device at a time: see docs/data-locations.md).
 data_dir = "/home/you/Sync/starter"
+
+# Keep it in SQLite, so the CLI works while the desktop app is open.
+# (Not in a synced folder: a sync service can damage the database.)
+# storage = "sqlite"
 
 # Try out a plan's limits.
 # plans_file = "/home/you/plans.jsonc"
