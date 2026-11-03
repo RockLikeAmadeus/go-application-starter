@@ -60,7 +60,9 @@ Temporary: delete this file in the same change that removes the `@wip` tags.
 9. [x] **Acceptance `sqlite` driver** in `test/acceptance/drivers.go` (tags like jsonfile's). Run all of `task accept`, and get the `@wip` scenarios green.
    No red: the driver passed its 23 scenarios (jsonfile's set) at once, and the `@wip` ones were already green after task 8. Kept as a guard: reversing `FindAll`'s order fails 9 of them. Green skipped.
    Refactor: `startJSONFile` removes its folder when `Open` fails, as `startSQLite` does; CLAUDE.md's driver list names sqlite. The two drivers' shared setup stays: a helper would leave the store used only in the `sample:` block, so the template wouldn't compile without the sample.
-10. [ ] **Init:** add the items migration and `item_repository*.go` to `SampleFiles`. Make sure the template's migrations embed and `Open` still work without them. Run `task test:init`.
+10. [x] **Init:** add the items migration and `item_repository*.go` to `SampleFiles`. Make sure the template's migrations embed and `Open` still work without them. Run `task test:init`.
+   No red: the files went into `SampleFiles` in task 5, and the template's `00001_baseline.sql` stays, so `Open` works without the sample. New guard `TestSampleFilesLeaveTheTemplateASQLiteMigration` (`scripts/initproject/manifest_test.go`) passed at once; marking the baseline as sample fails it. Green skipped.
+   Refactor: the manifest tests share `repoRoot`.
 11. [ ] **Docs and finish:**
    - `docs/configuration.md` (the storage values);
    - a new ADR 7 (SQLite: modernc, goose, WAL, no lock, `data.db`), and ADR 3's consequences pointing to it;

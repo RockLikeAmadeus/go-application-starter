@@ -8,10 +8,12 @@ import (
 	initproject "github.com/RockLikeAmadeus/go-application-starter/scripts/initproject"
 )
 
+// repoRoot is the template's root, seen from this package's directory.
+var repoRoot = filepath.Join("..", "..")
+
 func TestSampleFiles(t *testing.T) {
-	root := filepath.Join("..", "..")
 	for _, entry := range initproject.SampleFiles {
-		if _, err := os.Stat(filepath.Join(root, entry)); err != nil {
+		if _, err := os.Stat(filepath.Join(repoRoot, entry)); err != nil {
 			t.Errorf("sample entry %q is not in the template: %v", entry, err)
 		}
 	}
@@ -30,4 +32,20 @@ func TestSampleFiles(t *testing.T) {
 			t.Errorf("SampleFiles does not cover %s", f)
 		}
 	}
+}
+
+// goose refuses to run with no migrations, so removing the sample must leave
+// the SQLite store at least one migration of the template's own.
+func TestSampleFilesLeaveTheTemplateASQLiteMigration(t *testing.T) {
+	dir := "internal/adapters/storage/sqlite/migrations"
+	entries, err := os.ReadDir(filepath.Join(repoRoot, dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if filepath.Ext(e.Name()) == ".sql" && !initproject.IsSample(dir+"/"+e.Name()) {
+			return
+		}
+	}
+	t.Errorf("every migration in %s is a sample file; the template needs one of its own", dir)
 }
