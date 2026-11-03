@@ -41,7 +41,7 @@ Work through them one at a time (each usually starts with `/feature`), tick them
   - [ ] **Change application settings (e.g. theme, style, other domain-specific settings) from a settings menu in all clients**
   - [ ] **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the template users.
   - [ ] **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable.
-  - [ ] If possible, **basic record searching and filtering functionality** that can be reused for any data entity in the application
+  - [ ] If possible, **basic record searching, sorting, and filtering functionality** that can be reused for any data entity in the application
   - [ ] **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version.
 
   
