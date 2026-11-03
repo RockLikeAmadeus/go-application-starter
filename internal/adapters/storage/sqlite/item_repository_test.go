@@ -5,16 +5,30 @@ import (
 	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/storagetest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
-func TestItemRepositoryFindsASavedItemWithItsTimesInUTCAtFullPrecision(t *testing.T) {
+func TestItemRepositoryContract(t *testing.T) {
+	storagetest.RunItemRepositoryContract(t, func(t *testing.T) ports.ItemRepository {
+		return newItemRepository(t)
+	})
+}
+
+// newItemRepository opens a store in a fresh folder, closed when the test ends.
+func newItemRepository(t *testing.T) *sqlite.ItemRepository {
+	t.Helper()
 	store, err := sqlite.Open(t.TempDir())
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	defer store.Close()
-	repo := sqlite.NewItemRepository(store)
+	t.Cleanup(func() { store.Close() })
+	return sqlite.NewItemRepository(store)
+}
+
+func TestItemRepositoryFindsASavedItemWithItsTimesInUTCAtFullPrecision(t *testing.T) {
+	repo := newItemRepository(t)
 	elsewhere := time.FixedZone("UTC+1", 60*60)
 	want := domain.Item{
 		ID:          "a",

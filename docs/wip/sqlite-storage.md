@@ -28,11 +28,14 @@ Temporary: delete this file in the same change that removes the `@wip` tags.
    Refactor: the check moved into `refuseNewer`. Its `ListSources()[len-1]` relies on at least one migration (goose refuses none), which task 10 must keep in mind.
 4. [x] **Store.Ready** is nil on an open store, and fails once the data folder (and so the database file) is removed. It checks afresh each time. Red: `TestStoreIsReadyUntilItsDataFolderIsRemoved`, "Ready error = nil" after removal (stub returned nil). Green: `Ready` pings, then `os.SameFile` against the `FileInfo` that `Open` took of `data.db`.
    Refactor: the DSN moved into `dsn(path)`, so `Open` reads as steps. A test for a *replaced* file (SameFile) was left out: removal already shows it, and a separate guard would add little.
-5. [ ] **(sample) ItemRepository passes `storagetest.RunItemRepositoryContract`**, workspace isolation included: an `items` migration plus `Save`/`FindByID`/`FindAll`/`Delete`. Expect two cycles: Save + FindByID, then FindAll ordering + Delete. Times round-trip in UTC, at full precision.
+5. [x] **(sample) ItemRepository passes `storagetest.RunItemRepositoryContract`**, workspace isolation included: an `items` migration plus `Save`/`FindByID`/`FindAll`/`Delete`. Expect two cycles: Save + FindByID, then FindAll ordering + Delete. Times round-trip in UTC, at full precision.
    - Cycle 1 (Save + FindByID). Red: `TestItemRepositoryFindsASavedItemWithItsTimesInUTCAtFullPrecision`, zero Item back (stubs).
      Green: `00002_items.sql` (key `workspace_id, id`; times as fixed-width UTC text), `Save` (plain INSERT), `FindByID` (filters by workspace). The three files went into `SampleFiles` now, not in task 10, so `task test:init` holds.
      Refactor: `scanItem` (for `FindAll` next), `formatTime`, and the shared `itemColumns`.
      `task test:init` is red only because its plain `go test ./test/...` runs the `@wip` scenarios (until task 9).
+   - Cycle 2 (the rest of the contract). Red: `TestItemRepositoryContract` (runs `RunItemRepositoryContract`), with `FindAll`/`Delete` stubs: no ErrNotFound, Save's UNIQUE constraint on replace, empty FindAll.
+     Green: `INSERT OR REPLACE`, `sql.ErrNoRows` → `ErrNotFound`, `FindAll` (`ORDER BY created_at, id`, empty slice), `Delete` (no rows affected → `ErrNotFound`).
+     Refactor: the tests share `newItemRepository(t)`. The UTC/precision test stays: the contract's times have no nanoseconds or zone.
 6. [ ] **(sample) Two stores on one data folder** (two programs) each see what the other saved, and writing from both doesn't fail with "database is locked".
 7. [ ] **bootstrap:** `NewEmbedded` with `StorageSQLite` wires the store: items saved survive a reopen, `Close` closes it, and `Ready` fails once the data folder is removed.
 8. [ ] **desktop.Open** honours `storage = "sqlite"` from the settings file (jsonfile otherwise, never memory). Two `desktop.Open`s on SQLite in one folder both work.
