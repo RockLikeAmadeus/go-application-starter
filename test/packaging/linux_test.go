@@ -8,7 +8,6 @@ package packaging
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"image/png"
 	"net/mail"
@@ -43,16 +42,8 @@ const (
 // each of its tests with the reason, and only those.
 var linuxErr, windowsErr error
 
-// errLinuxBuildOff marks the Linux build as temporarily switched off in
-// TestMain: its tests skip instead of reading stale packages from bin/.
-var errLinuxBuildOff = errors.New("the Linux build is switched off in TestMain")
-
 func TestMain(m *testing.M) {
-	// TEMPORARY, while the Windows installer is in progress
-	// (docs/wip/windows-installer.md): the Linux build is the slow part, so
-	// it's off and the Linux tests skip. Restore this line before the step ends.
-	// linuxErr = build("package:desktop:linux", version)
-	linuxErr = errLinuxBuildOff
+	linuxErr = build("package:desktop:linux", version)
 	windowsErr = build("package:desktop:windows", version)
 	os.Exit(m.Run())
 }
@@ -383,9 +374,6 @@ func built(t *testing.T, name string) string {
 // if that build failed (buildErr) or didn't make it.
 func builtBy(t *testing.T, buildErr error, name string) string {
 	t.Helper()
-	if errors.Is(buildErr, errLinuxBuildOff) {
-		t.Skip(buildErr)
-	}
 	if buildErr != nil {
 		t.Fatal(buildErr)
 	}

@@ -38,7 +38,7 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
 | golangci-lint | 2 | https://golangci-lint.run/welcome/install/ |
 | lefthook (optional) | | `go install github.com/evilmartians/lefthook@latest` |
 | Docker (optional) | | for `task docker:*` |
-| Desktop build deps (optional) | | only for the desktop app (`task run:desktop`, `task build:desktop`). Linux (Ubuntu/Debian): `sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev`. macOS: `xcode-select --install`. Windows: nothing extra expected (Wails uses no cgo there, and the WebView2 runtime ships with Windows 10 and 11; not yet tried) |
+| Desktop build deps (optional) | | only for the desktop app (`task run:desktop`, `task build:desktop`). Linux (Ubuntu/Debian): `sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev`. macOS: `xcode-select --install`. Windows: nothing extra (Wails uses no cgo there, and the WebView2 runtime ships with Windows 10 and 11; the setup program installs it if missing). Tried on Windows on 2026-11-02 |
 | Linux packaging tools (optional) | | only for the desktop app's Linux packages (`task package:desktop:linux`, `task test:package`), on top of the desktop build deps. `sudo apt install desktop-file-utils rpm libfuse2t64`: `desktop-file-validate` checks the desktop file, `rpm` reads the `.rpm` (its checks are skipped without it), and FUSE 2 runs an AppImage (on Ubuntu before 24.04, `libfuse2`). The first AppImage build downloads `linuxdeploy` from GitHub. Build the AppImage where WebKitGTK 4.1 isn't installed (`sudo apt remove libwebkit2gtk-4.1-dev` if nothing else needs it), or it bundles that too, about 90 MB the app never uses |
 | Windows packaging tools (optional) | | only for the desktop app's Windows setup program (`task package:desktop:windows`, `task test:package`), built on Linux. `sudo apt install nsis 7zip`: `makensis` builds the setup `.exe`, and 7-Zip checks the files inside it (that check is skipped without it). Cross-compiling the Windows program needs no desktop build deps |
 | Android tools (optional) | JDK 17+, Android SDK 35, NDK 26 | only for the mobile app (`task mobile:android:*`). A JDK (`sudo apt install openjdk-21-jdk-headless`), then the SDK command-line tools and `sdkmanager` packages listed in [docs/mobile.md](docs/mobile.md), plus an emulator or a phone with USB debugging |
@@ -102,7 +102,7 @@ GitHub Actions, in `.github/workflows/`:
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `ci.yml` | PRs, `main`, `v*` tags | Go lint/unit/acceptance/terminal journeys, web lint/typecheck/unit, codegen drift, playwright-bdd e2e. Then builds the Docker image and, on push, publishes it to GHCR (`ghcr.io/<owner>/<repo>:sha-<sha>`) |
-| `deploy.yml` | CI success on `main` → **staging**; on `v*` tag → **production** | `flyctl deploy --image …`, then a `/readyz` smoke test |
+| `deploy.yml` | CI success on `main` → **staging**; on `v*` tag → **production**. Only once `DEPLOY_ENABLED` is `true` (see below) | `flyctl deploy --image …`, then a `/readyz` smoke test |
 | `release.yml` | `v*` tag | GoReleaser publishes CLI/TUI binaries for Linux, macOS and Windows |
 
 Dependabot keeps Go, npm, Actions and Docker dependencies current.
@@ -126,6 +126,7 @@ Then, in GitHub, open **Settings → Environments** and:
 1. Create `staging` and `production`. Add required reviewers to `production` if you want a manual approval gate.
 2. Add the secret `FLY_API_TOKEN` (at repo level, or in each environment).
 3. Make sure Actions may publish packages (**Settings → Actions → General → Workflow permissions**).
+4. Switch deploys on: add the repository variable `DEPLOY_ENABLED` with the value `true` (**Settings → Secrets and variables → Actions → Variables**). Until then, `deploy.yml` skips instead of failing.
 
 Fly must be able to pull the image from GHCR. The simplest option is to make the package public (**Package settings → Change visibility**). To keep it private, change `deploy.yml` to `flyctl deploy --remote-only` (Fly builds from source) instead of `--image`.
 
