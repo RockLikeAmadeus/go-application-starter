@@ -60,8 +60,27 @@ func migrate(db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("prepare migrations: %w", err)
 	}
-	if _, err := provider.Up(context.Background()); err != nil {
+	ctx := context.Background()
+	if err := refuseNewer(ctx, provider); err != nil {
+		return err
+	}
+	if _, err := provider.Up(ctx); err != nil {
 		return fmt.Errorf("apply migrations: %w", err)
+	}
+	return nil
+}
+
+// refuseNewer fails if a newer app has migrated the database past the newest
+// migration this one embeds: its schema may not be one this app can use, so
+// Open changes nothing and stops.
+func refuseNewer(ctx context.Context, provider *goose.Provider) error {
+	current, err := provider.GetDBVersion(ctx)
+	if err != nil {
+		return fmt.Errorf("read database version: %w", err)
+	}
+	sources := provider.ListSources() // never empty: goose refuses to start with no migrations
+	if newest := sources[len(sources)-1].Version; current > newest {
+		return fmt.Errorf("the data was saved by a newer version of the app (database version %d, this app knows up to %d)", current, newest)
 	}
 	return nil
 }
