@@ -34,3 +34,12 @@ func replaceLine(text, prefix, line string) (string, error) {
 	}
 	return strings.Join(lines, ""), nil
 }
+
+// SetDesktopComment sets the desktop file's Comment line to the description,
+// keeping everything else, including localised Comment[xx]= lines. The value
+// needs no escaping: ParseArgs has already refused the backslashes and line
+// breaks that a desktop entry would read as escapes. A missing key is an
+// error, as in SetNFPMDetails.
+func SetDesktopComment(text string, o Options) (string, error) {
+	return replaceLine(text, "Comment=", "Comment="+o.Description)
+}
