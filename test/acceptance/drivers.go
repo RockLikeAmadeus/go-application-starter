@@ -58,6 +58,9 @@ type harness struct {
 	// server is the running server, as cmd/server wires it. Only the server
 	// driver sets it.
 	server *testServer
+	// apiURL is the address of the API the driving ports are reached
+	// through, when they're reached over HTTP.
+	apiURL string
 }
 
 type driver struct {
@@ -201,6 +204,7 @@ func startHTTP() (*harness, error) {
 // driveOverHTTP points the harness's driving ports at the server at url,
 // through the HTTP client adapter.
 func (h *harness) driveOverHTTP(url string) error {
+	h.apiURL = url
 	entitlements, err := httpclient.NewEntitlementsService(url)
 	if err != nil {
 		return err

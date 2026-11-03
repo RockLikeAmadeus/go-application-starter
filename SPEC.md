@@ -312,7 +312,13 @@ Data can be kept in a SQLite database instead of as plain text, so that several 
 - Opening the data brings its layout up to date with the app. Data saved by a newer version of the app, with a layout this one doesn't know, is refused rather than changed.
 - A server on SQLite is ready while it can reach its database, and not ready once the database is gone (§4.10).
 - Each workspace's data stays separate, as with every kind of storage (§4.8).
-- Don't keep SQLite data in a folder that a file-sync service (Dropbox, iCloud Drive, Syncthing, …) syncs: it can damage the database. A warning when the folder looks synced is planned.
+- Don't keep SQLite data in a folder that a file-sync service (Dropbox, iCloud Drive, Google Drive, OneDrive, Syncthing, Nextcloud, …) syncs: it can damage the database. When the data folder looks synced, the app warns, naming the service, and keeps working:
+  - the desktop app (and the server's web app) shows the warning in its window;
+  - the command line prints it with every command, apart from the command's own output;
+  - the terminal app shows it on its screen;
+  - the server logs it when it starts.
+- Telling whether a folder is synced is a best guess, from the folder's path and the files a sync service leaves in it. A user whose folder looks synced but isn't (it's excluded from sync, say) can turn the warning off with the `ignore_synced_folder` setting.
+- Plain-text data in a synced folder gets no warning: it's safe there while one device at a time uses it (ADR 5).
 
 **Examples**
 - The settings file says `storage = "sqlite"` → the desktop app keeps its data in SQLite, and `starter info` works while the desktop app is open.
@@ -321,8 +327,11 @@ Data can be kept in a SQLite database instead of as plain text, so that several 
 <!-- sample:end -->
 - A server on SQLite whose data folder is removed → not ready: the data is unavailable.
 - A user opens data saved by a newer version of the app → it isn't opened, and they're told it's from a newer version.
+- The desktop app keeps SQLite data in `~/Dropbox/starter` → its window warns: "Your data folder looks synced by Dropbox. A sync service can damage SQLite data: move the data folder out of it, or keep your data as plain text." `starter item list` still lists the items, with the same warning beside them.
+- The same user sets `ignore_synced_folder = true` → no warning.
+- Plain-text data in `~/Dropbox/starter` → no warning.
 
-**Specification:** [`features/sqlite-storage.feature`](features/sqlite-storage.feature). Every other feature's business scenarios also run on SQLite storage. Refusing a newer layout is checked by unit tests.
+**Specification:** [`features/sqlite-storage.feature`](features/sqlite-storage.feature) and [`features/synced-folder.feature`](features/synced-folder.feature). Every other feature's business scenarios also run on SQLite storage. Refusing a newer layout, and which paths and files mean a synced folder, are checked by unit tests.
 
 ## 5. Non-functional requirements
 
