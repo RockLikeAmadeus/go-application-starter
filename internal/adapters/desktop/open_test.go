@@ -133,6 +133,26 @@ func TestOpenUsesTheSettingsFilesDataFolder(t *testing.T) {
 	}
 }
 
+// SQLite has no lock, so with it the desktop app can be opened while another
+// program (here, a second copy) has the same data folder open. On plain text
+// the second Open fails with "data directory is locked".
+func TestOpenOnTheSettingsFilesSQLiteCanBeOpenedTwiceOnOneDataFolder(t *testing.T) {
+	settings := t.TempDir()
+	writeSettings(t, settings, `storage = "sqlite"`)
+	env := envOf(map[string]string{"STARTER_DATA_DIR": t.TempDir()})
+
+	first, err := desktop.Open(env, configDirAt(settings), nil)
+	if err != nil {
+		t.Fatalf("first Open: %v", err)
+	}
+	t.Cleanup(func() { _ = first.Close() })
+	second, err := desktop.Open(env, configDirAt(settings), nil)
+	if err != nil {
+		t.Fatalf("second Open on the same data folder: %v", err)
+	}
+	t.Cleanup(func() { _ = second.Close() })
+}
+
 func TestOpenUsesTheSettingsFilesPlansFile(t *testing.T) {
 	settings := t.TempDir()
 	plans := filepath.Join(t.TempDir(), "plans.jsonc")

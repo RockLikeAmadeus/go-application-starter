@@ -23,13 +23,14 @@ type App struct {
 }
 
 // Open loads the configuration from the local settings file and the
-// environment (config.Load), always with jsonfile storage, opens the desktop
-// app's data folder (config.LocalDataDir: STARTER_DATA_DIR, else data_dir in
-// the settings file, else the user's settings folder) and wires the core
-// behind the server's HTTP handler. getenv reads the environment (os.Getenv
-// in production) and userConfigDir finds the user's settings folder
-// (os.UserConfigDir on the desktop). webAssets is the built web app
-// (web.Assets() in production).
+// environment (config.Load), with SQLite storage when the settings choose it
+// and jsonfile otherwise (never memory: the desktop app keeps its data),
+// opens the desktop app's data folder (config.LocalDataDir:
+// STARTER_DATA_DIR, else data_dir in the settings file, else the user's
+// settings folder) and wires the core behind the server's HTTP handler.
+// getenv reads the environment (os.Getenv in production) and userConfigDir
+// finds the user's settings folder (os.UserConfigDir on the desktop).
+// webAssets is the built web app (web.Assets() in production).
 func Open(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS) (*App, error) {
 	env := config.Env{Getenv: getenv, UserConfigDir: userConfigDir}
 	settingsFile, err := config.LocalConfigFile(env)
@@ -40,7 +41,9 @@ func Open(getenv func(string) string, userConfigDir func() (string, error), webA
 	if err != nil {
 		return nil, err
 	}
-	cfg.Storage = config.StorageJSONFile
+	if cfg.Storage != config.StorageSQLite {
+		cfg.Storage = config.StorageJSONFile
+	}
 	cfg.DataDir, err = config.LocalDataDir(env, settingsFile)
 	if err != nil {
 		return nil, err
