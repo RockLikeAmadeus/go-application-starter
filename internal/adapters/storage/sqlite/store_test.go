@@ -2,6 +2,7 @@ package sqlite_test
 
 import (
 	"database/sql"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -70,5 +71,26 @@ func TestOpenRefusesADatabaseSavedByANewerVersionOfTheApp(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "newer version of the app") {
 		t.Errorf("Open error = %q; want it to say a newer version of the app saved the data", err)
+	}
+}
+
+func TestStoreIsReadyUntilItsDataFolderIsRemoved(t *testing.T) {
+	dir := t.TempDir()
+	store, err := sqlite.Open(dir)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer store.Close()
+
+	if err := store.Ready(t.Context()); err != nil {
+		t.Errorf("Ready error = %v, want nil while the database is there", err)
+	}
+	// An open handle keeps a removed file alive on Unix, so a ping alone
+	// would still succeed here.
+	if err := os.RemoveAll(dir); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Ready(t.Context()); err == nil {
+		t.Error("Ready error = nil, want an error once the data folder is gone")
 	}
 }
