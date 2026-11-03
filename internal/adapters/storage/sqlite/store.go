@@ -42,6 +42,12 @@ func Open(dir string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
+	// SQLite lets one connection write at a time. With one connection per
+	// store, this program's writes queue here rather than in SQLite's busy
+	// wait, where many at once outlast the timeout and fail with "database
+	// is locked"; only other programs then contend for the lock. A query
+	// must therefore finish (close its rows) before the next one starts.
+	db.SetMaxOpenConns(1)
 	if err := migrate(db); err != nil {
 		db.Close()
 		return nil, err

@@ -36,7 +36,10 @@ Temporary: delete this file in the same change that removes the `@wip` tags.
    - Cycle 2 (the rest of the contract). Red: `TestItemRepositoryContract` (runs `RunItemRepositoryContract`), with `FindAll`/`Delete` stubs: no ErrNotFound, Save's UNIQUE constraint on replace, empty FindAll.
      Green: `INSERT OR REPLACE`, `sql.ErrNoRows` → `ErrNotFound`, `FindAll` (`ORDER BY created_at, id`, empty slice), `Delete` (no rows affected → `ErrNotFound`).
      Refactor: the tests share `newItemRepository(t)`. The UTC/precision test stays: the contract's times have no nanoseconds or zone.
-6. [ ] **(sample) Two stores on one data folder** (two programs) each see what the other saved, and writing from both doesn't fail with "database is locked".
+6. [x] **(sample) Two stores on one data folder** (two programs) each see what the other saved, and writing from both doesn't fail with "database is locked".
+   Red: `TestTwoStoresOnOneDataFolderShareItemsAndCanWriteAtOnce` (50 concurrent Saves per store), "database is locked (SQLITE_BUSY)" after the 5 s busy timeout.
+   Green: `Open` sets `db.SetMaxOpenConns(1)`, so a store's own writes queue in Go and only the programs contend for SQLite's lock.
+   Refactor: a comment on `SetMaxOpenConns(1)` (why, and that queries mustn't nest); the tests open stores with `openItemRepository(t, dir)`.
 7. [ ] **bootstrap:** `NewEmbedded` with `StorageSQLite` wires the store: items saved survive a reopen, `Close` closes it, and `Ready` fails once the data folder is removed.
 8. [ ] **desktop.Open** honours `storage = "sqlite"` from the settings file (jsonfile otherwise, never memory). Two `desktop.Open`s on SQLite in one folder both work.
 9. [ ] **Acceptance `sqlite` driver** in `test/acceptance/drivers.go` (tags like jsonfile's). Run all of `task accept`, and get the `@wip` scenarios green.
