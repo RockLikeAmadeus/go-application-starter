@@ -47,7 +47,7 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 	root.PersistentFlags().StringVar(&serverURL, "server", "", "use a remote server at this URL instead of the embedded core (env STARTER_SERVER_URL)")
 	root.PersistentFlags().StringVar(&dataDir, "data-dir", "", "data folder for embedded mode (default: the local data folder the desktop app uses; env STARTER_DATA_DIR)")
 	root.PersistentFlags().StringVar(&configFile, "config", "", "settings file to read (default: config.toml in the app's settings folder; env STARTER_CONFIG_FILE)")
-	root.PersistentFlags().StringVar(&storage, "storage", "", "storage adapter for embedded mode: jsonfile|memory (env STARTER_STORAGE)")
+	root.PersistentFlags().StringVar(&storage, "storage", "", "storage adapter for embedded mode: jsonfile|sqlite|memory (env STARTER_STORAGE)")
 
 	// openApp loads config (the local settings file, then the environment),
 	// applies flag overrides and wires the app.
@@ -112,7 +112,7 @@ func settingsFileFor(configFile string, env config.Env) (string, error) {
 // keepsDataInAFolder reports whether cfg keeps the data in a data folder on
 // this computer: not on a server, and not only in memory.
 func keepsDataInAFolder(cfg config.Config) bool {
-	return cfg.ServerURL == "" && cfg.Storage == config.StorageJSONFile
+	return cfg.ServerURL == "" && (cfg.Storage == config.StorageJSONFile || cfg.Storage == config.StorageSQLite)
 }
 
 // withApp opens the app for the duration of a command.

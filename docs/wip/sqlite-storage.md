@@ -47,13 +47,16 @@ Temporary: delete this file in the same change that removes the `@wip` tags.
      Red: `TestNewEmbedded_OnSQLiteKeepsItemsAfterClosingAndReopening` (new sample file `bootstrap/embedded_items_test.go`), nil-pointer panic in `CreateItem` (no item repository).
      Green: the SQLite case sets `items = sqlite.NewItemRepository(store)` in `sample:` markers; the test file went into `SampleFiles`. `task test:init` passes with the sample removed (red with it kept only on the `@wip` scenario, as before).
      Refactor: the manifest entry moved to its own "Composition root" group. The cases' shared `close`/`ready` lines stay: two lines each, and folding them would need an interface over both stores for no gain.
-8. [ ] **desktop.Open** honours `storage = "sqlite"` from the settings file (jsonfile otherwise, never memory). Two `desktop.Open`s on SQLite in one folder both work.
+8. [x] **desktop.Open** honours `storage = "sqlite"` from the settings file (jsonfile otherwise, never memory). Two `desktop.Open`s on SQLite in one folder both work.
    Also `cli.keepsDataInAFolder` must count SQLite: until then the CLI on SQLite opens `./data` (the `@wip` run leaves a stray `test/acceptance/data/data.db`).
    Two cycles: `desktop.Open`, then the CLI's data folder.
    - [x] Cycle 1 (`desktop.Open`). Red: `TestOpenOnTheSettingsFilesSQLiteCanBeOpenedTwiceOnOneDataFolder`, second Open "data directory is locked" (Open forced jsonfile).
      Green: `Open` forces jsonfile only when the storage isn't SQLite. `@wip`: desktop 2/3 (the CLI one waits for cycle 2), server 2/2.
      Refactor: `Open`'s doc comment no longer says "always jsonfile". A guard test for "memory in the settings → jsonfile" was left out: refactor adds no tests, and the old behaviour is unchanged.
-   - [ ] Cycle 2 (CLI): `keepsDataInAFolder` counts SQLite, so the CLI on SQLite uses the desktop app's data folder.
+   - [x] Cycle 2 (CLI): `keepsDataInAFolder` counts SQLite, so the CLI on SQLite uses the desktop app's data folder.
+     Red: `TestWithoutDataDirCommandsOnSQLiteUseTheLocalDataFolder`, opened `./data` instead of the local folder.
+     Green: `keepsDataInAFolder` counts `StorageSQLite` too.
+     Refactor: the jsonfile and SQLite data-folder tests became one table test; `--storage`'s help lists `sqlite`.
 9. [ ] **Acceptance `sqlite` driver** in `test/acceptance/drivers.go` (tags like jsonfile's). Run all of `task accept`, and get the `@wip` scenarios green.
 10. [ ] **Init:** add the items migration and `item_repository*.go` to `SampleFiles`. Make sure the template's migrations embed and `Open` still work without them. Run `task test:init`.
 11. [ ] **Docs and finish:**

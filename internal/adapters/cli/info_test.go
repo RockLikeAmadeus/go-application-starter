@@ -80,22 +80,27 @@ func computer(settings string, vars map[string]string) config.Env {
 	}
 }
 
+// Both storages that keep data in a folder share the desktop app's.
 func TestWithoutDataDirCommandsUseTheLocalDataFolder(t *testing.T) {
-	settings := t.TempDir()
-	local := filepath.Join(settings, "starter")
-	var opened string
-	newApp := func(cfg config.Config) (*bootstrap.App, error) {
-		opened = cfg.DataDir
-		return bootstrap.New(cfg)
-	}
-	cmd := cli.NewRootCmd(newApp, computer(settings, nil), &bytes.Buffer{})
-	cmd.SetArgs([]string{"--storage", "jsonfile", "info"})
+	for _, storage := range []string{"jsonfile", "sqlite"} {
+		t.Run(storage, func(t *testing.T) {
+			settings := t.TempDir()
+			local := filepath.Join(settings, "starter")
+			var opened string
+			newApp := func(cfg config.Config) (*bootstrap.App, error) {
+				opened = cfg.DataDir
+				return bootstrap.New(cfg)
+			}
+			cmd := cli.NewRootCmd(newApp, computer(settings, nil), &bytes.Buffer{})
+			cmd.SetArgs([]string{"--storage", storage, "info"})
 
-	if err := cmd.ExecuteContext(context.Background()); err != nil {
-		t.Fatalf("info: %v", err)
-	}
-	if opened != local {
-		t.Errorf("opened the data folder %q, want the local one %q", opened, local)
+			if err := cmd.ExecuteContext(context.Background()); err != nil {
+				t.Fatalf("info: %v", err)
+			}
+			if opened != local {
+				t.Errorf("opened the data folder %q, want the local one %q", opened, local)
+			}
+		})
 	}
 }
 
