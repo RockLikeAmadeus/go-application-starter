@@ -35,7 +35,11 @@
   - Red: `TestDetect_AFolderInsideOneHoldingDotStfolderLooksSyncedBySyncthing` failed: `Detect` = `("", false)`, want `("Syncthing", true)`.
   - Green: a second `os.Stat` check for `.stfolder` → `Syncthing`.
   - Refactor: the two checks became a `markers` table read by `markedBy`; task 3's patterns will need a glob there.
-- [ ] 3. `Detect`: `.sync_*.db` or `._sync_*.db` above the folder → Nextcloud.
+- [x] 3. `Detect`: `.sync_*.db` or `._sync_*.db` above the folder → Nextcloud.
+  - Red: `TestDetect_AFolderInsideOneHoldingASyncJournalLooksSyncedByNextcloud` (both names) failed: `Detect` = `("", false)`, want `("Nextcloud", true)`.
+  - Green: markers are glob patterns read with `filepath.Glob`; two Nextcloud entries.
+  - Refactor: the marker field is `pattern`. Left: `Glob` reads `[`, `*`, `?` in the folder's own path as pattern characters, so task 3a.
+- [ ] 3a. `Detect`: a folder whose path holds glob characters (`notes [old]`) is still checked for markers (match names from `os.ReadDir` with `filepath.Match`).
 - [ ] 4. `Detect`: folder names (table test): `Dropbox`, `OneDrive`, `OneDrive - Contoso`, `Google Drive`, `My Drive`, `iCloud Drive`, `iCloudDrive`, `Mobile Documents`.
 - [ ] 5. `Detect`: macOS `Library/CloudStorage/<Provider>-…` → that provider (`Dropbox-Personal` → Dropbox, `GoogleDrive-me@example.com` → Google Drive, `OneDrive-Personal` → OneDrive).
 - [ ] 6. `Detect`: a relative folder is checked from where the program runs (its parents count).
@@ -52,4 +56,4 @@
 
 ## Changes to the plan
 
-_None yet._
+- 2026-11-03, task 3: added task 3a. Matching markers with `filepath.Glob` misses them under a folder whose path holds `[`, `*` or `?`; fixing it changes behaviour, so it needs its own test.

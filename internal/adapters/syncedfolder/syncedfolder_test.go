@@ -51,3 +51,20 @@ func TestDetect_AFolderInsideOneHoldingDotStfolderLooksSyncedBySyncthing(t *test
 		t.Errorf("Detect(%q) = (%q, %v), want (%q, true)", dir, service, ok, "Syncthing")
 	}
 }
+
+func TestDetect_AFolderInsideOneHoldingASyncJournalLooksSyncedByNextcloud(t *testing.T) {
+	for _, journal := range []string{".sync_7a3f9c2e81b4.db", "._sync_7a3f9c2e81b4.db"} {
+		t.Run(journal, func(t *testing.T) {
+			root := t.TempDir()
+			if err := os.WriteFile(filepath.Join(root, journal), nil, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			dir := folderInside(t, root)
+
+			service, ok := syncedfolder.Detect(dir)
+			if !ok || service != "Nextcloud" {
+				t.Errorf("Detect(%q) = (%q, %v), want (%q, true)", dir, service, ok, "Nextcloud")
+			}
+		})
+	}
+}
