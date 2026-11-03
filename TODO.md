@@ -41,11 +41,16 @@ Work through them one at a time (each usually starts with `/feature`), tick them
   - [x] Run `task test:init` to confirm `--remove-sample` still works now that the sidebar's content is shared with the phone menu (`SidebarContent` in `web/src/routes/Layout.tsx`). Passed on 2026-10-30.
 - [ ] **Universal application user stories that should survive `--remove-sample`** (each a separate /feature and should be designed such that template users can expand on them easily).  The idea is to have to do as little as possible from scratch for features that are common to utilities or consumer-focused software, so that template users can focus development primarily on their respective problem space. Each should be well-documented, and this documentation should be pointed to by a top-level guide for template users.
   - [ ] **Change application settings (e.g. theme, style, other domain-specific settings) from a settings menu in all clients**
-  - [ ] **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the template users.
-  - [ ] **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable.
+  - [ ] **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the for template users, that potentially could themselves link to documentation pages?
+  - [ ] **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable. This could be in-app notifications as well as boilerplate for email/mobile/etc. notifications.
   - [ ] If possible, **basic record searching, sorting, and filtering functionality** that can be reused for as-yet-unimplemented and domain-specific data models in the application.
-  - [ ] **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version.
+  - [ ] **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version, or possibly for the data backups task under `## Operability`.
   - [ ] **Form validation helpers**
+  - [ ] **Multi-provider auth** for traditional email/password and standard OAuth providers.
+  - [ ] **Session management**: secure token refresh cycles, automatic logout on expiration, and multi-device session invalidation?
+  - [ ] **User account** flows for common tasks like password changes, account deletion, etc. **ONLY FOR HOSTED EDITIONS**.
+  - [ ] **Functional feature-flagging support** to toggle unreleased features or modify runtime behavior dynamically without redeploying.
+
   - [ ] **Other features along these same lines likely to be required by template users** that we brainstorm.
 
   
@@ -56,12 +61,15 @@ Work through them one at a time (each usually starts with `/feature`), tick them
   - a `/metrics` endpoint;
   - optional OpenTelemetry tracing.
 - [ ] **Automatic periodic and manual data backups?**
+- [ ] **Crash & Error Reporting**: pre-integrated boundaries (like Global Exception Handlers or React Error Boundaries) that intercept crashes and prepare them for upstream analytics.
+- [ ] **Telemetry & Analytics**: a unified tracking hook or service layer to measure core user events, app launch performance, and page/view transitions.
 - [ ] **Security basics:**
   - security headers and a CSP on the server;
   - request size limits and rate limiting on the API;
   - `govulncheck` and `pnpm audit` in CI.
 - [ ] **Release automation:** GoReleaser (or similar), a changelog convention, and Renovate or Dependabot.
 - [ ] **Pre-release tags for the desktop packages.** The Taskfile's `PACKAGE_VERSION` accepts only `vX.Y.Z`, so a tag like `v0.1.0-rc.1` builds installers numbered `0.0.0` (GoReleaser's CLI downloads get the right version). Each format writes a pre-release its own way: `.deb` and `.rpm` want `0.1.0~rc.1` (so it sorts before `0.1.0`), while Windows' version info takes only numbers. Then mark such a Release as a pre-release (GoReleaser's `release.prerelease: auto`), and update docs/ci-cd.md's "Making a release".
+- [ ] **Dockerized Mocking Infrastructure** such as a docker-compose stack to spin up auxiliary local services like mock authentication, testing databases, or local S3 object buckets seamlessly.
 
 ## API and data conventions
 - [ ] **Pagination, sorting and filtering on list endpoints**, cursor-based. `GET /items` currently returns everything.
@@ -79,7 +87,7 @@ Work through them one at a time (each usually starts with `/feature`), tick them
 
 ## Maybe (depends on the products built from it)
 - [ ] Translations (i18n)
-- [ ] Background jobs or domain events (outbox pattern)
+- [ ] Background jobs or domain events (outbox pattern) - (this very likely will be relevant for my first intended use of the template)
 - [ ] Audit log (who changed what, and when)
 
 ## Other
