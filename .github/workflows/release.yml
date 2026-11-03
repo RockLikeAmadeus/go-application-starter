@@ -1,16 +1,27 @@
-# Publishes CLI/TUI binaries to a GitHub Release when a v* tag is pushed.
+# Builds the downloads for a release.
+#   push a v* tag      -> GoReleaser publishes the CLI/TUI binaries to a
+#                         GitHub Release, and the desktop jobs build the
+#                         desktop app's installers
+#   "Run workflow"     -> only the desktop jobs run, to try them: the
+#   (Actions tab)         installers are kept as the run's artifacts, and
+#                         nothing is published
 name: Release
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
+# Each job asks for what it needs; by default, it can only read the code.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   goreleaser:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub Release
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,3 +35,52 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  desktop-linux:
+    name: Desktop app for Linux (.deb, .rpm, AppImage)
+    # A fixed Ubuntu rather than ubuntu-latest: the packages' dependencies are
+    # named after this release's GTK 4 and WebKitGTK 6.0 packages.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the tags, which give the packages their version
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install Task
+        run: go install github.com/go-task/task/v3/cmd/task@v3.54.0
+      - name: Install the desktop build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+      # The AppImage bundles every WebKitGTK on the machine, so an older one
+      # would make it much bigger (CLAUDE.md, Gotchas).
+      - name: Check only WebKitGTK 6.0 is installed
+        run: |
+          if dpkg -s libwebkit2gtk-4.1-0 >/dev/null 2>&1; then
+            echo "::error::libwebkit2gtk-4.1-0 is installed, so the AppImage would bundle it"
+            exit 1
+          fi
+      - run: pnpm --dir web install --frozen-lockfile
+      - run: task package:desktop:linux
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-linux
+          path: |
+            bin/*.deb
+            bin/*.rpm
+            bin/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
