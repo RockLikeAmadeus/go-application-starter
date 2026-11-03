@@ -37,6 +37,14 @@ Work through them one at a time (each usually starts with `/feature`), tick them
 - [ ] **Authentication behind a port.** An `Authenticator` port with a simple session or OIDC adapter, wired through the REST API, the SPA, and the CLI's `--server` mode. Currently listed in SPEC.md §6 "Out of scope". This is step 8 of the [editions plan](docs/plans/editions-and-accounts.md): OIDC plus a dev-only fake login, with CLI and TUI login in step 9.
 - [x] **Phone-width SPA layout.** The sidebar is a fixed `w-60`, so the app breaks on phones. Add a collapsible sidebar or bottom navigation, and check it in all three styles and both themes.
   - [x] Run `task test:init` to confirm `--remove-sample` still works now that the sidebar's content is shared with the phone menu (`SidebarContent` in `web/src/routes/Layout.tsx`). Passed on 2026-10-30.
+- [ ] **Universal application user stories that should survive `--remove-sample`** (each a separate /feature and should be designed such that template users can expand on them easily) 
+  - [ ] **Change application settings (e.g. theme, style, other domain-specific settings) from a settings menu in all clients**
+  - [ ] **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the template users.
+  - [ ] **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable.
+  - [ ] If possible, **basic record searching and filtering functionality** that can be reused for any data entity in the application
+  - [ ] **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version.
+
+  
 
 ## Operability
 - [ ] **Logging, metrics and traces:**
@@ -84,6 +92,5 @@ Work through them one at a time (each usually starts with `/feature`), tick them
   - Plan: [docs/plans/editions-and-accounts.md](docs/plans/editions-and-accounts.md). Decisions: [ADR 5](docs/adr/0005-hosted-and-local-editions.md). Data belongs to a workspace; plans in config grant features and limits; billing is a driving adapter; OIDC authentication; synced folders are used from one device at a time, with no merging; no sync between local and cloud data.
 - [x] **Fix `task accept -- -run 'TestFeatures/<driver>'`.** CLAUDE.md documents it for running one acceptance driver, but on 2026-10-30 `-run 'TestFeatures/memory$'` still ran all five drivers.
   - Done 2026-11-03: `godog.BindCommandLineFlags` adds Go's `flag.CommandLine` to pflag, so `pflag.Parse()` in `TestMain` marked it parsed with no arguments and `m.Run` never read `-run` or `-v`. The four Godog suites now bind their flags with `godog.BindFlags("godog.", flag.CommandLine, &opts)` and let `go test` parse everything.
-- [ ] Placeholder functionality for exporting workspace data to a file, importing workspace data from a file--especially useful for converting from the local only version to the hosted version.
 - [ ] Add release notes and update commands to write them automatically
 - [ ] Project cleanup: go through the project and look for potential opportunities to pair down unnecessary files and leave a clean-as-possible slate for users of the template.
