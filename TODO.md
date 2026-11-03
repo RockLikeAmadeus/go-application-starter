@@ -3,6 +3,8 @@
 Ideas for things every project built from this template is likely to need.
 Work through them one at a time (each usually starts with `/feature`), tick them off, and delete this file when it's empty.
 
+**Before starting work on any feature below, discuss whether it's actually a valuable feature and what are the tradeoffs of including it or not including it. Many of these are Claude's ideas and probably very sensible, but some of them I've thought of myself and I want to be wary of template bloat.**
+
 ## Do first
 - [x] **`/readyz` checks storage without the sample.** The server's only readiness check is `opts.Items.ListItems` (`internal/adapters/httpapi/server.go`), inside a sample block, so after `--remove-sample` `/readyz` always answers "ready", even when storage is broken. Give it a check that doesn't depend on an entity: for example a `Ready func(ctx) error` in `httpapi.Options` that `bootstrap` takes from the storage adapter (the jsonfile store, and later SQL's ping). Cover it with a test that runs without the sample, and run `task test:init`.
   - Done 2026-11-02: `httpapi.Options.Ready` from `bootstrap`'s `App.Ready` (jsonfile writes and removes a temp file in its data folder; memory is always ready), wired in `cmd/server` and `desktop.Open`. SPEC.md §4.10, `features/readiness.feature` on the new `server` driver.
