@@ -21,6 +21,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/mobile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -80,6 +81,7 @@ type driver struct {
 var drivers = []driver{
 	{name: "memory", start: startMemory, tags: "~@desktop && ~@mobile && ~@server"},
 	{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile && ~@server"},
+	{name: "sqlite", start: startSQLite, tags: "~@desktop && ~@mobile && ~@server"},
 	{name: "http", start: startHTTP, tags: "~@desktop && ~@mobile && ~@workspaces && ~@server"},
 	{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server"},
 	{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server"},
@@ -133,6 +135,7 @@ func startJSONFile() (*harness, error) {
 	}
 	store, err := jsonfile.Open(dir)
 	if err != nil {
+		os.RemoveAll(dir)
 		return nil, err
 	}
 	h := newHarness()
@@ -146,6 +149,31 @@ func startJSONFile() (*harness, error) {
 	}
 	// sample:start
 	h.items = h.newItems(jsonfile.NewItemRepository(store), workspace.FromContext{})
+	// sample:end
+	return h, nil
+}
+
+func startSQLite() (*harness, error) {
+	dir, err := os.MkdirTemp("", "acceptance-sqlite-*")
+	if err != nil {
+		return nil, err
+	}
+	store, err := sqlite.Open(dir)
+	if err != nil {
+		os.RemoveAll(dir)
+		return nil, err
+	}
+	h := newHarness()
+	h.cleanup = func() {
+		store.Close()
+		os.RemoveAll(dir)
+	}
+	if err := h.usePlans(workspace.FromContext{}); err != nil {
+		h.cleanup()
+		return nil, err
+	}
+	// sample:start
+	h.items = h.newItems(sqlite.NewItemRepository(store), workspace.FromContext{})
 	// sample:end
 	return h, nil
 }

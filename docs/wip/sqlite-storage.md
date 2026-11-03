@@ -57,7 +57,9 @@ Temporary: delete this file in the same change that removes the `@wip` tags.
      Red: `TestWithoutDataDirCommandsOnSQLiteUseTheLocalDataFolder`, opened `./data` instead of the local folder.
      Green: `keepsDataInAFolder` counts `StorageSQLite` too.
      Refactor: the jsonfile and SQLite data-folder tests became one table test; `--storage`'s help lists `sqlite`.
-9. [ ] **Acceptance `sqlite` driver** in `test/acceptance/drivers.go` (tags like jsonfile's). Run all of `task accept`, and get the `@wip` scenarios green.
+9. [x] **Acceptance `sqlite` driver** in `test/acceptance/drivers.go` (tags like jsonfile's). Run all of `task accept`, and get the `@wip` scenarios green.
+   No red: the driver passed its 23 scenarios (jsonfile's set) at once, and the `@wip` ones were already green after task 8. Kept as a guard: reversing `FindAll`'s order fails 9 of them. Green skipped.
+   Refactor: `startJSONFile` removes its folder when `Open` fails, as `startSQLite` does; CLAUDE.md's driver list names sqlite. The two drivers' shared setup stays: a helper would leave the store used only in the `sample:` block, so the template wouldn't compile without the sample.
 10. [ ] **Init:** add the items migration and `item_repository*.go` to `SampleFiles`. Make sure the template's migrations embed and `Open` still work without them. Run `task test:init`.
 11. [ ] **Docs and finish:**
    - `docs/configuration.md` (the storage values);
