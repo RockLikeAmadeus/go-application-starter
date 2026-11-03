@@ -40,3 +40,8 @@ updates:
   - package-ecosystem: docker
     directory: /
     schedule: { interval: weekly }
+    ignore:
+      # A new Node major goes with .nvmrc, which Dependabot doesn't read, and
+      # odd-numbered majors are never LTS. Move both to the next LTS by hand.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
