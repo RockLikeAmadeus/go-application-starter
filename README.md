@@ -103,7 +103,7 @@ GitHub Actions, in `.github/workflows/`. [docs/ci-cd.md](docs/ci-cd.md) explains
 |---|---|---|
 | `ci.yml` | PRs, `main`, `v*` tags | Go lint/unit/acceptance/terminal journeys, web lint/typecheck/unit, codegen drift, playwright-bdd e2e. Then builds the Docker image and, on push, publishes it to GHCR (`ghcr.io/<owner>/<repo>:sha-<sha>`) |
 | `deploy.yml` | CI success on `main` → **staging**; on `v*` tag → **production**. Only once `DEPLOY_ENABLED` is `true` (see below) | `flyctl deploy --image …`, then a `/readyz` smoke test |
-| `release.yml` | `v*` tag; **Run workflow** | On a tag, GoReleaser publishes CLI/TUI binaries for Linux, macOS and Windows. On a tag or by hand, builds the desktop app's Linux and Windows installers as artifacts |
+| `release.yml` | `v*` tag; **Run workflow** | On a tag, creates the GitHub Release: GoReleaser's CLI/TUI binaries for Linux, macOS and Windows, and the desktop app's Linux and Windows installers. By hand, builds only the installers, as artifacts (see [docs/ci-cd.md](docs/ci-cd.md#making-a-release)) |
 
 Dependabot keeps Go, npm, Actions and Docker dependencies current.
 

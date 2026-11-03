@@ -49,6 +49,7 @@ Work through them one at a time (each usually starts with `/feature`), tick them
   - request size limits and rate limiting on the API;
   - `govulncheck` and `pnpm audit` in CI.
 - [ ] **Release automation:** GoReleaser (or similar), a changelog convention, and Renovate or Dependabot.
+- [ ] **Pre-release tags for the desktop packages.** The Taskfile's `PACKAGE_VERSION` accepts only `vX.Y.Z`, so a tag like `v0.1.0-rc.1` builds installers numbered `0.0.0` (GoReleaser's CLI downloads get the right version). Each format writes a pre-release its own way: `.deb` and `.rpm` want `0.1.0~rc.1` (so it sorts before `0.1.0`), while Windows' version info takes only numbers. Then mark such a Release as a pre-release (GoReleaser's `release.prerelease: auto`), and update docs/ci-cd.md's "Making a release".
 
 ## API and data conventions
 - [ ] **Pagination, sorting and filtering on list endpoints**, cursor-based. `GET /items` currently returns everything.

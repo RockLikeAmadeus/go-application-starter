@@ -30,7 +30,7 @@ All of it is **GitHub Actions**, which is built into GitHub: no other service or
 |---|---|---|
 | `ci.yml` | a pull request; a push to `main`; a `v*` tag | The checks `task check` runs, as five jobs: Go (lint, unit, acceptance, terminal journeys), Web (lint, types, format, unit), generated code is up to date, browser e2e, and then the Docker image. The image job waits for the other four, and publishes the server's image to the repository's **Packages** (GHCR) only on a push, not for a pull request. |
 | `deploy.yml` | `ci.yml` finishing | Deploys the image CI just built to Fly.io: a push to `main` goes to **staging**, a `v*` tag to **production**, and then a smoke test asks the new server's `/readyz`. Only after a successful CI run, and only once deploys are switched on (below). |
-| `release.yml` | a `v*` tag; **Run workflow** | On a tag, GoReleaser builds the CLI for Linux, macOS and Windows and creates the GitHub Release. On a tag or a click, two desktop jobs build the installers and save them as artifacts: the Linux `.deb`, `.rpm` and AppImage, and the Windows setup `.exe` (cross-compiled on Linux). A click never publishes anything. |
+| `release.yml` | a `v*` tag; **Run workflow** | On a tag or a click, two desktop jobs build the installers and save them as artifacts: the Linux `.deb`, `.rpm` and AppImage, and the Windows setup `.exe` (cross-compiled on Linux). On a tag only, GoReleaser builds the CLI for Linux, macOS and Windows and creates the GitHub Release, and then `publish` adds the installers to it. A click never publishes anything. |
 
 So, for each thing you do:
 
@@ -38,7 +38,7 @@ So, for each thing you do:
 |---|---|
 | open or update a pull request | CI (the image is built, not published) |
 | push to `main` (or merge a pull request) | CI, then Deploy to staging |
-| push a `v*` tag | CI, then Deploy to production; and Release |
+| push a `v*` tag | CI, then Deploy to production; and Release, which publishes the GitHub Release ([below](#making-a-release)) |
 | click **Run workflow** on Release | the desktop jobs only |
 
 ### Keeping CI in step with `task check`
@@ -70,6 +70,34 @@ A new oapi-codegen (in `tools/go.mod`) can change the generated API code, which 
 
 To merge: the **Merge pull request** button, or `gh pr merge <number> --squash`. After you merge one, Dependabot updates the others that touch the same file; wait for their checks before merging the next. To turn an update down, close its pull request: Dependabot won't propose that version again.
 
+## Making a release
+
+A release is a version with a page of downloads. You make one by pushing a tag:
+
+```sh
+git switch main && git pull     # tag what's on GitHub's main
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+Use a plain `vMAJOR.MINOR.PATCH` tag. The desktop installers take their version from it (`1.2.0`), and any other tag, such as `v1.2.0-rc.1`, builds installers numbered `0.0.0`.
+
+The tag starts two workflows:
+
+- **Release**, on the Actions tab. `goreleaser`, `desktop-linux` and `desktop-windows` run side by side; GoReleaser creates the Release with the CLI downloads, its `checksums.txt` and a list of the changes since the last tag. When all three are green, `publish` adds the installers. If any of them fails, `publish` is skipped and the installers aren't added: fix the problem, then delete the Release and the tag (below) and push the tag again.
+- **CI**, as for a push, which also publishes the server's Docker image tagged `1.2.0` to GHCR, and then **Deploy** to production, once deploys are switched on.
+
+When Release is green, the repository's **Releases** page (on the right of its front page) shows the version with all its downloads. `checksums.txt` covers the CLI downloads only.
+
+A tag means "this exact commit is version 1.2.0", so don't move it once people may have downloaded it: fix a bad release with the next version. To undo one nobody has used yet, or a test:
+
+```sh
+gh release delete v1.2.0 --cleanup-tag --yes   # the Release and the tag on GitHub
+git tag -d v1.2.0                              # your local copy of the tag
+```
+
+The Docker image stays in GHCR: delete it under the repository's **Packages** if you want it gone.
+
 ## Building the desktop installers by hand
 
 To build the desktop installers on GitHub without making a release, e.g. after changing `build/desktop/` or the Release workflow:
@@ -77,7 +105,7 @@ To build the desktop installers on GitHub without making a release, e.g. after c
 1. Push the change to a branch on GitHub. (The **Run workflow** button appears only once `release.yml` with `workflow_dispatch:` is on the default branch.)
 2. Open the repository's **Actions** tab, choose **Release** in the list on the left, then **Run workflow** at the right of the list of runs.
 3. Choose the branch to build (usually `main`), then **Run workflow**. The new run appears in the list after a few seconds.
-4. Open the run. `goreleaser` is skipped (it only runs for a tag); `desktop-linux` and `desktop-windows` run side by side. Open one to follow each step's log. Linux takes several minutes, most of them on the AppImage; Windows is quicker.
+4. Open the run. `goreleaser` and `publish` are skipped (they only run for a tag); `desktop-linux` and `desktop-windows` run side by side. Open one to follow each step's log. Linux takes several minutes, most of them on the AppImage; Windows is quicker.
 5. When it's green, scroll to **Artifacts** at the bottom of the run's **Summary** page. Each is a zip: `desktop-linux` holds `starter-desktop_0.0.0_amd64.deb`, `starter-desktop-0.0.0-1.x86_64.rpm` and `starter-desktop-0.0.0-x86_64.AppImage`; `desktop-windows` holds `starter-desktop-0.0.0-setup.exe`. A run from a branch is version `0.0.0`; only a release tag gives a version. Artifacts are deleted after 14 days.
 
 To try a package, install it as you would any other, e.g. `sudo apt install ./starter-desktop_0.0.0_amd64.deb`, or make the AppImage executable and run it. On Windows, run the setup program; it's unsigned, so SmartScreen warns first (**More info → Run anyway**).
@@ -89,4 +117,4 @@ From the command line, with the GitHub CLI: `gh workflow run release.yml --ref m
 1. Open the run and the red job, then the red step: its log is open at the error. The end of it usually says what went wrong.
 2. Something that passes locally but fails on GitHub is usually something your machine has and the runner doesn't: a system package, a browser, a tool. Install it in the workflow, as `task setup` or the README's Prerequisites do locally.
 3. To try again without a new commit, use **Re-run jobs** on the run's page (**Re-run failed jobs** reruns only the red ones).
-4. A grey, skipped job isn't a failure: its `if:` was false. Deploy is skipped until it's switched on; GoReleaser is skipped on a manual run.
+4. A grey, skipped job isn't a failure: its `if:` was false. Deploy is skipped until it's switched on; GoReleaser and `publish` are skipped on a manual run, and `publish` also when a build before it failed.

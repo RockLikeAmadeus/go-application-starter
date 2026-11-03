@@ -52,7 +52,7 @@ SPEC.md §4.6 (the Windows install rule). `task package:desktop:windows` cross-c
 
 ### 5. Release wiring and housekeeping — in progress (Linux and Windows part)
 - **Split 2026-11-02** (see the log): the Linux and Windows part is done now, while the Mac is being set up; the `.dmg` job and its docs come after step 4. Done in small pieces, with each CI idea explained as it comes, at the user's request (new to CI/CD).
-- Done so far: `release.yml` builds the Linux packages and the Windows setup program on a `v*` tag or **Run workflow**, kept as artifacts (jobs `desktop-linux`, `desktop-windows`, on `ubuntu-24.04`); both tried by hand on GitHub 2026-11-02.
+- Done so far: `release.yml` builds the Linux packages and the Windows setup program on a `v*` tag or **Run workflow**, kept as artifacts (jobs `desktop-linux`, `desktop-windows`, on `ubuntu-24.04`); both tried by hand on GitHub 2026-11-02. A `publish` job adds both to the tag's Release once GoReleaser and the builds succeed; docs/ci-cd.md has "Making a release".
 - Attach all the installers to the GitHub Release on a `v*` tag (`release.yml`), beside GoReleaser's CLI archives. Linux and Windows build on `ubuntu-latest`; the `.dmg` builds on `macos-latest` with the same `task package:desktop:macos` used on the Mac.
 - `docs/desktop.md`: building each package, regenerating the Wails assets, the unsigned-app warnings, and what's been tried on which OS.
 - CLAUDE.md: Commands rows, the `build/desktop/` architecture line, Gotchas. SPEC.md §4.6: how the desktop app is installed.
@@ -71,3 +71,4 @@ SPEC.md §4.6 (the Windows install rule). `task package:desktop:windows` cross-c
 - 2026-11-02: step 5's Linux and Windows release wiring and docs pulled ahead of step 4, at the user's request, because step 4 waits on setting up the Mac. Step 5 finishes after step 4 with the `macos-latest` `.dmg` job and the macOS docs.
 - 2026-11-02: added `docs/ci-cd.md` (plain-language guide to the workflows, Dependabot, the deploy switch and the manual desktop build), at the user's request. Step 5's release work updates it as the desktop jobs grow.
 - 2026-11-02, step 5: the Windows job's first run failed: `go tool wails3`, built with cgo on Linux, needs GTK. Both Windows tasks now set `CGO_ENABLED=0`, so the Windows build needs no desktop build deps, as CLAUDE.md already claimed. Desktop jobs pin `ubuntu-24.04` rather than `ubuntu-latest`.
+- 2026-11-02, step 5: pre-release tags (`v0.1.0-rc.1`) still give the installers version `0.0.0`; moved to TODO.md as a follow-up, at the user's choice. The Release is tried with a plain throwaway tag instead, deleted afterwards.

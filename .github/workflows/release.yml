@@ -1,7 +1,8 @@
 # Builds the downloads for a release.
-#   push a v* tag      -> GoReleaser publishes the CLI/TUI binaries to a
-#                         GitHub Release, and the desktop jobs build the
-#                         desktop app's installers (Linux, Windows)
+#   push a v* tag      -> GoReleaser creates the GitHub Release with the
+#                         CLI/TUI binaries, the desktop jobs build the desktop
+#                         app's installers (Linux, Windows), and publish adds
+#                         them to the Release
 #   "Run workflow"     -> only the desktop jobs run, to try them: the
 #   (Actions tab)         installers are kept as the run's artifacts, and
 #                         nothing is published
@@ -123,3 +124,24 @@ jobs:
           path: bin/*-setup.exe
           if-no-files-found: error
           retention-days: 14
+
+  # Adds the installers to the Release GoReleaser created. It waits for all
+  # three jobs, so the Release exists and no installer is missing: if any
+  # build fails, nothing is added. The build jobs stay the same for a tag and
+  # for "Run workflow", so what you try by hand is what's released.
+  publish:
+    name: Add the desktop installers to the Release
+    if: github.event_name == 'push'
+    needs: [goreleaser, desktop-linux, desktop-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # upload files to the Release
+    steps:
+      # Each artifact into its own folder under installers/.
+      - uses: actions/download-artifact@v8
+        with:
+          path: installers
+      - name: Upload to the Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$GITHUB_REF_NAME" installers/*/* --repo "$GITHUB_REPOSITORY"
