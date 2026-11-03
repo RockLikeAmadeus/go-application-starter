@@ -30,7 +30,7 @@ All of it is **GitHub Actions**, which is built into GitHub: no other service or
 |---|---|---|
 | `ci.yml` | a pull request; a push to `main`; a `v*` tag | The checks `task check` runs, as five jobs: Go (lint, unit, acceptance, terminal journeys), Web (lint, types, format, unit), generated code is up to date, browser e2e, and then the Docker image. The image job waits for the other four, and publishes the server's image to the repository's **Packages** (GHCR) only on a push, not for a pull request. |
 | `deploy.yml` | `ci.yml` finishing | Deploys the image CI just built to Fly.io: a push to `main` goes to **staging**, a `v*` tag to **production**, and then a smoke test asks the new server's `/readyz`. Only after a successful CI run, and only once deploys are switched on (below). |
-| `release.yml` | a `v*` tag; **Run workflow** | On a tag, GoReleaser builds the CLI for Linux, macOS and Windows and creates the GitHub Release. On a tag or a click, the desktop job builds the Linux installers (`.deb`, `.rpm`, AppImage) and saves them as an artifact; a click never publishes anything. |
+| `release.yml` | a `v*` tag; **Run workflow** | On a tag, GoReleaser builds the CLI for Linux, macOS and Windows and creates the GitHub Release. On a tag or a click, two desktop jobs build the installers and save them as artifacts: the Linux `.deb`, `.rpm` and AppImage, and the Windows setup `.exe` (cross-compiled on Linux). A click never publishes anything. |
 
 So, for each thing you do:
 
@@ -39,7 +39,7 @@ So, for each thing you do:
 | open or update a pull request | CI (the image is built, not published) |
 | push to `main` (or merge a pull request) | CI, then Deploy to staging |
 | push a `v*` tag | CI, then Deploy to production; and Release |
-| click **Run workflow** on Release | the desktop job only |
+| click **Run workflow** on Release | the desktop jobs only |
 
 ### Keeping CI in step with `task check`
 
@@ -72,17 +72,17 @@ To merge: the **Merge pull request** button, or `gh pr merge <number> --squash`.
 
 ## Building the desktop installers by hand
 
-To build the Linux installers on GitHub without making a release, e.g. after changing `build/desktop/linux/` or the Release workflow:
+To build the desktop installers on GitHub without making a release, e.g. after changing `build/desktop/` or the Release workflow:
 
 1. Push the change to a branch on GitHub. (The **Run workflow** button appears only once `release.yml` with `workflow_dispatch:` is on the default branch.)
 2. Open the repository's **Actions** tab, choose **Release** in the list on the left, then **Run workflow** at the right of the list of runs.
 3. Choose the branch to build (usually `main`), then **Run workflow**. The new run appears in the list after a few seconds.
-4. Open the run. `goreleaser` is skipped (it only runs for a tag) and `desktop-linux` runs; open it to follow each step's log. It takes several minutes, most of them on the AppImage.
-5. When it's green, scroll to **Artifacts** at the bottom of the run's **Summary** page and download `desktop-linux`. It's a zip holding `starter-desktop_0.0.0_amd64.deb`, `starter-desktop-0.0.0-1.x86_64.rpm` and `starter-desktop-0.0.0-x86_64.AppImage`. A run from a branch is version `0.0.0`; only a release tag gives a version. Artifacts are deleted after 14 days.
+4. Open the run. `goreleaser` is skipped (it only runs for a tag); `desktop-linux` and `desktop-windows` run side by side. Open one to follow each step's log. Linux takes several minutes, most of them on the AppImage; Windows is quicker.
+5. When it's green, scroll to **Artifacts** at the bottom of the run's **Summary** page. Each is a zip: `desktop-linux` holds `starter-desktop_0.0.0_amd64.deb`, `starter-desktop-0.0.0-1.x86_64.rpm` and `starter-desktop-0.0.0-x86_64.AppImage`; `desktop-windows` holds `starter-desktop-0.0.0-setup.exe`. A run from a branch is version `0.0.0`; only a release tag gives a version. Artifacts are deleted after 14 days.
 
-To try a package, install it as you would any other, e.g. `sudo apt install ./starter-desktop_0.0.0_amd64.deb`, or make the AppImage executable and run it.
+To try a package, install it as you would any other, e.g. `sudo apt install ./starter-desktop_0.0.0_amd64.deb`, or make the AppImage executable and run it. On Windows, run the setup program; it's unsigned, so SmartScreen warns first (**More info → Run anyway**).
 
-From the command line, with the GitHub CLI: `gh workflow run release.yml --ref main`, then `gh run watch` to follow it and `gh run download <run id> -n desktop-linux` to fetch the files.
+From the command line, with the GitHub CLI: `gh workflow run release.yml --ref main`, then `gh run watch` to follow it and `gh run download <run id> -n desktop-linux` (or `-n desktop-windows`) to fetch the files.
 
 ## When a run fails
 

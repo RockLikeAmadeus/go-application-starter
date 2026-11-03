@@ -1,7 +1,7 @@
 # Builds the downloads for a release.
 #   push a v* tag      -> GoReleaser publishes the CLI/TUI binaries to a
 #                         GitHub Release, and the desktop jobs build the
-#                         desktop app's installers
+#                         desktop app's installers (Linux, Windows)
 #   "Run workflow"     -> only the desktop jobs run, to try them: the
 #   (Actions tab)         installers are kept as the run's artifacts, and
 #                         nothing is published
@@ -82,5 +82,44 @@ jobs:
             bin/*.deb
             bin/*.rpm
             bin/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
+
+  desktop-windows:
+    name: Desktop app for Windows (setup .exe)
+    # Cross-compiled on Linux: Wails needs no C compiler for Windows, so
+    # neither GTK nor a Windows machine is needed. Same Ubuntu as Linux, for
+    # its makensis.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the tags, which give the setup program its version
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install Task
+        run: go install github.com/go-task/task/v3/cmd/task@v3.54.0
+      - name: Install NSIS (makensis)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nsis
+      - run: pnpm --dir web install --frozen-lockfile
+      - run: task package:desktop:windows
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-windows
+          path: bin/*-setup.exe
           if-no-files-found: error
           retention-days: 14
