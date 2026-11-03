@@ -66,3 +66,31 @@ func TestParseArgsRequiresEachPackageDetail(t *testing.T) {
 		})
 	}
 }
+
+func TestParseArgsRefusesUnsafePackageDetails(t *testing.T) {
+	tests := []struct {
+		flag, value, wantErr string
+	}{
+		{"--description", `Say "hi"`, "description must not contain double quotes or backslashes"},
+		{"--description", `Tasks\for teams`, "description must not contain double quotes or backslashes"},
+		{"--description", "Tasks\nfor teams", "description must be one line"},
+		{"--description", "Tasks\rfor teams", "description must be one line"},
+		{"--publisher", `Acme "Ltd"`, "publisher must not contain double quotes or backslashes"},
+		{"--publisher", `Acme\Ltd`, "publisher must not contain double quotes or backslashes"},
+		{"--publisher", "Acme\nLtd", "publisher must be one line"},
+		{"--publisher", "Acme <Ltd>", "publisher must not contain < or >"},
+		{"--publisher", "Acme > Ltd", "publisher must not contain < or >"},
+		{"--email", "not an address", "invalid email address"},
+		{"--email", "Acme <dev@acme.example>", "invalid email address"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.flag+" "+tt.value, func(t *testing.T) {
+			// Given last, the bad value overrides the valid one from details.
+			args := append(withDetails("--module", "example.com/acme/tasks", "--name", "Acme"), tt.flag, tt.value)
+			_, err := initproject.ParseArgs(args)
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("ParseArgs(%q) error = %v, want one mentioning %q", args, err, tt.wantErr)
+			}
+		})
+	}
+}

@@ -22,7 +22,10 @@ TODO.md item: **Init asks for the app's description and publisher.**
    - Red: `TestParseArgsRequiresEachPackageDetail` (and the updated `TestParseArgs` happy cases) failed with "unknown flag: --description".
    - Green: the three flags and their "is required" checks. Tests pass them with `withDetails`.
    - Refactor: one loop over `required` replaces the five "is required" checks; `withDetails`/`wantDetails` moved to `helpers_test.go`, used by three test files.
-2. [ ] `ParseArgs` refuses double quotes, backslashes and line breaks in the description and publisher (`description must not contain double quotes or backslashes`), `<` or `>` in the publisher, and an email that isn't a bare address (`invalid email address`).
+2. [x] `ParseArgs` refuses double quotes, backslashes and line breaks in the description and publisher (`description must not contain double quotes or backslashes`), `<` or `>` in the publisher, and an email that isn't a bare address (`invalid email address`).
+   - Red: `TestParseArgsRefusesUnsafePackageDetails` failed: ParseArgs accepted every bad value (error = nil). Line breaks say `… must be one line`.
+   - Green: ParseArgs checks the description, publisher and email after the module.
+   - Refactor: `checkDetails` holds the detail checks, with `checkLine` for the description's and publisher's shared rule (fixing the stray backslash). Slug keeps its own check: refusing line breaks there would change the name's rule.
 3. [ ] A pure function sets nfpm.yaml's `description:` and `maintainer:` lines (quoted so any allowed text is valid YAML), keeping everything else; it fails when either key is missing.
 4. [ ] A pure function sets the desktop file's `Comment=` line; it fails when the key is missing.
 5. [ ] A pure function sets info.json's `CompanyName` and `LegalCopyright` (`© <publisher>`), keeping its layout, `FileDescription` and the `@VERSION@` placeholders; JSON-escaped, no HTML escaping (`&` stays `&`). Fails when a key is missing.
