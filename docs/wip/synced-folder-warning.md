@@ -26,10 +26,11 @@
 
 ## Tasks
 
-- [ ] 1. `syncedfolder.Detect`: a folder inside one holding `.dropbox` looks synced by Dropbox; a folder with no signs anywhere above it doesn't.
+- [x] 1. `syncedfolder.Detect`: a folder inside one holding `.dropbox` looks synced by Dropbox; a folder with no signs anywhere above it doesn't.
   - Red: `TestDetect_AFolderInsideOneHoldingDotDropboxLooksSyncedByDropbox` failed: `Detect` = `("", false)`, want `("Dropbox", true)`.
-  - Green: `Detect` walks up from `dir` to the root, `Dropbox` at the first `.dropbox`. The "no signs" half is still open (it passes today; add it as a guard next cycle).
+  - Green: `Detect` walks up from `dir` to the root, `Dropbox` at the first `.dropbox`.
   - Refactor: nothing; a marker table waits until task 2 brings a second marker.
+  - Cycle 2, no red: `TestDetect_AFolderWithNoSignsAnywhereAboveItDoesNotLookSynced` passed at once (the walk already ends with `("", false)`), kept as a guard; a mutation always answering Dropbox made it fail. Refactor: a `folderInside` test helper.
 - [ ] 2. `Detect`: `.stfolder` above the folder → Syncthing.
 - [ ] 3. `Detect`: `.sync_*.db` or `._sync_*.db` above the folder → Nextcloud.
 - [ ] 4. `Detect`: folder names (table test): `Dropbox`, `OneDrive`, `OneDrive - Contoso`, `Google Drive`, `My Drive`, `iCloud Drive`, `iCloudDrive`, `Mobile Documents`.
