@@ -39,6 +39,9 @@ var SampleFiles = []string{
 	"internal/adapters/storage/memory/item_repository_test.go",
 	"internal/adapters/storage/jsonfile/item_repository.go",
 	"internal/adapters/storage/jsonfile/item_repository_test.go",
+	"internal/adapters/storage/sqlite/item_repository.go",
+	"internal/adapters/storage/sqlite/item_repository_test.go",
+	"internal/adapters/storage/sqlite/migrations/00002_items.sql",
 	"internal/adapters/storage/storagetest/item_repository_contract.go",
 	"internal/adapters/storage/storageutil/",
 
