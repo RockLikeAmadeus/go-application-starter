@@ -81,8 +81,8 @@ func TestVersionInfoNamesTheProductAndVersion(t *testing.T) {
 
 // The program's version info describes it and names a publisher. Task
 // Manager shows the description as the process's name, and Properties →
-// Details shows all three. The publisher and copyright are placeholders that
-// a project fills in.
+// Details shows all three. The template's publisher and copyright are
+// placeholders that task init replaces.
 func TestExeVersionInfoDescribesTheProgramAndItsPublisher(t *testing.T) {
 	_, _, text := windowsVersionInfo(t, exe)
 

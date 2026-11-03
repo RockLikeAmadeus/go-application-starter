@@ -53,7 +53,6 @@ Feature: Make the template mine
       |                       |
       | , removing the sample |
 
-  @wip
   Scenario: The desktop packages describe the app and name its publisher
     When I make it mine with:
       | module      | example.com/acme/tasks |
@@ -67,7 +66,6 @@ Feature: Make the template mine
     And the Windows program is published by "Acme Ltd", with copyright "© Acme Ltd"
     And the Windows program is still described as "Acme Tasks"
 
-  @wip
   Scenario: No placeholder publisher is left in the desktop packages
     When I make it mine with module "example.com/acme/tasks" and name "Acme"
     Then the desktop packages name no placeholder publisher
@@ -99,7 +97,6 @@ Feature: Make the template mine
     Then it fails saying "commit or stash your changes first"
     And the project is unchanged
 
-  @wip
   Scenario Outline: Refuse missing or invalid package details and change nothing
     # An empty value leaves the detail out.
     When I try to make it mine with <detail> "<value>"

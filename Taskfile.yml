@@ -41,7 +41,7 @@ tasks:
 
   # template:start
   init:
-    desc: 'Make this template your own project, e.g. task init -- --module github.com/you/app --name "Acme" [--remove-sample] (see docs/template.md)'
+    desc: 'Make this template your own project, e.g. task init -- --module github.com/you/app --name "Acme" --description "Tasks for busy teams" --publisher "Acme Ltd" --email dev@acme.example [--remove-sample] (see docs/template.md)'
     cmds:
       - go run ./scripts/initproject {{.CLI_ARGS}}
 

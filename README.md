@@ -140,7 +140,7 @@ Fly must be able to pull the image from GHCR. The simplest option is to make the
 ## Using this as a template
 
 1. Create a repo from this template, or copy it.
-2. Run `task init -- --module github.com/you/your-app --name "Your App"`. Add `--remove-sample` to drop the sample `Item` domain too. See [docs/template.md](docs/template.md).
+2. Run `task init -- --module github.com/you/your-app --name "Your App" --description "What it does" --publisher "Your Name" --email you@example.com`. Add `--remove-sample` to drop the sample `Item` domain too. See [docs/template.md](docs/template.md).
 3. Fill in `SPEC.md`, then build your first capability with `/feature`.
 <!-- template:end -->
 
