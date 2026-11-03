@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- web: build the React SPA ----
-FROM node:24-alpine AS web
+FROM node:26-alpine AS web
 WORKDIR /src/web
 RUN npm install -g pnpm@10
 COPY web/package.json web/pnpm-lock.yaml ./
