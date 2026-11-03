@@ -1,3 +1,11 @@
+# Dependabot opens a pull request each week for each kind of dependency below,
+# and CI runs on it. It isn't told about the versions we hold back on purpose,
+# so those are ignored here and upgraded by hand:
+# - Wails: the Go module (go.mod), wails3 (tools/go.mod) and @wailsio/runtime
+#   (web/package.json) must stay on the same version, and an upgrade
+#   regenerates mobile/android (docs/mobile.md). CI builds neither the desktop
+#   nor the Android app, so a green pull request wouldn't prove it safe.
+# - TypeScript 7: held at 6.0.x until typescript-eslint supports it.
 version: 2
 updates:
   - package-ecosystem: gomod
@@ -5,11 +13,27 @@ updates:
     schedule: { interval: weekly }
     groups:
       go: { patterns: ["*"] }
+    ignore:
+      - dependency-name: github.com/wailsapp/*
+  # Dev-only Go tools (oapi-codegen, Air, wails3). A new oapi-codegen can change
+  # the generated code, which fails CI's "Generated code is up to date" job:
+  # then run `task gen` on the pull request's branch and commit the result.
+  - package-ecosystem: gomod
+    directory: /tools
+    schedule: { interval: weekly }
+    groups:
+      tools: { patterns: ["*"] }
+    ignore:
+      - dependency-name: github.com/wailsapp/*
   - package-ecosystem: npm
     directory: /web
     schedule: { interval: weekly }
     groups:
       web: { patterns: ["*"] }
+    ignore:
+      - dependency-name: "@wailsio/runtime"
+      - dependency-name: typescript
+        versions: [">=7"]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
