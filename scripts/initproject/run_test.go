@@ -15,16 +15,16 @@ import (
 
 func TestRunRefusesBeforeTouchingFiles(t *testing.T) {
 	const original = "module github.com/RockLikeAmadeus/go-application-starter\n"
-	valid := []string{"--module", "example.com/acme/tasks", "--name", "Acme"}
+	valid := withDetails("--module", "example.com/acme/tasks", "--name", "Acme")
 	tests := []struct {
 		desc      string
 		args      []string
 		porcelain string
 		wantErr   string
 	}{
-		{desc: "missing module", args: []string{"--name", "Acme"}, wantErr: "--module is required"},
-		{desc: "invalid module", args: []string{"--module", "not a module", "--name", "Acme"}, wantErr: "invalid module path"},
-		{desc: "unusable name", args: []string{"--module", "example.com/acme/tasks", "--name", "!!!"}, wantErr: "name must contain a letter or digit"},
+		{desc: "missing module", args: withDetails("--name", "Acme"), wantErr: "--module is required"},
+		{desc: "invalid module", args: withDetails("--module", "not a module", "--name", "Acme"), wantErr: "invalid module path"},
+		{desc: "unusable name", args: withDetails("--module", "example.com/acme/tasks", "--name", "!!!"), wantErr: "name must contain a letter or digit"},
 		{desc: "uncommitted changes", args: valid, porcelain: " M go.mod\n", wantErr: "commit or stash your changes first"},
 	}
 	for _, tt := range tests {
@@ -60,7 +60,7 @@ func TestRunRenamesTheProject(t *testing.T) {
 	write("web/node_modules/x.js", ignored) // not tracked, so not listed
 	files := []string{"go.mod", "cmd/starter/main.go", "go.sum"}
 
-	_, err := initproject.Run(dir, files, []string{"--module", "example.com/acme/tasks", "--name", "Acme Tasks"}, "")
+	_, err := initproject.Run(dir, files, withDetails("--module", "example.com/acme/tasks", "--name", "Acme Tasks"), "")
 	if err != nil {
 		t.Fatalf("Run error = %v", err)
 	}
@@ -116,7 +116,7 @@ func TestRunRemovesTheSampleOnlyWhenAsked(t *testing.T) {
 				writeFile(t, dir, rel, content)
 				listed = append(listed, rel)
 			}
-			args := append([]string{"--module", "example.com/acme/tasks", "--name", "Acme"}, tt.flags...)
+			args := append(withDetails("--module", "example.com/acme/tasks", "--name", "Acme"), tt.flags...)
 
 			if _, err := initproject.Run(dir, listed, args, ""); err != nil {
 				t.Fatalf("Run error = %v", err)
@@ -161,7 +161,7 @@ func TestRunRemovesTheInitTool(t *testing.T) {
 		listed = append(listed, rel)
 	}
 
-	_, err := initproject.Run(dir, listed, []string{"--module", "example.com/acme/tasks", "--name", "Acme"}, "")
+	_, err := initproject.Run(dir, listed, withDetails("--module", "example.com/acme/tasks", "--name", "Acme"), "")
 	if err != nil {
 		t.Fatalf("Run error = %v", err)
 	}
@@ -206,7 +206,7 @@ var _ = fmt.Sprint
 `)
 
 	_, err := initproject.Run(dir, []string{"internal/core/ports/ports.go"},
-		[]string{"--module", "example.com/acme/tasks", "--name", "Acme", "--remove-sample"}, "")
+		withDetails("--module", "example.com/acme/tasks", "--name", "Acme", "--remove-sample"), "")
 	if err != nil {
 		t.Fatalf("Run error = %v", err)
 	}
@@ -253,7 +253,7 @@ func TestRunAsksForFollowUpCommands(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			args := append([]string{"--module", "example.com/acme/tasks", "--name", "Acme"}, tt.flags...)
+			args := append(withDetails("--module", "example.com/acme/tasks", "--name", "Acme"), tt.flags...)
 
 			dir := t.TempDir()
 			writeTemplateRecord(t, dir)
@@ -281,7 +281,7 @@ func TestRunRemovesDirectoriesTheSampleLeavesEmpty(t *testing.T) {
 	for _, rel := range files {
 		writeFile(t, dir, rel, "package x\n")
 	}
-	args := []string{"--module", "example.com/acme/tasks", "--name", "Acme", "--remove-sample"}
+	args := withDetails("--module", "example.com/acme/tasks", "--name", "Acme", "--remove-sample")
 
 	if _, err := initproject.Run(dir, files, args, ""); err != nil {
 		t.Fatalf("Run error = %v", err)
@@ -305,7 +305,7 @@ func TestRunKeepsGoImportsSortedWhenTheModuleSortsDifferently(t *testing.T) {
 		")\n\nvar _, _ = cli.New, cobra.Command{}\n")
 
 	_, err := initproject.Run(dir, []string{"cmd/starter/main.go"},
-		[]string{"--module", "zenith.dev/notes", "--name", "Zenith"}, "")
+		withDetails("--module", "zenith.dev/notes", "--name", "Zenith"), "")
 	if err != nil {
 		t.Fatalf("Run error = %v", err)
 	}
@@ -326,7 +326,7 @@ func TestRunReadsTheOldNamesFromTheProjectRecord(t *testing.T) {
 	writeFile(t, dir, "README.md", "# Old Thing\n\nOLD_THING_PORT=8080 go run example.com/old/thing/cmd/old-thing\n")
 
 	_, err := initproject.Run(dir, []string{"README.md"},
-		[]string{"--module", "example.com/acme/tasks", "--name", "Acme"}, "")
+		withDetails("--module", "example.com/acme/tasks", "--name", "Acme"), "")
 	if err != nil {
 		t.Fatalf("Run error = %v", err)
 	}
@@ -345,7 +345,7 @@ func TestRunRecordsTheNewNames(t *testing.T) {
 		`{"module": "example.com/you/app", "name": "App", "slug": "app", "app": "app"}`+"\n")
 
 	_, err := initproject.Run(dir, []string{"project.json"},
-		[]string{"--module", "example.com/acme/tasks", "--name", "Acme Tasks"}, "")
+		withDetails("--module", "example.com/acme/tasks", "--name", "Acme Tasks"), "")
 	if err != nil {
 		t.Fatalf("Run error = %v", err)
 	}

@@ -41,7 +41,7 @@ func TestMainRunsInAGitRepository(t *testing.T) {
 				writeFile(t, dir, "notes.txt", "wip\n")
 			}
 
-			cmd := exec.Command(bin, "--module", "example.com/acme/tasks", "--name", "Acme")
+			cmd := exec.Command(bin, withDetails("--module", "example.com/acme/tasks", "--name", "Acme")...)
 			cmd.Dir = dir
 			out, err := cmd.CombinedOutput()
 

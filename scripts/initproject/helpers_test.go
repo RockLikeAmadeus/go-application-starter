@@ -4,7 +4,21 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	initproject "github.com/RockLikeAmadeus/go-application-starter/scripts/initproject"
 )
+
+// details are the package details every valid command line must give.
+var details = []string{"--description", "Tasks for busy teams", "--publisher", "Acme Ltd", "--email", "dev@acme.example"}
+
+// withDetails returns the command line args followed by details.
+func withDetails(args ...string) []string { return append(args, details...) }
+
+// wantDetails is o with the package details from details.
+func wantDetails(o initproject.Options) initproject.Options {
+	o.Description, o.Publisher, o.Email = "Tasks for busy teams", "Acme Ltd", "dev@acme.example"
+	return o
+}
 
 // writeFile creates dir/rel (a slash-separated path) with content, making any
 // parent directories.

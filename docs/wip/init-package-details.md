@@ -18,7 +18,10 @@ TODO.md item: **Init asks for the app's description and publisher.**
 
 ## Tasks
 
-1. [ ] `ParseArgs` accepts `--description`, `--publisher` and `--email` into `Options`, and requires each (`--description is required`, …). Update `run_test.go`'s argument lists to pass them.
+1. [x] `ParseArgs` accepts `--description`, `--publisher` and `--email` into `Options`, and requires each (`--description is required`, …). Update `run_test.go`'s argument lists to pass them.
+   - Red: `TestParseArgsRequiresEachPackageDetail` (and the updated `TestParseArgs` happy cases) failed with "unknown flag: --description".
+   - Green: the three flags and their "is required" checks. Tests pass them with `withDetails`.
+   - Refactor: one loop over `required` replaces the five "is required" checks; `withDetails`/`wantDetails` moved to `helpers_test.go`, used by three test files.
 2. [ ] `ParseArgs` refuses double quotes, backslashes and line breaks in the description and publisher (`description must not contain double quotes or backslashes`), `<` or `>` in the publisher, and an email that isn't a bare address (`invalid email address`).
 3. [ ] A pure function sets nfpm.yaml's `description:` and `maintainer:` lines (quoted so any allowed text is valid YAML), keeping everything else; it fails when either key is missing.
 4. [ ] A pure function sets the desktop file's `Comment=` line; it fails when the key is missing.
