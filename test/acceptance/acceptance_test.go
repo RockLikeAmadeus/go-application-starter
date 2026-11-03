@@ -1,12 +1,12 @@
 package acceptance
 
 import (
+	"flag"
 	"os"
 	"testing"
 
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
-	"github.com/spf13/pflag"
 )
 
 var opts = godog.Options{
@@ -18,12 +18,7 @@ var opts = godog.Options{
 
 func init() {
 	// Enables e.g. `go test ./test/acceptance --godog.tags=@wip --godog.format=progress`.
-	godog.BindCommandLineFlags("godog.", &opts)
-}
-
-func TestMain(m *testing.M) {
-	pflag.Parse()
-	os.Exit(m.Run())
+	godog.BindFlags("godog.", flag.CommandLine, &opts)
 }
 
 // TestFeatures runs every feature against every driver. Restrict drivers with

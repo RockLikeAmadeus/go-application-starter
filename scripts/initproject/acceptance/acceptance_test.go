@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
-	"github.com/spf13/pflag"
 )
 
 var opts = godog.Options{
@@ -25,12 +25,7 @@ var opts = godog.Options{
 }
 
 func init() {
-	godog.BindCommandLineFlags("godog.", &opts)
-}
-
-func TestMain(m *testing.M) {
-	pflag.Parse()
-	os.Exit(m.Run())
+	godog.BindFlags("godog.", flag.CommandLine, &opts)
 }
 
 // TestFeatures runs the init tool against throwaway copies of this template.

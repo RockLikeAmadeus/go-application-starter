@@ -6,6 +6,7 @@
 package terminal
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
-	"github.com/spf13/pflag"
 )
 
 var opts = godog.Options{
@@ -26,11 +26,11 @@ var opts = godog.Options{
 
 func init() {
 	// Enables e.g. `go test ./test/terminal --godog.tags=@wip`.
-	godog.BindCommandLineFlags("godog.", &opts)
+	godog.BindFlags("godog.", flag.CommandLine, &opts)
 }
 
 func TestMain(m *testing.M) {
-	pflag.Parse()
+	flag.Parse()
 	bin, err := os.MkdirTemp("", "starter-journeys-")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
