@@ -118,6 +118,10 @@ tasks:
   build:desktop:windows:
     desc: Cross-compile the desktop app for Windows, with the web UI built in, into ./bin
     deps: [web:build]
+    # No cgo: the program needs no C compiler for Windows, and wails3 built
+    # without it needs no GTK (on Linux its cgo build reads the WebKitGTK
+    # version), so this builds on a machine without the desktop build deps.
+    env: { CGO_ENABLED: "0" }
     vars:
       # Go links every .syso in the package's folder into the program: this one
       # holds the icon and manifest. Its _windows_amd64 suffix keeps it out of
@@ -133,7 +137,7 @@ tasks:
       - defer: rm -f {{.SYSO}}
       # Only go build targets Windows, so go tool wails3 above runs here.
       # windowsgui: a GUI program, so Windows opens no console window beside it.
-      - GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags desktop,embedweb -ldflags "-s -w -H windowsgui" -o {{.BIN}}/starter-desktop.exe ./cmd/desktop
+      - GOOS=windows GOARCH=amd64 go build -tags desktop,embedweb -ldflags "-s -w -H windowsgui" -o {{.BIN}}/starter-desktop.exe ./cmd/desktop
 
   # ---------------------------------------------------------------- package
   # Each format has its own task, so one can be built alone (the package
@@ -173,6 +177,7 @@ tasks:
   package:desktop:windows:
     desc: Package the desktop app for Windows (an NSIS setup .exe) into ./bin (needs makensis, see README)
     deps: [build:desktop:windows]
+    env: { CGO_ENABLED: "0" } # for wails3, as in build:desktop:windows
     vars:
       # The script's File command takes the bootstrapper from its own folder,
       # so it's written there for the build and deleted afterwards.
