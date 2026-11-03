@@ -56,6 +56,9 @@ var SampleFiles = []string{
 	"internal/adapters/tui/items_test.go",
 	"web/src/features/items/",
 
+	// Composition root
+	"internal/bootstrap/embedded_items_test.go",
+
 	// Specifications
 	"features/items.feature",
 	"features/plans.feature",

@@ -85,6 +85,9 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		}
 		a.close = store.Close
 		a.ready = store.Ready
+		// sample:start
+		items = sqlite.NewItemRepository(store)
+		// sample:end
 	default:
 		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
 	}
