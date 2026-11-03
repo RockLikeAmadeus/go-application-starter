@@ -12,14 +12,23 @@ Either way, the tool then **deletes itself**, because you only need it once. To 
 ## Make it mine
 
 ```sh
-task init -- --module github.com/you/tasks --name "Acme Tasks"            # keep the sample Item
-task init -- --module github.com/you/tasks --name "Acme Tasks" --remove-sample
+task init -- --module github.com/you/tasks --name "Acme Tasks" \
+  --description "Tasks for busy teams" --publisher "Acme Ltd" --email dev@acme.example   # keep the sample Item
+task init -- --module github.com/you/tasks --name "Acme Tasks" \
+  --description "Tasks for busy teams" --publisher "Acme Ltd" --email dev@acme.example \
+  --remove-sample
 ```
 
-**Purpose:** start a real project without hunting down every place the template's own name appears.
+**Purpose:** start a real project without hunting down every place the template's own name appears, or the placeholders its desktop packages carry.
 
 **Rules**
 - `--module` (the Go module path) and `--name` (the brand name people see) are both required.
+- So are the details the desktop packages show, so no project ships the template's placeholders:
+  - `--description`: one line about the app. It describes the Linux packages (`apt show`, software centres) and the app's menu entry (the desktop file's `Comment`).
+  - `--publisher`: the person or company that publishes the app. It is the Windows program's company, its copyright reads `© <publisher>`, and with `--email` it maintains the Linux packages: `Acme Ltd <dev@acme.example>`.
+  - `--email`: where people reach the publisher about the packages.
+  - The Windows program's description stays the brand name: Task Manager shows it as the process's name.
+  - The menu entry's category (`Categories=Utility;`) is still yours to choose by hand.
 - Every other name comes from the brand name's **slug**: lower case, with runs of anything other than letters and digits turned into single hyphens. "Acme Tasks" becomes `acme-tasks`.
   - The brand name replaces "Starter" in the UI and the docs.
   - The slug names the command-line tool (`cmd/<slug>`), the Docker image, the deploy configs and the web package (`<slug>-web`).
@@ -30,23 +39,26 @@ task init -- --module github.com/you/tasks --name "Acme Tasks" --remove-sample
   - What the front ends share stays, so your first screen doesn't have to rebuild it: the terminal app's error and selection styles, and the web app's error message. The project still passes the Go linters.
 - The tool removes itself when it finishes: its code, this page and the `init` task.
 - It refuses to run, and changes nothing, when:
-  - the input is invalid (a flag is missing, the module path is invalid, the name has no letters or digits, or it contains a double quote or backslash);
+  - the input is invalid (a flag is missing, the module path is invalid, the name has no letters or digits, the name, description or publisher contains a double quote, a backslash or a line break, the publisher contains `<` or `>`, or the email isn't an address);
   - the working tree has uncommitted changes. That way, `git` can always undo a run.
 
 **Examples**
 - `--name "Acme"` → brand "Acme", command `acme`, variables `ACME_…`.
 - `--name "Acme Tasks"` → brand "Acme Tasks", command `acme-tasks`, variables `ACME_TASKS_…`.
 - `--remove-sample` → the Items screens go, but the TUI's `errorStyle` and `selectedStyle` and the web app's `ErrorMessage` stay.
+- `--publisher "Acme Ltd" --email dev@acme.example` → Linux maintainer `Acme Ltd <dev@acme.example>`, Windows company "Acme Ltd", copyright "© Acme Ltd".
 - `--name "!!!"` → refused: the name needs a letter or digit.
+- `--email "not an address"` → refused.
 - Uncommitted changes → refused: commit or stash first.
 
 ## What happens when you run it
 
 1. **Checks.** It makes sure both flags are given and valid, and that you have no uncommitted changes. If anything is wrong, it stops before touching a file.
 2. **Renames.** It replaces the Go module path, the brand, the command-line tool's name and the `STARTER_…` environment variables in every tracked file, and moves `cmd/starter` to `cmd/<slug>`. It records the new names in `project.json`, where `task rename` finds them later.
-3. **Removes the sample** (only with `--remove-sample`). It deletes the Item files and the Item parts of shared files, then removes any folders that leaves empty.
-4. **Removes itself.** Its code, this page, and the `init` and `test:init` tasks go.
-5. **Tidies up.** It runs `go mod tidy`. After removing the sample, it first regenerates the API code from the trimmed `api/openapi.yaml`, then regenerates the web client's types with `pnpm`.
+3. **Describes the desktop packages.** It writes the description, publisher and email into `build/desktop/linux/nfpm.yaml`, `build/desktop/linux/app.desktop` and `build/desktop/windows/info.json`.
+4. **Removes the sample** (only with `--remove-sample`). It deletes the Item files and the Item parts of shared files, then removes any folders that leaves empty.
+5. **Removes itself.** Its code, this page, and the `init` and `test:init` tasks go.
+6. **Tidies up.** It runs `go mod tidy`. After removing the sample, it first regenerates the API code from the trimmed `api/openapi.yaml`, then regenerates the web client's types with `pnpm`.
    - If pnpm is not installed, or fails (for example, `web/node_modules` is missing or Node is too old), it does not stop. It prints a note telling you to run `task gen` once that is fixed.
 
 Afterwards, look over `git diff`, run `task check`, and commit. If you don't like the result, `git reset --hard && git clean -fd` puts everything back.

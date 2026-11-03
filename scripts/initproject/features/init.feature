@@ -1,6 +1,8 @@
 Feature: Make the template mine
   # Template tooling, not product behaviour: see docs/template.md.
   # Each scenario runs the init tool on a throwaway copy of the template.
+  # Steps that don't name the description, publisher or email give the tool
+  # sample ones, since it needs them.
 
   Background:
     Given a fresh copy of the template
@@ -51,6 +53,25 @@ Feature: Make the template mine
       |                       |
       | , removing the sample |
 
+  @wip
+  Scenario: The desktop packages describe the app and name its publisher
+    When I make it mine with:
+      | module      | example.com/acme/tasks |
+      | name        | Acme Tasks             |
+      | description | Tasks for busy teams   |
+      | publisher   | Acme Ltd               |
+      | email       | dev@acme.example       |
+    Then the Linux packages are described as "Tasks for busy teams"
+    And the Linux packages are maintained by "Acme Ltd <dev@acme.example>"
+    And the app's menu entry is described as "Tasks for busy teams"
+    And the Windows program is published by "Acme Ltd", with copyright "© Acme Ltd"
+    And the Windows program is still described as "Acme Tasks"
+
+  @wip
+  Scenario: No placeholder publisher is left in the desktop packages
+    When I make it mine with module "example.com/acme/tasks" and name "Acme"
+    Then the desktop packages name no placeholder publisher
+
   Scenario: The project remembers its names
     When I make it mine with module "example.com/acme/tasks" and name "Acme Tasks"
     Then the project records module "example.com/acme/tasks" and name "Acme Tasks"
@@ -77,3 +98,20 @@ Feature: Make the template mine
     When I try to make it mine with module "example.com/acme/tasks" and name "Acme"
     Then it fails saying "commit or stash your changes first"
     And the project is unchanged
+
+  @wip
+  Scenario Outline: Refuse missing or invalid package details and change nothing
+    # An empty value leaves the detail out.
+    When I try to make it mine with <detail> "<value>"
+    Then it fails saying "<message>"
+    And the project is unchanged
+
+    Examples:
+      | detail      | value          | message                                                    |
+      | description |                | --description is required                                  |
+      | publisher   |                | --publisher is required                                    |
+      | email       |                | --email is required                                        |
+      | email       | not an address | invalid email address                                      |
+      | publisher   | Acme <Ltd>     | publisher must not contain < or >                          |
+      | publisher   | Acme\\Ltd      | publisher must not contain double quotes or backslashes    |
+      | description | Say "hi"       | description must not contain double quotes or backslashes  |

@@ -1,0 +1,31 @@
+# Init asks for the app's description and publisher
+
+TODO.md item: **Init asks for the app's description and publisher.**
+
+- Spec: [docs/template.md, "Make it mine"](../template.md#make-it-mine). Init is template tooling, so its spec lives there, not in SPEC.md.
+- Scenarios: [`scripts/initproject/features/init.feature`](../../scripts/initproject/features/init.feature), the three `@wip` ones. Run with `task test:init -- --godog.tags=@wip`.
+
+## Decisions
+
+- **Flags, not prompts** (init runs non-interactively in its acceptance tests and scripts), and **required**, like `--module` and `--name`, so no project starts with the placeholders (chosen 2026-11-03).
+- **`--description`, `--publisher`, `--email`.** No separate `--maintainer`: the Linux maintainer is `<publisher> <<email>>`. The Windows `CompanyName` is the publisher, and `LegalCopyright` is `© <publisher>` (no year, which would go stale).
+- **Windows `FileDescription` stays the brand name** (rename already writes it): Task Manager shows it as the process's name, so a sentence would look odd. The description goes only to nfpm's `description` and the desktop file's `Comment`.
+- **`Categories=Utility;` stays a manual step** for template users (there's no good flag for a freedesktop category list).
+- **Validation:** the description and publisher refuse double quotes, backslashes and line breaks (they land in YAML, JSON, a desktop file and makensis's `-D` arguments, see the Taskfile's `package:desktop:windows`), the same rule as `project.Slug` has for the name. The publisher also refuses `<` and `>` (they would break `Name <email>`). The email must be a bare address (`net/mail`), not `Name <addr>`.
+- **The template's files carry placeholder lines that init replaces by key**: nfpm.yaml gains a `description:` and app.desktop a `Comment=` (so the template's own packages are described too). Their text must not mention the template's name, or `task rename` and "no trace of the template's name" interfere. A missing key is a template bug, and init fails before touching a file (every check runs first, `Run`'s rule).
+- The edits happen **after** the rename pass, so a description that happens to contain the template's name isn't rewritten. They live in `scripts/initproject` (init-only; rename doesn't take these details).
+- The acceptance steps that don't name the details pass sample ones (`packageDetails` in `acceptance_test.go`). So until task 1 is green, **every** init scenario fails with "unknown flag: --description", not just the `@wip` ones.
+
+## Tasks
+
+1. [ ] `ParseArgs` accepts `--description`, `--publisher` and `--email` into `Options`, and requires each (`--description is required`, …). Update `run_test.go`'s argument lists to pass them.
+2. [ ] `ParseArgs` refuses double quotes, backslashes and line breaks in the description and publisher (`description must not contain double quotes or backslashes`), `<` or `>` in the publisher, and an email that isn't a bare address (`invalid email address`).
+3. [ ] A pure function sets nfpm.yaml's `description:` and `maintainer:` lines (quoted so any allowed text is valid YAML), keeping everything else; it fails when either key is missing.
+4. [ ] A pure function sets the desktop file's `Comment=` line; it fails when the key is missing.
+5. [ ] A pure function sets info.json's `CompanyName` and `LegalCopyright` (`© <publisher>`), keeping its layout, `FileDescription` and the `@VERSION@` placeholders; JSON-escaped, no HTML escaping (`&` stays `&`). Fails when a key is missing.
+6. [ ] `Run` applies 3–5 to the three files after renaming, and refuses before touching any file when one is missing or lacks a key. Add the placeholder `description:` and `Comment=` lines to the template's files.
+7. [ ] Docs and steps: README's "Using this as a template" command, the Taskfile `init` task's `desc`, TODO.md's template-user steps (drop the nfpm description/maintainer and info.json steps, keep `Categories` in the desktop file one), `test/packaging/nsis_test.go`'s "placeholders" comment, and the desktop packaging plan's mentions of these placeholders. Remove the `@wip` tags, run `task test:init`, `task test:rename` and `task check`, tick the TODO item, delete this file.
+
+## Changes to the plan
+
+(none yet)

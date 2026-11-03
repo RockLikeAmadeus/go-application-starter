@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -67,6 +68,8 @@ func initializeScenario(sc *godog.ScenarioContext) {
 	sc.Step(`^the copy has uncommitted changes$`, p.uncommittedChanges)
 	sc.Step(`^I make it mine with module "([^"]*)" and name "([^"]*)"(, removing the sample)?$`, p.makeItMine)
 	sc.Step(`^I try to make it mine with module "([^"]*)" and name "([^"]*)"$`, p.tryToMakeItMine)
+	sc.Step(`^I make it mine with:$`, p.makeItMineWith)
+	sc.Step(`^I try to make it mine with (description|publisher|email) "(.*)"$`, p.tryWithDetail)
 
 	sc.Step(`^the project's Go module is "([^"]*)"$`, p.goModuleIs)
 	sc.Step(`^the app is branded "([^"]*)"$`, p.brandedAs)
@@ -85,6 +88,12 @@ func initializeScenario(sc *godog.ScenarioContext) {
 	sc.Step(`^the project can still be renamed$`, p.canBeRenamed)
 	sc.Step(`^it fails saying "([^"]*)"$`, p.failsSaying)
 	sc.Step(`^the project is unchanged$`, p.unchanged)
+	sc.Step(`^the Linux packages are described as "([^"]*)"$`, p.linuxDescribedAs)
+	sc.Step(`^the Linux packages are maintained by "([^"]*)"$`, p.linuxMaintainedBy)
+	sc.Step(`^the app's menu entry is described as "([^"]*)"$`, p.menuEntryDescribedAs)
+	sc.Step(`^the Windows program is published by "([^"]*)", with copyright "([^"]*)"$`, p.windowsPublishedBy)
+	sc.Step(`^the Windows program is still described as "([^"]*)"$`, p.windowsDescribedAs)
+	sc.Step(`^the desktop packages name no placeholder publisher$`, p.noPlaceholderPublisher)
 }
 
 // --- arranging -------------------------------------------------------------
@@ -140,11 +149,48 @@ func (p *project) uncommittedChanges() error {
 
 // --- acting ----------------------------------------------------------------
 
+// packageDetails are the description, publisher and email the tool is given
+// when a step doesn't name them: the tool needs them, but most scenarios are
+// about something else.
+var packageDetails = map[string]string{
+	"description": "Tasks for busy teams",
+	"publisher":   "Acme Ltd",
+	"email":       "dev@acme.example",
+}
+
+// withDetails adds a flag for each detail in packageDetails that set doesn't
+// already give, then for each value in set; an empty value leaves its flag out.
+func withDetails(set map[string]string) []string {
+	var args []string
+	for _, key := range []string{"module", "name", "description", "publisher", "email"} {
+		value, ok := set[key]
+		if !ok {
+			value = packageDetails[key]
+		}
+		if value != "" {
+			args = append(args, "--"+key, value)
+		}
+	}
+	return args
+}
+
 func (p *project) makeItMine(module, name, removal string) error {
-	args := []string{"--module", module, "--name", name}
+	args := withDetails(map[string]string{"module": module, "name": name})
 	if removal != "" {
 		args = append(args, "--remove-sample")
 	}
+	return p.mustRun(args)
+}
+
+func (p *project) makeItMineWith(table *godog.Table) error {
+	set := map[string]string{}
+	for _, row := range table.Rows {
+		set[row.Cells[0].Value] = row.Cells[1].Value
+	}
+	return p.mustRun(withDetails(set))
+}
+
+func (p *project) mustRun(args []string) error {
 	p.runTool(args)
 	if p.err != nil {
 		return fmt.Errorf("init failed: %w\n%s", p.err, p.out)
@@ -153,13 +199,17 @@ func (p *project) makeItMine(module, name, removal string) error {
 }
 
 func (p *project) tryToMakeItMine(module, name string) error {
-	var args []string
-	if module != "" {
-		args = append(args, "--module", module)
-	}
-	if name != "" {
-		args = append(args, "--name", name)
-	}
+	return p.tryRun(withDetails(map[string]string{"module": module, "name": name}))
+}
+
+func (p *project) tryWithDetail(detail, value string) error {
+	return p.tryRun(withDetails(map[string]string{
+		"module": "example.com/acme/tasks", "name": "Acme", detail: value,
+	}))
+}
+
+// tryRun runs the tool after noting the project's state, for a run that may fail.
+func (p *project) tryRun(args []string) error {
 	before, err := p.state()
 	if err != nil {
 		return err
@@ -333,6 +383,101 @@ func (p *project) unchanged() error {
 		return fmt.Errorf("the project changed:\nbefore:\n%s\nafter:\n%s", p.before, after)
 	}
 	return nil
+}
+
+const (
+	nfpmFile    = "build/desktop/linux/nfpm.yaml"
+	desktopFile = "build/desktop/linux/app.desktop"
+	infoFile    = "build/desktop/windows/info.json"
+)
+
+func (p *project) linuxDescribedAs(description string) error {
+	return p.yamlFieldIs(nfpmFile, "description", description)
+}
+
+func (p *project) linuxMaintainedBy(maintainer string) error {
+	return p.yamlFieldIs(nfpmFile, "maintainer", maintainer)
+}
+
+func (p *project) menuEntryDescribedAs(comment string) error {
+	return p.allContain(map[string]string{desktopFile: "\nComment=" + comment + "\n"})
+}
+
+func (p *project) windowsPublishedBy(company, copyright string) error {
+	info, err := p.versionStrings()
+	if err != nil {
+		return err
+	}
+	if info["CompanyName"] != company || info["LegalCopyright"] != copyright {
+		return fmt.Errorf("%s names company %q and copyright %q, want %q and %q",
+			infoFile, info["CompanyName"], info["LegalCopyright"], company, copyright)
+	}
+	return nil
+}
+
+func (p *project) windowsDescribedAs(description string) error {
+	info, err := p.versionStrings()
+	if err != nil {
+		return err
+	}
+	if got := info["FileDescription"]; got != description {
+		return fmt.Errorf("%s's FileDescription is %q, want %q", infoFile, got, description)
+	}
+	return nil
+}
+
+// noPlaceholderPublisher looks for the template's placeholder publisher
+// ("Example") and addresses (…@example.com) in the desktop packaging. The app
+// ID's com.example. prefix is a separate placeholder (see docs/mobile.md).
+func (p *project) noPlaceholderPublisher() error {
+	out, err := run(p.dir, "git", "grep", "-I", "-n", "-E",
+		"-e", `\bExample\b`, "-e", `@example\.com`, "--", "build/desktop")
+	if err == nil {
+		return fmt.Errorf("the desktop packages still name a placeholder publisher:\n%s", firstLines(out, 20))
+	}
+	if out != "" {
+		return fmt.Errorf("git grep: %w\n%s", err, out)
+	}
+	return nil
+}
+
+// yamlFieldIs checks a top-level field of a YAML file. The value may be
+// quoted, as a YAML or JSON string.
+func (p *project) yamlFieldIs(file, key, want string) error {
+	text, err := p.read(file)
+	if err != nil {
+		return err
+	}
+	for line := range strings.SplitSeq(text, "\n") {
+		value, ok := strings.CutPrefix(line, key+":")
+		if !ok {
+			continue
+		}
+		value = strings.TrimSpace(value)
+		if unquoted, err := strconv.Unquote(value); err == nil {
+			value = unquoted
+		}
+		if value != want {
+			return fmt.Errorf("%s's %s is %q, want %q", file, key, value, want)
+		}
+		return nil
+	}
+	return fmt.Errorf("%s has no %s", file, key)
+}
+
+// versionStrings reads the Windows program's version info strings.
+func (p *project) versionStrings() (map[string]string, error) {
+	data, err := os.ReadFile(filepath.Join(p.dir, infoFile))
+	if err != nil {
+		return nil, err
+	}
+	var info struct {
+		Info map[string]map[string]string `json:"info"`
+	}
+	if err := json.Unmarshal(data, &info); err != nil {
+		return nil, fmt.Errorf("%s: %w", infoFile, err)
+	}
+	return info.Info["0409"], nil
 }
 
 // --- helpers ---------------------------------------------------------------
