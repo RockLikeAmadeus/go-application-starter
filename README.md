@@ -97,13 +97,13 @@ Keep the business rules in the first layer. Browser and terminal journeys are sl
 
 ## CI/CD
 
-GitHub Actions, in `.github/workflows/`:
+GitHub Actions, in `.github/workflows/`. [docs/ci-cd.md](docs/ci-cd.md) explains how they fit together, Dependabot, and how to build the desktop installers on GitHub by hand.
 
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `ci.yml` | PRs, `main`, `v*` tags | Go lint/unit/acceptance/terminal journeys, web lint/typecheck/unit, codegen drift, playwright-bdd e2e. Then builds the Docker image and, on push, publishes it to GHCR (`ghcr.io/<owner>/<repo>:sha-<sha>`) |
 | `deploy.yml` | CI success on `main` → **staging**; on `v*` tag → **production**. Only once `DEPLOY_ENABLED` is `true` (see below) | `flyctl deploy --image …`, then a `/readyz` smoke test |
-| `release.yml` | `v*` tag | GoReleaser publishes CLI/TUI binaries for Linux, macOS and Windows |
+| `release.yml` | `v*` tag; **Run workflow** | On a tag, GoReleaser publishes CLI/TUI binaries for Linux, macOS and Windows. On a tag or by hand, builds the desktop app's Linux installers as an artifact |
 
 Dependabot keeps Go, npm, Actions and Docker dependencies current.
 
