@@ -12,6 +12,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/plans"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/system"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -77,6 +78,13 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		// sample:start
 		items = jsonfile.NewItemRepository(store)
 		// sample:end
+	case config.StorageSQLite:
+		store, err := sqlite.Open(cfg.DataDir)
+		if err != nil {
+			return nil, err
+		}
+		a.close = store.Close
+		a.ready = store.Ready
 	default:
 		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
 	}

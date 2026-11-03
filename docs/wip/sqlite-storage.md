@@ -40,8 +40,12 @@ Temporary: delete this file in the same change that removes the `@wip` tags.
    Red: `TestTwoStoresOnOneDataFolderShareItemsAndCanWriteAtOnce` (50 concurrent Saves per store), "database is locked (SQLITE_BUSY)" after the 5 s busy timeout.
    Green: `Open` sets `db.SetMaxOpenConns(1)`, so a store's own writes queue in Go and only the programs contend for SQLite's lock.
    Refactor: a comment on `SetMaxOpenConns(1)` (why, and that queries mustn't nest); the tests open stores with `openItemRepository(t, dir)`.
-7. [ ] **bootstrap:** `NewEmbedded` with `StorageSQLite` wires the store: items saved survive a reopen, `Close` closes it, and `Ready` fails once the data folder is removed.
+7. [ ] **bootstrap:** `NewEmbedded` with `StorageSQLite` wires the store: items saved survive a reopen, `Close` closes it, and `Ready` fails once the data folder is removed. Two cycles: the store (template), then items (sample, in `sample:` markers).
+   - Cycle 1 (store). Red: `TestNewEmbedded_OnSQLiteIsNotReadyOnceTheDataFolderIsRemoved`, "unsupported storage \"sqlite\"". Green: a `StorageSQLite` case opens `sqlite.Open` and sets `close`/`ready`; no item repository yet (the CLI on SQLite panics on items until cycle 2).
+     Refactor: the jsonfile and SQLite readiness tests became one table test over both storages. The two `case`s' shared `close`/`ready` lines were left, since cycle 2 adds items to the SQLite one.
+   - [ ] Cycle 2 (sample): items saved through one `NewEmbedded` on SQLite are found by a second one on the same folder after the first is closed.
 8. [ ] **desktop.Open** honours `storage = "sqlite"` from the settings file (jsonfile otherwise, never memory). Two `desktop.Open`s on SQLite in one folder both work.
+   Also `cli.keepsDataInAFolder` must count SQLite: until then the CLI on SQLite opens `./data` (the `@wip` run leaves a stray `test/acceptance/data/data.db`).
 9. [ ] **Acceptance `sqlite` driver** in `test/acceptance/drivers.go` (tags like jsonfile's). Run all of `task accept`, and get the `@wip` scenarios green.
 10. [ ] **Init:** add the items migration and `item_repository*.go` to `SampleFiles`. Make sure the template's migrations embed and `Open` still work without them. Run `task test:init`.
 11. [ ] **Docs and finish:**

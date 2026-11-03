@@ -36,20 +36,27 @@ func TestNewEmbedded_IsOnTheLocalPlan(t *testing.T) {
 	}
 }
 
-// jsonfile storage is ready only while its data folder can be used.
-func TestNewEmbedded_OnJSONFileIsNotReadyOnceTheDataFolderIsRemoved(t *testing.T) {
-	dir := t.TempDir()
-	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
-	if err != nil {
-		t.Fatalf("NewEmbedded: %v", err)
-	}
-	t.Cleanup(func() { _ = a.Close() })
-	if err := os.RemoveAll(dir); err != nil {
-		t.Fatal(err)
-	}
+// Storage on disk is ready only while its data folder can be used.
+func TestNewEmbedded_IsNotReadyOnceTheDataFolderIsRemoved(t *testing.T) {
+	for _, storage := range []config.Storage{config.StorageJSONFile, config.StorageSQLite} {
+		t.Run(string(storage), func(t *testing.T) {
+			dir := t.TempDir()
+			a, err := bootstrap.NewEmbedded(config.Config{Storage: storage, DataDir: dir})
+			if err != nil {
+				t.Fatalf("NewEmbedded: %v", err)
+			}
+			t.Cleanup(func() { _ = a.Close() })
+			if err := a.Ready(t.Context()); err != nil {
+				t.Fatalf("Ready error = %v before removal, want nil", err)
+			}
+			if err := os.RemoveAll(dir); err != nil {
+				t.Fatal(err)
+			}
 
-	if err := a.Ready(t.Context()); err == nil {
-		t.Error("Ready error = nil, want an error once the data folder is gone")
+			if err := a.Ready(t.Context()); err == nil {
+				t.Error("Ready error = nil, want an error once the data folder is gone")
+			}
+		})
 	}
 }
 
