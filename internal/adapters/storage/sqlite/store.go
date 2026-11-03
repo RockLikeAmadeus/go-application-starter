@@ -27,7 +27,9 @@ var migrations embed.FS
 // Store owns the database connection. Repositories for individual domain
 // types are created from it.
 type Store struct {
-	db *sql.DB //nolint:unused // used by the repositories built on this Store
+	db     *sql.DB
+	path   string
+	opened os.FileInfo
 }
 
 // Open creates dir if needed, opens <dir>/data.db and applies the migrations.
@@ -35,12 +37,8 @@ func Open(dir string) (*Store, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, fmt.Errorf("create data dir: %w", err)
 	}
-	// Pragmas in the DSN apply to every connection the pool opens.
-	q := url.Values{}
-	q.Add("_pragma", "journal_mode(WAL)")
-	q.Add("_pragma", "busy_timeout(5000)")
-	q.Add("_pragma", "foreign_keys(1)")
-	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(filepath.Join(dir, "data.db"))+"?"+q.Encode())
+	path := filepath.Join(dir, "data.db")
+	db, err := sql.Open("sqlite", dsn(path))
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
@@ -48,7 +46,23 @@ func Open(dir string) (*Store, error) {
 		db.Close()
 		return nil, err
 	}
-	return &Store{db: db}, nil
+	opened, err := os.Stat(path)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("database file: %w", err)
+	}
+	return &Store{db: db, path: path, opened: opened}, nil
+}
+
+// dsn names the database file with the pragmas every connection needs.
+// Pragmas in the DSN apply to every connection the pool opens, not just the
+// first.
+func dsn(path string) string {
+	q := url.Values{}
+	q.Add("_pragma", "journal_mode(WAL)")
+	q.Add("_pragma", "busy_timeout(5000)")
+	q.Add("_pragma", "foreign_keys(1)")
+	return "file:" + filepath.ToSlash(path) + "?" + q.Encode()
 }
 
 func migrate(db *sql.DB) error {
@@ -88,4 +102,22 @@ func refuseNewer(ctx context.Context, provider *goose.Provider) error {
 // Close closes the database.
 func (s *Store) Close() error {
 	return s.db.Close()
+}
+
+// Ready reports whether the store can still use its database: a query
+// succeeds and the file at its path is still the one Open opened. On Unix an
+// open handle keeps a removed file alive, so a ping alone would say "ready"
+// while writes go nowhere. It checks afresh each time.
+func (s *Store) Ready(ctx context.Context) error {
+	if err := s.db.PingContext(ctx); err != nil {
+		return err
+	}
+	now, err := os.Stat(s.path)
+	if err != nil {
+		return err
+	}
+	if !os.SameFile(s.opened, now) {
+		return fmt.Errorf("database file %s was replaced", s.path)
+	}
+	return nil
 }
