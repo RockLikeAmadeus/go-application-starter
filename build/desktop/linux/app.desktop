@@ -1,6 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Starter
+Comment=A desktop app, built from the template.
 Exec=starter-desktop
 Icon=com.example.starter
 StartupWMClass=com.example.starter

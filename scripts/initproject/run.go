@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/imports"
@@ -34,6 +37,9 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 	if err != nil {
 		return nil, err
 	}
+	if err := setPackageDetails(dir, opts, false); err != nil {
+		return nil, err
+	}
 	if opts.RemoveSample {
 		if err := removeAll(dir, SampleFiles); err != nil {
 			return nil, err
@@ -51,6 +57,9 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 			return nil, err
 		}
 	}
+	if err := setPackageDetails(dir, opts, true); err != nil {
+		return nil, err
+	}
 	if err := project.WriteRecord(dir, n); err != nil {
 		return nil, err
 	}
@@ -58,6 +67,40 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 		return regenerate, nil
 	}
 	return [][]string{tidy}, nil
+}
+
+// packageFiles are the packaging files that carry the app's details, with the
+// function that sets them.
+var packageFiles = []struct {
+	rel string
+	set func(text string, o Options) (string, error)
+}{
+	{"build/desktop/linux/nfpm.yaml", SetNFPMDetails},
+	{"build/desktop/linux/app.desktop", SetDesktopComment},
+	{"build/desktop/windows/info.json", SetInfoJSON},
+}
+
+// setPackageDetails sets the app's details in the packaging files. Without
+// write it only checks that every file exists and has its keys, so Run can
+// refuse before touching anything.
+func setPackageDetails(dir string, o Options, write bool) error {
+	for _, f := range packageFiles {
+		path := filepath.Join(dir, filepath.FromSlash(f.rel))
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		text, err := f.set(string(b), o)
+		if err != nil {
+			return fmt.Errorf("%s: %w", f.rel, err)
+		}
+		if write {
+			if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // tidy follows every run: it drops the init tool's own dependencies from

@@ -323,6 +323,7 @@ func TestRunReadsTheOldNamesFromTheProjectRecord(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "project.json",
 		`{"module": "example.com/old/thing", "name": "Old Thing", "slug": "old-thing", "app": "old-thing"}`+"\n")
+	writePackagingFiles(t, dir)
 	writeFile(t, dir, "README.md", "# Old Thing\n\nOLD_THING_PORT=8080 go run example.com/old/thing/cmd/old-thing\n")
 
 	_, err := initproject.Run(dir, []string{"README.md"},
@@ -339,6 +340,7 @@ func TestRunReadsTheOldNamesFromTheProjectRecord(t *testing.T) {
 
 func TestRunRecordsTheNewNames(t *testing.T) {
 	dir := t.TempDir()
+	writePackagingFiles(t, dir)
 	// The old names are also keys in project.json, so renaming its text
 	// alone would rename the keys too.
 	writeFile(t, dir, "project.json",
@@ -358,4 +360,65 @@ func TestRunRecordsTheNewNames(t *testing.T) {
 	if got != want {
 		t.Errorf("project.json records %+v, want %+v\n%s", got, want, readFile(t, dir, "project.json"))
 	}
+}
+
+func TestRunSetsThePackageDetails(t *testing.T) {
+	const (
+		nfpm    = "build/desktop/linux/nfpm.yaml"
+		desktop = "build/desktop/linux/app.desktop"
+		info    = "build/desktop/windows/info.json"
+	)
+	templateFiles := map[string]string{
+		nfpm:    "name: starter-desktop\ndescription: placeholder\nmaintainer: Starter <starter@example.com>\n",
+		desktop: "[Desktop Entry]\nName=Starter\nComment=placeholder\n",
+		info:    "{\n\t\"CompanyName\": \"Example\",\n\t\"LegalCopyright\": \"© Example\"\n}\n",
+	}
+	args := withDetails("--module", "example.com/acme/tasks", "--name", "Acme")
+
+	t.Run("sets them in the three files, after renaming", func(t *testing.T) {
+		dir := t.TempDir()
+		writeTemplateRecord(t, dir)
+		var listed []string
+		for rel, content := range templateFiles {
+			writeFile(t, dir, rel, content)
+			listed = append(listed, rel)
+		}
+
+		if _, err := initproject.Run(dir, listed, args, ""); err != nil {
+			t.Fatalf("Run error = %v", err)
+		}
+
+		for rel, want := range map[string]string{
+			nfpm:    "name: acme-desktop\ndescription: \"Tasks for busy teams\"\nmaintainer: \"Acme Ltd <dev@acme.example>\"\n",
+			desktop: "[Desktop Entry]\nName=Acme\nComment=Tasks for busy teams\n",
+			info:    "{\n\t\"CompanyName\": \"Acme Ltd\",\n\t\"LegalCopyright\": \"© Acme Ltd\"\n}\n",
+		} {
+			if got := readFile(t, dir, rel); got != want {
+				t.Errorf("%s =\n%q\nwant\n%q", rel, got, want)
+			}
+		}
+	})
+
+	t.Run("refuses, touching nothing, when a file lacks its key", func(t *testing.T) {
+		dir := t.TempDir()
+		writeTemplateRecord(t, dir)
+		const gomod = "module github.com/RockLikeAmadeus/go-application-starter\n"
+		writeFile(t, dir, "go.mod", gomod)
+		for rel, content := range templateFiles {
+			writeFile(t, dir, rel, content)
+		}
+		writeFile(t, dir, desktop, "[Desktop Entry]\nName=Starter\n")
+
+		_, err := initproject.Run(dir, []string{"go.mod", nfpm, desktop, info}, args, "")
+
+		if err == nil || !strings.Contains(err.Error(), "Comment=") {
+			t.Errorf("Run error = %v, want one mentioning Comment=", err)
+		}
+		if got := readFile(t, dir, "go.mod"); got != gomod {
+			t.Errorf("go.mod changed to %q", got)
+		}
+		if got := readFile(t, dir, nfpm); got != templateFiles[nfpm] {
+			t.Errorf("nfpm.yaml changed to %q", got)
+		}
+	})
 }

@@ -34,11 +34,21 @@ func writeFile(t *testing.T, dir, rel, content string) {
 }
 
 // writeTemplateRecord gives dir the project.json the template ships with, so
-// Run knows the names it is replacing.
+// Run knows the names it is replacing, and the packaging files.
 func writeTemplateRecord(t *testing.T, dir string) {
 	t.Helper()
+	writePackagingFiles(t, dir)
 	writeFile(t, dir, "project.json", `{"module": "github.com/RockLikeAmadeus/go-application-starter", `+
 		`"name": "Starter", "slug": "starter", "app": "go-application-starter"}`+"\n")
+}
+
+// writePackagingFiles gives dir minimal packaging files, which Run sets the
+// package details in.
+func writePackagingFiles(t *testing.T, dir string) {
+	t.Helper()
+	writeFile(t, dir, "build/desktop/linux/nfpm.yaml", "description: x\nmaintainer: x\n")
+	writeFile(t, dir, "build/desktop/linux/app.desktop", "Comment=x\n")
+	writeFile(t, dir, "build/desktop/windows/info.json", "{\n\t\"CompanyName\": \"x\",\n\t\"LegalCopyright\": \"x\"\n}\n")
 }
 
 // readFile returns the content of dir/rel (a slash-separated path).

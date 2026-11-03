@@ -38,7 +38,10 @@ TODO.md item: **Init asks for the app's description and publisher.**
    - Red: `TestSetInfoJSON` failed: the stub returned the text unchanged and no error for a missing key.
    - Green: `SetInfoJSON(text, Options)` sets both values through `setJSONString` (indent and comma kept, encoder with HTML escaping off).
    - Refactor: nothing worth changing (doc comments already written).
-6. [ ] `Run` applies 3–5 to the three files after renaming, and refuses before touching any file when one is missing or lacks a key. Add the placeholder `description:` and `Comment=` lines to the template's files.
+6. [x] `Run` applies 3–5 to the three files after renaming, and refuses before touching any file when one is missing or lacks a key. Add the placeholder `description:` and `Comment=` lines to the template's files.
+   - Red: `TestRunSetsThePackageDetails` failed: files unchanged after Run, and no error for a missing `Comment=`.
+   - Green: `setPackageDetails` checks the three files before anything is touched, then writes after the rename; placeholder lines added to nfpm.yaml and app.desktop; the other Run tests get minimal packaging files (`writePackagingFiles`).
+   - Refactor: nothing worth changing (the `write` flag is small and documented).
 7. [ ] Docs and steps: README's "Using this as a template" command, the Taskfile `init` task's `desc`, TODO.md's template-user steps (drop the nfpm description/maintainer and info.json steps, keep `Categories` in the desktop file one), `test/packaging/nsis_test.go`'s "placeholders" comment, and the desktop packaging plan's mentions of these placeholders. Remove the `@wip` tags, run `task test:init`, `task test:rename` and `task check`, tick the TODO item, delete this file.
 
 ## Changes to the plan

@@ -3,6 +3,7 @@
 name: starter-desktop
 arch: ${ARCH}
 version: ${VERSION}
+description: "A desktop app, built from the template."
 maintainer: Starter <starter@example.com>
 depends:
   - libgtk-4-1
