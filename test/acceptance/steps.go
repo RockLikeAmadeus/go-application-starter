@@ -19,6 +19,10 @@ type world struct {
 	// last printed apart from that (its warnings).
 	cliOut    string
 	cliErrOut string
+	// sample:start
+	// export is the items' CSV that the last export gave.
+	export []byte
+	// sample:end
 }
 
 func initializeScenario(d driver) func(*godog.ScenarioContext) {

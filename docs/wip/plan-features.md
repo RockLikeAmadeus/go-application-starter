@@ -61,7 +61,10 @@
    - Red: `TestExportItems` (on → CSV / off → `FeatureError` / lookup fails) and an `ExportItems` row in the no-workspace table failed on the stub's nil, nil.
    - Green: `ExportItems` (on `ItemService`, not the port yet: task 9's drivers need it there) resolves the workspace, looks up the entitlements, checks `item-export`, and encodes `FindAll`'s items, already oldest first by the port's contract.
    - Refactor: an `itemExport` constant beside `itemsLimit`, and a doc comment; the lookup-then-check isn't a helper yet, with one gated use case.
-9. [ ] acceptance (sample): export steps ("I export the items", "I try to…", "the export lists", "I am told item export isn't on my plan…"). The memory, jsonfile and sqlite drivers go green.
+9. [x] acceptance (sample): export steps ("I export the items", "I try to…", "the export lists", "I am told item export isn't on my plan…"). The memory, jsonfile and sqlite drivers go green.
+   - Red: none. The export steps (`plan_feature_steps.go`, with `world.export` in a sample block) passed straight away on memory, jsonfile and sqlite, since task 8 built `ExportItems`; on http's zero-value stub they fail as they should (no header; no `FeatureError`). Kept as a guard.
+   - Compile minimum: `ExportItems` on `ports.ItemService` (sample block), and a `nil, nil` stub in `httpclient` until task 12.
+   - Refactor: only the errorlint fix (`%w`). `test:init`: the kept-sample project still fails only on the `@wip` export scenarios (http, desktop, mobile), as accepted under 5b.
 10. [ ] API: `openapi.yaml` gets `features` in `Entitlements`, the feature problem (403 with `feature` and `availableOn`) and `/items/export` (`text/csv`); `task gen`; httpapi maps `FeatureError` and serves the features.
 11. [ ] httpapi (sample): the export handler.
 12. [ ] httpclient: reads the features in the entitlements, maps the feature problem back to `*FeatureError`, and `ExportItems` (sample). The http, desktop and mobile drivers go green.

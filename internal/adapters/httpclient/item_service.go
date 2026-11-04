@@ -86,3 +86,7 @@ func (s *ItemService) DeleteItem(ctx context.Context, id string) error {
 func toDomain(i apiclient.Item) domain.Item {
 	return domain.Item{ID: i.Id, Name: i.Name, CreatedAt: i.CreatedAt, UpdatedAt: i.UpdatedAt}
 }
+
+func (s *ItemService) ExportItems(ctx context.Context) ([]byte, error) {
+	return nil, nil
+}

@@ -23,6 +23,7 @@ type ItemService interface {
 	ListItems(ctx context.Context) ([]domain.Item, error)
 	RenameItem(ctx context.Context, id, name string) (domain.Item, error)
 	DeleteItem(ctx context.Context, id string) error
+	ExportItems(ctx context.Context) ([]byte, error)
 }
 
 // ItemRepository is the driven port for persisting Items. FindAll orders them

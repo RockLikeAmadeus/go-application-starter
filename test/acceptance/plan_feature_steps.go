@@ -1,7 +1,10 @@
 package acceptance
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -21,6 +24,58 @@ func (w *world) registerPlanFeatureSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^the "([^"]*)" plan (has|doesn't have) item export$`, w.thePlanHasItemExport)
 	sc.Step(`^item export is (shown locked|hidden) when off$`, w.itemExportIsShownWhenOff)
 	sc.Step(`^item export is (on|hidden|locked, available on the "([^"]*)" plan) for my workspace$`, w.itemExportIsForMyWorkspace)
+	sc.Step(`^I export the items$`, w.iExportTheItems)
+	sc.Step(`^I try to export the items$`, w.iTryToExportTheItems)
+	sc.Step(`^the export lists:$`, w.theExportLists)
+	sc.Step(`^I am told item export isn't on my plan(?:, and is available on the "([^"]*)" plan)?$`, w.iAmToldItemExportIsntOnMyPlan)
+}
+
+func (w *world) iExportTheItems(ctx context.Context) error {
+	var err error
+	w.export, err = w.items.ExportItems(ctx)
+	return err
+}
+
+func (w *world) iTryToExportTheItems(ctx context.Context) error {
+	w.export, w.lastErr = w.items.ExportItems(ctx)
+	return nil
+}
+
+// theExportLists checks the export's names, in order, under its header.
+func (w *world) theExportLists(table *godog.Table) error {
+	records, err := csv.NewReader(bytes.NewReader(w.export)).ReadAll()
+	if err != nil {
+		return fmt.Errorf("read the export %q: %w", w.export, err)
+	}
+	if len(records) == 0 || !slices.Equal(records[0], []string{"name", "createdAt"}) {
+		return fmt.Errorf("the export has no name,createdAt header: %q", w.export)
+	}
+	var got, want []string
+	for _, record := range records[1:] {
+		got = append(got, record[0])
+	}
+	for _, row := range table.Rows {
+		want = append(want, row.Cells[0].Value)
+	}
+	if !slices.Equal(got, want) {
+		return fmt.Errorf("the export lists %q, want %q", got, want)
+	}
+	return nil
+}
+
+func (w *world) iAmToldItemExportIsntOnMyPlan(availableOn string) error {
+	want := domain.FeatureError{Feature: itemExport, Name: "Item export"}
+	if availableOn != "" {
+		want.AvailableOn = []string{availableOn}
+	}
+	var got *domain.FeatureError
+	if !errors.As(w.lastErr, &got) {
+		return fmt.Errorf("expected %q, got %w", want.Error(), w.lastErr)
+	}
+	if got.Feature != want.Feature || got.Name != want.Name || !slices.Equal(got.AvailableOn, want.AvailableOn) {
+		return fmt.Errorf("feature error = %+v, want %+v", *got, want)
+	}
+	return nil
 }
 
 // whenOff is what the scenarios call each way of showing a feature that's off.
