@@ -8,6 +8,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -20,11 +21,18 @@ type Catalog map[string]domain.Entitlements
 // document is the plans file's shape. Its records are separate from the
 // domain types, so the file's format can change on its own.
 type document struct {
-	Plans map[string]planRecord `json:"plans"`
+	Features map[string]featureRecord `json:"features"`
+	Plans    map[string]planRecord    `json:"plans"`
+}
+
+type featureRecord struct {
+	Name    string            `json:"name"`
+	WhenOff domain.FeatureOff `json:"whenOff"`
 }
 
 type planRecord struct {
-	Limits map[string]limitRecord `json:"limits"`
+	Limits   map[string]limitRecord `json:"limits"`
+	Features []string               `json:"features"`
 }
 
 type limitRecord struct {
@@ -34,9 +42,17 @@ type limitRecord struct {
 
 // Parse reads a plans document:
 //
-//	{"plans": {"<plan>": {"limits": {"<limit>": {"max": 3, "whenOver": "block-new"}}}}}
+//	{
+//	  "features": {"<feature>": {"name": "Item export", "whenOff": "show-locked"}},
+//	  "plans": {"<plan>": {
+//	    "limits": {"<limit>": {"max": 3, "whenOver": "block-new"}},
+//	    "features": ["<feature>"]
+//	  }}
+//	}
 //
-// and returns each plan's entitlements. Lines whose first non-blank characters
+// and returns each plan's entitlements. Every plan gets every feature in
+// "features", on when the plan lists it and off otherwise; a plan listing a
+// feature that isn't there is refused. Lines whose first non-blank characters
 // are // are comments, so the file can explain itself and carry the template's
 // sample markers. Comments at the end of a line aren't supported.
 func Parse(data []byte) (Catalog, error) {
@@ -46,9 +62,13 @@ func Parse(data []byte) (Catalog, error) {
 	if err := dec.Decode(&doc); err != nil {
 		return nil, fmt.Errorf("plans file: %w", err)
 	}
+	features, err := buildFeatures(doc.Features)
+	if err != nil {
+		return nil, fmt.Errorf("plans file: %w", err)
+	}
 	catalog := Catalog{}
 	for name, plan := range doc.Plans {
-		entitlements, err := plan.entitlements(name)
+		entitlements, err := plan.entitlements(name, features)
 		if err != nil {
 			return nil, fmt.Errorf("plans file: plan %q, %w", name, err)
 		}
@@ -57,8 +77,22 @@ func Parse(data []byte) (Catalog, error) {
 	return catalog, nil
 }
 
-// entitlements builds the named plan's entitlements, validating each limit.
-func (p planRecord) entitlements(name string) (domain.Entitlements, error) {
+// buildFeatures validates the file's features, all of them off.
+func buildFeatures(records map[string]featureRecord) (map[string]domain.Feature, error) {
+	features := map[string]domain.Feature{}
+	for key, f := range records {
+		built, err := domain.NewFeature(key, f.Name, f.WhenOff)
+		if err != nil {
+			return nil, fmt.Errorf("feature %q: %w", key, err)
+		}
+		features[key] = built
+	}
+	return features, nil
+}
+
+// entitlements builds the named plan's entitlements, validating each limit,
+// and turns on the features it lists among all the file's features.
+func (p planRecord) entitlements(name string, allFeatures map[string]domain.Feature) (domain.Entitlements, error) {
 	limits := map[string]domain.Limit{}
 	for limit, l := range p.Limits {
 		built, err := domain.NewLimit(limit, l.Max, l.WhenOver)
@@ -67,7 +101,16 @@ func (p planRecord) entitlements(name string) (domain.Entitlements, error) {
 		}
 		limits[limit] = built
 	}
-	return domain.Entitlements{Plan: name, Limits: limits}, nil
+	features := maps.Clone(allFeatures)
+	for _, key := range p.Features {
+		f, ok := features[key]
+		if !ok {
+			return domain.Entitlements{}, fmt.Errorf("feature %q isn't in the file's features", key)
+		}
+		f.On = true
+		features[key] = f
+	}
+	return domain.Entitlements{Plan: name, Limits: limits, Features: features}, nil
 }
 
 // stripComments empties every full-line // comment. It keeps the lines, so a

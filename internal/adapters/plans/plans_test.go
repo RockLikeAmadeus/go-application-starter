@@ -25,10 +25,11 @@ func TestParse_GivesEachPlansEntitlements(t *testing.T) {
 	}
 	want := plans.Catalog{
 		"free": {
-			Plan:   "free",
-			Limits: map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.ReadOnly}},
+			Plan:     "free",
+			Limits:   map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.ReadOnly}},
+			Features: map[string]domain.Feature{},
 		},
-		"pro": {Plan: "pro", Limits: map[string]domain.Limit{}},
+		"pro": {Plan: "pro", Limits: map[string]domain.Limit{}, Features: map[string]domain.Feature{}},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
@@ -55,11 +56,74 @@ func TestParse_IgnoresFullLineComments(t *testing.T) {
 		t.Fatalf("Parse: %v", err)
 	}
 	want := plans.Catalog{"free": {
-		Plan:   "free",
-		Limits: map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.BlockNew}},
+		Plan:     "free",
+		Limits:   map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.BlockNew}},
+		Features: map[string]domain.Feature{},
 	}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
+	}
+}
+
+func TestParse_ReadsFeatures(t *testing.T) {
+	features := `"features": {
+		"export": {"name": "Item export", "whenOff": "show-locked"},
+		"audit": {"name": "Audit log", "whenOff": "hide"}
+	}`
+	t.Run("gives every plan every feature, on when it lists it", func(t *testing.T) {
+		doc := `{` + features + `, "plans": {
+			"free": {"limits": {}},
+			"pro": {"limits": {}, "features": ["export", "audit"]}
+		}}`
+
+		got, err := plans.Parse([]byte(doc))
+		if err != nil {
+			t.Fatalf("Parse: %v", err)
+		}
+		catalogFeatures := func(on bool) map[string]domain.Feature {
+			return map[string]domain.Feature{
+				"export": {Key: "export", Name: "Item export", On: on, WhenOff: domain.ShowLocked},
+				"audit":  {Key: "audit", Name: "Audit log", On: on, WhenOff: domain.Hide},
+			}
+		}
+		want := plans.Catalog{
+			"free": {Plan: "free", Limits: map[string]domain.Limit{}, Features: catalogFeatures(false)},
+			"pro":  {Plan: "pro", Limits: map[string]domain.Limit{}, Features: catalogFeatures(true)},
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
+		}
+	})
+
+	refused := map[string]struct {
+		doc  string
+		want []string // each must appear in the error
+	}{
+		"a plan listing an unknown feature": {
+			`{` + features + `, "plans": {"pro": {"limits": {}, "features": ["export", "sso"]}}}`,
+			[]string{`plan "pro"`, `feature "sso"`},
+		},
+		"a feature with no name": {
+			`{"features": {"export": {"whenOff": "hide"}}, "plans": {}}`,
+			[]string{`feature "export"`, "name"},
+		},
+		"a feature with a bad whenOff": {
+			`{"features": {"export": {"name": "Item export", "whenOff": "grey-out"}}, "plans": {}}`,
+			[]string{`feature "export"`, "whenOff"},
+		},
+	}
+	for name, tc := range refused {
+		t.Run("refuses "+name, func(t *testing.T) {
+			_, err := plans.Parse([]byte(tc.doc))
+			if err == nil {
+				t.Fatal("Parse succeeded, want an error")
+			}
+			for _, want := range tc.want {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("error %q doesn't mention %q", err, want)
+				}
+			}
+		})
 	}
 }
 

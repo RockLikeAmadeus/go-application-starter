@@ -31,7 +31,10 @@
    - Red: `TestEntitlements_CheckFeature` (6 cases, each checking the error and its text) failed on the stub's nil; `TestNewFeature` now uses `reflect.DeepEqual` (`AvailableOn` makes `Feature` incomparable).
    - Green: `CheckFeature` refuses off and unknown features (an unknown one's `Name` is its key); `Error()` is "<Name> isn't on your plan", plus ", and is available on the pro plan" / "the pro or team plans".
    - Refactor: one `FeatureError` built, hint added only for `ShowLocked`; doc comments on `CheckFeature`, `FeatureError` and the new `Feature` fields.
-3. [ ] plans adapter: `Parse` reads `features` (key, `name`, `whenOff`) and each plan's `features` list into `Entitlements.Features` (every catalog feature, `On` per plan). It refuses an unknown feature, a missing `name` and a bad `whenOff`.
+3. [x] plans adapter: `Parse` reads `features` (key, `name`, `whenOff`) and each plan's `features` list into `Entitlements.Features` (every catalog feature, `On` per plan). It refuses an unknown feature, a missing `name` and a bad `whenOff`.
+   - Red: `TestParse_ReadsFeatures` (catalog + 3 refusals) failed on `unknown field "features"`; the older Parse tests now want an empty `Features` map, as `Limits` is.
+   - Green: `Parse` builds the file's `features` with `NewFeature`, gives each plan a copy with `On` set for those it lists, and refuses an unlisted key.
+   - Refactor: `buildFeatures` helper, `maps.Clone` for each plan's copy, `Parse`'s doc shows the features; errors read `feature "x": …` like limits'.
 4. [ ] plans adapter: `For` fills `AvailableOn` (sorted plan names that have the feature, without the local plan) when hints are on, and leaves it empty when they're off.
 5. [ ] bootstrap + plans.jsonc: the template's `features` section; `item-export` ("Item export", sample block) on for local and pro, locked for free; the local edition wires no hints (test: a locked feature in a local app has no `AvailableOn`). Also a light entitlements-only path that opens no storage, for the CLI's help.
 6. [ ] acceptance harness: hints on in `testPlans`; steps for "has / doesn't have item export", "is shown locked / hidden when off" and "item export is … for my workspace" (in a sample steps file).
