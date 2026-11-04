@@ -53,7 +53,10 @@
    - Green: `testPlans.For` sets `Hints` and `LocalPlan`; the outline passes on memory, jsonfile and sqlite (http, desktop and mobile wait for the API's features, tasks 10–12). `plan-features.feature` and its steps file are in `SampleFiles` now (from task 19).
    - Refactor: `withFeature` (copy a plan's features with one replaced) shared by `setFeature` and `setWhenOff`; the helpers moved from `plans.go` to the sample steps file, since the template without the sample left them unused (golangci-lint).
    - `task test:init`: the sample-removed project passes; the kept-sample one fails only on the `@wip` export steps, still undefined until task 9.
-7. [ ] domain (sample): encode items as CSV, with header `name,createdAt`, RFC 3339 and CSV quoting.
+7. [x] domain (sample): encode items as CSV, with header `name,createdAt`, RFC 3339 and CSV quoting.
+   - Red: `TestItemsCSV` (a plain name and one with a comma and quotes) failed on the stub's empty output.
+   - Green: `ItemsCSV(items) []byte` writes the header and a row per item with `encoding/csv` and `time.RFC3339`, in the order given (the app sorts, task 8).
+   - Refactor: a doc comment only (order given, why write errors are ignored); the function is small and in the sample file `item.go`.
 8. [ ] app (sample): `ExportItems` returns `ErrNoWorkspace` first (in the fail-closed table), refuses with `FeatureError` when off, refuses when the entitlements lookup fails, and returns the items' CSV, oldest first.
 9. [ ] acceptance (sample): export steps ("I export the items", "I try to…", "the export lists", "I am told item export isn't on my plan…"). The memory, jsonfile and sqlite drivers go green.
 10. [ ] API: `openapi.yaml` gets `features` in `Entitlements`, the feature problem (403 with `feature` and `availableOn`) and `/items/export` (`text/csv`); `task gen`; httpapi maps `FeatureError` and serves the features.

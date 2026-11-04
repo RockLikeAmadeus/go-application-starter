@@ -73,3 +73,17 @@ func TestItem_RenameRejectsEmpty(t *testing.T) {
 		t.Errorf("name changed on failed rename: %q", item.Name)
 	}
 }
+
+func TestItemsCSV(t *testing.T) {
+	first, _ := domain.NewItem(ws, "id-1", "Plain", now)
+	second, _ := domain.NewItem(ws, "id-2", `Comma, and "quotes"`, now.Add(time.Hour))
+
+	got := string(domain.ItemsCSV([]domain.Item{first, second}))
+
+	want := "name,createdAt\n" +
+		"Plain,2026-01-02T03:04:05Z\n" +
+		`"Comma, and ""quotes""",2026-01-02T04:04:05Z` + "\n"
+	if got != want {
+		t.Errorf("ItemsCSV =\n%s\nwant\n%s", got, want)
+	}
+}

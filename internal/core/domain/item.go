@@ -3,6 +3,8 @@
 package domain
 
 import (
+	"bytes"
+	"encoding/csv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -56,4 +58,18 @@ func normalizeName(name string) (string, error) {
 		return "", &ValidationError{Field: "name", Message: "must be at most 200 characters"}
 	}
 	return name, nil
+}
+
+// ItemsCSV encodes items as CSV, in the order given: a header row of
+// name,createdAt, then one row per item, its creation time in RFC 3339.
+// Writing to a bytes.Buffer can't fail, so the writer's errors are ignored.
+func ItemsCSV(items []Item) []byte {
+	var buf bytes.Buffer
+	w := csv.NewWriter(&buf)
+	_ = w.Write([]string{"name", "createdAt"})
+	for _, item := range items {
+		_ = w.Write([]string{item.Name, item.CreatedAt.Format(time.RFC3339)})
+	}
+	w.Flush()
+	return buf.Bytes()
 }
