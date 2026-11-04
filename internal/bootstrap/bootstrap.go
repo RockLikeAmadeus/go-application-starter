@@ -13,6 +13,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/syncedfolder"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/system"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -36,8 +37,11 @@ type App struct {
 	Items ports.ItemService
 	// sample:end
 	Entitlements ports.EntitlementsService
-	close        func() error
-	ready        func(context.Context) error
+	// Warnings are messages every front end shows the user as given, such
+	// as SQLite's data folder looking synced.
+	Warnings []string
+	close    func() error
+	ready    func(context.Context) error
 }
 
 // Close releases resources such as storage locks.
@@ -85,6 +89,9 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		}
 		a.close = store.Close
 		a.ready = store.Ready
+		if warning, ok := syncedFolderWarning(cfg); ok {
+			a.Warnings = append(a.Warnings, warning)
+		}
 		// sample:start
 		items = sqlite.NewItemRepository(store)
 		// sample:end
@@ -104,6 +111,22 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	a.Items = app.NewItemService(items, workspace.Local{}, entitlements, system.Clock{}, system.UUIDs{})
 	// sample:end
 	return a, nil
+}
+
+// syncedFolderWarning warns when SQLite's data folder looks kept in sync by
+// a file-sync service, which can damage the database, unless the setting
+// turns it off. Plain text is safe there (one device at a time), so only
+// SQLite asks.
+func syncedFolderWarning(cfg config.Config) (string, bool) {
+	if cfg.IgnoreSyncedFolder {
+		return "", false
+	}
+	service, ok := syncedfolder.Detect(cfg.DataDir)
+	if !ok {
+		return "", false
+	}
+	return "Your data folder looks synced by " + service + ". A sync service can damage SQLite data: " +
+		"move the data folder out of it, or keep your data as plain text.", true
 }
 
 // localEntitlements answers LocalPlan, from plansFile or else the plans file

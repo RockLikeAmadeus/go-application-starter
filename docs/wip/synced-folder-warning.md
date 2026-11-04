@@ -59,7 +59,10 @@
   - Red: `TestIgnoreSyncedFolderIsABoolFromTheSettingsFileOrEnvironmentDefaultingToFalse` (built in, file, env, env over file, not a bool) failed: the file's key was unknown, the env ignored, `Settings` lacked it, `sometimes` loaded.
   - Green: `Config.IgnoreSyncedFolder`, parsed with `strconv.ParseBool` in `Load`, in `envVars` and `Settings`.
   - Refactor: `docs/configuration.md` (table row, file example, `starter info` output); `Setting`'s and `tomlValue`'s comments now allow a bool. Left: a bad value's error names the env var even when it came from the file, as `PORT`'s does.
-- [ ] 8. `bootstrap.NewEmbedded`: on SQLite in a synced folder, `App.Warnings` holds the message naming the service; none on jsonfile in the same folder, none with `IgnoreSyncedFolder`, none in an ordinary folder. `NewRemote` has none.
+- [x] 8. `bootstrap.NewEmbedded`: on SQLite in a synced folder, `App.Warnings` holds the message naming the service; none on jsonfile in the same folder, none with `IgnoreSyncedFolder`, none in an ordinary folder. `NewRemote` has none.
+  - Red: `TestApp_WarnsWhenSQLiteDataLooksSynced` (5 cases, through `bootstrap.New`) failed only for SQLite in a synced folder: `Warnings` = `[]`, want the Dropbox message.
+  - Green: the SQLite case appends the message when `syncedfolder.Detect` finds a service and `IgnoreSyncedFolder` is off.
+  - Refactor: the check and message became `syncedFolderWarning(cfg)`. `task test:init` fails only on this feature's `@wip` scenarios, which the generated project runs untagged (expected until task 16).
 - [ ] 9. API: `GET /api/v1/warnings` in `api/openapi.yaml`, `task gen`; `httpapi.Options.Warnings` answered as given, an empty list when unset.
 - [ ] 10. `desktop.Open` serves the core's warnings → the desktop app scenarios in `features/synced-folder.feature` pass (all but the command-line ones).
 - [ ] 11. `cmd/server`: `handlerOptions` passes the warnings, and the server logs each with `log.Warn` at start → the `@server` scenario passes.

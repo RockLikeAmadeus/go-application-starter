@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -139,5 +140,51 @@ func TestNewRemote_IsOnTheServersPlan(t *testing.T) {
 	}
 	if got.Plan != "pro" {
 		t.Errorf("plan = %q, want the server's %q", got.Plan, "pro")
+	}
+}
+
+// SQLite in a folder that looks synced gets a warning naming the service.
+// Plain text there is supported (one device at a time), so it gets none, as
+// does SQLite with the warning turned off, an ordinary folder, or a server.
+func TestApp_WarnsWhenSQLiteDataLooksSynced(t *testing.T) {
+	const dropbox = "Your data folder looks synced by Dropbox. A sync service can damage SQLite data: " +
+		"move the data folder out of it, or keep your data as plain text."
+	cases := []struct {
+		name string
+		cfg  func(synced string) config.Config
+		want []string
+	}{
+		{"SQLite in a synced folder", func(synced string) config.Config {
+			return config.Config{Storage: config.StorageSQLite, DataDir: synced}
+		}, []string{dropbox}},
+		{"plain text in a synced folder", func(synced string) config.Config {
+			return config.Config{Storage: config.StorageJSONFile, DataDir: synced}
+		}, nil},
+		{"SQLite in a synced folder, warning turned off", func(synced string) config.Config {
+			return config.Config{Storage: config.StorageSQLite, DataDir: synced, IgnoreSyncedFolder: true}
+		}, nil},
+		{"SQLite in an ordinary folder", func(string) config.Config {
+			return config.Config{Storage: config.StorageSQLite, DataDir: t.TempDir()}
+		}, nil},
+		{"a server", func(string) config.Config {
+			return config.Config{ServerURL: "http://localhost:1"}
+		}, nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			if err := os.WriteFile(filepath.Join(root, ".dropbox"), nil, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			a, err := bootstrap.New(tc.cfg(filepath.Join(root, "data")))
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			t.Cleanup(func() { _ = a.Close() })
+
+			if !slices.Equal(a.Warnings, tc.want) {
+				t.Errorf("Warnings = %q, want %q", a.Warnings, tc.want)
+			}
+		})
 	}
 }
