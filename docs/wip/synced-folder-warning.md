@@ -39,7 +39,10 @@
   - Red: `TestDetect_AFolderInsideOneHoldingASyncJournalLooksSyncedByNextcloud` (both names) failed: `Detect` = `("", false)`, want `("Nextcloud", true)`.
   - Green: markers are glob patterns read with `filepath.Glob`; two Nextcloud entries.
   - Refactor: the marker field is `pattern`. Left: `Glob` reads `[`, `*`, `?` in the folder's own path as pattern characters, so task 3a.
-- [ ] 3a. `Detect`: a folder whose path holds glob characters (`notes [old]`) is still checked for markers (match names from `os.ReadDir` with `filepath.Match`).
+- [x] 3a. `Detect`: a folder whose path holds glob characters (`notes [old]`) is still checked for markers (match names from `os.ReadDir` with `filepath.Match`).
+  - Red: `TestDetect_AFolderWhosePathHoldsGlobCharactersIsStillCheckedForMarkers` (`.dropbox` in `notes [old]`) failed: `Detect` = `("", false)`, want `("Dropbox", true)`. Only `[ ]` in the name: `*` and `?` aren't allowed in Windows file names.
+  - Green: `markedBy` reads `dir` with `os.ReadDir` and matches each name with `filepath.Match`.
+  - Refactor: a comment on `markedBy` saying why it matches names, and that an unreadable folder holds no markers.
 - [ ] 4. `Detect`: folder names (table test): `Dropbox`, `OneDrive`, `OneDrive - Contoso`, `Google Drive`, `My Drive`, `iCloud Drive`, `iCloudDrive`, `Mobile Documents`.
 - [ ] 5. `Detect`: macOS `Library/CloudStorage/<Provider>-…` → that provider (`Dropbox-Personal` → Dropbox, `GoogleDrive-me@example.com` → Google Drive, `OneDrive-Personal` → OneDrive).
 - [ ] 6. `Detect`: a relative folder is checked from where the program runs (its parents count).

@@ -68,3 +68,19 @@ func TestDetect_AFolderInsideOneHoldingASyncJournalLooksSyncedByNextcloud(t *tes
 		})
 	}
 }
+
+func TestDetect_AFolderWhosePathHoldsGlobCharactersIsStillCheckedForMarkers(t *testing.T) {
+	synced := filepath.Join(t.TempDir(), "notes [old]")
+	dir := filepath.Join(synced, "starter")
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(synced, ".dropbox"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	service, ok := syncedfolder.Detect(dir)
+	if !ok || service != "Dropbox" {
+		t.Errorf("Detect(%q) = (%q, %v), want (%q, true)", dir, service, ok, "Dropbox")
+	}
+}

@@ -3,7 +3,10 @@
 // files and folder names those services leave. It's a best guess.
 package syncedfolder
 
-import "path/filepath"
+import (
+	"os"
+	"path/filepath"
+)
 
 // markers are the files or folders a sync service leaves at the top of the
 // folder it keeps in sync, as filepath.Match patterns, each with the
@@ -29,11 +32,16 @@ func Detect(dir string) (service string, ok bool) {
 	}
 }
 
-// markedBy reports the service whose marker dir holds, if any.
+// markedBy reports the service whose marker dir holds, if any. It matches
+// the names in dir rather than globbing under it, so `[`, `*` or `?` in dir's
+// own path stay plain characters. A folder it can't read holds no markers.
 func markedBy(dir string) (service string, ok bool) {
+	entries, _ := os.ReadDir(dir)
 	for _, m := range markers {
-		if matches, _ := filepath.Glob(filepath.Join(dir, m.pattern)); len(matches) > 0 {
-			return m.service, true
+		for _, e := range entries {
+			if matched, _ := filepath.Match(m.pattern, e.Name()); matched {
+				return m.service, true
+			}
 		}
 	}
 	return "", false
