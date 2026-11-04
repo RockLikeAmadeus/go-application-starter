@@ -77,7 +77,7 @@ a.Items = app.NewItemService(items, system.Clock{}, system.UUIDs{})
 // sample:end
 ```
 
-- `sample:start` / `sample:end` wrap code that is removed with `--remove-sample`. You'll find them in the startup code, the API spec, the CLI, the TUI, the web app's router and sidebar, `SPEC.md`, `CLAUDE.md` and the README.
+- `sample:start` / `sample:end` wrap code that is removed with `--remove-sample`. You'll find them in the startup code, the API spec, the CLI, the TUI, the web app's router and sidebar, `SPEC.md`, `CLAUDE.md`, `.claude/rules/tui.md` and the README.
 - `template:start` / `template:end` wrap things that only make sense in the template, such as the `task init` task and the README's "Using this as a template" section. These are always removed.
 - Imports don't need markers: in Go files, unused imports are tidied away automatically.
 - A missing or mistyped marker makes the tool fail with the line number, rather than silently deleting the rest of a file.

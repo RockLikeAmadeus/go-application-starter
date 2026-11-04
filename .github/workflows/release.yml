@@ -67,7 +67,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
       # The AppImage bundles every WebKitGTK on the machine, so an older one
-      # would make it much bigger (CLAUDE.md, Gotchas).
+      # would make it much bigger (.claude/rules/desktop-packaging.md).
       - name: Check only WebKitGTK 6.0 is installed
         run: |
           if dpkg -s libwebkit2gtk-4.1-0 >/dev/null 2>&1; then
