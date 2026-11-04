@@ -39,6 +39,19 @@ jobs:
       - name: Terminal journeys (Godog)
         run: go test ./test/terminal/ -count=1 --godog.format=pretty
 
+  # The packages whose code differs on Windows, tested there. Nothing else
+  # in CI can run Windows code.
+  go-windows:
+    name: Go on Windows (jsonfile unit)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Unit tests
+        run: go test ./internal/adapters/storage/jsonfile/
+
   web:
     name: Web (lint, typecheck, unit)
     runs-on: ubuntu-latest
@@ -118,7 +131,7 @@ jobs:
 
   image:
     name: Docker image
-    needs: [go, web, codegen, e2e]
+    needs: [go, go-windows, web, codegen, e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: read
