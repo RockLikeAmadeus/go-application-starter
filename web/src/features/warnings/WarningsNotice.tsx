@@ -12,7 +12,7 @@ export function WarningsNotice() {
     queryKey: warningsKey,
     queryFn: async () => unwrap(await api.GET("/api/v1/warnings")),
   });
-  if (!data) return null;
+  if (!data?.warnings.length) return null;
   return (
     <section aria-label="Warnings">
       {data.warnings.map(({ message }) => (

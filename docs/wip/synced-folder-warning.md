@@ -95,7 +95,10 @@
   - Red: `WarningsNotice` › "shows each of the app's warnings" (two) failed: no `Warnings` region (`WarningsNotice` rendered nothing).
   - Green: `useQuery` on `GET /api/v1/warnings`; once answered, a `<section aria-label="Warnings">` with a `<p>` per message.
   - Refactor: the fake became `web/src/test/warningsApi.ts` (beside `connectionApi`, for 15c too); a `warningsKey` and a doc comment. Left: styling waits for 15c, where it shows in the page.
-- [ ] 15a. SPA: the notice shows nothing when there are no warnings.
+- [x] 15a. SPA: the notice shows nothing when there are no warnings.
+  - Red: "shows nothing when there are no warnings" (waits for the query to settle; `renderWithClient` now returns its `client`) failed: an empty `Warnings` region.
+  - Green: `WarningsNotice` returns nothing unless the answer holds a warning.
+  - Refactor: nothing; the settle wait stays inline until 15b reuses it.
 - [ ] 15b. SPA: the notice shows nothing when the request fails.
 - [ ] 15c. SPA: `Layout` shows the notice beside `OfflineNotice`, styled like it (the palette has no warning colour yet).
 - [ ] 16. Finish: `docs/data-locations.md` and ADR 7 ("is planned" → what happens), CLAUDE.md's SQLite Gotcha (one line on the warning and the setting), tick the TODO.md item, and note it under step 6 of the editions plan. Remove the `@wip` tags and delete this file. Run `task check` and `task test:init`.

@@ -6,10 +6,13 @@ function newClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
 }
 
-/** Renders UI with a fresh, retry-free QueryClient. */
+/**
+ * Renders UI with a fresh, retry-free QueryClient, returned beside the
+ * render result so a test can wait for its queries to settle.
+ */
 export function renderWithClient(ui: ReactElement) {
   const client = newClient();
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  return { ...render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>), client };
 }
 
 /** Renders a hook with a fresh, retry-free QueryClient. */
