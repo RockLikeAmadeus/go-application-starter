@@ -18,8 +18,9 @@ import (
 // core gave the server.
 func TestCurrentEntitlements_RoundTrip(t *testing.T) {
 	free := domain.Entitlements{
-		Plan:   "free",
-		Limits: map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.ReadOnly}},
+		Plan:     "free",
+		Limits:   map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.ReadOnly}},
+		Features: map[string]domain.Feature{},
 	}
 	core := app.NewEntitlementsService(testsupport.FixedEntitlements(free), testsupport.FixedWorkspace(domain.LocalWorkspace))
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core}))
@@ -35,6 +36,35 @@ func TestCurrentEntitlements_RoundTrip(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, free) {
 		t.Errorf("CurrentEntitlements = %+v, want %+v", got, free)
+	}
+}
+
+// The client reads every feature back by key, on or off, with its upgrade
+// hint; a feature with no hint comes back with none, as the core sent it.
+func TestCurrentEntitlements_ReadsTheFeatures(t *testing.T) {
+	sent := domain.Entitlements{
+		Plan:   "free",
+		Limits: map[string]domain.Limit{},
+		Features: map[string]domain.Feature{
+			"export":  {Key: "export", Name: "Export", On: true, WhenOff: domain.ShowLocked, AvailableOn: []string{"pro"}},
+			"reports": {Key: "reports", Name: "Reports", WhenOff: domain.ShowLocked, AvailableOn: []string{"pro", "team"}},
+			"beta":    {Key: "beta", Name: "Beta", WhenOff: domain.Hide},
+		},
+	}
+	core := app.NewEntitlementsService(testsupport.FixedEntitlements(sent), testsupport.FixedWorkspace(domain.LocalWorkspace))
+	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core}))
+	t.Cleanup(srv.Close)
+	client, err := httpclient.NewEntitlementsService(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := client.CurrentEntitlements(context.Background())
+	if err != nil {
+		t.Fatalf("CurrentEntitlements: %v", err)
+	}
+	if !reflect.DeepEqual(got.Features, sent.Features) {
+		t.Errorf("Features = %+v, want %+v", got.Features, sent.Features)
 	}
 }
 

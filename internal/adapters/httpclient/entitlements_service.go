@@ -8,8 +8,8 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
-// EntitlementsService is ports.EntitlementsService over HTTP: the plan and
-// limits of the workspace the server puts the request in.
+// EntitlementsService is ports.EntitlementsService over HTTP: the plan,
+// limits and features of the workspace the server puts the request in.
 type EntitlementsService struct {
 	api *apiclient.ClientWithResponses
 }
@@ -42,5 +42,19 @@ func toEntitlements(e apiclient.Entitlements) domain.Entitlements {
 	for name, limit := range e.Limits {
 		limits[name] = domain.Limit{Name: name, Max: limit.Max, WhenOver: domain.OverLimit(limit.WhenOver)}
 	}
-	return domain.Entitlements{Plan: e.Plan, Limits: limits}
+	features := make(map[string]domain.Feature, len(e.Features))
+	for key, f := range e.Features {
+		features[key] = toFeature(key, f)
+	}
+	return domain.Entitlements{Plan: e.Plan, Limits: limits, Features: features}
+}
+
+// toFeature reads a feature back as the core built it: the API always sends
+// availableOn as a list, and an empty one (no upgrade hint) becomes nil again.
+func toFeature(key string, f apiclient.Feature) domain.Feature {
+	var availableOn []string
+	if len(f.AvailableOn) > 0 {
+		availableOn = f.AvailableOn
+	}
+	return domain.Feature{Key: key, Name: f.Name, On: f.On, WhenOff: domain.FeatureOff(f.WhenOff), AvailableOn: availableOn}
 }

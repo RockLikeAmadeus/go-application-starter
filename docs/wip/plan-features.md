@@ -77,7 +77,12 @@
    - Red: `TestExportServesTheItemsAsCSV` (new sample file `httpapi/items_test.go`) failed with status 404: `export` was read as an item ID.
    - Green: `GET /api/v1/items/export` (`exportItems`, `text/csv`) in `openapi.yaml`'s sample block, `task gen`; the handler serves `ExportItems`' bytes. The new test file is in `SampleFiles`.
    - Refactor: nothing; the handler is three lines like its neighbours. ServeMux's precedence keeps `export` from matching `{id}`, which the test guards.
-12. [ ] httpclient: reads the features in the entitlements, maps the feature problem back to `*FeatureError`, and `ExportItems` (sample). The http, desktop and mobile drivers go green.
+12. [x] httpclient: reads the features in the entitlements (every field, a hint-less `availableOn` back to nil).
+   - Red: `TestCurrentEntitlements_ReadsTheFeatures` (on with a hint, locked, hidden with none) failed with `Features = map[]`; the round-trip test now wants an empty `Features` map.
+   - Green: `toEntitlements` maps each API feature to a `domain.Feature` (key, name, on, whenOff), an empty `availableOn` back to nil. The http driver's "can see whether its plan has the feature" outline now passes.
+   - Refactor: `toFeature` helper with a doc comment (why `[]` becomes nil); the service's doc mentions features.
+12b. [ ] httpclient: maps the feature problem back to `*FeatureError` (`feature`, `name`, `availableOn`); the plans rule's domain-error list gets `FeatureError`.
+12c. [ ] httpclient (sample): `ExportItems` over `GET /items/export`. The http, desktop and mobile drivers go green.
 13. [ ] CLI (template): the gated-command helper and the help: on → listed plainly; locked → listed as disabled on your plan, with the hint, or without one in the local edition; hidden → not listed; entitlements unreadable → listed with no note. The help opens no storage.
 14. [ ] CLI (sample): `starter item export`; the terminal journey steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.
 15. [ ] TUI (template): the gated key help helper and its test, outside sample blocks.
@@ -94,3 +99,4 @@
   - The web app avoids pop-in: it prefetches the entitlements, gated pages wait for them in their loading state, and the gate has a same-size placeholder. Failing to load shows the feature locked, not hidden.
 - 2026-11-04 (user, during task 5): task 5 split in two, one test each: 5 is the template light path and no hints; 5b is the shipped plans file's `features` and the sample `item-export`, whose test sits in a sample block.
 - 2026-11-04 (user, during task 10): task 10 split in two, one test each: 10 serves the features in the entitlements; 10b maps `FeatureError` to its problem. `/items/export` moves to task 11, whose handler test needs it.
+- 2026-11-04 (user, during task 12): task 12 split in three, one test each: 12 reads the features; 12b maps the feature problem back; 12c is the sample `ExportItems`, which turns the http, desktop and mobile drivers green.
