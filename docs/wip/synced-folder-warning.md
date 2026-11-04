@@ -79,7 +79,10 @@
   - Red: `TestTheServerLogsEachWarning` (two warnings, JSON log) failed: logged `[]`, want `WARN first warning`, `WARN second warning`.
   - Green: `logWarnings` logs each as the message of a `log.Warn` record; `run` calls it once the app is wired.
   - Refactor: `logWarnings`' comment says why; nothing else, the code is three lines.
-- [ ] 12. CLI: every embedded command prints each warning as `warning: …` on stderr (not stdout); nothing when there are none → the command-line scenarios pass.
+- [x] 12. CLI: every embedded command prints each warning as `warning: …` on stderr (not stdout); nothing when there are none → the command-line scenarios pass.
+  - Red: `TestCommandsPrintTheAppsWarningsOnStderr` (none, two) failed only for two: stderr = `""`, want both `warning:` lines.
+  - Green: `openApp` prints each of `app.Warnings` to the root's stderr once the app is wired. All nine `@wip` acceptance scenarios now pass.
+  - Refactor: the loop became `printWarnings(errOut, warnings)`, with a comment on why stderr. Left for task 14: `starter tui` prints them on stderr too, before its screen opens.
 - [ ] 13. TUI: a `warningLine` helper in `styles.go`, with its test in `styles_test.go`.
 - [ ] 14. TUI: the warnings show above whichever screen opens first; `starter tui` passes the app's warnings → the terminal journey passes. Run `task test:init` (this wraps the sample's screen).
 - [ ] 15. SPA: a warnings notice (`web/src/features/warnings/`) reading `GET /api/v1/warnings` (generated types): shows each message, nothing when there are none or the request fails; placed in `Layout` beside `OfflineNotice`. Vitest, by role.

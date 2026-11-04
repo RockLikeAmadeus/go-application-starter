@@ -50,7 +50,7 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 	root.PersistentFlags().StringVar(&storage, "storage", "", "storage adapter for embedded mode: jsonfile|sqlite|memory (env STARTER_STORAGE)")
 
 	// openApp loads config (the local settings file, then the environment),
-	// applies flag overrides and wires the app.
+	// applies flag overrides, wires the app and prints its warnings.
 	openApp := func() (*bootstrap.App, config.Config, error) {
 		settingsFile, err := settingsFileFor(configFile, env)
 		if err != nil {
@@ -84,6 +84,7 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 		if err != nil {
 			return nil, cfg, fmt.Errorf("start application: %w", err)
 		}
+		printWarnings(root.ErrOrStderr(), app.Warnings)
 		return app, cfg, nil
 	}
 
@@ -113,6 +114,14 @@ func settingsFileFor(configFile string, env config.Env) (string, error) {
 // this computer: not on a server, and not only in memory.
 func keepsDataInAFolder(cfg config.Config) bool {
 	return cfg.ServerURL == "" && (cfg.Storage == config.StorageJSONFile || cfg.Storage == config.StorageSQLite)
+}
+
+// printWarnings prints each of the app's warnings as it is given, on errOut
+// (stderr), so a command's output, which scripts read, stays as it is.
+func printWarnings(errOut io.Writer, warnings []string) {
+	for _, w := range warnings {
+		fmt.Fprintln(errOut, "warning:", w)
+	}
 }
 
 // withApp opens the app for the duration of a command.
