@@ -87,7 +87,10 @@
   - Red: `TestWarningLineShowsTheMessageInTheWarningStyle` failed: `warningLine` = `""`, want `warningStyle.Render("Warning: …")`.
   - Green: `warningLine` renders `"Warning: " + message` in `warningStyle`, an amber `caution` colour.
   - Refactor: nothing; it mirrors `errorLine` line for line.
-- [ ] 14. TUI: the warnings show above whichever screen opens first; `starter tui` passes the app's warnings → the terminal journey passes. Run `task test:init` (this wraps the sample's screen).
+- [x] 14. TUI: the warnings show above whichever screen opens first; `starter tui` passes the app's warnings → the terminal journey passes. Run `task test:init` (this wraps the sample's screen).
+  - Red: `TestWarningsShowAboveWhicheverScreenIsOpen` (two warnings, before and after an update) failed: no warning lines above `Home`. The journey passed already, from the CLI's stderr line flashing before the alt screen; its step now waits for the TUI's `Warning: …`, and failed.
+  - Green: `firstScreen` wraps the screen in `warned`, which puts a `warningLine` per warning above its view; `tui.Run` takes the warnings and `starter tui` passes `app.Warnings`. The terminal journey passes; `task test:init` passes too.
+  - Refactor: a comment on `warned`. Left: `starter tui` still prints the warnings on stderr first (seen after quitting), as every embedded command does.
 - [ ] 15. SPA: a warnings notice (`web/src/features/warnings/`) reading `GET /api/v1/warnings` (generated types): shows each message, nothing when there are none or the request fails; placed in `Layout` beside `OfflineNotice`. Vitest, by role.
 - [ ] 16. Finish: `docs/data-locations.md` and ADR 7 ("is planned" → what happens), CLAUDE.md's SQLite Gotcha (one line on the warning and the setting), tick the TODO.md item, and note it under step 6 of the editions plan. Remove the `@wip` tags and delete this file. Run `task check` and `task test:init`.
 

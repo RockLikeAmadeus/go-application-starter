@@ -17,20 +17,48 @@ type Ports struct {
 	// sample:end
 }
 
-// Run starts the TUI and blocks until the user quits.
-func Run(p Ports, opts ...tea.ProgramOption) error {
-	_, err := tea.NewProgram(firstScreen(p), opts...).Run()
+// Run starts the TUI and blocks until the user quits. warnings show above
+// whichever screen is open.
+func Run(p Ports, warnings []string, opts ...tea.ProgramOption) error {
+	_, err := tea.NewProgram(firstScreen(p, warnings), opts...).Run()
 	return err
 }
 
 // firstScreen picks the screen the TUI opens on.
-func firstScreen(p Ports) tea.Model {
+func firstScreen(p Ports, warnings []string) tea.Model {
+	var screen tea.Model = home{}
 	// sample:start
 	if p.Items != nil {
-		return New(p.Items)
+		screen = New(p.Items)
 	}
 	// sample:end
-	return home{}
+	return warned{screen: screen, warnings: warnings}
+}
+
+// warned shows the app's warnings, each on its own line, above screen, and
+// passes everything else to it. It wraps whichever screen opens first, so the
+// warnings stay above it after the sample is removed.
+type warned struct {
+	screen   tea.Model
+	warnings []string
+}
+
+func (w warned) Init() tea.Cmd { return w.screen.Init() }
+
+func (w warned) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	w.screen, cmd = w.screen.Update(msg)
+	return w, cmd
+}
+
+func (w warned) View() tea.View {
+	v := w.screen.View()
+	var b strings.Builder
+	for _, m := range w.warnings {
+		b.WriteString(warningLine(m) + "\n")
+	}
+	v.Content = b.String() + v.Content
+	return v
 }
 
 // home is shown until the project has a capability of its own.

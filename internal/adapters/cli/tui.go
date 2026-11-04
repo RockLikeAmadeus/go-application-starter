@@ -17,7 +17,7 @@ func newTUICmd(open appOpener) *cobra.Command {
 				// sample:start
 				Items: app.Items,
 				// sample:end
-			})
+			}, app.Warnings)
 		}),
 	}
 }
