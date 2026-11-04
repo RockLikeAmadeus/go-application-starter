@@ -73,7 +73,10 @@
    - Red: `TestAFeatureErrorIsAForbiddenProblemNamingTheFeature` (with a hint / without: `availableOn` `[]`) failed with status 500, want 403.
    - Green: `feature`, `name` and `availableOn` on `Problem` in `openapi.yaml`; `problemFor` maps `*FeatureError` to a 403 `feature` problem (`ProblemFeature`), a nil `AvailableOn` as `[]`.
    - Refactor: `availableOnDTO` (nil → `[]`) shared by `toFeatureDTO` and the problem. The plans rule's domain-error list gets `FeatureError` in task 12, once httpclient maps it back.
-11. [ ] API + httpapi (sample): `/items/export` (`text/csv`) in `openapi.yaml`, and the export handler.
+11. [x] API + httpapi (sample): `/items/export` (`text/csv`) in `openapi.yaml`, and the export handler.
+   - Red: `TestExportServesTheItemsAsCSV` (new sample file `httpapi/items_test.go`) failed with status 404: `export` was read as an item ID.
+   - Green: `GET /api/v1/items/export` (`exportItems`, `text/csv`) in `openapi.yaml`'s sample block, `task gen`; the handler serves `ExportItems`' bytes. The new test file is in `SampleFiles`.
+   - Refactor: nothing; the handler is three lines like its neighbours. ServeMux's precedence keeps `export` from matching `{id}`, which the test guards.
 12. [ ] httpclient: reads the features in the entitlements, maps the feature problem back to `*FeatureError`, and `ExportItems` (sample). The http, desktop and mobile drivers go green.
 13. [ ] CLI (template): the gated-command helper and the help: on → listed plainly; locked → listed as disabled on your plan, with the hint, or without one in the local edition; hidden → not listed; entitlements unreadable → listed with no note. The help opens no storage.
 14. [ ] CLI (sample): `starter item export`; the terminal journey steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.

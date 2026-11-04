@@ -50,6 +50,7 @@ var SampleFiles = []string{
 	"internal/adapters/cli/item_test.go",
 	"internal/adapters/desktop/open_items_test.go",
 	"internal/adapters/httpapi/items.go",
+	"internal/adapters/httpapi/items_test.go",
 	"internal/adapters/httpclient/item_service.go",
 	"internal/adapters/httpclient/item_service_test.go",
 	"internal/adapters/tui/items.go",

@@ -272,6 +272,9 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	CreateItem(ctx context.Context, body CreateItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ExportItems performs a GET /api/v1/items/export (the `ExportItems` operationId) request.
+	ExportItems(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteItem performs a DELETE /api/v1/items/{id} (the `DeleteItem` operationId) request.
 	DeleteItem(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -347,6 +350,19 @@ func (c *Client) CreateItemWithBody(ctx context.Context, contentType string, bod
 // Takes a body of the `application/json` content type.
 func (c *Client) CreateItem(ctx context.Context, body CreateItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateItemRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ExportItems performs a GET /api/v1/items/export (the `ExportItems` operationId) request.
+func (c *Client) ExportItems(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExportItemsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -541,6 +557,33 @@ func NewCreateItemRequestWithBody(server string, contentType string, body io.Rea
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewExportItemsRequest constructs an http.Request for the ExportItems method
+func NewExportItemsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/items/export")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -756,6 +799,11 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	CreateItemWithResponse(ctx context.Context, body CreateItemJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateItemResponse, error)
 
+	// ExportItemsWithResponse performs a GET /api/v1/items/export (the `ExportItems` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ExportItemsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ExportItemsResponse, error)
+
 	// DeleteItemWithResponse performs a DELETE /api/v1/items/{id} (the `DeleteItem` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -968,6 +1016,47 @@ func (r CreateItemResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateItemResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ExportItemsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ExportItemsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ExportItemsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ExportItemsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ExportItemsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ExportItemsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -1214,6 +1303,17 @@ func (c *ClientWithResponses) CreateItemWithResponse(ctx context.Context, body C
 	return ParseCreateItemResponse(rsp)
 }
 
+// ExportItemsWithResponse performs a GET /api/v1/items/export (the `ExportItems` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ExportItemsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ExportItemsResponse, error) {
+	rsp, err := c.ExportItems(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExportItemsResponse(rsp)
+}
+
 // DeleteItemWithResponse performs a DELETE /api/v1/items/{id} (the `DeleteItem` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -1389,6 +1489,32 @@ func ParseCreateItemResponse(rsp *http.Response) (*CreateItemResponse, error) {
 		}
 		response.JSON201 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseExportItemsResponse parses an HTTP response from a ExportItemsWithResponse call
+func ParseExportItemsResponse(rsp *http.Response) (*ExportItemsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ExportItemsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

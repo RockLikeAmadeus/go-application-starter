@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi/openapi"
@@ -50,6 +51,14 @@ func (h *Handlers) DeleteItem(ctx context.Context, req openapi.DeleteItemRequest
 		return nil, err
 	}
 	return openapi.DeleteItem204Response{}, nil
+}
+
+func (h *Handlers) ExportItems(ctx context.Context, _ openapi.ExportItemsRequestObject) (openapi.ExportItemsResponseObject, error) {
+	csv, err := h.items.ExportItems(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.ExportItems200TextcsvResponse{Body: bytes.NewReader(csv), ContentLength: int64(len(csv))}, nil
 }
 
 func toDTO(i domain.Item) openapi.Item {

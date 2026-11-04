@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -195,6 +196,9 @@ type ServerInterface interface {
 	// (POST /api/v1/items)
 	CreateItem(w http.ResponseWriter, r *http.Request)
 
+	// (GET /api/v1/items/export)
+	ExportItems(w http.ResponseWriter, r *http.Request)
+
 	// (DELETE /api/v1/items/{id})
 	DeleteItem(w http.ResponseWriter, r *http.Request, id string)
 
@@ -264,6 +268,20 @@ func (siw *ServerInterfaceWrapper) CreateItem(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateItem(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportItems operation middleware
+func (siw *ServerInterfaceWrapper) ExportItems(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportItems(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -490,6 +508,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/warnings", wrapper.GetWarnings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/items", wrapper.ListItems)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/items", wrapper.CreateItem)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/items/export", wrapper.ExportItems)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/items/{id}", wrapper.DeleteItem)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/items/{id}", wrapper.GetItem)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/items/{id}", wrapper.RenameItem)
@@ -641,6 +660,50 @@ type CreateItemdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response CreateItemdefaultApplicationProblemPlusJSONResponse) VisitCreateItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportItemsRequestObject struct {
+}
+
+type ExportItemsResponseObject interface {
+	VisitExportItemsResponse(w http.ResponseWriter) error
+}
+
+type ExportItems200TextcsvResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response ExportItems200TextcsvResponse) VisitExportItemsResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "text/csv")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportItemsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ExportItemsdefaultApplicationProblemPlusJSONResponse) VisitExportItemsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -817,6 +880,9 @@ type StrictServerInterface interface {
 	// (POST /api/v1/items)
 	CreateItem(ctx context.Context, request CreateItemRequestObject) (CreateItemResponseObject, error)
 
+	// (GET /api/v1/items/export)
+	ExportItems(ctx context.Context, request ExportItemsRequestObject) (ExportItemsResponseObject, error)
+
 	// (DELETE /api/v1/items/{id})
 	DeleteItem(ctx context.Context, request DeleteItemRequestObject) (DeleteItemResponseObject, error)
 
@@ -965,6 +1031,30 @@ func (sh *strictHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateItemResponseObject); ok {
 		if err := validResponse.VisitCreateItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExportItems operation middleware
+func (sh *strictHandler) ExportItems(w http.ResponseWriter, r *http.Request) {
+	var request ExportItemsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportItems(ctx, request.(ExportItemsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportItems")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportItemsResponseObject); ok {
+		if err := validResponse.VisitExportItemsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
