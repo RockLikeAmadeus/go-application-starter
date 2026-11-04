@@ -20,3 +20,11 @@ func TestSelectedRowMarksTheTextInTheSelectedStyle(t *testing.T) {
 		t.Errorf("selectedRow = %q, want %q", got, want)
 	}
 }
+
+func TestWarningLineShowsTheMessageInTheWarningStyle(t *testing.T) {
+	got := warningLine("Your data folder looks synced by Dropbox.")
+
+	if want := warningStyle.Render("Warning: Your data folder looks synced by Dropbox."); got != want {
+		t.Errorf("warningLine = %q, want %q", got, want)
+	}
+}

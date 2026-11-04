@@ -83,7 +83,10 @@
   - Red: `TestCommandsPrintTheAppsWarningsOnStderr` (none, two) failed only for two: stderr = `""`, want both `warning:` lines.
   - Green: `openApp` prints each of `app.Warnings` to the root's stderr once the app is wired. All nine `@wip` acceptance scenarios now pass.
   - Refactor: the loop became `printWarnings(errOut, warnings)`, with a comment on why stderr. Left for task 14: `starter tui` prints them on stderr too, before its screen opens.
-- [ ] 13. TUI: a `warningLine` helper in `styles.go`, with its test in `styles_test.go`.
+- [x] 13. TUI: a `warningLine` helper in `styles.go`, with its test in `styles_test.go`.
+  - Red: `TestWarningLineShowsTheMessageInTheWarningStyle` failed: `warningLine` = `""`, want `warningStyle.Render("Warning: …")`.
+  - Green: `warningLine` renders `"Warning: " + message` in `warningStyle`, an amber `caution` colour.
+  - Refactor: nothing; it mirrors `errorLine` line for line.
 - [ ] 14. TUI: the warnings show above whichever screen opens first; `starter tui` passes the app's warnings → the terminal journey passes. Run `task test:init` (this wraps the sample's screen).
 - [ ] 15. SPA: a warnings notice (`web/src/features/warnings/`) reading `GET /api/v1/warnings` (generated types): shows each message, nothing when there are none or the request fails; placed in `Layout` beside `OfflineNotice`. Vitest, by role.
 - [ ] 16. Finish: `docs/data-locations.md` and ADR 7 ("is planned" → what happens), CLAUDE.md's SQLite Gotcha (one line on the warning and the setting), tick the TODO.md item, and note it under step 6 of the editions plan. Remove the `@wip` tags and delete this file. Run `task check` and `task test:init`.
