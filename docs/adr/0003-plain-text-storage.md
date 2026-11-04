@@ -17,7 +17,7 @@ The `jsonfile` adapter stores each domain type in one file in a data directory (
 
 - Writes go to a temp file, then fsync, then an atomic rename.
 - An in-process RW mutex serialises access.
-- An advisory `flock` on `data/.lock` stops a second process from opening the same directory.
+- A lock on `data/.lock` stops a second process from opening the same directory: an advisory `flock` on Unix, `LockFileEx` on Windows.
 - On-disk records are separate structs from domain entities, so the format can evolve. `version` allows migrations.
 - Every adapter must pass `storagetest.RunItemRepositoryContract`.
 - Each record carries the workspace it belongs to (ADR 5). Lookups return only the given workspace's records, and treat another workspace's as missing.
