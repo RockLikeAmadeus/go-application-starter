@@ -18,9 +18,11 @@
 
 - [x] 1. A Windows CI job runs the jsonfile package's unit tests (`go test ./internal/adapters/storage/jsonfile/`), with the lock test still skipped, so the package is known to pass on Windows before the lock lands. Infrastructure only, checked on GitHub after the push.
   - No red/green (CI only): `go-windows` job in `ci.yml`; the `image` job now needs it too. Cross-compiled the package's tests for Windows locally; refactor: nothing.
-- [ ] 2. Unskip `TestOpenFailsWhenDirectoryIsLocked`: a second `Open` of a locked folder fails with `ErrLocked` on Windows too. Green: `lock_windows.go` with `LockFileEx`; `lock_other.go` narrowed to `!unix && !windows`.
+- [x] 2. Unskip `TestOpenFailsWhenDirectoryIsLocked`: a second `Open` of a locked folder fails with `ErrLocked` on Windows too. Green: `lock_windows.go` with `LockFileEx`; `lock_other.go` narrowed to `!unix && !windows`.
   - Watch: on Windows an open file can't be deleted, so once the store holds `.lock` open, `TestStoreIsNotReadyOnceItsDataDirectoryIsRemoved` (`os.RemoveAll` while open) will likely fail there. Decide then whether to skip it on Windows (a folder in use can't be removed there, so that state can't happen) or change how it's set up.
-  - Red: unskipped `TestOpenFailsWhenDirectoryIsLocked`; pushed as its own commit (agreed), go-windows CI: <pending>.
+  - Red: unskipped `TestOpenFailsWhenDirectoryIsLocked`; pushed as its own commit (agreed); go-windows CI failed: `second Open err = <nil>, want ErrLocked`.
+  - Green: `lock_windows.go` (`LockFileEx` on 1 byte of `.lock`, `ERROR_LOCK_VIOLATION` → `ErrLocked`); `lock_other.go` is `!unix && !windows`; `x/sys` now direct. The removed-folder test skips on Windows (agreed: a folder in use can't be removed there). Checked locally by Windows vet/lint only; CI proves it.
+  - Refactor: nothing. Sharing the open/wrap code with `lock_unix.go` would make `lock_other.go` create a `.lock` file, a behaviour change.
 - [ ] 3. The lock is released on `Close`, so the folder can be opened again (check an existing test covers it on Windows; add one if not).
 - [ ] 4. Docs: drop the Windows caveat in `docs/data-locations.md`; ADR 3's `flock` line says Windows uses `LockFileEx`; check CLAUDE.md's Gotcha ("on Unix only: the lock is `flock`") and fix it; tick the TODO item and delete this file.
 

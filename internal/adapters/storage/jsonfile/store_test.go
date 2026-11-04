@@ -37,6 +37,9 @@ func TestStoreIsReadyWhileItsDataDirectoryIsThere(t *testing.T) {
 }
 
 func TestStoreIsNotReadyOnceItsDataDirectoryIsRemoved(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("a folder in use can't be removed on windows: the store holds its lock file open")
+	}
 	dir := t.TempDir()
 	store := openStore(t, dir)
 	if err := os.RemoveAll(dir); err != nil {
