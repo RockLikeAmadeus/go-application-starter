@@ -58,6 +58,7 @@ func Open(getenv func(string) string, userConfigDir func() (string, error), webA
 		// sample:end
 		Entitlements: core.Entitlements,
 		Ready:        core.Ready,
+		Warnings:     core.Warnings,
 		LocalData:    true,
 		WebAssets:    webAssets,
 	})

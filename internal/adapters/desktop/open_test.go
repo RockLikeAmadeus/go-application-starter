@@ -230,3 +230,42 @@ func TestOpenServesTheLocalPlan(t *testing.T) {
 		t.Errorf("plan = %q, want %q", body.Plan, "local")
 	}
 }
+
+// The core's warnings reach the desktop app's window through the REST API,
+// as the server's do.
+func TestOpenServesTheCoresWarnings(t *testing.T) {
+	synced := t.TempDir()
+	if err := os.WriteFile(filepath.Join(synced, ".dropbox"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	settings := t.TempDir()
+	writeSettings(t, settings, `storage = "sqlite"`)
+	env := envOf(map[string]string{"STARTER_DATA_DIR": filepath.Join(synced, "data")})
+	app, err := desktop.Open(env, configDirAt(settings), nil)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
+
+	got := servedWarnings(t, app.Handler)
+	if len(got) != 1 || !strings.Contains(got[0], "Dropbox") {
+		t.Errorf("warnings = %q, want one naming Dropbox", got)
+	}
+}
+
+// servedWarnings asks the REST API for the warnings' messages, as the web
+// app does.
+func servedWarnings(t *testing.T, h http.Handler) []string {
+	t.Helper()
+	var body struct {
+		Warnings []struct {
+			Message string `json:"message"`
+		} `json:"warnings"`
+	}
+	getJSON(t, h, "/api/v1/warnings", &body)
+	messages := make([]string, 0, len(body.Warnings))
+	for _, w := range body.Warnings {
+		messages = append(messages, w.Message)
+	}
+	return messages
+}

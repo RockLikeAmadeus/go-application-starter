@@ -68,6 +68,9 @@
   - Green: `Handlers.warnings` from `Options.Warnings`, each one an `openapi.Warning` in `GetWarnings` (`warnings.go`). The four "no warning" `@wip` scenarios now pass.
   - Refactor: the list is built with `make` (never null), a comment says why it isn't a port, and a `servedWarnings` test helper like `connectionRequired`. `task test:init` still fails only on the `@wip` scenarios.
 - [ ] 10. `desktop.Open` serves the core's warnings → the desktop app scenarios in `features/synced-folder.feature` pass (all but the command-line ones).
+  - Red: `TestOpenServesTheCoresWarnings` (SQLite under `.dropbox`) failed: warnings = `[]`, want one naming Dropbox.
+  - Green: `Open` passes `core.Warnings` as `httpapi.Options.Warnings`. The desktop app's `@wip` scenarios now pass; the command-line and server ones wait for tasks 11–12.
+  - Refactor: a `servedWarnings` test helper beside `connectionRequired`; the production change was one line.
 - [ ] 11. `cmd/server`: `handlerOptions` passes the warnings, and the server logs each with `log.Warn` at start → the `@server` scenario passes.
 - [ ] 12. CLI: every embedded command prints each warning as `warning: …` on stderr (not stdout); nothing when there are none → the command-line scenarios pass.
 - [ ] 13. TUI: a `warningLine` helper in `styles.go`, with its test in `styles_test.go`.
