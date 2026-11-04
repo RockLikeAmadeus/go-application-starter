@@ -20,9 +20,6 @@ func openStore(t *testing.T, dir string) *jsonfile.Store {
 }
 
 func TestOpenFailsWhenDirectoryIsLocked(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("file locking is not implemented on windows")
-	}
 	dir := t.TempDir()
 	openStore(t, dir)
 

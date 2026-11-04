@@ -20,6 +20,7 @@
   - No red/green (CI only): `go-windows` job in `ci.yml`; the `image` job now needs it too. Cross-compiled the package's tests for Windows locally; refactor: nothing.
 - [ ] 2. Unskip `TestOpenFailsWhenDirectoryIsLocked`: a second `Open` of a locked folder fails with `ErrLocked` on Windows too. Green: `lock_windows.go` with `LockFileEx`; `lock_other.go` narrowed to `!unix && !windows`.
   - Watch: on Windows an open file can't be deleted, so once the store holds `.lock` open, `TestStoreIsNotReadyOnceItsDataDirectoryIsRemoved` (`os.RemoveAll` while open) will likely fail there. Decide then whether to skip it on Windows (a folder in use can't be removed there, so that state can't happen) or change how it's set up.
+  - Red: unskipped `TestOpenFailsWhenDirectoryIsLocked`; pushed as its own commit (agreed), go-windows CI: <pending>.
 - [ ] 3. The lock is released on `Close`, so the folder can be opened again (check an existing test covers it on Windows; add one if not).
 - [ ] 4. Docs: drop the Windows caveat in `docs/data-locations.md`; ADR 3's `flock` line says Windows uses `LockFileEx`; check CLAUDE.md's Gotcha ("on Unix only: the lock is `flock`") and fix it; tick the TODO item and delete this file.
 
