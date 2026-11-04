@@ -105,6 +105,30 @@ export interface components {
             limits: {
                 [key: string]: components["schemas"]["Limit"];
             };
+            /**
+             * @description Every feature the plans know, by key (e.g. "item-export"), whether
+             *     the plan has it or not. A feature that isn't here is off.
+             */
+            features: {
+                [key: string]: components["schemas"]["Feature"];
+            };
+        };
+        Feature: {
+            /** @description What people read (e.g. "Item export"). */
+            name: string;
+            /** @description True when the workspace's plan has the feature. */
+            on: boolean;
+            /**
+             * @description What to show when the feature is off. show-locked: show it locked,
+             *     with the upgrade hint. hide: leave it out.
+             * @enum {string}
+             */
+            whenOff: "show-locked" | "hide";
+            /**
+             * @description The plans that have the feature, for the upgrade hint. Empty when
+             *     the edition gives no hints.
+             */
+            availableOn: string[];
         };
         Limit: {
             /** @description How many the plan allows. */

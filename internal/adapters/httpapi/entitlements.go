@@ -22,5 +22,19 @@ func toEntitlementsDTO(e domain.Entitlements) openapi.Entitlements {
 	for name, limit := range e.Limits {
 		limits[name] = openapi.Limit{Max: limit.Max, WhenOver: openapi.LimitWhenOver(limit.WhenOver)}
 	}
-	return openapi.Entitlements{Plan: e.Plan, Limits: limits}
+	features := make(map[string]openapi.Feature, len(e.Features))
+	for key, f := range e.Features {
+		features[key] = toFeatureDTO(f)
+	}
+	return openapi.Entitlements{Plan: e.Plan, Limits: limits, Features: features}
+}
+
+// toFeatureDTO keeps a feature's AvailableOn a list, never null, as the
+// contract requires: with no hints it's empty.
+func toFeatureDTO(f domain.Feature) openapi.Feature {
+	availableOn := f.AvailableOn
+	if availableOn == nil {
+		availableOn = []string{}
+	}
+	return openapi.Feature{Name: f.Name, On: f.On, WhenOff: openapi.FeatureWhenOff(f.WhenOff), AvailableOn: availableOn}
 }

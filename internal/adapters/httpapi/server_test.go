@@ -135,9 +135,44 @@ func TestEntitlementsAreTheCurrentWorkspacesPlanAndLimits(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode %q: %v", rec.Body.String(), err)
 	}
-	_ = json.Unmarshal([]byte(`{"plan":"free","limits":{"items":{"max":3,"whenOver":"block-new"}}}`), &want)
+	_ = json.Unmarshal([]byte(`{"plan":"free","limits":{"items":{"max":3,"whenOver":"block-new"}},"features":{}}`), &want)
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("body = %s, want %v", rec.Body, want)
+	}
+}
+
+// The entitlements list every feature the plans know, by key, whether it's on
+// or off, so front ends can show it, lock it or hide it.
+func TestEntitlementsIncludeEveryFeatureByKey(t *testing.T) {
+	free := fixedEntitlements{
+		Plan: "free",
+		Features: map[string]domain.Feature{
+			"item-export": {Key: "item-export", Name: "Item export", WhenOff: domain.ShowLocked, AvailableOn: []string{"pro"}},
+			"sharing":     {Key: "sharing", Name: "Sharing", On: true, WhenOff: domain.Hide},
+			"audit-log":   {Key: "audit-log", Name: "Audit log", WhenOff: domain.Hide},
+		},
+	}
+	rec := httptest.NewRecorder()
+	httpapi.NewHandler(httpapi.Options{Entitlements: free}).
+		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	var got struct {
+		Features any `json:"features"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode %q: %v", rec.Body.String(), err)
+	}
+	var want any
+	_ = json.Unmarshal([]byte(`{
+		"item-export": {"name": "Item export", "on": false, "whenOff": "show-locked", "availableOn": ["pro"]},
+		"sharing":     {"name": "Sharing", "on": true, "whenOff": "hide", "availableOn": []},
+		"audit-log":   {"name": "Audit log", "on": false, "whenOff": "hide", "availableOn": []}
+	}`), &want)
+	if !reflect.DeepEqual(got.Features, want) {
+		t.Errorf("features = %v, want %v", got.Features, want)
 	}
 }
 

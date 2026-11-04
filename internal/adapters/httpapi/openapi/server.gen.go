@@ -16,6 +16,24 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for FeatureWhenOff.
+const (
+	Hide       FeatureWhenOff = "hide"
+	ShowLocked FeatureWhenOff = "show-locked"
+)
+
+// Valid indicates whether the value is a known member of the FeatureWhenOff enum.
+func (e FeatureWhenOff) Valid() bool {
+	switch e {
+	case Hide:
+		return true
+	case ShowLocked:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LimitWhenOver.
 const (
 	BlockNew LimitWhenOver = "block-new"
@@ -44,12 +62,37 @@ type Connection struct {
 
 // Entitlements defines model for Entitlements.
 type Entitlements struct {
+	// Features Every feature the plans know, by key (e.g. "item-export"), whether
+	// the plan has it or not. A feature that isn't here is off.
+	Features map[string]Feature `json:"features"`
+
 	// Limits The plan's limits, by name (e.g. "items"). A limit that isn't here doesn't apply.
 	Limits map[string]Limit `json:"limits"`
 
 	// Plan The name of the plan the workspace is on.
 	Plan string `json:"plan"`
 }
+
+// Feature defines model for Feature.
+type Feature struct {
+	// AvailableOn The plans that have the feature, for the upgrade hint. Empty when
+	// the edition gives no hints.
+	AvailableOn []string `json:"availableOn"`
+
+	// Name What people read (e.g. "Item export").
+	Name string `json:"name"`
+
+	// On True when the workspace's plan has the feature.
+	On bool `json:"on"`
+
+	// WhenOff What to show when the feature is off. show-locked: show it locked,
+	// with the upgrade hint. hide: leave it out.
+	WhenOff FeatureWhenOff `json:"whenOff"`
+}
+
+// FeatureWhenOff What to show when the feature is off. show-locked: show it locked,
+// with the upgrade hint. hide: leave it out.
+type FeatureWhenOff string
 
 // Item defines model for Item.
 type Item struct {

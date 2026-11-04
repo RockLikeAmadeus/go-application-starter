@@ -65,8 +65,12 @@
    - Red: none. The export steps (`plan_feature_steps.go`, with `world.export` in a sample block) passed straight away on memory, jsonfile and sqlite, since task 8 built `ExportItems`; on http's zero-value stub they fail as they should (no header; no `FeatureError`). Kept as a guard.
    - Compile minimum: `ExportItems` on `ports.ItemService` (sample block), and a `nil, nil` stub in `httpclient` until task 12.
    - Refactor: only the errorlint fix (`%w`). `test:init`: the kept-sample project still fails only on the `@wip` export scenarios (http, desktop, mobile), as accepted under 5b.
-10. [ ] API: `openapi.yaml` gets `features` in `Entitlements`, the feature problem (403 with `feature` and `availableOn`) and `/items/export` (`text/csv`); `task gen`; httpapi maps `FeatureError` and serves the features.
-11. [ ] httpapi (sample): the export handler.
+10. [x] API: `openapi.yaml` gets `features` in `Entitlements` (by key: `name`, `on`, `whenOff`, `availableOn`; hidden ones too); `task gen`; httpapi serves them.
+   - Red: `TestEntitlementsIncludeEveryFeatureByKey` (locked with a hint, on, hidden) failed with `features = <nil>`.
+   - Green: `Entitlements.features` (required) and a `Feature` schema in `openapi.yaml`; `toEntitlementsDTO` maps each feature, a nil `AvailableOn` as `[]`. The old entitlements test now wants `"features":{}`.
+   - Refactor: `toFeatureDTO` (keeps `availableOn` a list, never null), beside the limits loop.
+10b. [ ] API: the feature problem (403 with `feature`, `name` and `availableOn`); httpapi maps `FeatureError` to it.
+11. [ ] API + httpapi (sample): `/items/export` (`text/csv`) in `openapi.yaml`, and the export handler.
 12. [ ] httpclient: reads the features in the entitlements, maps the feature problem back to `*FeatureError`, and `ExportItems` (sample). The http, desktop and mobile drivers go green.
 13. [ ] CLI (template): the gated-command helper and the help: on → listed plainly; locked → listed as disabled on your plan, with the hint, or without one in the local edition; hidden → not listed; entitlements unreadable → listed with no note. The help opens no storage.
 14. [ ] CLI (sample): `starter item export`; the terminal journey steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.
@@ -83,3 +87,4 @@
   - CLI help lists locked commands as disabled on the plan, instead of hiding them, and reads only the entitlements, never opening storage (opening the app for help would create the folder, run migrations and fail on a lock).
   - The web app avoids pop-in: it prefetches the entitlements, gated pages wait for them in their loading state, and the gate has a same-size placeholder. Failing to load shows the feature locked, not hidden.
 - 2026-11-04 (user, during task 5): task 5 split in two, one test each: 5 is the template light path and no hints; 5b is the shipped plans file's `features` and the sample `item-export`, whose test sits in a sample block.
+- 2026-11-04 (user, during task 10): task 10 split in two, one test each: 10 serves the features in the entitlements; 10b maps `FeatureError` to its problem. `/items/export` moves to task 11, whose handler test needs it.
