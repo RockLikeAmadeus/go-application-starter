@@ -51,6 +51,7 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		// sample:start
 		w.registerItemSteps(sc)
 		w.registerPlanSteps(sc)
+		w.registerPlanFeatureSteps(sc)
 		w.registerWorkspaceSteps(sc)
 		// sample:end
 	}

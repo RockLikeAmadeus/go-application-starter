@@ -48,7 +48,11 @@
    - Green: `plans.jsonc` gets a `features` section and each plan a `features` list; `item-export` and the plans' entries are in sample blocks.
    - Refactor: nothing; the file's explanatory comments are task 19's.
    - `task test:init` is red only on the `@wip` plan-features scenarios (undefined steps) in the generated project; expected until tasks 6, 9 and 19 (user, 2026-11-04).
-6. [ ] acceptance harness: hints on in `testPlans`; steps for "has / doesn't have item export", "is shown locked / hidden when off" and "item export is … for my workspace" (in a sample steps file).
+6. [x] acceptance harness: hints on in `testPlans`; steps for "has / doesn't have item export", "is shown locked / hidden when off" and "item export is … for my workspace" (in a sample steps file).
+   - Red: the "can see whether its plan has the feature" outline, with the new steps (`plan_feature_steps.go`, sample, with `testPlans.setFeature` / `setWhenOff`): the locked row failed with `AvailableOn = [], want ["pro"]`.
+   - Green: `testPlans.For` sets `Hints` and `LocalPlan`; the outline passes on memory, jsonfile and sqlite (http, desktop and mobile wait for the API's features, tasks 10–12). `plan-features.feature` and its steps file are in `SampleFiles` now (from task 19).
+   - Refactor: `withFeature` (copy a plan's features with one replaced) shared by `setFeature` and `setWhenOff`; the helpers moved from `plans.go` to the sample steps file, since the template without the sample left them unused (golangci-lint).
+   - `task test:init`: the sample-removed project passes; the kept-sample one fails only on the `@wip` export steps, still undefined until task 9.
 7. [ ] domain (sample): encode items as CSV, with header `name,createdAt`, RFC 3339 and CSV quoting.
 8. [ ] app (sample): `ExportItems` returns `ErrNoWorkspace` first (in the fail-closed table), refuses with `FeatureError` when off, refuses when the entitlements lookup fails, and returns the items' CSV, oldest first.
 9. [ ] acceptance (sample): export steps ("I export the items", "I try to…", "the export lists", "I am told item export isn't on my plan…"). The memory, jsonfile and sqlite drivers go green.
@@ -61,7 +65,7 @@
 16. [ ] web (template): `useFeature`, stubbing `fetch` of `/api/v1/entitlements`: on / locked + hint / hidden / loading → pending / failed → locked without a hint. `Layout` prefetches the entitlements, with a long `staleTime`.
 17. [ ] web (template): the gate component: children / locked with hint / locked without hint ("Not available") / nothing / a same-size disabled placeholder while pending.
 18. [ ] web (sample): the Items page's Export button downloads the CSV; e2e steps; `task e2e` goes green. Check the download by hand in `task run:desktop` (WebKitGTK).
-19. [ ] docs: `docs/features.md` (a checklist for gating a new feature), linked from CLAUDE.md's plans rule; ADR 5's step 3 line; the plans file comments; the manifest's `SampleFiles`; a template-user step for defining their own features if needed; `task test:init`.
+19. [ ] docs: `docs/features.md` (a checklist for gating a new feature), linked from CLAUDE.md's plans rule; ADR 5's step 3 line; the plans file comments; a template-user step for defining their own features if needed; `task test:init`.
 20. [ ] Finish: `task check`, `task accept`, `task e2e`, `task e2e:terminal`; remove `@wip`; mark step 3 done in the plan; delete this file.
 
 ## Changes to the plan
