@@ -28,6 +28,19 @@ func TestOpenFailsWhenDirectoryIsLocked(t *testing.T) {
 	}
 }
 
+func TestOpenSucceedsOnceTheLockingStoreIsClosed(t *testing.T) {
+	dir := t.TempDir()
+	first, err := jsonfile.Open(dir)
+	if err != nil {
+		t.Fatalf("first Open: %v", err)
+	}
+	if err := first.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	openStore(t, dir)
+}
+
 func TestStoreIsReadyWhileItsDataDirectoryIsThere(t *testing.T) {
 	store := openStore(t, t.TempDir())
 

@@ -23,7 +23,8 @@
   - Red: unskipped `TestOpenFailsWhenDirectoryIsLocked`; pushed as its own commit (agreed); go-windows CI failed: `second Open err = <nil>, want ErrLocked`.
   - Green: `lock_windows.go` (`LockFileEx` on 1 byte of `.lock`, `ERROR_LOCK_VIOLATION` → `ErrLocked`); `lock_other.go` is `!unix && !windows`; `x/sys` now direct. The removed-folder test skips on Windows (agreed: a folder in use can't be removed there). Checked locally by Windows vet/lint only; CI proves it.
   - Refactor: nothing. Sharing the open/wrap code with `lock_unix.go` would make `lock_other.go` create a `.lock` file, a behaviour change.
-- [ ] 3. The lock is released on `Close`, so the folder can be opened again (check an existing test covers it on Windows; add one if not).
+- [x] 3. The lock is released on `Close`, so the folder can be opened again (check an existing test covers it on Windows; add one if not).
+  - No red: `TestItemsSurviveReopen` already reopened after `Close`, and passed on go-windows in task 2's CI. Added `TestOpenSucceedsOnceTheLockingStoreIsClosed` as an explicit guard (fails with `ErrLocked` if unlock is stubbed out). Refactor: nothing.
 - [ ] 4. Docs: drop the Windows caveat in `docs/data-locations.md`; ADR 3's `flock` line says Windows uses `LockFileEx`; check CLAUDE.md's Gotcha ("on Unix only: the lock is `flock`") and fix it; tick the TODO item and delete this file.
 
 ## Changes to the plan
