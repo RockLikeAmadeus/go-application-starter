@@ -140,6 +140,37 @@ func TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints(t *testing.T) {
 	}
 }
 
+// sample:start
+
+// The shipped plans file has the sample's item export: on for the local and
+// pro plans, and shown locked on free.
+func TestNewEntitlements_ShippedPlansHaveItemExport(t *testing.T) {
+	defer func(plan string) { bootstrap.LocalPlan = plan }(bootstrap.LocalPlan)
+	for _, tc := range []struct {
+		plan string
+		on   bool
+	}{{"local", true}, {"pro", true}, {"free", false}} {
+		t.Run(tc.plan, func(t *testing.T) {
+			bootstrap.LocalPlan = tc.plan
+			svc, err := bootstrap.NewEntitlements(config.Config{Storage: config.StorageMemory})
+			if err != nil {
+				t.Fatalf("NewEntitlements: %v", err)
+			}
+			got, err := svc.CurrentEntitlements(context.Background())
+			if err != nil {
+				t.Fatalf("CurrentEntitlements: %v", err)
+			}
+
+			export, ok := got.Features["item-export"]
+			if !ok || export.Name != "Item export" || export.On != tc.on || export.WhenOff != domain.ShowLocked {
+				t.Errorf("item-export = %+v (found %t), want Item export, on %t, shown locked when off", export, ok, tc.on)
+			}
+		})
+	}
+}
+
+// sample:end
+
 // writePlansFile writes a plans file into a temporary folder and returns its
 // path.
 func writePlansFile(t *testing.T, content string) string {

@@ -43,7 +43,11 @@
    - Red: `TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints` (a plans file with `export` locked on local; no data folder made) failed on the stub's nil service.
    - Green: `NewEntitlements(cfg)` wraps `localEntitlements` in `app.NewEntitlementsService` with `workspace.Local{}`; no storage opened.
    - Refactor: doc comments only (`NewEntitlements` says what it skips; `localEntitlements` says it gives no hints). The `--server` branch waits for task 13, whose help needs it.
-5b. [ ] plans.jsonc (+ bootstrap test in a sample block): the template's `features` section; `item-export` ("Item export", sample block) on for local and pro, locked for free.
+5b. [x] plans.jsonc (+ bootstrap test in a sample block): the template's `features` section; `item-export` ("Item export", sample block) on for local and pro, locked for free.
+   - Red: `TestNewEntitlements_ShippedPlansHaveItemExport` (local / pro / free, through `LocalPlan`) failed: no `item-export` in the shipped file.
+   - Green: `plans.jsonc` gets a `features` section and each plan a `features` list; `item-export` and the plans' entries are in sample blocks.
+   - Refactor: nothing; the file's explanatory comments are task 19's.
+   - `task test:init` is red only on the `@wip` plan-features scenarios (undefined steps) in the generated project; expected until tasks 6, 9 and 19 (user, 2026-11-04).
 6. [ ] acceptance harness: hints on in `testPlans`; steps for "has / doesn't have item export", "is shown locked / hidden when off" and "item export is … for my workspace" (in a sample steps file).
 7. [ ] domain (sample): encode items as CSV, with header `name,createdAt`, RFC 3339 and CSV quoting.
 8. [ ] app (sample): `ExportItems` returns `ErrNoWorkspace` first (in the fail-closed table), refuses with `FeatureError` when off, refuses when the entitlements lookup fails, and returns the items' CSV, oldest first.

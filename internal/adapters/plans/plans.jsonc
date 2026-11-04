@@ -6,17 +6,37 @@
 // ("whenOver"): "block-new" refuses new ones, and "read-only" also refuses
 // changes while over. A plan without a limit has no limit on that thing.
 {
+	"features": {
+		// sample:start
+		"item-export": {"name": "Item export", "whenOff": "show-locked"}
+		// sample:end
+	},
 	"plans": {
 		// The local edition's plan, chosen when the app is built.
-		"local": {"limits": {}},
+		"local": {
+			"limits": {},
+			"features": [
+				// sample:start
+				"item-export"
+				// sample:end
+			]
+		},
 		// Examples of hosted plans, until sign-in puts workspaces on them.
 		"free": {
 			"limits": {
 				// sample:start
 				"items": {"max": 3, "whenOver": "block-new"}
 				// sample:end
-			}
+			},
+			"features": []
 		},
-		"pro": {"limits": {}}
+		"pro": {
+			"limits": {},
+			"features": [
+				// sample:start
+				"item-export"
+				// sample:end
+			]
+		}
 	}
 }
