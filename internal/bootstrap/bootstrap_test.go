@@ -108,6 +108,38 @@ func TestNewEmbedded_WithAPlansFile(t *testing.T) {
 	})
 }
 
+// The CLI's help reads only the local plan's entitlements: it opens no
+// storage, so it creates no data folder and isn't stopped by a locked one.
+// The local edition gives no upgrade hints, so a locked feature names no
+// plan.
+func TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints(t *testing.T) {
+	path := writePlansFile(t, `{
+		"features": {"export": {"name": "Export", "whenOff": "show-locked"}},
+		"plans": {"local": {"limits": {}}, "pro": {"limits": {}, "features": ["export"]}}
+	}`)
+	dataDir := filepath.Join(t.TempDir(), "data")
+
+	svc, err := bootstrap.NewEntitlements(config.Config{Storage: config.StorageSQLite, DataDir: dataDir, PlansFile: path})
+	if err != nil {
+		t.Fatalf("NewEntitlements: %v", err)
+	}
+	if svc == nil {
+		t.Fatal("NewEntitlements returned no service")
+	}
+	got, err := svc.CurrentEntitlements(context.Background())
+	if err != nil {
+		t.Fatalf("CurrentEntitlements: %v", err)
+	}
+
+	export, ok := got.Features["export"]
+	if got.Plan != "local" || !ok || export.On || export.WhenOff != domain.ShowLocked || len(export.AvailableOn) != 0 {
+		t.Errorf("CurrentEntitlements = %+v, want the local plan with export locked and no hint", got)
+	}
+	if _, err := os.Stat(dataDir); !os.IsNotExist(err) {
+		t.Errorf("data folder stat error = %v, want it not created", err)
+	}
+}
+
 // writePlansFile writes a plans file into a temporary folder and returns its
 // path.
 func writePlansFile(t *testing.T, content string) string {

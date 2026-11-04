@@ -113,6 +113,18 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	return a, nil
 }
 
+// NewEntitlements returns the local edition's entitlements service alone,
+// as NewEmbedded wires it, but opens no storage: it creates no data folder,
+// runs no migrations and isn't stopped by a locked folder. The CLI's help
+// reads the plan through it.
+func NewEntitlements(cfg config.Config) (ports.EntitlementsService, error) {
+	entitlements, err := localEntitlements(cfg.PlansFile)
+	if err != nil {
+		return nil, err
+	}
+	return app.NewEntitlementsService(entitlements, workspace.Local{}), nil
+}
+
 // syncedFolderWarning warns when SQLite's data folder looks kept in sync by
 // a file-sync service, which can damage the database, unless the setting
 // turns it off. Plain text is safe there (one device at a time), so only
@@ -131,7 +143,8 @@ func syncedFolderWarning(cfg config.Config) (string, bool) {
 
 // localEntitlements answers LocalPlan, from plansFile or else the plans file
 // built into the binary, for every workspace: the local edition has only
-// one. It refuses a LocalPlan the file doesn't have.
+// one. It gives no upgrade hints, since a local copy can't change plan. It
+// refuses a LocalPlan the file doesn't have.
 func localEntitlements(plansFile string) (plans.Entitlements, error) {
 	catalog, err := plans.Load(plansFile)
 	if err != nil {

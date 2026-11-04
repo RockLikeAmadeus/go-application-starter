@@ -39,7 +39,11 @@
    - Red: `TestEntitlements_FillsTheUpgradeHintWhenHintsAreOn` (on / off) failed with `AvailableOn = nil, want {"pro", "team"}`; the adapter got stub `Hints` and `LocalPlan` fields.
    - Green: with `Hints`, `For` gives each of the plan's features (in a cloned map) the sorted catalog plans that have it on, leaving out `LocalPlan`.
    - Refactor: `withHints` (copies the map) and `plansWith` helpers; doc comments on `Hints`, `LocalPlan` and `For`. Bootstrap and the harness are left to tasks 5 and 6.
-5. [ ] bootstrap + plans.jsonc: the template's `features` section; `item-export` ("Item export", sample block) on for local and pro, locked for free; the local edition wires no hints (test: a locked feature in a local app has no `AvailableOn`). Also a light entitlements-only path that opens no storage, for the CLI's help.
+5. [x] bootstrap (template): a light entitlements-only path that opens no storage, for the CLI's help; the local edition wires no hints (a locked feature has no `AvailableOn`).
+   - Red: `TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints` (a plans file with `export` locked on local; no data folder made) failed on the stub's nil service.
+   - Green: `NewEntitlements(cfg)` wraps `localEntitlements` in `app.NewEntitlementsService` with `workspace.Local{}`; no storage opened.
+   - Refactor: doc comments only (`NewEntitlements` says what it skips; `localEntitlements` says it gives no hints). The `--server` branch waits for task 13, whose help needs it.
+5b. [ ] plans.jsonc (+ bootstrap test in a sample block): the template's `features` section; `item-export` ("Item export", sample block) on for local and pro, locked for free.
 6. [ ] acceptance harness: hints on in `testPlans`; steps for "has / doesn't have item export", "is shown locked / hidden when off" and "item export is … for my workspace" (in a sample steps file).
 7. [ ] domain (sample): encode items as CSV, with header `name,createdAt`, RFC 3339 and CSV quoting.
 8. [ ] app (sample): `ExportItems` returns `ErrNoWorkspace` first (in the fail-closed table), refuses with `FeatureError` when off, refuses when the entitlements lookup fails, and returns the items' CSV, oldest first.
@@ -61,3 +65,4 @@
   - Features get a required display `name` in the plans file, so template users choose the wording; messages use it.
   - CLI help lists locked commands as disabled on the plan, instead of hiding them, and reads only the entitlements, never opening storage (opening the app for help would create the folder, run migrations and fail on a lock).
   - The web app avoids pop-in: it prefetches the entitlements, gated pages wait for them in their loading state, and the gate has a same-size placeholder. Failing to load shows the feature locked, not hidden.
+- 2026-11-04 (user, during task 5): task 5 split in two, one test each: 5 is the template light path and no hints; 5b is the shipped plans file's `features` and the sample `item-export`, whose test sits in a sample block.
