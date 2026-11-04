@@ -106,3 +106,21 @@ func TestDetect_AFolderInsideOneNamedForASyncServiceLooksSyncedByIt(t *testing.T
 		})
 	}
 }
+
+func TestDetect_AFolderInsideAMacOSCloudStorageFolderLooksSyncedByItsProvider(t *testing.T) {
+	for _, tc := range []struct{ folder, service string }{
+		{"Dropbox-Personal", "Dropbox"},
+		{"GoogleDrive-me@example.com", "Google Drive"},
+		{"OneDrive-Personal", "OneDrive"},
+	} {
+		t.Run(tc.folder, func(t *testing.T) {
+			provider := filepath.Join(t.TempDir(), "Library", "CloudStorage", tc.folder)
+			dir := folderInside(t, provider)
+
+			service, ok := syncedfolder.Detect(dir)
+			if !ok || service != tc.service {
+				t.Errorf("Detect(%q) = (%q, %v), want (%q, true)", dir, service, ok, tc.service)
+			}
+		})
+	}
+}

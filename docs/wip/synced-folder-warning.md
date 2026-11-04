@@ -47,7 +47,10 @@
   - Red: `TestDetect_AFolderInsideOneNamedForASyncServiceLooksSyncedByIt` (8 cases) failed: `Detect` = `("", false)` for each. Services: OneDrive for both OneDrive names, Google Drive for `My Drive`, iCloud Drive for all three iCloud names.
   - Green: a `names` table of patterns (`OneDrive - *`) matched against each folder's own name on the walk up.
   - Refactor: one `sign` type for both tables, a `namedFor` beside `markedBy`, a shared `matches`; comments on the OS-specific names.
-- [ ] 5. `Detect`: macOS `Library/CloudStorage/<Provider>-…` → that provider (`Dropbox-Personal` → Dropbox, `GoogleDrive-me@example.com` → Google Drive, `OneDrive-Personal` → OneDrive).
+- [x] 5. `Detect`: macOS `Library/CloudStorage/<Provider>-…` → that provider (`Dropbox-Personal` → Dropbox, `GoogleDrive-me@example.com` → Google Drive, `OneDrive-Personal` → OneDrive).
+  - Red: `TestDetect_AFolderInsideAMacOSCloudStorageFolderLooksSyncedByItsProvider` (3 cases) failed: `Detect` = `("", false)` for each.
+  - Green: inline in `Detect`'s walk, a folder under `Library/CloudStorage` → its name up to the first `-`, `GoogleDrive` → Google Drive.
+  - Refactor: the check became `cloudStorageProvider` beside `markedBy` and `namedFor`, with a `providerNames` table for `GoogleDrive`.
 - [ ] 6. `Detect`: a relative folder is checked from where the program runs (its parents count).
 - [ ] 7. `config`: `ignore_synced_folder` from the settings file or `STARTER_IGNORE_SYNCED_FOLDER`, default false; a value that isn't a bool fails `Load`; it's listed by `Settings`. Add it to `envVars`, `Load`, `Config.Settings` and `docs/configuration.md`.
 - [ ] 8. `bootstrap.NewEmbedded`: on SQLite in a synced folder, `App.Warnings` holds the message naming the service; none on jsonfile in the same folder, none with `IgnoreSyncedFolder`, none in an ordinary folder. `NewRemote` has none.

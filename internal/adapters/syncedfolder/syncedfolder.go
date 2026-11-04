@@ -6,6 +6,7 @@ package syncedfolder
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // A sign is a filepath.Match pattern for a file or folder name that a sync
@@ -33,6 +34,12 @@ var names = []sign{
 	{"Mobile Documents", "iCloud Drive"}, // macOS: ~/Library/Mobile Documents
 }
 
+// providerNames are the services' names for the providers in macOS's
+// Library/CloudStorage whose folder prefix isn't already that name.
+var providerNames = map[string]string{
+	"GoogleDrive": "Google Drive",
+}
+
 // Detect reports the sync service that seems to keep dir in sync, if any.
 func Detect(dir string) (service string, ok bool) {
 	for {
@@ -40,6 +47,9 @@ func Detect(dir string) (service string, ok bool) {
 			return service, true
 		}
 		if service, ok := namedFor(dir); ok {
+			return service, true
+		}
+		if service, ok := cloudStorageProvider(dir); ok {
 			return service, true
 		}
 		parent := filepath.Dir(dir)
@@ -73,6 +83,21 @@ func namedFor(dir string) (service string, ok bool) {
 		}
 	}
 	return "", false
+}
+
+// cloudStorageProvider reports the provider whose folder dir is in macOS's
+// Library/CloudStorage, if it's one. Each provider names its folder
+// "<Provider>-<account>", e.g. "Dropbox-Personal".
+func cloudStorageProvider(dir string) (service string, ok bool) {
+	parent := filepath.Dir(dir)
+	if filepath.Base(parent) != "CloudStorage" || filepath.Base(filepath.Dir(parent)) != "Library" {
+		return "", false
+	}
+	provider, _, _ := strings.Cut(filepath.Base(dir), "-")
+	if name, ok := providerNames[provider]; ok {
+		return name, true
+	}
+	return provider, true
 }
 
 func matches(s sign, name string) bool {
