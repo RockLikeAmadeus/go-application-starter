@@ -91,10 +91,17 @@
   - Red: `TestWarningsShowAboveWhicheverScreenIsOpen` (two warnings, before and after an update) failed: no warning lines above `Home`. The journey passed already, from the CLI's stderr line flashing before the alt screen; its step now waits for the TUI's `Warning: …`, and failed.
   - Green: `firstScreen` wraps the screen in `warned`, which puts a `warningLine` per warning above its view; `tui.Run` takes the warnings and `starter tui` passes `app.Warnings`. The terminal journey passes; `task test:init` passes too.
   - Refactor: a comment on `warned`. Left: `starter tui` still prints the warnings on stderr first (seen after quitting), as every embedded command does.
-- [ ] 15. SPA: a warnings notice (`web/src/features/warnings/`) reading `GET /api/v1/warnings` (generated types): shows each message, nothing when there are none or the request fails; placed in `Layout` beside `OfflineNotice`. Vitest, by role.
+- [x] 15. SPA: a warnings notice (`web/src/features/warnings/`) reading `GET /api/v1/warnings` (generated types) shows each message. Vitest, by role.
+  - Red: `WarningsNotice` › "shows each of the app's warnings" (two) failed: no `Warnings` region (`WarningsNotice` rendered nothing).
+  - Green: `useQuery` on `GET /api/v1/warnings`; once answered, a `<section aria-label="Warnings">` with a `<p>` per message.
+  - Refactor: the fake became `web/src/test/warningsApi.ts` (beside `connectionApi`, for 15c too); a `warningsKey` and a doc comment. Left: styling waits for 15c, where it shows in the page.
+- [ ] 15a. SPA: the notice shows nothing when there are no warnings.
+- [ ] 15b. SPA: the notice shows nothing when the request fails.
+- [ ] 15c. SPA: `Layout` shows the notice beside `OfflineNotice`, styled like it (the palette has no warning colour yet).
 - [ ] 16. Finish: `docs/data-locations.md` and ADR 7 ("is planned" → what happens), CLAUDE.md's SQLite Gotcha (one line on the warning and the setting), tick the TODO.md item, and note it under step 6 of the editions plan. Remove the `@wip` tags and delete this file. Run `task check` and `task test:init`.
 
 ## Changes to the plan
 
 - 2026-11-03, task 3: added task 3a. Matching markers with `filepath.Glob` misses them under a folder whose path holds `[`, `*` or `?`; fixing it changes behaviour, so it needs its own test.
 - 2026-11-04, task 11: split off logging as task 11a. Serving and logging are two behaviours, each needing its own test.
+- 2026-11-04, task 15: split into 15, 15a–15c. Showing the messages, none, a failed request and the place in `Layout` are four behaviours, each needing its own test.
