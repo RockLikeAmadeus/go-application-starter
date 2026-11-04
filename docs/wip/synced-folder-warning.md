@@ -63,7 +63,10 @@
   - Red: `TestApp_WarnsWhenSQLiteDataLooksSynced` (5 cases, through `bootstrap.New`) failed only for SQLite in a synced folder: `Warnings` = `[]`, want the Dropbox message.
   - Green: the SQLite case appends the message when `syncedfolder.Detect` finds a service and `IgnoreSyncedFolder` is off.
   - Refactor: the check and message became `syncedFolderWarning(cfg)`. `task test:init` fails only on this feature's `@wip` scenarios, which the generated project runs untagged (expected until task 16).
-- [ ] 9. API: `GET /api/v1/warnings` in `api/openapi.yaml`, `task gen`; `httpapi.Options.Warnings` answered as given, an empty list when unset.
+- [x] 9. API: `GET /api/v1/warnings` in `api/openapi.yaml`, `task gen`; `httpapi.Options.Warnings` answered as given, an empty list when unset.
+  - Red: `TestWarningsAreServedAsGivenAndEmptyWhenUnset` (unset, given) failed only for given: warnings = `[]`, want both messages (a stub answered an empty list).
+  - Green: `Handlers.warnings` from `Options.Warnings`, each one an `openapi.Warning` in `GetWarnings` (`warnings.go`). The four "no warning" `@wip` scenarios now pass.
+  - Refactor: the list is built with `make` (never null), a comment says why it isn't a port, and a `servedWarnings` test helper like `connectionRequired`. `task test:init` still fails only on the `@wip` scenarios.
 - [ ] 10. `desktop.Open` serves the core's warnings → the desktop app scenarios in `features/synced-folder.feature` pass (all but the command-line ones).
 - [ ] 11. `cmd/server`: `handlerOptions` passes the warnings, and the server logs each with `log.Warn` at start → the `@server` scenario passes.
 - [ ] 12. CLI: every embedded command prints each warning as `warning: …` on stderr (not stdout); nothing when there are none → the command-line scenarios pass.

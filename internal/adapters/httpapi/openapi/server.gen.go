@@ -109,6 +109,19 @@ type Problem struct {
 	Type *string `json:"type,omitempty"`
 }
 
+// Warning defines model for Warning.
+type Warning struct {
+	// Message The warning, ready to show as given (e.g. that the data folder
+	// looks synced by a sync service).
+	Message string `json:"message"`
+}
+
+// Warnings defines model for Warnings.
+type Warnings struct {
+	// Warnings The warnings to show, in order. Empty when there are none.
+	Warnings []Warning `json:"warnings"`
+}
+
 // CreateItemJSONRequestBody defines body for CreateItem for application/json ContentType.
 type CreateItemJSONRequestBody = ItemInput
 
@@ -138,6 +151,9 @@ type ServerInterface interface {
 
 	// (PATCH /api/v1/items/{id})
 	RenameItem(w http.ResponseWriter, r *http.Request, id string)
+
+	// (GET /api/v1/warnings)
+	GetWarnings(w http.ResponseWriter, r *http.Request)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -283,6 +299,20 @@ func (siw *ServerInterfaceWrapper) RenameItem(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
+// GetWarnings operation middleware
+func (siw *ServerInterfaceWrapper) GetWarnings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWarnings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -405,6 +435,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/connection", wrapper.GetConnection)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/entitlements", wrapper.GetEntitlements)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/warnings", wrapper.GetWarnings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/items", wrapper.ListItems)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/items", wrapper.CreateItem)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/items/{id}", wrapper.DeleteItem)
@@ -681,6 +712,44 @@ func (response RenameItemdefaultApplicationProblemPlusJSONResponse) VisitRenameI
 	return err
 }
 
+type GetWarningsRequestObject struct {
+}
+
+type GetWarningsResponseObject interface {
+	VisitGetWarningsResponse(w http.ResponseWriter) error
+}
+
+type GetWarnings200JSONResponse Warnings
+
+func (response GetWarnings200JSONResponse) VisitGetWarningsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWarningsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetWarningsdefaultApplicationProblemPlusJSONResponse) VisitGetWarningsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
@@ -704,6 +773,9 @@ type StrictServerInterface interface {
 
 	// (PATCH /api/v1/items/{id})
 	RenameItem(ctx context.Context, request RenameItemRequestObject) (RenameItemResponseObject, error)
+
+	// (GET /api/v1/warnings)
+	GetWarnings(ctx context.Context, request GetWarningsRequestObject) (GetWarningsResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -926,6 +998,30 @@ func (sh *strictHandler) RenameItem(w http.ResponseWriter, r *http.Request, id s
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RenameItemResponseObject); ok {
 		if err := validResponse.VisitRenameItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetWarnings operation middleware
+func (sh *strictHandler) GetWarnings(w http.ResponseWriter, r *http.Request) {
+	var request GetWarningsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWarnings(ctx, request.(GetWarningsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWarnings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWarningsResponseObject); ok {
+		if err := validResponse.VisitGetWarningsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

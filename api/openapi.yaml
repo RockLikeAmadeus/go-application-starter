@@ -33,6 +33,19 @@ paths:
                 $ref: "#/components/schemas/Entitlements"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/warnings:
+    get:
+      operationId: getWarnings
+      tags: [warnings]
+      responses:
+        "200":
+          description: What the user should know about how the app keeps their data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Warnings"
+        default:
+          $ref: "#/components/responses/Problem"
   # sample:start
   /api/v1/items:
     get:
@@ -157,6 +170,24 @@ components:
             What happens at or over the limit. block-new: no new ones can be
             added. read-only: no new ones either, and over the limit the
             existing ones can't be changed, only deleted.
+    Warnings:
+      type: object
+      required: [warnings]
+      properties:
+        warnings:
+          type: array
+          description: The warnings to show, in order. Empty when there are none.
+          items:
+            $ref: "#/components/schemas/Warning"
+    Warning:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          description: |
+            The warning, ready to show as given (e.g. that the data folder
+            looks synced by a sync service).
     # sample:start
     Item:
       type: object

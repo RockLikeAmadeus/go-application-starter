@@ -175,3 +175,53 @@ func TestALimitErrorIsAForbiddenProblemNamingTheLimit(t *testing.T) {
 		t.Errorf("body = %v, want %v", got, want)
 	}
 }
+
+// Warnings come from the composition root (bootstrap.App.Warnings) and are
+// served as given, for every front end to show. With none, the list is empty
+// rather than missing, so the web app can always read it.
+func TestWarningsAreServedAsGivenAndEmptyWhenUnset(t *testing.T) {
+	tests := []struct {
+		name     string
+		warnings []string
+		want     []string
+	}{
+		{name: "unset", warnings: nil, want: []string{}},
+		{name: "given", warnings: []string{"first warning", "second warning"}, want: []string{"first warning", "second warning"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := servedWarnings(t, httpapi.Options{Warnings: tt.warnings})
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("warnings = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// servedWarnings asks a handler built from opts for its warnings' messages,
+// failing the test if the list is missing.
+func servedWarnings(t *testing.T, opts httpapi.Options) []string {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	httpapi.NewHandler(opts).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/warnings", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	var body struct {
+		Warnings *[]struct {
+			Message string `json:"message"`
+		} `json:"warnings"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode %q: %v", rec.Body.String(), err)
+	}
+	if body.Warnings == nil {
+		t.Fatalf("body = %s, want a warnings list", rec.Body)
+	}
+	messages := make([]string, len(*body.Warnings))
+	for i, w := range *body.Warnings {
+		messages[i] = w.Message
+	}
+	return messages
+}

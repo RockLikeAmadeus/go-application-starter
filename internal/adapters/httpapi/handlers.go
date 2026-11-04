@@ -16,6 +16,7 @@ type Handlers struct {
 	// sample:end
 	entitlements ports.EntitlementsService
 	localData    bool
+	warnings     []string
 }
 
 var _ openapi.StrictServerInterface = (*Handlers)(nil)
@@ -28,5 +29,6 @@ func NewHandlers(opts Options) *Handlers {
 		// sample:end
 		entitlements: opts.Entitlements,
 		localData:    opts.LocalData,
+		warnings:     opts.Warnings,
 	}
 }

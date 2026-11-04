@@ -31,6 +31,9 @@ type Options struct {
 	// LocalData is set when the data is on the same device as the web app
 	// (the desktop app's local-only mode), so it needs no connection.
 	LocalData bool
+	// Warnings answers GET /api/v1/warnings: messages every front end shows
+	// as given, such as bootstrap.App.Warnings. None when nil.
+	Warnings []string
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and

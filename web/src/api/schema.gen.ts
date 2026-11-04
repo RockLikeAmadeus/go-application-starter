@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getWarnings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/items": {
         parameters: {
             query?: never;
@@ -100,6 +116,17 @@ export interface components {
              * @enum {string}
              */
             whenOver: "block-new" | "read-only";
+        };
+        Warnings: {
+            /** @description The warnings to show, in order. Empty when there are none. */
+            warnings: components["schemas"]["Warning"][];
+        };
+        Warning: {
+            /**
+             * @description The warning, ready to show as given (e.g. that the data folder
+             *     looks synced by a sync service).
+             */
+            message: string;
         };
         Item: {
             id: string;
@@ -190,6 +217,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Entitlements"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getWarnings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What the user should know about how the app keeps their data. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Warnings"];
                 };
             };
             default: components["responses"]["Problem"];
