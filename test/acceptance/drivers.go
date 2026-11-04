@@ -257,6 +257,7 @@ func (s *testServer) start(storage config.Storage) error {
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{
 		Entitlements: core.Entitlements,
 		Ready:        core.Ready,
+		Warnings:     core.Warnings,
 	}))
 	s.url = srv.URL
 	s.close = func() {

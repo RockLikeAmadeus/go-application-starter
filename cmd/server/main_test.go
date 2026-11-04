@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
@@ -48,4 +50,37 @@ func TestTheServerReadsTheSettingsFileStarterConfigFileNames(t *testing.T) {
 	if cfg.Port != 9090 {
 		t.Errorf("Port = %d, want the settings file's 9090", cfg.Port)
 	}
+}
+
+// The server's web app shows the app's warnings, so the handler serves them.
+func TestTheServerServesTheAppsWarnings(t *testing.T) {
+	want := []string{"first warning", "second warning"}
+	handler := httpapi.NewHandler(handlerOptions(&bootstrap.App{Warnings: want}, nil))
+
+	got := servedWarnings(t, handler)
+
+	if !slices.Equal(got, want) {
+		t.Errorf("warnings = %q, want %q", got, want)
+	}
+}
+
+// servedWarnings asks the REST API for the warnings' messages, as the web
+// app does.
+func servedWarnings(t *testing.T, h http.Handler) []string {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/warnings", nil))
+	var body struct {
+		Warnings []struct {
+			Message string `json:"message"`
+		} `json:"warnings"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	messages := make([]string, 0, len(body.Warnings))
+	for _, w := range body.Warnings {
+		messages = append(messages, w.Message)
+	}
+	return messages
 }
