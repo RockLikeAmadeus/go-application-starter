@@ -262,6 +262,64 @@ func TestUseCases_WhenTheItemsCantBeCountedAreRefusedAndSaveNothing(t *testing.T
 	}
 }
 
+// exportPlan is a plan with item export on or off, shown locked when off.
+func exportPlan(on bool) testsupport.FixedEntitlements {
+	return testsupport.FixedEntitlements{
+		Features: map[string]domain.Feature{
+			"item-export": {Key: "item-export", Name: "Item export", On: on, WhenOff: domain.ShowLocked},
+		},
+	}
+}
+
+func TestExportItems(t *testing.T) {
+	t.Run("on the plan, encodes the workspace's items oldest first", func(t *testing.T) {
+		repo := memory.NewItemRepository()
+		maker, clock := newServiceWith(repo, testsupport.FixedWorkspace(workspace), testsupport.FixedEntitlements{})
+		ctx := context.Background()
+		var made []domain.Item
+		for _, name := range []string{"First", "Second"} {
+			item, err := maker.CreateItem(ctx, name)
+			if err != nil {
+				t.Fatalf("CreateItem(%q): %v", name, err)
+			}
+			made = append(made, item)
+			clock.Advance(time.Minute)
+		}
+		svc, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), exportPlan(true))
+
+		got, err := svc.ExportItems(ctx)
+		if err != nil {
+			t.Fatalf("ExportItems: %v", err)
+		}
+		if want := domain.ItemsCSV(made); string(got) != string(want) {
+			t.Errorf("ExportItems =\n%s\nwant\n%s", got, want)
+		}
+	})
+	t.Run("off the plan, is refused with the feature", func(t *testing.T) {
+		svc, _ := serviceWithItems(t, exportPlan(false), "First")
+
+		got, err := svc.ExportItems(context.Background())
+		var featureErr *domain.FeatureError
+		if !errors.As(err, &featureErr) || featureErr.Feature != "item-export" {
+			t.Fatalf("err = %v, want item-export refused", err)
+		}
+		if got != nil {
+			t.Errorf("ExportItems = %q, want nothing", got)
+		}
+	})
+	t.Run("when the plan can't be looked up, is refused", func(t *testing.T) {
+		svc, _ := serviceWithItems(t, unavailablePlans{}, "First")
+
+		got, err := svc.ExportItems(context.Background())
+		if !errors.Is(err, errPlans) {
+			t.Fatalf("err = %v, want %v", err, errPlans)
+		}
+		if got != nil {
+			t.Errorf("ExportItems = %q, want nothing", got)
+		}
+	})
+}
+
 func TestRenameItem_NotFound(t *testing.T) {
 	svc, _ := newService()
 	if _, err := svc.RenameItem(context.Background(), "missing", "x"); !errors.Is(err, domain.ErrNotFound) {
@@ -326,6 +384,10 @@ func TestUseCases_WithoutAWorkspaceAreRefusedBeforeStorage(t *testing.T) {
 		},
 		"DeleteItem": func(ctx context.Context, s *app.ItemService) error {
 			return s.DeleteItem(ctx, "item-1")
+		},
+		"ExportItems": func(ctx context.Context, s *app.ItemService) error {
+			_, err := s.ExportItems(ctx)
+			return err
 		},
 	}
 	for name, call := range cases {

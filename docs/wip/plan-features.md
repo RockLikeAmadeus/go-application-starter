@@ -57,7 +57,10 @@
    - Red: `TestItemsCSV` (a plain name and one with a comma and quotes) failed on the stub's empty output.
    - Green: `ItemsCSV(items) []byte` writes the header and a row per item with `encoding/csv` and `time.RFC3339`, in the order given (the app sorts, task 8).
    - Refactor: a doc comment only (order given, why write errors are ignored); the function is small and in the sample file `item.go`.
-8. [ ] app (sample): `ExportItems` returns `ErrNoWorkspace` first (in the fail-closed table), refuses with `FeatureError` when off, refuses when the entitlements lookup fails, and returns the items' CSV, oldest first.
+8. [x] app (sample): `ExportItems` returns `ErrNoWorkspace` first (in the fail-closed table), refuses with `FeatureError` when off, refuses when the entitlements lookup fails, and returns the items' CSV, oldest first.
+   - Red: `TestExportItems` (on → CSV / off → `FeatureError` / lookup fails) and an `ExportItems` row in the no-workspace table failed on the stub's nil, nil.
+   - Green: `ExportItems` (on `ItemService`, not the port yet: task 9's drivers need it there) resolves the workspace, looks up the entitlements, checks `item-export`, and encodes `FindAll`'s items, already oldest first by the port's contract.
+   - Refactor: an `itemExport` constant beside `itemsLimit`, and a doc comment; the lookup-then-check isn't a helper yet, with one gated use case.
 9. [ ] acceptance (sample): export steps ("I export the items", "I try to…", "the export lists", "I am told item export isn't on my plan…"). The memory, jsonfile and sqlite drivers go green.
 10. [ ] API: `openapi.yaml` gets `features` in `Entitlements`, the feature problem (403 with `feature` and `availableOn`) and `/items/export` (`text/csv`); `task gen`; httpapi maps `FeatureError` and serves the features.
 11. [ ] httpapi (sample): the export handler.

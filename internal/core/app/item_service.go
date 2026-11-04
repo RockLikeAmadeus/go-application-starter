@@ -36,6 +36,9 @@ func NewItemService(
 // itemsLimit is the name of the plan limit on how many items a workspace has.
 const itemsLimit = "items"
 
+// itemExport is the key of the plan feature that exports a workspace's items.
+const itemExport = "item-export"
+
 // itemUsage returns the workspace's entitlements and how many items it has,
 // for checking the items limit.
 func (s *ItemService) itemUsage(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, int, error) {
@@ -119,4 +122,26 @@ func (s *ItemService) DeleteItem(ctx context.Context, id string) error {
 		return err
 	}
 	return s.repo.Delete(ctx, workspace, id)
+}
+
+// ExportItems encodes the workspace's items as CSV (domain.ItemsCSV), oldest
+// first, as the repository's FindAll orders them. It's refused when the plan
+// doesn't have item export, or can't be looked up.
+func (s *ItemService) ExportItems(ctx context.Context) ([]byte, error) {
+	workspace, err := s.workspaces.CurrentWorkspace(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entitlements, err := s.entitlements.For(ctx, workspace)
+	if err != nil {
+		return nil, err
+	}
+	if err := entitlements.CheckFeature(itemExport); err != nil {
+		return nil, err
+	}
+	items, err := s.repo.FindAll(ctx, workspace)
+	if err != nil {
+		return nil, err
+	}
+	return domain.ItemsCSV(items), nil
 }
