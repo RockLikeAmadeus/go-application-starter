@@ -36,6 +36,9 @@ type Config struct {
 	// PlansFile replaces the plans file built into the binary (plans_file;
 	// STARTER_PLANS_FILE). Empty means the built-in one.
 	PlansFile string
+	// IgnoreSyncedFolder silences the warning that SQLite's data folder
+	// looks synced (ignore_synced_folder; STARTER_IGNORE_SYNCED_FOLDER).
+	IgnoreSyncedFolder bool
 	// SettingsFile is the settings file Load read, or "" for none.
 	SettingsFile string
 	// Sources says where each setting came from, by its key in the settings
@@ -87,11 +90,16 @@ func Load(env Env, settingsFile string) (Config, error) {
 		return Config{}, fmt.Errorf("PORT: %w", err)
 	}
 	cfg.Port = port
+	ignore, err := strconv.ParseBool(setting("ignore_synced_folder", "false"))
+	if err != nil {
+		return Config{}, fmt.Errorf("STARTER_IGNORE_SYNCED_FOLDER: %w", err)
+	}
+	cfg.IgnoreSyncedFolder = ignore
 	return cfg, cfg.Validate()
 }
 
-// Setting is one setting's key in the settings file, its value (a string or
-// an int) and where it came from.
+// Setting is one setting's key in the settings file, its value (a string, an
+// int or a bool) and where it came from.
 type Setting struct {
 	Key    string
 	Value  any
@@ -110,6 +118,7 @@ func (c Config) Settings() []Setting {
 		{"server_url", c.ServerURL},
 		{"log_format", c.LogFormat},
 		{"plans_file", c.PlansFile},
+		{"ignore_synced_folder", c.IgnoreSyncedFolder},
 	}
 	settings := make([]Setting, len(values))
 	for i, v := range values {
@@ -133,12 +142,13 @@ func (c Config) Validate() error {
 // envVars are the settings, by their key in a settings file, each with the
 // environment variable that overrides it.
 var envVars = map[string]string{
-	"storage":    "STARTER_STORAGE",
-	"data_dir":   "STARTER_DATA_DIR",
-	"port":       "PORT",
-	"server_url": "STARTER_SERVER_URL",
-	"log_format": "STARTER_LOG_FORMAT",
-	"plans_file": "STARTER_PLANS_FILE",
+	"storage":              "STARTER_STORAGE",
+	"data_dir":             "STARTER_DATA_DIR",
+	"port":                 "PORT",
+	"server_url":           "STARTER_SERVER_URL",
+	"log_format":           "STARTER_LOG_FORMAT",
+	"plans_file":           "STARTER_PLANS_FILE",
+	"ignore_synced_folder": "STARTER_IGNORE_SYNCED_FOLDER",
 }
 
 // readSettingsFile reads the TOML settings file at path, refusing any key

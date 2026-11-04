@@ -55,7 +55,10 @@
   - Red: `TestDetect_ARelativeFolderIsCheckedFromWhereTheProgramRunsWithItsParents` (`data` under a working directory below `.dropbox`) failed: `Detect` = `("", false)`, want `("Dropbox", true)`.
   - Green: `Detect` resolves `dir` with `filepath.Abs` first, keeping it as given if that fails.
   - Refactor: `Detect`'s comment says how a relative folder is checked; the code was already one line.
-- [ ] 7. `config`: `ignore_synced_folder` from the settings file or `STARTER_IGNORE_SYNCED_FOLDER`, default false; a value that isn't a bool fails `Load`; it's listed by `Settings`. Add it to `envVars`, `Load`, `Config.Settings` and `docs/configuration.md`.
+- [x] 7. `config`: `ignore_synced_folder` from the settings file or `STARTER_IGNORE_SYNCED_FOLDER`, default false; a value that isn't a bool fails `Load`; it's listed by `Settings`. Add it to `envVars`, `Load`, `Config.Settings` and `docs/configuration.md`.
+  - Red: `TestIgnoreSyncedFolderIsABoolFromTheSettingsFileOrEnvironmentDefaultingToFalse` (built in, file, env, env over file, not a bool) failed: the file's key was unknown, the env ignored, `Settings` lacked it, `sometimes` loaded.
+  - Green: `Config.IgnoreSyncedFolder`, parsed with `strconv.ParseBool` in `Load`, in `envVars` and `Settings`.
+  - Refactor: `docs/configuration.md` (table row, file example, `starter info` output); `Setting`'s and `tomlValue`'s comments now allow a bool. Left: a bad value's error names the env var even when it came from the file, as `PORT`'s does.
 - [ ] 8. `bootstrap.NewEmbedded`: on SQLite in a synced folder, `App.Warnings` holds the message naming the service; none on jsonfile in the same folder, none with `IgnoreSyncedFolder`, none in an ordinary folder. `NewRemote` has none.
 - [ ] 9. API: `GET /api/v1/warnings` in `api/openapi.yaml`, `task gen`; `httpapi.Options.Warnings` answered as given, an empty list when unset.
 - [ ] 10. `desktop.Open` serves the core's warnings → the desktop app scenarios in `features/synced-folder.feature` pass (all but the command-line ones).

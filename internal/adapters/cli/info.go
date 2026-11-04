@@ -57,7 +57,7 @@ func dataLocation(cfg config.Config) (where, place string) {
 }
 
 // tomlValue writes a setting's value as a settings file would: a string
-// quoted, a number as it is.
+// quoted, a number or a bool as it is.
 func tomlValue(v any) string {
 	if s, ok := v.(string); ok {
 		return strconv.Quote(s)

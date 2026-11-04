@@ -118,3 +118,54 @@ func TestStorageAcceptsSQLiteAndTheErrorForAnUnknownOneNamesAllThree(t *testing.
 		}
 	}
 }
+
+func TestIgnoreSyncedFolderIsABoolFromTheSettingsFileOrEnvironmentDefaultingToFalse(t *testing.T) {
+	cases := []struct {
+		name     string
+		file     string
+		env      map[string]string
+		want     bool
+		wantFrom string
+	}{
+		{"built in", "", nil, false, "built in"},
+		{"settings file", "ignore_synced_folder = true", nil, true, "settings file"},
+		{"environment", "", map[string]string{"STARTER_IGNORE_SYNCED_FOLDER": "true"}, true, "environment (STARTER_IGNORE_SYNCED_FOLDER)"},
+		{"environment over file", "ignore_synced_folder = true", map[string]string{"STARTER_IGNORE_SYNCED_FOLDER": "false"}, false, "environment (STARTER_IGNORE_SYNCED_FOLDER)"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			file := ""
+			if c.file != "" {
+				file = writeSettings(t, c.file)
+			}
+
+			cfg, err := config.Load(config.Env{Getenv: envOf(c.env)}, file)
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if cfg.IgnoreSyncedFolder != c.want {
+				t.Errorf("IgnoreSyncedFolder = %v, want %v", cfg.IgnoreSyncedFolder, c.want)
+			}
+			if !listsSetting(cfg.Settings(), config.Setting{Key: "ignore_synced_folder", Value: c.want, Source: c.wantFrom}) {
+				t.Errorf("Settings() = %v, want ignore_synced_folder = %v from %q", cfg.Settings(), c.want, c.wantFrom)
+			}
+		})
+	}
+
+	t.Run("not a bool", func(t *testing.T) {
+		_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_IGNORE_SYNCED_FOLDER": "sometimes"})}, "")
+		if err == nil || !strings.Contains(err.Error(), "STARTER_IGNORE_SYNCED_FOLDER") {
+			t.Errorf("Load error = %v, want one naming %s", err, "STARTER_IGNORE_SYNCED_FOLDER")
+		}
+	})
+}
+
+// listsSetting reports whether settings holds want.
+func listsSetting(settings []config.Setting, want config.Setting) bool {
+	for _, s := range settings {
+		if s == want {
+			return true
+		}
+	}
+	return false
+}

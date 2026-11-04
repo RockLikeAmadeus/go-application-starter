@@ -19,6 +19,7 @@ So the settings file holds what you want every time, and an environment variable
 | `server_url` | `STARTER_SERVER_URL` | `--server` | none | Makes the CLI and TUI use a server at this URL instead of their own data. |
 | `log_format` | `STARTER_LOG_FORMAT` | | `text` | The server's log format: `text` or `json`. |
 | `plans_file` | `STARTER_PLANS_FILE` | | none | A plans file to use instead of the one built in (`internal/adapters/plans/plans.jsonc`). |
+| `ignore_synced_folder` | `STARTER_IGNORE_SYNCED_FOLDER` | | `false` | `true` turns off the warning that SQLite's data folder looks synced (SPEC.md §4.14), for a folder that looks synced but isn't. A value that isn't `true` or `false` stops the app at start. |
 
 The default data folder depends on the front end. The server uses `./data`, relative to the folder it was started in. The CLI, TUI and desktop app share `starter` in the user's settings folder (`~/.config/starter` on Linux). [docs/data-locations.md](data-locations.md) has every case, on every OS.
 
@@ -38,6 +39,9 @@ data_dir = "/home/you/Sync/starter"
 
 # Try out a plan's limits.
 # plans_file = "/home/you/plans.jsonc"
+
+# This folder looks synced but is excluded from sync: don't warn about it.
+# ignore_synced_folder = true
 ```
 
 **Which file is read:**
@@ -68,6 +72,7 @@ Settings file: /home/you/.config/starter/config.toml
   server_url = ""  # built in
   log_format = "json"  # environment (STARTER_LOG_FORMAT)
   plans_file = ""  # built in
+  ignore_synced_folder = false  # built in
 Data folder: /home/you/Sync/starter
 Plan: local
 ```
