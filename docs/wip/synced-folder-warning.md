@@ -75,7 +75,10 @@
   - Red: `TestTheServerServesTheAppsWarnings` (two given in `bootstrap.App`) failed: warnings = `[]`, want both.
   - Green: `handlerOptions` passes `Warnings`; the acceptance server driver, which copies that wiring, does too. The `@server` scenario passes.
   - Refactor: a `servedWarnings` test helper, as in `desktop` and `httpapi`.
-- [ ] 11a. `cmd/server`: the server logs each warning with `log.Warn` at start.
+- [x] 11a. `cmd/server`: the server logs each warning with `log.Warn` at start.
+  - Red: `TestTheServerLogsEachWarning` (two warnings, JSON log) failed: logged `[]`, want `WARN first warning`, `WARN second warning`.
+  - Green: `logWarnings` logs each as the message of a `log.Warn` record; `run` calls it once the app is wired.
+  - Refactor: `logWarnings`' comment says why; nothing else, the code is three lines.
 - [ ] 12. CLI: every embedded command prints each warning as `warning: …` on stderr (not stdout); nothing when there are none → the command-line scenarios pass.
 - [ ] 13. TUI: a `warningLine` helper in `styles.go`, with its test in `styles_test.go`.
 - [ ] 14. TUI: the warnings show above whichever screen opens first; `starter tui` passes the app's warnings → the terminal journey passes. Run `task test:init` (this wraps the sample's screen).

@@ -37,6 +37,7 @@ func run() error {
 		return err
 	}
 	defer application.Close()
+	logWarnings(log, application.Warnings)
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
@@ -88,5 +89,14 @@ func handlerOptions(application *bootstrap.App, log *slog.Logger) httpapi.Option
 		Warnings:     application.Warnings,
 		Logger:       log,
 		WebAssets:    web.Assets(),
+	}
+}
+
+// logWarnings logs each of the app's warnings, one record per warning at
+// warn level, so whoever runs the server sees them, not only the web app's
+// users.
+func logWarnings(log *slog.Logger, warnings []string) {
+	for _, w := range warnings {
+		log.Warn(w)
 	}
 }

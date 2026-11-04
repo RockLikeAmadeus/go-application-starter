@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -61,6 +63,31 @@ func TestTheServerServesTheAppsWarnings(t *testing.T) {
 
 	if !slices.Equal(got, want) {
 		t.Errorf("warnings = %q, want %q", got, want)
+	}
+}
+
+// Whoever runs the server reads its log, so it logs each warning at start.
+func TestTheServerLogsEachWarning(t *testing.T) {
+	var out bytes.Buffer
+	log := slog.New(slog.NewJSONHandler(&out, nil))
+
+	logWarnings(log, []string{"first warning", "second warning"})
+
+	var got []string
+	dec := json.NewDecoder(&out)
+	for dec.More() {
+		var record struct {
+			Level string `json:"level"`
+			Msg   string `json:"msg"`
+		}
+		if err := dec.Decode(&record); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		got = append(got, record.Level+" "+record.Msg)
+	}
+	want := []string{"WARN first warning", "WARN second warning"}
+	if !slices.Equal(got, want) {
+		t.Errorf("logged %q, want %q", got, want)
 	}
 }
 
