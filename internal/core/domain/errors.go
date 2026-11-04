@@ -3,6 +3,7 @@ package domain
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // ErrNotFound is returned when a requested entity does not exist.
@@ -47,4 +48,29 @@ func (e *LimitError) Error() string {
 		return fmt.Sprintf("%s are read only while over the limit of %d", e.Limit, e.Max)
 	}
 	return fmt.Sprintf("the limit of %d %s is reached", e.Max, e.Limit)
+}
+
+// FeatureError is returned when the workspace's plan refuses a feature.
+type FeatureError struct {
+	// Feature is the feature's key ("item-export").
+	Feature string
+	// Name is what people read ("Item export"), or the key when the plans
+	// don't know the feature.
+	Name string
+	// AvailableOn names the plans that have the feature, for the upgrade
+	// hint. It's empty when there's no hint to give.
+	AvailableOn []string
+}
+
+func (e *FeatureError) Error() string {
+	msg := e.Name + " isn't on your plan"
+	switch len(e.AvailableOn) {
+	case 0:
+		return msg
+	case 1:
+		return msg + ", and is available on the " + e.AvailableOn[0] + " plan"
+	default:
+		last := len(e.AvailableOn) - 1
+		return msg + ", and is available on the " + strings.Join(e.AvailableOn[:last], ", ") + " or " + e.AvailableOn[last] + " plans"
+	}
 }

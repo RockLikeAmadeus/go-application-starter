@@ -27,7 +27,10 @@
    - Red: `TestNewFeature` (valid + 4 invalid cases) failed on the stub's zero `Feature` and nil error.
    - Green: `NewFeature(key, name, whenOff)` checks the trimmed name and `whenOff`; `On`/`AvailableOn` left for task 2 and the adapter.
    - Refactor: doc comments on `FeatureOff`, its constants, `Feature` and `NewFeature`, matching `NewLimit`'s; the name isn't trimmed when stored (no test asks).
-2. [ ] domain: `Entitlements.CheckFeature`: on → nil; off and locked → `*FeatureError` with `AvailableOn`; off and hidden → `*FeatureError` without; unknown → `*FeatureError` without. Test `FeatureError.Error()`'s text, with a hint and without.
+2. [x] domain: `Entitlements.CheckFeature`: on → nil; off and locked → `*FeatureError` with `AvailableOn`; off and hidden → `*FeatureError` without; unknown → `*FeatureError` without. Test `FeatureError.Error()`'s text, with a hint and without.
+   - Red: `TestEntitlements_CheckFeature` (6 cases, each checking the error and its text) failed on the stub's nil; `TestNewFeature` now uses `reflect.DeepEqual` (`AvailableOn` makes `Feature` incomparable).
+   - Green: `CheckFeature` refuses off and unknown features (an unknown one's `Name` is its key); `Error()` is "<Name> isn't on your plan", plus ", and is available on the pro plan" / "the pro or team plans".
+   - Refactor: one `FeatureError` built, hint added only for `ShowLocked`; doc comments on `CheckFeature`, `FeatureError` and the new `Feature` fields.
 3. [ ] plans adapter: `Parse` reads `features` (key, `name`, `whenOff`) and each plan's `features` list into `Entitlements.Features` (every catalog feature, `On` per plan). It refuses an unknown feature, a missing `name` and a bad `whenOff`.
 4. [ ] plans adapter: `For` fills `AvailableOn` (sorted plan names that have the feature, without the local plan) when hints are on, and leaves it empty when they're off.
 5. [ ] bootstrap + plans.jsonc: the template's `features` section; `item-export` ("Item export", sample block) on for local and pro, locked for free; the local edition wires no hints (test: a locked feature in a local app has no `AvailableOn`). Also a light entitlements-only path that opens no storage, for the CLI's help.

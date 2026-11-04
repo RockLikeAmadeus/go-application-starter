@@ -3,6 +3,7 @@ package domain_test
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -133,7 +134,7 @@ func TestNewFeature(t *testing.T) {
 			t.Fatalf("NewFeature: %v", err)
 		}
 		want := domain.Feature{Key: "item-export", Name: "Item export", WhenOff: domain.ShowLocked}
-		if got != want {
+		if !reflect.DeepEqual(got, want) {
 			t.Errorf("NewFeature = %+v, want %+v", got, want)
 		}
 	})
@@ -157,6 +158,69 @@ func TestNewFeature(t *testing.T) {
 			}
 			if verr.Field != tc.field {
 				t.Errorf("Field = %q, want %q", verr.Field, tc.field)
+			}
+		})
+	}
+}
+
+func entitlementsWithFeature(f domain.Feature) domain.Entitlements {
+	return domain.Entitlements{Plan: "free", Features: map[string]domain.Feature{f.Key: f}}
+}
+
+func TestEntitlements_CheckFeature(t *testing.T) {
+	exportFeature := func(on bool, whenOff domain.FeatureOff, availableOn ...string) domain.Feature {
+		return domain.Feature{Key: "item-export", Name: "Item export", On: on, WhenOff: whenOff, AvailableOn: availableOn}
+	}
+	cases := map[string]struct {
+		entitlements domain.Entitlements
+		want         *domain.FeatureError
+		message      string
+	}{
+		"on": {entitlementsWithFeature(exportFeature(true, domain.ShowLocked, "pro")), nil, ""},
+		"off and locked": {
+			entitlementsWithFeature(exportFeature(false, domain.ShowLocked, "pro")),
+			&domain.FeatureError{Feature: "item-export", Name: "Item export", AvailableOn: []string{"pro"}},
+			"Item export isn't on your plan, and is available on the pro plan",
+		},
+		"off and locked, on two plans": {
+			entitlementsWithFeature(exportFeature(false, domain.ShowLocked, "pro", "team")),
+			&domain.FeatureError{Feature: "item-export", Name: "Item export", AvailableOn: []string{"pro", "team"}},
+			"Item export isn't on your plan, and is available on the pro or team plans",
+		},
+		"off and locked, with no hint": {
+			entitlementsWithFeature(exportFeature(false, domain.ShowLocked)),
+			&domain.FeatureError{Feature: "item-export", Name: "Item export"},
+			"Item export isn't on your plan",
+		},
+		"off and hidden": {
+			entitlementsWithFeature(exportFeature(false, domain.Hide, "pro")),
+			&domain.FeatureError{Feature: "item-export", Name: "Item export"},
+			"Item export isn't on your plan",
+		},
+		"unknown": {
+			domain.Entitlements{Plan: "pro"},
+			&domain.FeatureError{Feature: "item-export", Name: "item-export"},
+			"item-export isn't on your plan",
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			err := tc.entitlements.CheckFeature("item-export")
+			if tc.want == nil {
+				if err != nil {
+					t.Fatalf("CheckFeature(item-export) = %v, want nil", err)
+				}
+				return
+			}
+			var got *domain.FeatureError
+			if !errors.As(err, &got) {
+				t.Fatalf("CheckFeature(item-export) = %v, want a *FeatureError", err)
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("CheckFeature(item-export) = %+v, want %+v", got, tc.want)
+			}
+			if msg := got.Error(); msg != tc.message {
+				t.Errorf("Error() = %q, want %q", msg, tc.message)
 			}
 		})
 	}
