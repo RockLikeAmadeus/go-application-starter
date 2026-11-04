@@ -184,6 +184,15 @@ export interface components {
              *     a new one was refused at the limit.
              */
             readOnly?: boolean;
+            /** @description The feature's key (e.g. "item-export"), for feature errors. */
+            feature?: string;
+            /** @description The feature's display name (e.g. "Item export"), for feature errors. */
+            name?: string;
+            /**
+             * @description For feature errors: the plans that have the feature, for the
+             *     upgrade hint. Empty when there's no hint to give.
+             */
+            availableOn?: string[];
         };
     };
     responses: {

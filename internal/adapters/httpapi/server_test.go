@@ -211,6 +211,50 @@ func TestALimitErrorIsAForbiddenProblemNamingTheLimit(t *testing.T) {
 	}
 }
 
+// A feature error is forbidden, and its problem document names the feature
+// and the plans that have it, so clients can map it back and give the hint.
+// With no hint, availableOn is an empty list, never missing.
+func TestAFeatureErrorIsAForbiddenProblemNamingTheFeature(t *testing.T) {
+	tests := []struct {
+		name            string
+		err             *domain.FeatureError
+		wantAvailableOn []any
+	}{
+		{
+			name:            "with a hint",
+			err:             &domain.FeatureError{Feature: "item-export", Name: "Item export", AvailableOn: []string{"pro", "team"}},
+			wantAvailableOn: []any{"pro", "team"},
+		},
+		{
+			name:            "without a hint",
+			err:             &domain.FeatureError{Feature: "item-export", Name: "Item export"},
+			wantAvailableOn: []any{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{tt.err}}).
+				ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
+
+			if rec.Code != http.StatusForbidden {
+				t.Fatalf("status = %d, want %d", rec.Code, http.StatusForbidden)
+			}
+			var got map[string]any
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+				t.Fatalf("decode %q: %v", rec.Body.String(), err)
+			}
+			want := map[string]any{
+				"type": "feature", "title": "Forbidden", "status": 403.0, "detail": tt.err.Error(),
+				"feature": "item-export", "name": "Item export", "availableOn": tt.wantAvailableOn,
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("body = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
 // Warnings come from the composition root (bootstrap.App.Warnings) and are
 // served as given, for every front end to show. With none, the list is empty
 // rather than missing, so the web app can always read it.

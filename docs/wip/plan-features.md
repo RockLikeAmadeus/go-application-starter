@@ -69,7 +69,10 @@
    - Red: `TestEntitlementsIncludeEveryFeatureByKey` (locked with a hint, on, hidden) failed with `features = <nil>`.
    - Green: `Entitlements.features` (required) and a `Feature` schema in `openapi.yaml`; `toEntitlementsDTO` maps each feature, a nil `AvailableOn` as `[]`. The old entitlements test now wants `"features":{}`.
    - Refactor: `toFeatureDTO` (keeps `availableOn` a list, never null), beside the limits loop.
-10b. [ ] API: the feature problem (403 with `feature`, `name` and `availableOn`); httpapi maps `FeatureError` to it.
+10b. [x] API: the feature problem (403 with `feature`, `name` and `availableOn`); httpapi maps `FeatureError` to it.
+   - Red: `TestAFeatureErrorIsAForbiddenProblemNamingTheFeature` (with a hint / without: `availableOn` `[]`) failed with status 500, want 403.
+   - Green: `feature`, `name` and `availableOn` on `Problem` in `openapi.yaml`; `problemFor` maps `*FeatureError` to a 403 `feature` problem (`ProblemFeature`), a nil `AvailableOn` as `[]`.
+   - Refactor: `availableOnDTO` (nil → `[]`) shared by `toFeatureDTO` and the problem. The plans rule's domain-error list gets `FeatureError` in task 12, once httpclient maps it back.
 11. [ ] API + httpapi (sample): `/items/export` (`text/csv`) in `openapi.yaml`, and the export handler.
 12. [ ] httpclient: reads the features in the entitlements, maps the feature problem back to `*FeatureError`, and `ExportItems` (sample). The http, desktop and mobile drivers go green.
 13. [ ] CLI (template): the gated-command helper and the help: on → listed plainly; locked → listed as disabled on your plan, with the hint, or without one in the local edition; hidden → not listed; entitlements unreadable → listed with no note. The help opens no storage.

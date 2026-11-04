@@ -15,6 +15,7 @@ const (
 	ProblemNotFound   = "not_found"
 	ProblemValidation = "validation"
 	ProblemLimit      = "limit"
+	ProblemFeature    = "feature"
 	ProblemBadRequest = "bad_request"
 	ProblemInternal   = "internal"
 )
@@ -23,12 +24,18 @@ const (
 func problemFor(err error) openapi.Problem {
 	var verr *domain.ValidationError
 	var lerr *domain.LimitError
+	var ferr *domain.FeatureError
 	switch {
 	case errors.As(err, &verr):
 		return problem(http.StatusUnprocessableEntity, ProblemValidation, verr.Error(), &verr.Field)
 	case errors.As(err, &lerr):
 		p := problem(http.StatusForbidden, ProblemLimit, lerr.Error(), nil)
 		p.Limit, p.Max, p.ReadOnly = &lerr.Limit, &lerr.Max, &lerr.ReadOnly
+		return p
+	case errors.As(err, &ferr):
+		p := problem(http.StatusForbidden, ProblemFeature, ferr.Error(), nil)
+		availableOn := availableOnDTO(ferr.AvailableOn)
+		p.Feature, p.Name, p.AvailableOn = &ferr.Feature, &ferr.Name, &availableOn
 		return p
 	case errors.Is(err, domain.ErrNotFound):
 		return problem(http.StatusNotFound, ProblemNotFound, err.Error(), nil)

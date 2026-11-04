@@ -29,12 +29,16 @@ func toEntitlementsDTO(e domain.Entitlements) openapi.Entitlements {
 	return openapi.Entitlements{Plan: e.Plan, Limits: limits, Features: features}
 }
 
-// toFeatureDTO keeps a feature's AvailableOn a list, never null, as the
-// contract requires: with no hints it's empty.
 func toFeatureDTO(f domain.Feature) openapi.Feature {
-	availableOn := f.AvailableOn
-	if availableOn == nil {
-		availableOn = []string{}
+	return openapi.Feature{Name: f.Name, On: f.On, WhenOff: openapi.FeatureWhenOff(f.WhenOff), AvailableOn: availableOnDTO(f.AvailableOn)}
+}
+
+// availableOnDTO keeps the upgrade hint's plans a list, never null, as the
+// contract requires of both the entitlements and the feature problem: with
+// no hint it's empty.
+func availableOnDTO(plans []string) []string {
+	if plans == nil {
+		return []string{}
 	}
-	return openapi.Feature{Name: f.Name, On: f.On, WhenOff: openapi.FeatureWhenOff(f.WhenOff), AvailableOn: availableOn}
+	return plans
 }

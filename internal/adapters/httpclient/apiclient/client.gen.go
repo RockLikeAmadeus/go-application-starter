@@ -131,7 +131,13 @@ type LimitWhenOver string
 
 // Problem defines model for Problem.
 type Problem struct {
-	Detail *string `json:"detail,omitempty"`
+	// AvailableOn For feature errors: the plans that have the feature, for the
+	// upgrade hint. Empty when there's no hint to give.
+	AvailableOn *[]string `json:"availableOn,omitempty"`
+	Detail      *string   `json:"detail,omitempty"`
+
+	// Feature The feature's key (e.g. "item-export"), for feature errors.
+	Feature *string `json:"feature,omitempty"`
 
 	// Field The offending input field, for validation errors.
 	Field *string `json:"field,omitempty"`
@@ -141,6 +147,9 @@ type Problem struct {
 
 	// Max The plan's maximum for that limit, for limit errors.
 	Max *int `json:"max,omitempty"`
+
+	// Name The feature's display name (e.g. "Item export"), for feature errors.
+	Name *string `json:"name,omitempty"`
 
 	// ReadOnly For limit errors: true when the change was refused because the
 	// workspace is over a limit that makes things read only, false when
