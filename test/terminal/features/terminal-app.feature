@@ -9,7 +9,6 @@ Feature: The terminal app
     When I quit the terminal app
     Then the terminal shows what it showed before
 
-  @wip
   Scenario: The terminal app warns when my SQLite data is in a synced folder
     Given my data is kept in SQLite in a folder synced by Dropbox
     When I open the terminal app

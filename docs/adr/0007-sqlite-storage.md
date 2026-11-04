@@ -25,6 +25,6 @@ The app is built for Windows with `CGO_ENABLED=0` (the Windows build and setup t
 
 - With `storage = "sqlite"`, the CLI and TUI work while the desktop app is open, and several server processes can share one disk.
 - Several **machines** still can't share one database: SQLite's locking needs one disk, not a network share or a Fly volume per machine. Scaling a server out needs Postgres (step 7).
-- A data folder in a file-sync service (Dropbox, iCloud Drive, Syncthing, …) can corrupt a SQLite database, which plain text survives. A warning when the folder looks synced is a follow-up in `TODO.md`.
+- A data folder in a file-sync service (Dropbox, iCloud Drive, Syncthing, …) can corrupt a SQLite database, which plain text survives. When the folder looks synced (its path, or a sync service's marker files in it or above it: `internal/adapters/syncedfolder`), every front end warns, naming the service, and keeps working. The `ignore_synced_folder` setting turns the warning off.
 - A new entity on SQLite needs a migration and a repository, and its own isolation cases for any extra query (`docs/workspaces.md`). A schema change is a new migration file, never an edit to an old one.
 - The data isn't human-readable any more; `sqlite3 data.db` opens it.

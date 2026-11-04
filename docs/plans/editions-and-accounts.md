@@ -81,6 +81,7 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
 - This is the existing "SQL storage adapter" TODO item. It passes every contract suite, including isolation.
 - The user chooses plain text or SQLite (`storage = "sqlite"`). SQLite has no lock: the desktop app, the CLI and TUI, and several servers on one disk can share it.
 - The warning when SQLite's folder looks synced is deferred to a follow-up, now in TODO.md.
+  - Done 2026-11-04 as that follow-up: every front end warns, naming the service, when SQLite's data folder looks synced by its path or marker files (`internal/adapters/syncedfolder`); `ignore_synced_folder` turns it off. [`features/synced-folder.feature`](../../features/synced-folder.feature).
 
 ### 7. Postgres adapter — not started
 - For the hosted edition. It shares the schema with SQLite where possible, and is tested against a Postgres container in CI.
@@ -128,3 +129,4 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
   - Template code had come to depend on sample code (`bootstrap`'s plans, httpclient's `toError`). Both are fixed, CLAUDE.md now says to keep machinery in template code with one thin sample use, and to run `task test:init` whenever a cycle touches a sample boundary. The other cases found are TODO.md items (`/readyz`, generic UI helpers).
 - 2026-11-03: step 6 (SQLite) started before step 5, at the user's request; neither depends on the other. Its synced-folder warning moves to a follow-up. Decided: modernc.org/sqlite (pure Go), goose migrations, no lock (WAL), so SQLite lifts ADR 3's one-program limit.
 - 2026-11-03: step 6 finished, recorded in ADR 7. The synced-folder warning went into TODO.md now, not at the end of the plan, so it isn't lost. The template keeps a no-op baseline migration, so SQLite still opens with the sample removed.
+- 2026-11-04: step 6's follow-up, the synced-folder warning, finished (TODO.md). It detects by path and marker files only; step 5's conflict-copy detection stays in step 5.
