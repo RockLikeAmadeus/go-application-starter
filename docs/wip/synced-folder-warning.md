@@ -99,7 +99,9 @@
   - Red: "shows nothing when there are no warnings" (waits for the query to settle; `renderWithClient` now returns its `client`) failed: an empty `Warnings` region.
   - Green: `WarningsNotice` returns nothing unless the answer holds a warning.
   - Refactor: nothing; the settle wait stays inline until 15b reuses it.
-- [ ] 15b. SPA: the notice shows nothing when the request fails.
+- [x] 15b. SPA: the notice shows nothing when the request fails.
+  - No red: "shows nothing when the request fails" (a 500) passed at once (`WarningsNotice` already renders nothing without an answer), kept as a guard; a mutation showing a notice on error made it fail.
+  - Refactor: the settle wait became a `settled(fetch, client)` test helper, shared with 15a's test.
 - [ ] 15c. SPA: `Layout` shows the notice beside `OfflineNotice`, styled like it (the palette has no warning colour yet).
 - [ ] 16. Finish: `docs/data-locations.md` and ADR 7 ("is planned" → what happens), CLAUDE.md's SQLite Gotcha (one line on the warning and the setting), tick the TODO.md item, and note it under step 6 of the editions plan. Remove the `@wip` tags and delete this file. Run `task check` and `task test:init`.
 
