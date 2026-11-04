@@ -19,3 +19,13 @@ Feature: Use the mobile app
 
   Scenario: The mobile app is on the local plan
     Then my workspace's plan is "local"
+
+  # sample:start
+  @wip
+  Scenario: The mobile app can export items
+    Given an item named "Widget"
+    Then item export is on for my workspace
+    When I export the items
+    Then the export lists:
+      | Widget |
+  # sample:end

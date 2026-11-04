@@ -62,7 +62,7 @@ SPEC.md §4.9 · [`features/plans.feature`](../../features/plans.feature) · [AD
 - **Acceptance:** the harness has its own plans; `@plans` scenarios run on memory, jsonfile and http. Desktop and mobile check they're on the local plan.
 - Found along the way, and fixed: template code that depended on sample code (now a rule in CLAUDE.md); `/readyz` and generic UI helpers in the sample are TODO.md items.
 
-### 3. Sample paid feature: CSV export of items — not started
+### 3. Sample paid feature: CSV export of items — in progress ([`docs/wip/plan-features.md`](../wip/plan-features.md))
 - On/off gating end to end: the use case checks the entitlement. In the web app, CLI and TUI it's shown locked or hidden, as config says per feature.
 - Inside the sample blocks. Run `task test:init`.
 

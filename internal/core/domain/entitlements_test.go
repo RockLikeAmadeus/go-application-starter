@@ -125,3 +125,39 @@ func TestNewLimit(t *testing.T) {
 		})
 	}
 }
+
+func TestNewFeature(t *testing.T) {
+	t.Run("a valid feature", func(t *testing.T) {
+		got, err := domain.NewFeature("item-export", "Item export", domain.ShowLocked)
+		if err != nil {
+			t.Fatalf("NewFeature: %v", err)
+		}
+		want := domain.Feature{Key: "item-export", Name: "Item export", WhenOff: domain.ShowLocked}
+		if got != want {
+			t.Errorf("NewFeature = %+v, want %+v", got, want)
+		}
+	})
+
+	invalid := map[string]struct {
+		name    string
+		whenOff domain.FeatureOff
+		field   string
+	}{
+		"no name":              {"", domain.Hide, "name"},
+		"a blank name":         {"  ", domain.ShowLocked, "name"},
+		"an unknown behaviour": {"Item export", "disable", "whenOff"},
+		"no behaviour":         {"Item export", "", "whenOff"},
+	}
+	for name, tc := range invalid {
+		t.Run(name, func(t *testing.T) {
+			_, err := domain.NewFeature("item-export", tc.name, tc.whenOff)
+			var verr *domain.ValidationError
+			if !errors.As(err, &verr) {
+				t.Fatalf("NewFeature(item-export, %q, %q) = %v, want a *ValidationError", tc.name, tc.whenOff, err)
+			}
+			if verr.Field != tc.field {
+				t.Errorf("Field = %q, want %q", verr.Field, tc.field)
+			}
+		})
+	}
+}

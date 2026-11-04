@@ -24,3 +24,10 @@ Feature: Items in the browser
     Given I am on the items page
     When I add an item named ""
     Then I see the error "name must not be empty"
+
+  @wip
+  Scenario: Export the items
+    Given I am on the items page
+    And I have added an item named "Exported widget"
+    When I export the items
+    Then the downloaded file lists "Exported widget"

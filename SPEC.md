@@ -196,13 +196,23 @@ All data belongs to a workspace, so that when one server serves many users, nobo
 **Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory, jsonfile and sqlite drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition.
 <!-- sample:end -->
 
-### 4.9 Plans and limits
+### 4.9 Plans, features and limits
 
-Each workspace is on a **plan**, which sets its limits: for example, how many items it may have. Paid plans can then offer more than free ones (ADR 5). Plans are defined in configuration, not code, so they can change without a new release. On/off features come in a later step ([`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md), step 3).
+Each workspace is on a **plan**, which turns **features** on or off and sets its **limits**: for example, whether it can export its items, and how many items it may have. Paid plans can then offer more than free ones (ADR 5). Plans are defined in configuration, not code, so they can change without a new release.
 
-**Rules**
+**Rules: features**
+- A plan turns each feature on or off. A feature the plan doesn't turn on is off.
+- A feature that's off can't be used: trying is refused, saying the feature isn't on the workspace's plan. Front ends never decide this themselves; they only show what the plan says.
+- Each feature has a name that people read (for example "Item export"), set with the plan, so its wording can change without a release.
+- Each feature says how the front ends show it while it's off:
+  - **locked:** it's shown, but marked as disabled on the workspace's plan, with a hint naming the plans that have it (for example, "Available on the pro plan");
+  - **hidden:** it isn't shown at all, and a refusal names no plan.
+- The local edition gives no upgrade hints: a locked feature there just says it isn't available.
+- Moving to a plan that has a feature turns it on straight away, and moving to one that doesn't turns it off.
+
+**Rules: limits**
 - A workspace's plan sets its limits. A plan without a given limit has no limit on that thing.
-- A workspace can always see its plan and its limits.
+- A workspace can always see its plan, which features it has, how each one that's off is shown, and its limits.
 - At a limit, nothing more can be created. Whatever was already there stays.
 - A workspace can end up **over** a limit, for example after moving to a smaller plan. Each limit says what happens then:
   - **block new:** existing data can still be changed and deleted; only new data is refused;
@@ -214,8 +224,12 @@ Each workspace is on a **plan**, which sets its limits: for example, how many it
 - The free plan allows 3 items. A workspace on it with 3 items tries to create a fourth → it's told the limit of 3 items is reached, and still has 3 items.
 - The free plan allows 3 items and makes them read only when over. A workspace with 4 items moves to it → it can't rename an item, but can delete one; with 3 items left, it can rename again.
 - The pro plan has no item limit → a workspace on it can create a fourth item.
+- **Item export** is the sample feature: it gives the workspace's items as a CSV file (spreadsheet text), one row per item, oldest first. The local and pro plans have it; the free plan shows it locked.
+  - A workspace on the pro plan exports its items → it gets "First" and "Second", in that order.
+  - A workspace on the free plan tries to export → it's told item export isn't on its plan, and is available on the pro plan. The web app shows the export button locked, with that hint. `starter --help` lists the command as disabled on the plan, with the hint, and `starter item export` refuses, saying the same.
+  - With item export hidden when off, a workspace on the free plan sees no export button, and `starter --help` doesn't list the command.
 
-**Specification:** [`features/plans.feature`](features/plans.feature). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile, sqlite and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
+**Specification:** [`features/plans.feature`](features/plans.feature) (limits) and [`features/plan-features.feature`](features/plan-features.feature) (features). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile, sqlite and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
 <!-- sample:end -->
 
 ### 4.10 Tell when the server is ready
