@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
+import { noticeClass } from "../../components/notice";
 
 const warningsKey = ["warnings"] as const;
 
@@ -14,7 +15,7 @@ export function WarningsNotice() {
   });
   if (!data?.warnings.length) return null;
   return (
-    <section aria-label="Warnings">
+    <section aria-label="Warnings" className={`space-y-1 ${noticeClass}`}>
       {data.warnings.map(({ message }) => (
         <p key={message}>{message}</p>
       ))}

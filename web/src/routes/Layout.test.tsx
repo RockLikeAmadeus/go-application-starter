@@ -5,6 +5,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { connectionApi } from "../test/connectionApi";
 import { renderWithClient } from "../test/render";
+import { warningsApi } from "../test/warningsApi";
 import { Layout } from "./Layout";
 
 function renderLayout(page = <p>Page</p>) {
@@ -179,6 +180,15 @@ describe("Layout", () => {
     renderLayout();
 
     expect(screen.getByRole("status")).toHaveTextContent("You're offline");
+  });
+
+  it("shows the app's warnings, on every page", async () => {
+    vi.stubGlobal("fetch", warningsApi("Your data folder looks synced by Dropbox."));
+
+    renderLayout();
+
+    const warnings = await screen.findByRole("region", { name: "Warnings" });
+    expect(warnings).toHaveTextContent("Your data folder looks synced by Dropbox.");
   });
 
   it("keeps saving after the browser goes offline when no connection is required", async () => {

@@ -12,6 +12,7 @@ import { useStyle } from "../features/style/useStyle";
 import type { Theme } from "../features/theme/theme";
 import { ThemeToggle } from "../features/theme/ThemeToggle";
 import { useTheme } from "../features/theme/useTheme";
+import { WarningsNotice } from "../features/warnings/WarningsNotice";
 
 export function Layout() {
   useLocalDataOnline();
@@ -28,6 +29,7 @@ export function Layout() {
       <main className="min-w-0 flex-1 px-8 py-8 terminal:px-5 terminal:py-5">
         <MobileNav>{content}</MobileNav>
         <OfflineNotice />
+        <WarningsNotice />
         <div className="mx-auto max-w-4xl">
           <Outlet />
         </div>

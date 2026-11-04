@@ -102,7 +102,10 @@
 - [x] 15b. SPA: the notice shows nothing when the request fails.
   - No red: "shows nothing when the request fails" (a 500) passed at once (`WarningsNotice` already renders nothing without an answer), kept as a guard; a mutation showing a notice on error made it fail.
   - Refactor: the settle wait became a `settled(fetch, client)` test helper, shared with 15a's test.
-- [ ] 15c. SPA: `Layout` shows the notice beside `OfflineNotice`, styled like it (the palette has no warning colour yet).
+- [x] 15c. SPA: `Layout` shows the notice beside `OfflineNotice`, styled like it (the palette has no warning colour yet).
+  - Red: `Layout` › "shows the app's warnings, on every page" failed: no `Warnings` region.
+  - Green: `Layout` renders `WarningsNotice` below `OfflineNotice`, boxed in `OfflineNotice`'s classes. All `@wip` acceptance scenarios pass.
+  - Refactor: the shared box classes became `noticeClass` (`web/src/components/notice.ts`), used by both notices.
 - [ ] 16. Finish: `docs/data-locations.md` and ADR 7 ("is planned" → what happens), CLAUDE.md's SQLite Gotcha (one line on the warning and the setting), tick the TODO.md item, and note it under step 6 of the editions plan. Remove the `@wip` tags and delete this file. Run `task check` and `task test:init`.
 
 ## Changes to the plan

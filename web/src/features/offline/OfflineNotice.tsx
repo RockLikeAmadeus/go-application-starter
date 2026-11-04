@@ -1,3 +1,4 @@
+import { noticeClass } from "../../components/notice";
 import { useConnectionRequired } from "./useConnectionRequired";
 import { useOnline } from "./useOnline";
 
@@ -13,7 +14,7 @@ export function OfflineNotice() {
   return (
     <div role="status">
       {connectionRequired && !online && (
-        <p className="mb-6 rounded-control border border-line bg-sunken px-4 py-2 text-sm text-muted terminal:mb-4 terminal:text-xs">
+        <p className={noticeClass}>
           You're offline. Data will load when the connection comes back.
         </p>
       )}
