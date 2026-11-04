@@ -3,6 +3,8 @@
 Ideas for things every project built from this template is likely to need.
 Work through them one at a time (each usually starts with `/feature`), tick them off, and delete this file when it's empty.
 
+**Before starting work on any feature below, discuss whether it's actually a valuable feature and what are the tradeoffs of including it or not including it. Many of these are Claude's ideas and probably very sensible, but some of them I've thought of myself and I want to be wary of template bloat.**
+
 ## Do first
 - [x] **`/readyz` checks storage without the sample.** The server's only readiness check is `opts.Items.ListItems` (`internal/adapters/httpapi/server.go`), inside a sample block, so after `--remove-sample` `/readyz` always answers "ready", even when storage is broken. Give it a check that doesn't depend on an entity: for example a `Ready func(ctx) error` in `httpapi.Options` that `bootstrap` takes from the storage adapter (the jsonfile store, and later SQL's ping). Cover it with a test that runs without the sample, and run `task test:init`.
   - Done 2026-11-02: `httpapi.Options.Ready` from `bootstrap`'s `App.Ready` (jsonfile writes and removes a temp file in its data folder; memory is always ready), wired in `cmd/server` and `desktop.Open`. SPEC.md §4.10, `features/readiness.feature` on the new `server` driver.
@@ -41,11 +43,16 @@ Work through them one at a time (each usually starts with `/feature`), tick them
   - [x] Run `task test:init` to confirm `--remove-sample` still works now that the sidebar's content is shared with the phone menu (`SidebarContent` in `web/src/routes/Layout.tsx`). Passed on 2026-10-30.
 - [ ] **Universal application user stories that should survive `--remove-sample`** (each a separate /feature and should be designed such that template users can expand on them easily).  The idea is to have to do as little as possible from scratch for features that are common to utilities or consumer-focused software, so that template users can focus development primarily on their respective problem space. Each should be well-documented, and this documentation should be pointed to by a top-level guide for template users.
   - [ ] **Change application settings (e.g. theme, style, other domain-specific settings) from a settings menu in all clients**
-  - [ ] **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the template users.
-  - [ ] **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable.
+  - [ ] **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the for template users, that potentially could themselves link to documentation pages?
+  - [ ] **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable. This could be in-app notifications as well as boilerplate for email/mobile/etc. notifications.
   - [ ] If possible, **basic record searching, sorting, and filtering functionality** that can be reused for as-yet-unimplemented and domain-specific data models in the application.
-  - [ ] **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version.
+  - [ ] **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version, or possibly for the data backups task under `## Operability`.
   - [ ] **Form validation helpers**
+  - [ ] **Multi-provider auth** for traditional email/password and standard OAuth providers.
+  - [ ] **Session management**: secure token refresh cycles, automatic logout on expiration, and multi-device session invalidation?
+  - [ ] **User account** flows for common tasks like password changes, account deletion, etc. **ONLY FOR HOSTED EDITIONS**.
+  - [ ] **Functional feature-flagging support** to toggle unreleased features or modify runtime behavior dynamically without redeploying.
+
   - [ ] **Other features along these same lines likely to be required by template users** that we brainstorm.
 
   
@@ -56,12 +63,15 @@ Work through them one at a time (each usually starts with `/feature`), tick them
   - a `/metrics` endpoint;
   - optional OpenTelemetry tracing.
 - [ ] **Automatic periodic and manual data backups?**
+- [ ] **Crash & Error Reporting**: pre-integrated boundaries (like Global Exception Handlers or React Error Boundaries) that intercept crashes and prepare them for upstream analytics.
+- [ ] **Telemetry & Analytics**: a unified tracking hook or service layer to measure core user events, app launch performance, and page/view transitions.
 - [ ] **Security basics:**
   - security headers and a CSP on the server;
   - request size limits and rate limiting on the API;
   - `govulncheck` and `pnpm audit` in CI.
 - [ ] **Release automation:** GoReleaser (or similar), a changelog convention, and Renovate or Dependabot.
 - [ ] **Pre-release tags for the desktop packages.** The Taskfile's `PACKAGE_VERSION` accepts only `vX.Y.Z`, so a tag like `v0.1.0-rc.1` builds installers numbered `0.0.0` (GoReleaser's CLI downloads get the right version). Each format writes a pre-release its own way: `.deb` and `.rpm` want `0.1.0~rc.1` (so it sorts before `0.1.0`), while Windows' version info takes only numbers. Then mark such a Release as a pre-release (GoReleaser's `release.prerelease: auto`), and update docs/ci-cd.md's "Making a release".
+- [ ] **Dockerized Mocking Infrastructure** such as a docker-compose stack to spin up auxiliary local services like mock authentication, testing databases, or local S3 object buckets seamlessly.
 
 ## API and data conventions
 - [ ] **Pagination, sorting and filtering on list endpoints**, cursor-based. `GET /items` currently returns everything.
@@ -79,7 +89,7 @@ Work through them one at a time (each usually starts with `/feature`), tick them
 
 ## Maybe (depends on the products built from it)
 - [ ] Translations (i18n)
-- [ ] Background jobs or domain events (outbox pattern)
+- [ ] Background jobs or domain events (outbox pattern) - (this very likely will be relevant for my first intended use of the template)
 - [ ] Audit log (who changed what, and when)
 
 ## Other
@@ -91,10 +101,11 @@ Work through them one at a time (each usually starts with `/feature`), tick them
 - [x] **Init asks for the app's description and publisher.** The desktop packages' descriptions, publisher, maintainer and copyright (the template-user steps above) are filled in by hand for now. `task init` could take them as flags or prompts and write them into `build/desktop/`, so a new project starts with none of the template's placeholders.
   - Done 2026-11-03: `--description`, `--publisher` and `--email` are required flags; init writes them into `nfpm.yaml`, `app.desktop` and `info.json` (see [docs/template.md](docs/template.md)).
 - [ ] Notate in CLAUDE.md that all bugfixes and new features should be functional for all clients: web, desktop, mobile, cli, and tui.
-- [ ] Generate an architecture document, with diagrams, that explains the project directory structure and the purposes of each directory to give users of this template a foothold for starting new development. Also create a similar document with diagrams for each of the supported front-ends in place in their corresponding directory under `docs`, as well as the Go library itself (just a stub for the template to be filled in later), and the REST API (also a stub).
+- [ ] Generate an architecture document, with diagrams, that explains the project directory structure and the purposes of each directory to give users of this template a foothold for starting new development. Also create a similar document with diagrams for each of the supported front-ends in place in their corresponding directory under `docs`, as well as the core Go library itself (just a stub for the template to be filled in later), and the REST API (also a stub).
 - [ ] **Hosted and local editions:** let web, desktop and mobile be commercial products, with data kept separate per account and features gated by paid plans, while the local edition (the CLI and TUI by default, the desktop and mobile apps in local mode, and a self-hosted server with sign-in off) stays a set of single-user tools on local data (plain text or SQLite, in a folder the user chooses, which can be a cloud-synced one), on the same core and data structures. The CLI and TUI can also log in to the hosted edition.
   - Plan: [docs/plans/editions-and-accounts.md](docs/plans/editions-and-accounts.md). Decisions: [ADR 5](docs/adr/0005-hosted-and-local-editions.md). Data belongs to a workspace; plans in config grant features and limits; billing is a driving adapter; OIDC authentication; synced folders are used from one device at a time, with no merging; no sync between local and cloud data.
 - [x] **Fix `task accept -- -run 'TestFeatures/<driver>'`.** CLAUDE.md documents it for running one acceptance driver, but on 2026-10-30 `-run 'TestFeatures/memory$'` still ran all five drivers.
   - Done 2026-11-03: `godog.BindCommandLineFlags` adds Go's `flag.CommandLine` to pflag, so `pflag.Parse()` in `TestMain` marked it parsed with no arguments and `m.Run` never read `-run` or `-v`. The four Godog suites now bind their flags with `godog.BindFlags("godog.", flag.CommandLine, &opts)` and let `go test` parse everything.
 - [ ] Add release notes and update commands to write them automatically
+- [ ] Template-wide sweep to ensure developers using this template will be able to add domain-specific features while touching as few places as possible (Core, API, Docs, Storage adapters, CLI, TUI, and Web I think covers it but I could be missing some). Also make sure `/feature` commands prompt for decisions about the web, TUI, and CLI interfaces, since these cannot all be identical. The intention is that shared code is maximized with reason so that new feature development requires as little work as is feasible.
 - [ ] Project cleanup: go through the project and look for potential opportunities to pair down unnecessary files and leave a clean-as-possible slate for users of the template.
