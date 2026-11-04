@@ -8,20 +8,38 @@ import (
 	"path/filepath"
 )
 
+// A sign is a filepath.Match pattern for a file or folder name that a sync
+// service leaves, with the service's name.
+type sign struct{ pattern, service string }
+
 // markers are the files or folders a sync service leaves at the top of the
-// folder it keeps in sync, as filepath.Match patterns, each with the
-// service's name.
-var markers = []struct{ pattern, service string }{
+// folder it keeps in sync.
+var markers = []sign{
 	{".dropbox", "Dropbox"},
 	{".stfolder", "Syncthing"},
 	{".sync_*.db", "Nextcloud"},
 	{"._sync_*.db", "Nextcloud"},
 }
 
+// names are the names a sync service gives the folder it keeps in sync.
+var names = []sign{
+	{"Dropbox", "Dropbox"},
+	{"OneDrive", "OneDrive"},
+	{"OneDrive - *", "OneDrive"}, // a work or school account: "OneDrive - <org>"
+	{"Google Drive", "Google Drive"},
+	{"My Drive", "Google Drive"},
+	{"iCloud Drive", "iCloud Drive"},
+	{"iCloudDrive", "iCloud Drive"},      // Windows
+	{"Mobile Documents", "iCloud Drive"}, // macOS: ~/Library/Mobile Documents
+}
+
 // Detect reports the sync service that seems to keep dir in sync, if any.
 func Detect(dir string) (service string, ok bool) {
 	for {
 		if service, ok := markedBy(dir); ok {
+			return service, true
+		}
+		if service, ok := namedFor(dir); ok {
 			return service, true
 		}
 		parent := filepath.Dir(dir)
@@ -39,10 +57,25 @@ func markedBy(dir string) (service string, ok bool) {
 	entries, _ := os.ReadDir(dir)
 	for _, m := range markers {
 		for _, e := range entries {
-			if matched, _ := filepath.Match(m.pattern, e.Name()); matched {
+			if matches(m, e.Name()) {
 				return m.service, true
 			}
 		}
 	}
 	return "", false
+}
+
+// namedFor reports the service whose folder name dir has, if any.
+func namedFor(dir string) (service string, ok bool) {
+	for _, n := range names {
+		if matches(n, filepath.Base(dir)) {
+			return n.service, true
+		}
+	}
+	return "", false
+}
+
+func matches(s sign, name string) bool {
+	matched, _ := filepath.Match(s.pattern, name)
+	return matched
 }

@@ -84,3 +84,25 @@ func TestDetect_AFolderWhosePathHoldsGlobCharactersIsStillCheckedForMarkers(t *t
 		t.Errorf("Detect(%q) = (%q, %v), want (%q, true)", dir, service, ok, "Dropbox")
 	}
 }
+
+func TestDetect_AFolderInsideOneNamedForASyncServiceLooksSyncedByIt(t *testing.T) {
+	for _, tc := range []struct{ folder, service string }{
+		{"Dropbox", "Dropbox"},
+		{"OneDrive", "OneDrive"},
+		{"OneDrive - Contoso", "OneDrive"},
+		{"Google Drive", "Google Drive"},
+		{"My Drive", "Google Drive"},
+		{"iCloud Drive", "iCloud Drive"},
+		{"iCloudDrive", "iCloud Drive"},
+		{"Mobile Documents", "iCloud Drive"},
+	} {
+		t.Run(tc.folder, func(t *testing.T) {
+			dir := folderInside(t, filepath.Join(t.TempDir(), tc.folder))
+
+			service, ok := syncedfolder.Detect(dir)
+			if !ok || service != tc.service {
+				t.Errorf("Detect(%q) = (%q, %v), want (%q, true)", dir, service, ok, tc.service)
+			}
+		})
+	}
+}

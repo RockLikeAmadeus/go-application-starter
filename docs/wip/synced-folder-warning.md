@@ -43,7 +43,10 @@
   - Red: `TestDetect_AFolderWhosePathHoldsGlobCharactersIsStillCheckedForMarkers` (`.dropbox` in `notes [old]`) failed: `Detect` = `("", false)`, want `("Dropbox", true)`. Only `[ ]` in the name: `*` and `?` aren't allowed in Windows file names.
   - Green: `markedBy` reads `dir` with `os.ReadDir` and matches each name with `filepath.Match`.
   - Refactor: a comment on `markedBy` saying why it matches names, and that an unreadable folder holds no markers.
-- [ ] 4. `Detect`: folder names (table test): `Dropbox`, `OneDrive`, `OneDrive - Contoso`, `Google Drive`, `My Drive`, `iCloud Drive`, `iCloudDrive`, `Mobile Documents`.
+- [x] 4. `Detect`: folder names (table test): `Dropbox`, `OneDrive`, `OneDrive - Contoso`, `Google Drive`, `My Drive`, `iCloud Drive`, `iCloudDrive`, `Mobile Documents`.
+  - Red: `TestDetect_AFolderInsideOneNamedForASyncServiceLooksSyncedByIt` (8 cases) failed: `Detect` = `("", false)` for each. Services: OneDrive for both OneDrive names, Google Drive for `My Drive`, iCloud Drive for all three iCloud names.
+  - Green: a `names` table of patterns (`OneDrive - *`) matched against each folder's own name on the walk up.
+  - Refactor: one `sign` type for both tables, a `namedFor` beside `markedBy`, a shared `matches`; comments on the OS-specific names.
 - [ ] 5. `Detect`: macOS `Library/CloudStorage/<Provider>-…` → that provider (`Dropbox-Personal` → Dropbox, `GoogleDrive-me@example.com` → Google Drive, `OneDrive-Personal` → OneDrive).
 - [ ] 6. `Detect`: a relative folder is checked from where the program runs (its parents count).
 - [ ] 7. `config`: `ignore_synced_folder` from the settings file or `STARTER_IGNORE_SYNCED_FOLDER`, default false; a value that isn't a bool fails `Load`; it's listed by `Settings`. Add it to `envVars`, `Load`, `Config.Settings` and `docs/configuration.md`.
