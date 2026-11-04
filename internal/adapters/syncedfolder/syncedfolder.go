@@ -41,7 +41,13 @@ var providerNames = map[string]string{
 }
 
 // Detect reports the sync service that seems to keep dir in sync, if any.
+// It checks dir and each folder above it. A relative dir is taken from the
+// working directory, whose parents count too; if that can't be found, dir is
+// checked as given.
 func Detect(dir string) (service string, ok bool) {
+	if abs, err := filepath.Abs(dir); err == nil {
+		dir = abs
+	}
 	for {
 		if service, ok := markedBy(dir); ok {
 			return service, true

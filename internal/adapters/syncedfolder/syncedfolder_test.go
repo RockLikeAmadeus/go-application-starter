@@ -124,3 +124,19 @@ func TestDetect_AFolderInsideAMacOSCloudStorageFolderLooksSyncedByItsProvider(t 
 		})
 	}
 }
+
+func TestDetect_ARelativeFolderIsCheckedFromWhereTheProgramRunsWithItsParents(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".dropbox"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(folderInside(t, root))
+	if err := os.Mkdir("data", 0o750); err != nil {
+		t.Fatal(err)
+	}
+
+	service, ok := syncedfolder.Detect("data")
+	if !ok || service != "Dropbox" {
+		t.Errorf("Detect(%q) = (%q, %v), want (%q, true)", "data", service, ok, "Dropbox")
+	}
+}

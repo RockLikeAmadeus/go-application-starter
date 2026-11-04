@@ -51,7 +51,10 @@
   - Red: `TestDetect_AFolderInsideAMacOSCloudStorageFolderLooksSyncedByItsProvider` (3 cases) failed: `Detect` = `("", false)` for each.
   - Green: inline in `Detect`'s walk, a folder under `Library/CloudStorage` → its name up to the first `-`, `GoogleDrive` → Google Drive.
   - Refactor: the check became `cloudStorageProvider` beside `markedBy` and `namedFor`, with a `providerNames` table for `GoogleDrive`.
-- [ ] 6. `Detect`: a relative folder is checked from where the program runs (its parents count).
+- [x] 6. `Detect`: a relative folder is checked from where the program runs (its parents count).
+  - Red: `TestDetect_ARelativeFolderIsCheckedFromWhereTheProgramRunsWithItsParents` (`data` under a working directory below `.dropbox`) failed: `Detect` = `("", false)`, want `("Dropbox", true)`.
+  - Green: `Detect` resolves `dir` with `filepath.Abs` first, keeping it as given if that fails.
+  - Refactor: `Detect`'s comment says how a relative folder is checked; the code was already one line.
 - [ ] 7. `config`: `ignore_synced_folder` from the settings file or `STARTER_IGNORE_SYNCED_FOLDER`, default false; a value that isn't a bool fails `Load`; it's listed by `Settings`. Add it to `envVars`, `Load`, `Config.Settings` and `docs/configuration.md`.
 - [ ] 8. `bootstrap.NewEmbedded`: on SQLite in a synced folder, `App.Warnings` holds the message naming the service; none on jsonfile in the same folder, none with `IgnoreSyncedFolder`, none in an ordinary folder. `NewRemote` has none.
 - [ ] 9. API: `GET /api/v1/warnings` in `api/openapi.yaml`, `task gen`; `httpapi.Options.Warnings` answered as given, an empty list when unset.
