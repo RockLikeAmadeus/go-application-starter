@@ -184,6 +184,41 @@ func TestEntitlements_AnswersThePlanTheWorkspaceIsOn(t *testing.T) {
 	}
 }
 
+func TestEntitlements_FillsTheUpgradeHintWhenHintsAreOn(t *testing.T) {
+	feature := func(on bool) map[string]domain.Feature {
+		return map[string]domain.Feature{
+			"export": {Key: "export", Name: "Item export", On: on, WhenOff: domain.ShowLocked},
+		}
+	}
+	catalog := plans.Catalog{
+		"free":  {Plan: "free", Features: feature(false)},
+		"team":  {Plan: "team", Features: feature(true)},
+		"pro":   {Plan: "pro", Features: feature(true)},
+		"local": {Plan: "local", Features: feature(true)},
+	}
+	onFree := func(context.Context, domain.WorkspaceID) (string, error) { return "free", nil }
+	cases := map[string]struct {
+		hints bool
+		want  []string
+	}{
+		"on: the sorted plans with it, without the local plan": {hints: true, want: []string{"pro", "team"}},
+		"off: no hint": {hints: false, want: nil},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			adapter := plans.Entitlements{Catalog: catalog, PlanOf: onFree, Hints: tc.hints, LocalPlan: "local"}
+
+			got, err := adapter.For(context.Background(), "ws-a")
+			if err != nil {
+				t.Fatalf("For: %v", err)
+			}
+			if availableOn := got.Features["export"].AvailableOn; !reflect.DeepEqual(availableOn, tc.want) {
+				t.Errorf("AvailableOn = %#v, want %#v", availableOn, tc.want)
+			}
+		})
+	}
+}
+
 func TestEntitlements_RefusesAPlanItCantAnswer(t *testing.T) {
 	lookupFailed := errors.New("lookup failed")
 	cases := map[string]struct {

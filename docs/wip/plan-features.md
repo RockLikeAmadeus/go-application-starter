@@ -35,7 +35,10 @@
    - Red: `TestParse_ReadsFeatures` (catalog + 3 refusals) failed on `unknown field "features"`; the older Parse tests now want an empty `Features` map, as `Limits` is.
    - Green: `Parse` builds the file's `features` with `NewFeature`, gives each plan a copy with `On` set for those it lists, and refuses an unlisted key.
    - Refactor: `buildFeatures` helper, `maps.Clone` for each plan's copy, `Parse`'s doc shows the features; errors read `feature "x": …` like limits'.
-4. [ ] plans adapter: `For` fills `AvailableOn` (sorted plan names that have the feature, without the local plan) when hints are on, and leaves it empty when they're off.
+4. [x] plans adapter: `For` fills `AvailableOn` (sorted plan names that have the feature, without the local plan) when hints are on, and leaves it empty when they're off.
+   - Red: `TestEntitlements_FillsTheUpgradeHintWhenHintsAreOn` (on / off) failed with `AvailableOn = nil, want {"pro", "team"}`; the adapter got stub `Hints` and `LocalPlan` fields.
+   - Green: with `Hints`, `For` gives each of the plan's features (in a cloned map) the sorted catalog plans that have it on, leaving out `LocalPlan`.
+   - Refactor: `withHints` (copies the map) and `plansWith` helpers; doc comments on `Hints`, `LocalPlan` and `For`. Bootstrap and the harness are left to tasks 5 and 6.
 5. [ ] bootstrap + plans.jsonc: the template's `features` section; `item-export` ("Item export", sample block) on for local and pro, locked for free; the local edition wires no hints (test: a locked feature in a local app has no `AvailableOn`). Also a light entitlements-only path that opens no storage, for the CLI's help.
 6. [ ] acceptance harness: hints on in `testPlans`; steps for "has / doesn't have item export", "is shown locked / hidden when off" and "item export is … for my workspace" (in a sample steps file).
 7. [ ] domain (sample): encode items as CSV, with header `name,createdAt`, RFC 3339 and CSV quoting.

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"slices"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
@@ -133,12 +134,19 @@ type Entitlements struct {
 	// one plan for every workspace; the acceptance tests answer from a map.
 	// Changing a workspace's plan (ChangePlan) will store the answers instead.
 	PlanOf func(ctx context.Context, workspace domain.WorkspaceID) (string, error)
+	// Hints fills each feature's upgrade hint (AvailableOn) with the plans
+	// that have it. The local edition leaves it off, so it gives no hints;
+	// the acceptance tests turn it on.
+	Hints bool
+	// LocalPlan is the local edition's plan, which a hint never names.
+	LocalPlan string
 }
 
 var _ ports.Entitlements = Entitlements{}
 
-// For returns the entitlements of the plan the workspace is on. It returns
-// PlanOf's error as is, and refuses a plan the catalog doesn't have.
+// For returns the entitlements of the plan the workspace is on, with the
+// upgrade hints when Hints is set. It returns PlanOf's error as is, and
+// refuses a plan the catalog doesn't have.
 func (e Entitlements) For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error) {
 	plan, err := e.PlanOf(ctx, workspace)
 	if err != nil {
@@ -148,7 +156,34 @@ func (e Entitlements) For(ctx context.Context, workspace domain.WorkspaceID) (do
 	if !ok {
 		return domain.Entitlements{}, fmt.Errorf("plan %q isn't in the plans file", plan)
 	}
+	if e.Hints {
+		entitlements.Features = e.withHints(entitlements.Features)
+	}
 	return entitlements, nil
+}
+
+// withHints returns a copy of features, each with the upgrade hint filled
+// in. It copies, so the catalog's own features stay without hints.
+func (e Entitlements) withHints(features map[string]domain.Feature) map[string]domain.Feature {
+	hinted := maps.Clone(features)
+	for key, f := range hinted {
+		f.AvailableOn = e.plansWith(key)
+		hinted[key] = f
+	}
+	return hinted
+}
+
+// plansWith names, sorted, the catalog's plans that turn the feature on,
+// leaving out LocalPlan.
+func (e Entitlements) plansWith(feature string) []string {
+	var names []string
+	for name, plan := range e.Catalog {
+		if name != e.LocalPlan && plan.Features[feature].On {
+			names = append(names, name)
+		}
+	}
+	slices.Sort(names)
+	return names
 }
 
 // shipped is the plans file built into the binary.
