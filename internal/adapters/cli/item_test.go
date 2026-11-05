@@ -44,3 +44,18 @@ func TestAddRejectsBlankName(t *testing.T) {
 		t.Fatalf("err = %v, want ErrValidation", err)
 	}
 }
+
+func TestExportPrintsTheItemsAsCSV(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := run(t, dir, "item", "add", "Widget, large"); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+
+	out, err := run(t, dir, "item", "export")
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	if want := "name,createdAt\n\"Widget, large\","; !strings.HasPrefix(out, want) {
+		t.Errorf("export output = %q, want it to start with %q", out, want)
+	}
+}

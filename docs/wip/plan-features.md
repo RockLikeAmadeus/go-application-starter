@@ -94,7 +94,11 @@
    - Red: `TestHelpNotesGatedCommandsByThePlan` (template `gated_test.go`, 5 cases, no data folder made) failed on locked, hidden and the server's hint: the stub `Gated` leaves the command listed plainly.
    - Green: `Gated` sets a `feature` annotation; the root's help func loads the config (`loadConfig`, split from `openApp`), reads `bootstrap.NewEntitlements` (now with a `--server` branch) and hides or notes gated children; `domain.PlansPhrase` split from `FeatureError.Error` for the hint.
    - Refactor: `note(cmd, feature)` pulled out of the help loop; doc comments on `Gated`, `noteGatedCommands`, `readEntitlements` and `NewEntitlements`. Also gofmt'd `plans.go` (left by 89b94ec; user, 2026-11-05).
-14. [ ] CLI (sample): `starter item export`; the terminal journey steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.
+14. [x] CLI (sample): `starter item export`, gated by `item-export`, prints the CSV on stdout.
+   - Red: `TestExportPrintsTheItemsAsCSV` (a quoted name, jsonfile) failed: no `export` subcommand, so `item`'s help was printed.
+   - Green: `item export` (`Gated("item-export", …)`) writes `ExportItems`' bytes to stdout; a locked plan fails through the core's `FeatureError`.
+   - Refactor: nothing; the key stays a literal, like the app's `itemExport`, since keys are the plans file's contract.
+14b. [ ] terminal journeys (sample): the steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.
 15. [ ] TUI (template): the gated key help helper and its test, outside sample blocks.
 16. [ ] web (template): `useFeature`, stubbing `fetch` of `/api/v1/entitlements`: on / locked + hint / hidden / loading → pending / failed → locked without a hint. `Layout` prefetches the entitlements, with a long `staleTime`.
 17. [ ] web (template): the gate component: children / locked with hint / locked without hint ("Not available") / nothing / a same-size disabled placeholder while pending.
@@ -110,3 +114,4 @@
 - 2026-11-04 (user, during task 5): task 5 split in two, one test each: 5 is the template light path and no hints; 5b is the shipped plans file's `features` and the sample `item-export`, whose test sits in a sample block.
 - 2026-11-04 (user, during task 10): task 10 split in two, one test each: 10 serves the features in the entitlements; 10b maps `FeatureError` to its problem. `/items/export` moves to task 11, whose handler test needs it.
 - 2026-11-04 (user, during task 12): task 12 split in three, one test each: 12 reads the features; 12b maps the feature problem back; 12c is the sample `ExportItems`, which turns the http, desktop and mobile drivers green.
+- 2026-11-05 (user, during task 14): task 14 split in two, one test each: 14 is the CLI's `item export` command; 14b is the terminal journey steps and `task e2e:terminal`.

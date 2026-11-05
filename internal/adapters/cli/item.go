@@ -107,6 +107,19 @@ func newItemCmd(open appOpener) *cobra.Command {
 				return nil
 			}),
 		},
+		Gated("item-export", &cobra.Command{
+			Use:   "export",
+			Short: "Export the items as CSV",
+			Args:  cobra.NoArgs,
+			RunE: withApp(open, func(cmd *cobra.Command, _ []string, app *bootstrap.App) error {
+				csv, err := app.Items.ExportItems(cmd.Context())
+				if err != nil {
+					return err
+				}
+				_, err = cmd.OutOrStdout().Write(csv)
+				return err
+			}),
+		}),
 	)
 	return cmd
 }
