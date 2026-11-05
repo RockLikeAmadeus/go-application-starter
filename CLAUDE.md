@@ -92,7 +92,7 @@ test/packaging                   package check: builds the Linux packages and th
 - Business rules live in `domain`. Use cases in `app` only orchestrate.
 - UIs call the core **only** through driving ports (the `…Service` interfaces in `ports`). Never put business logic in handlers, Cobra commands, Bubble Tea models or React components.
 - A new storage backend implements the `…Repository` ports, runs each one's `storagetest` contract suite, and is wired (with its readiness check) in `internal/bootstrap` (`.claude/rules/storage.md`).
-- Data belongs to a workspace, passed **explicitly** to every repository call; plans set a workspace's limits, checked before saving and never on delete; domain errors are the shared language across HTTP. Details are in `.claude/rules/workspaces-and-plans.md`. **Adding an entity: follow the checklist in `docs/workspaces.md`.**
+- Data belongs to a workspace, passed **explicitly** to every repository call; plans set a workspace's limits, checked before saving and never on delete; domain errors are the shared language across HTTP. Details are in `.claude/rules/workspaces-and-plans.md`. **Adding an entity: follow the checklist in `docs/workspaces.md`. Gating a feature by plan: `docs/features.md`.**
 - Time and IDs come from `ports.Clock` / `ports.IDGenerator`. Use `internal/testsupport` fakes in tests.
 
 ### API contract

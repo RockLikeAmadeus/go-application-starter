@@ -1,10 +1,18 @@
-// The product's plans: what each one allows a workspace. See SPEC.md, "Plans
-// and limits". Lines starting with // are comments.
+// The product's plans: what each one allows a workspace. See SPEC.md, "Plans,
+// features and limits". Lines starting with // are comments.
 //
 // A limit is named after what it counts, in the plural ("items"), and says
 // how many a workspace may have ("max") and what happens when it's over
 // ("whenOver"): "block-new" refuses new ones, and "read-only" also refuses
 // changes while over. A plan without a limit has no limit on that thing.
+//
+// A feature is something a plan turns on or off. "features" lists every one
+// by its key ("item-export"), which code and the API use, so keep it once
+// chosen. Its "name" is what people read ("Item export"), and "whenOff" says
+// how front ends show it on a plan without it: "show-locked" shows it
+// disabled, with a hint naming the plans that have it, and "hide" leaves it
+// out. Each plan's "features" lists the keys it turns on; any other feature
+// is off. See docs/features.md.
 {
 	"features": {
 		// sample:start

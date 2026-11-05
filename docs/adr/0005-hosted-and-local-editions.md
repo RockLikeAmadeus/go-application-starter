@@ -33,7 +33,7 @@ A product built from this template may be sold as a hosted service: many users, 
 - For each limit, config says what happens when a workspace is over it: keep the data and refuse new records, or make that data read-only. For each feature, config says whether the UI shows it locked, with an upgrade hint, or hides it.
 - Use cases ask an `EntitlementsProvider` port. The REST API exposes the current workspace's entitlements, so every UI can follow the same rules.
 - The local edition's workspace is on a plan named at build time. A paid local licence could later switch it.
-- Built in step 2: limits, in a plans file that is JSON with full-line comments (`internal/adapters/plans/plans.jsonc`, replaceable with `STARTER_PLANS_FILE`), and `GET /api/v1/entitlements`. A limit's error is a 403 naming the limit. On/off features come in step 3.
+- Built in step 2: limits, in a plans file that is JSON with full-line comments (`internal/adapters/plans/plans.jsonc`, replaceable with `STARTER_PLANS_FILE`), and `GET /api/v1/entitlements`. A limit's error is a 403 naming the limit. Built in step 3: on/off features, in the same file's `features` section, each with a display name and `whenOff` (`show-locked` or `hide`). A use case refuses a feature that's off with a 403 naming it, and the web app, CLI help and TUI show it by the plan (`docs/features.md`).
 
 ### Billing is a driving adapter
 

@@ -132,8 +132,11 @@
 18c. [x] web e2e (sample): the "Export the items" journey's steps; `task e2e` goes green.
    - Red: none. The steps ("I export the items" waits for the download; "the downloaded file lists" reads `items.csv`, its header and the name) passed straight away, since tasks 18 and 18b built the behaviour; asserting a missing name fails on the real file. Kept as a guard. The button is matched `exact`, since the item's name contains "Export".
    - Refactor: an explicit "no file was downloaded" guard in place of optional chaining.
-18d. [ ] desktop (by hand): check the Items page's Export download in `task run:desktop` (WebKitGTK), including the object URL revoked straight after the click.
-19. [ ] docs: `docs/features.md` (a checklist for gating a new feature), linked from CLAUDE.md's plans rule; ADR 5's step 3 line; the plans file comments; a template-user step for defining their own features if needed; `task test:init`.
+18d. [x] desktop (by hand): check the Items page's Export download in `task run:desktop` (WebKitGTK), including the object URL revoked straight after the click.
+   - Checked by the user (2026-11-05): Export saves a correct `items.csv` to the downloads folder, so revoking the URL straight after the click is fine on WebKitGTK.
+19. [x] docs: `docs/features.md` (a checklist for gating a new feature), linked from CLAUDE.md's plans rule; ADR 5's step 3 line; the plans file comments; a template-user step for defining their own features if needed; `task test:init`.
+   - Red / green: none. Docs only, with no behaviour to specify; the plans tests still read the shipped file.
+   - Done: `docs/features.md` (how gating works, steps, checklist, pitfalls), linked from the plans rule and CLAUDE.md; ADR 5's step 3 line; `plans.jsonc`'s features comment; TODO.md's plans step names features.
 20. [ ] Finish: `task check`, `task accept`, `task e2e`, `task e2e:terminal`; remove `@wip`; mark step 3 done in the plan; delete this file.
 
 ## Changes to the plan
