@@ -49,16 +49,16 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 	root.PersistentFlags().StringVar(&configFile, "config", "", "settings file to read (default: config.toml in the app's settings folder; env STARTER_CONFIG_FILE)")
 	root.PersistentFlags().StringVar(&storage, "storage", "", "storage adapter for embedded mode: jsonfile|sqlite|memory (env STARTER_STORAGE)")
 
-	// openApp loads config (the local settings file, then the environment),
-	// applies flag overrides, wires the app and prints its warnings.
-	openApp := func() (*bootstrap.App, config.Config, error) {
+	// loadConfig loads config (the local settings file, then the
+	// environment) and applies flag overrides.
+	loadConfig := func() (config.Config, error) {
 		settingsFile, err := settingsFileFor(configFile, env)
 		if err != nil {
-			return nil, config.Config{}, err
+			return config.Config{}, err
 		}
 		cfg, err := config.Load(env, settingsFile)
 		if err != nil {
-			return nil, cfg, err
+			return cfg, err
 		}
 		if serverURL != "" {
 			cfg.ServerURL = serverURL
@@ -74,10 +74,19 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 		} else if keepsDataInAFolder(cfg) {
 			cfg.DataDir, err = config.LocalDataDir(env, settingsFile)
 			if err != nil {
-				return nil, cfg, err
+				return cfg, err
 			}
 		}
 		if err := cfg.Validate(); err != nil {
+			return cfg, err
+		}
+		return cfg, nil
+	}
+
+	// openApp loads config, wires the app and prints its warnings.
+	openApp := func() (*bootstrap.App, config.Config, error) {
+		cfg, err := loadConfig()
+		if err != nil {
 			return nil, cfg, err
 		}
 		app, err := newApp(cfg)
@@ -87,6 +96,8 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 		printWarnings(root.ErrOrStderr(), app.Warnings)
 		return app, cfg, nil
 	}
+
+	noteGatedCommands(root, loadConfig)
 
 	root.AddCommand(newTUICmd(openApp))
 	root.AddCommand(newInfoCmd(openApp))

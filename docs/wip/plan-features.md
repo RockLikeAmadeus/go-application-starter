@@ -90,7 +90,10 @@
    - Green: `ExportItems` calls `ExportItemsWithResponse`, returns the body on 200 and `toError` otherwise.
    - Refactor: `newClient(t, plan)` test helper shared with `TestRoundTrip`; a doc comment on `ExportItems`. Every `@wip` acceptance scenario now passes on every driver.
    - `task test:init`: the removed-sample project passes; the kept-sample one fails only on the `@wip` terminal journeys (undefined steps until task 14).
-13. [ ] CLI (template): the gated-command helper and the help: on → listed plainly; locked → listed as disabled on your plan, with the hint, or without one in the local edition; hidden → not listed; entitlements unreadable → listed with no note. The help opens no storage.
+13. [x] CLI (template): the gated-command helper and the help: on → listed plainly; locked → listed as disabled on your plan, with the hint, or without one in the local edition; hidden → not listed; entitlements unreadable → listed with no note. The help opens no storage.
+   - Red: `TestHelpNotesGatedCommandsByThePlan` (template `gated_test.go`, 5 cases, no data folder made) failed on locked, hidden and the server's hint: the stub `Gated` leaves the command listed plainly.
+   - Green: `Gated` sets a `feature` annotation; the root's help func loads the config (`loadConfig`, split from `openApp`), reads `bootstrap.NewEntitlements` (now with a `--server` branch) and hides or notes gated children; `domain.PlansPhrase` split from `FeatureError.Error` for the hint.
+   - Refactor: `note(cmd, feature)` pulled out of the help loop; doc comments on `Gated`, `noteGatedCommands`, `readEntitlements` and `NewEntitlements`. Also gofmt'd `plans.go` (left by 89b94ec; user, 2026-11-05).
 14. [ ] CLI (sample): `starter item export`; the terminal journey steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.
 15. [ ] TUI (template): the gated key help helper and its test, outside sample blocks.
 16. [ ] web (template): `useFeature`, stubbing `fetch` of `/api/v1/entitlements`: on / locked + hint / hidden / loading → pending / failed → locked without a hint. `Layout` prefetches the entitlements, with a long `staleTime`.

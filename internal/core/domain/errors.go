@@ -64,13 +64,18 @@ type FeatureError struct {
 
 func (e *FeatureError) Error() string {
 	msg := e.Name + " isn't on your plan"
-	switch len(e.AvailableOn) {
-	case 0:
+	if len(e.AvailableOn) == 0 {
 		return msg
-	case 1:
-		return msg + ", and is available on the " + e.AvailableOn[0] + " plan"
-	default:
-		last := len(e.AvailableOn) - 1
-		return msg + ", and is available on the " + strings.Join(e.AvailableOn[:last], ", ") + " or " + e.AvailableOn[last] + " plans"
 	}
+	return msg + ", and is available on " + PlansPhrase(e.AvailableOn)
+}
+
+// PlansPhrase names plans for an upgrade hint: "the pro plan", or "the pro
+// or team plans". plans must not be empty.
+func PlansPhrase(plans []string) string {
+	if len(plans) == 1 {
+		return "the " + plans[0] + " plan"
+	}
+	last := len(plans) - 1
+	return "the " + strings.Join(plans[:last], ", ") + " or " + plans[last] + " plans"
 }

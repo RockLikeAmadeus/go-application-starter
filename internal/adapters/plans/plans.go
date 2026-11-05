@@ -37,7 +37,7 @@ type planRecord struct {
 }
 
 type limitRecord struct {
-	Max      int              `json:"max"`
+	Max      int                      `json:"max"`
 	WhenOver domain.OverLimitBehavior `json:"whenOver"`
 }
 

@@ -113,11 +113,15 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	return a, nil
 }
 
-// NewEntitlements returns the local edition's entitlements service alone,
-// as NewEmbedded wires it, but opens no storage: it creates no data folder,
+// NewEntitlements returns the entitlements service alone: the server's when
+// cfg.ServerURL is set, as NewRemote wires it, else the local edition's, as
+// NewEmbedded wires it, but opening no storage: it creates no data folder,
 // runs no migrations and isn't stopped by a locked folder. The CLI's help
 // reads the plan through it.
 func NewEntitlements(cfg config.Config) (ports.EntitlementsService, error) {
+	if cfg.ServerURL != "" {
+		return httpclient.NewEntitlementsService(cfg.ServerURL)
+	}
 	entitlements, err := localEntitlements(cfg.PlansFile)
 	if err != nil {
 		return nil, err
