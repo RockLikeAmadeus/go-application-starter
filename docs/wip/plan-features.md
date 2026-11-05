@@ -101,7 +101,10 @@
 14b. [x] terminal journeys (sample): the steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.
    - Red: none. The export and help steps (`item_steps.go`, with a plans-file step setting `STARTER_PLANS_FILE`) passed straight away, since tasks 13 and 14 built the behaviour; swapping the outline's plans fails both rows as it should. Kept as a guard.
    - Refactor: nothing; the steps are short and in the sample file. `task test:init` now passes in full.
-15. [ ] TUI (template): the gated key help helper and its test, outside sample blocks.
+15. [x] TUI (template): the gated key help helper and its test, outside sample blocks.
+   - Red: `TestGatedKeyHelpShowsTheKeyByItsFeaturesState` (template `tui/gated_test.go`: on, locked with / without a hint, hidden) failed on the stub's empty string.
+   - Green: `gatedKeyHelp(binding, feature)` returns the binding, "… (locked: available on the pro plan)", "… (locked)", or "" when hidden.
+   - Refactor: a `switch` shaped like the CLI's `note`, and a doc comment. Not shared with `note`: the wording differs per front end, and only the rule's four branches repeat.
 16. [ ] web (template): `useFeature`, stubbing `fetch` of `/api/v1/entitlements`: on / locked + hint / hidden / loading → pending / failed → locked without a hint. `Layout` prefetches the entitlements, with a long `staleTime`.
 17. [ ] web (template): the gate component: children / locked with hint / locked without hint ("Not available") / nothing / a same-size disabled placeholder while pending.
 18. [ ] web (sample): the Items page's Export button downloads the CSV; e2e steps; `task e2e` goes green. Check the download by hand in `task run:desktop` (WebKitGTK).
