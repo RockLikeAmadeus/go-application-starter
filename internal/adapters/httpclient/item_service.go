@@ -87,6 +87,14 @@ func toDomain(i apiclient.Item) domain.Item {
 	return domain.Item{ID: i.Id, Name: i.Name, CreatedAt: i.CreatedAt, UpdatedAt: i.UpdatedAt}
 }
 
+// ExportItems fetches the workspace's items as CSV, as the server encodes them.
 func (s *ItemService) ExportItems(ctx context.Context) ([]byte, error) {
-	return nil, nil
+	res, err := s.api.ExportItemsWithResponse(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode() != http.StatusOK {
+		return nil, toError(res.StatusCode(), res.ApplicationproblemJSONDefault)
+	}
+	return res.Body, nil
 }

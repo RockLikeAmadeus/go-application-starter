@@ -85,7 +85,11 @@
    - Red: `TestAFeatureErrorComesBackAsAFeatureError` (with a hint / without) failed with `server error (403): Export isn't on your plan…`, not a `*FeatureError`.
    - Green: `toError` maps a `feature` problem to `*FeatureError` (`feature`, `name`, `availableOn`), an empty `availableOn` back to nil.
    - Refactor: `fromAvailableOn` (`[]` → nil) shared by `toFeature` and `toError`; `FeatureError` added to the plans rule's domain-error list.
-12c. [ ] httpclient (sample): `ExportItems` over `GET /items/export`. The http, desktop and mobile drivers go green.
+12c. [x] httpclient (sample): `ExportItems` over `GET /items/export`. The http, desktop and mobile drivers go green.
+   - Red: `TestExportItems_ReadsTheCSV` (a quoted name through a real server) failed with `ExportItems = ""`, the stub's nil.
+   - Green: `ExportItems` calls `ExportItemsWithResponse`, returns the body on 200 and `toError` otherwise.
+   - Refactor: `newClient(t, plan)` test helper shared with `TestRoundTrip`; a doc comment on `ExportItems`. Every `@wip` acceptance scenario now passes on every driver.
+   - `task test:init`: the removed-sample project passes; the kept-sample one fails only on the `@wip` terminal journeys (undefined steps until task 14).
 13. [ ] CLI (template): the gated-command helper and the help: on → listed plainly; locked → listed as disabled on your plan, with the hint, or without one in the local edition; hidden → not listed; entitlements unreadable → listed with no note. The help opens no storage.
 14. [ ] CLI (sample): `starter item export`; the terminal journey steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.
 15. [ ] TUI (template): the gated key help helper and its test, outside sample blocks.

@@ -18,15 +18,7 @@ import (
 // TestRoundTrip exercises the HTTP server and client adapters together:
 // client -> HTTP -> server -> core -> memory storage, and errors back.
 func TestRoundTrip(t *testing.T) {
-	core := app.NewItemService(memory.NewItemRepository(), testsupport.FixedWorkspace(domain.LocalWorkspace), testsupport.FixedEntitlements{},
-		testsupport.NewFixedClock(time.Unix(0, 0).UTC()), testsupport.NewSequentialIDs("item"))
-	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Items: core}))
-	t.Cleanup(srv.Close)
-
-	client, err := httpclient.New(srv.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := newClient(t, testsupport.FixedEntitlements{})
 	ctx := context.Background()
 
 	created, err := client.CreateItem(ctx, "Widget")
@@ -55,4 +47,39 @@ func TestRoundTrip(t *testing.T) {
 	if _, err := client.GetItem(ctx, created.ID); !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("GetItem after delete err = %v, want ErrNotFound", err)
 	}
+}
+
+// TestExportItems_ReadsTheCSV checks that the client hands back the server's
+// CSV export as it was sent.
+func TestExportItems_ReadsTheCSV(t *testing.T) {
+	plan := testsupport.FixedEntitlements{Features: map[string]domain.Feature{
+		"item-export": {Key: "item-export", Name: "Item export", On: true, WhenOff: domain.ShowLocked},
+	}}
+	client := newClient(t, plan)
+	ctx := context.Background()
+	if _, err := client.CreateItem(ctx, "Widget, large"); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := client.ExportItems(ctx)
+
+	want := "name,createdAt\n\"Widget, large\",1970-01-01T00:00:00Z\n"
+	if err != nil || string(got) != want {
+		t.Errorf("ExportItems = %q, %v; want %q", got, err, want)
+	}
+}
+
+// newClient serves a core on memory storage, with the clock at the Unix
+// epoch and the given plan, and returns a client for it.
+func newClient(t *testing.T, plan testsupport.FixedEntitlements) *httpclient.ItemService {
+	t.Helper()
+	core := app.NewItemService(memory.NewItemRepository(), testsupport.FixedWorkspace(domain.LocalWorkspace), plan,
+		testsupport.NewFixedClock(time.Unix(0, 0).UTC()), testsupport.NewSequentialIDs("item"))
+	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Items: core}))
+	t.Cleanup(srv.Close)
+	client, err := httpclient.New(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return client
 }
