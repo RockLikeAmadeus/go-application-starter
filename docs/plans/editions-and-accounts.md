@@ -62,9 +62,10 @@ SPEC.md §4.9 · [`features/plans.feature`](../../features/plans.feature) · [AD
 - **Acceptance:** the harness has its own plans; `@plans` scenarios run on memory, jsonfile and http. Desktop and mobile check they're on the local plan.
 - Found along the way, and fixed: template code that depended on sample code (now a rule in CLAUDE.md); `/readyz` and generic UI helpers in the sample are TODO.md items.
 
-### 3. Sample paid feature: CSV export of items — in progress ([`docs/wip/plan-features.md`](../wip/plan-features.md))
-- On/off gating end to end: the use case checks the entitlement. In the web app, CLI and TUI it's shown locked or hidden, as config says per feature.
-- Inside the sample blocks. Run `task test:init`.
+### 3. Sample paid feature: CSV export of items — done
+SPEC.md §4.9 · [`features/plan-features.feature`](../../features/plan-features.feature) · [`docs/features.md`](../features.md) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Features and limits come from plans".
+- Done 2026-11-05: on/off features end to end, all template code. Each feature in the plans file's `features` section has a display `name` and a `whenOff` (`show-locked` or `hide`). `Entitlements.CheckFeature` fails closed and returns a `FeatureError`, whose upgrade hint names the plans that have the feature (there are no hints in the local edition). The API serves the features in `/entitlements`, with a 403 `feature` problem that `httpclient` maps back. The CLI help notes locked commands without opening storage, the TUI has `gatedKeyHelp`, and the web app has `useFeature` and `FeatureGate`, with no pop-in.
+- Sample: `item-export` (on for `local` and `pro`, locked for `free`): `ExportItems`, `GET /api/v1/items/export`, `starter item export`, and the Items page's Export button, all in sample files or blocks. The scenarios run on every driver, plus the browser and terminal journeys. `task test:init` passes.
 
 ### 4. Changing a workspace's plan — not started
 - The admin-only `ChangePlan` use case and `starter admin set-plan`.
@@ -130,3 +131,7 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
 - 2026-11-03: step 6 (SQLite) started before step 5, at the user's request; neither depends on the other. Its synced-folder warning moves to a follow-up. Decided: modernc.org/sqlite (pure Go), goose migrations, no lock (WAL), so SQLite lifts ADR 3's one-program limit.
 - 2026-11-03: step 6 finished, recorded in ADR 7. The synced-folder warning went into TODO.md now, not at the end of the plan, so it isn't lost. The template keeps a no-op baseline migration, so SQLite still opens with the sample removed.
 - 2026-11-04: step 6's follow-up, the synced-folder warning, finished (TODO.md). It detects by path and marker files only; step 5's conflict-copy detection stays in step 5.
+- 2026-11-05: step 3 finished. Along the way:
+  - Features got a required display `name`, so template users choose the wording; the CLI help lists locked commands as disabled rather than hiding them, and reads only the entitlements (`bootstrap.NewEntitlementsService`), never opening storage.
+  - The web app avoids pop-in: `Layout` prefetches the entitlements for the session, gated pages wait for them in their loading state, and `FeatureGate` has a same-size disabled placeholder.
+  - The desktop download was checked by hand on WebKitGTK. `docs/features.md` is the checklist for gating a new feature.

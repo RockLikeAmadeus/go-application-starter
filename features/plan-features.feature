@@ -10,7 +10,6 @@ Feature: Features that plans turn on or off
   # and http (see test/acceptance). The desktop and mobile apps are on the
   # local plan (desktop.feature, mobile.feature).
 
-  @wip
   Scenario: A plan with the feature lets the workspace use it
     Given the "pro" plan has item export
     And my workspace is on the "pro" plan
@@ -21,7 +20,6 @@ Feature: Features that plans turn on or off
       | First  |
       | Second |
 
-  @wip
   Scenario Outline: A plan without the feature refuses it
     Given the "pro" plan has item export
     And the "free" plan doesn't have item export
@@ -36,7 +34,6 @@ Feature: Features that plans turn on or off
       | shown locked | , and is available on the "pro" plan   |
       | hidden       |                                        |
 
-  @wip
   Scenario Outline: A workspace can see whether its plan has the feature
     Given the "pro" plan has item export
     And the "free" plan doesn't have item export
@@ -51,7 +48,6 @@ Feature: Features that plans turn on or off
       | shown locked | free | locked, available on the "pro" plan  |
       | hidden       | free | hidden                               |
 
-  @wip
   Scenario: Moving to a plan with the feature turns it on
     Given the "pro" plan has item export
     And the "free" plan doesn't have item export
@@ -62,7 +58,6 @@ Feature: Features that plans turn on or off
     Then the export lists:
       | First |
 
-  @wip
   Scenario: Moving to a plan without the feature turns it off
     Given the "pro" plan has item export
     And the "free" plan doesn't have item export

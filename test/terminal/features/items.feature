@@ -28,13 +28,11 @@ Feature: Items in a terminal
       | j    | k    |
       | down | up   |
 
-  @wip
   Scenario: Export the items with the command line
     Given I have added the items "First" and "Second"
     When I export the items with the command line
     Then the export lists "First" and then "Second"
 
-  @wip
   Scenario Outline: The command line shows item export <shown> when the plan doesn't have it
     Given a plans file whose local plan doesn't have item export, which is <shown> when off
     When I ask the command line for help

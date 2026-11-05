@@ -21,7 +21,6 @@ Feature: Use the mobile app
     Then my workspace's plan is "local"
 
   # sample:start
-  @wip
   Scenario: The mobile app can export items
     Given an item named "Widget"
     Then item export is on for my workspace
