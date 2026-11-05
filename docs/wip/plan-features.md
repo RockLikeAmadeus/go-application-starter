@@ -113,7 +113,10 @@
    - Red: `Layout` "starts reading the plan's features when the app starts…" (`entitlementsApi` fetch fake) failed: only `/api/v1/connection` and `/api/v1/warnings` were requested.
    - Green: `entitlementsQuery` (`queryOptions`) exported from `useFeature.ts`, used by `useFeature` and by `Layout`'s `usePrefetchQuery`.
    - Refactor: a doc comment on `entitlementsQuery`; the query stays in `useFeature.ts`, where 16c's `staleTime` goes. `task test:init` passes.
-16c. [ ] web (template): the entitlements answer is kept for the session (a long `staleTime`).
+16c. [x] web (template): the entitlements answer is kept for the session (a long `staleTime`).
+   - Red: `useFeature` "keeps the entitlements for the session…" (a second hook on the same client) failed: fetch called 2 times, want 1. `renderHookWithClient` takes an optional client and returns it.
+   - Green: `entitlementsQuery` gets `staleTime: Number.POSITIVE_INFINITY`.
+   - Refactor: `entitlementsQuery`'s doc comment says why it never goes stale; nothing else worth changing.
 17. [ ] web (template): the gate component: children / locked with hint / locked without hint ("Not available") / nothing / a same-size disabled placeholder while pending.
 18. [ ] web (sample): the Items page's Export button downloads the CSV; e2e steps; `task e2e` goes green. Check the download by hand in `task run:desktop` (WebKitGTK).
 19. [ ] docs: `docs/features.md` (a checklist for gating a new feature), linked from CLAUDE.md's plans rule; ADR 5's step 3 line; the plans file comments; a template-user step for defining their own features if needed; `task test:init`.

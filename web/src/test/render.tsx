@@ -15,12 +15,18 @@ export function renderWithClient(ui: ReactElement) {
   return { ...render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>), client };
 }
 
-/** Renders a hook with a fresh, retry-free QueryClient. */
-export function renderHookWithClient<T>(hook: () => T) {
-  const client = newClient();
-  return renderHook(hook, {
-    wrapper: ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    ),
-  });
+/**
+ * Renders a hook with a fresh, retry-free QueryClient, or with the one given
+ * (to mount a second component on the same cache), returned beside the
+ * render result.
+ */
+export function renderHookWithClient<T>(hook: () => T, client = newClient()) {
+  return {
+    ...renderHook(hook, {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    }),
+    client,
+  };
 }

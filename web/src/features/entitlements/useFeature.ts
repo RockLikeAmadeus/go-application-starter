@@ -5,11 +5,15 @@ const entitlementsKey = ["entitlements"] as const;
 
 /**
  * The workspace's entitlements, shared by every gated control. `Layout`
- * prefetches it when the app starts, so pages rarely wait for it.
+ * prefetches it when the app starts, so pages rarely wait for it, and the
+ * answer is kept for the session (it never goes stale), so a control doesn't
+ * change under the user when another page mounts. The server still refuses a
+ * feature that's off, should the plan change meanwhile.
  */
 export const entitlementsQuery = queryOptions({
   queryKey: entitlementsKey,
   queryFn: async () => unwrap(await api.GET("/api/v1/entitlements")),
+  staleTime: Number.POSITIVE_INFINITY,
 });
 
 /**

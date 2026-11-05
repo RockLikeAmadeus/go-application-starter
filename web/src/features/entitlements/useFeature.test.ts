@@ -53,4 +53,19 @@ describe("useFeature", () => {
 
     await waitFor(() => expect(result.current).toEqual(want));
   });
+
+  it("keeps the entitlements for the session, so a later page doesn't read them again", async () => {
+    const fetch = entitlementsApi({
+      export: { ...exportFeature, isOn: true, whenOff: "show-locked" },
+    });
+    vi.stubGlobal("fetch", fetch);
+    const first = renderHookWithClient(() => useFeature("export"));
+    await waitFor(() => expect(first.result.current).toEqual({ state: "on" }));
+
+    const later = renderHookWithClient(() => useFeature("export"), first.client);
+
+    expect(later.result.current).toEqual({ state: "on" });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
 });
