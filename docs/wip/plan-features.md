@@ -117,7 +117,10 @@
    - Red: `useFeature` "keeps the entitlements for the session…" (a second hook on the same client) failed: fetch called 2 times, want 1. `renderHookWithClient` takes an optional client and returns it.
    - Green: `entitlementsQuery` gets `staleTime: Number.POSITIVE_INFINITY`.
    - Refactor: `entitlementsQuery`'s doc comment says why it never goes stale; nothing else worth changing.
-17. [ ] web (template): the gate component: children / locked with hint / locked without hint ("Not available") / nothing / a same-size disabled placeholder while pending.
+17. [x] web (template): the gate component: children / locked with hint / locked without hint ("Not available") / nothing / a same-size disabled placeholder while pending.
+   - Red: `FeatureGate.test.tsx` (`it.each`, 5 states, the control enabled / disabled with its note as accessible description / absent) failed: the stub never requested the entitlements.
+   - Green: `FeatureGate({feature, children})` takes a render prop given `{disabled, aria-describedby}`; locked adds a `text-muted` note ("Available on the pro or team plans" / "Not available"); pending renders the control disabled.
+   - Refactor: `lockedNote` (shaped like `domain.PlansPhrase`) pulled out; doc comments on `FeatureGate` and `GatedControlProps`.
 18. [ ] web (sample): the Items page's Export button downloads the CSV; e2e steps; `task e2e` goes green. Check the download by hand in `task run:desktop` (WebKitGTK).
 19. [ ] docs: `docs/features.md` (a checklist for gating a new feature), linked from CLAUDE.md's plans rule; ADR 5's step 3 line; the plans file comments; a template-user step for defining their own features if needed; `task test:init`.
 20. [ ] Finish: `task check`, `task accept`, `task e2e`, `task e2e:terminal`; remove `@wip`; mark step 3 done in the plan; delete this file.
