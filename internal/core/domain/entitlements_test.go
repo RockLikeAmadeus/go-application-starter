@@ -9,7 +9,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
-func entitlementsWithItemLimit(max int, whenOver domain.OverLimit) domain.Entitlements {
+func entitlementsWithItemLimit(max int, whenOver domain.OverLimitBehavior) domain.Entitlements {
 	return domain.Entitlements{
 		Plan:   "free",
 		Limits: map[string]domain.Limit{"items": {Name: "items", Max: max, WhenOver: whenOver}},
@@ -106,7 +106,7 @@ func TestNewLimit(t *testing.T) {
 
 	invalid := map[string]struct {
 		max      int
-		whenOver domain.OverLimit
+		whenOver domain.OverLimitBehavior
 		field    string
 	}{
 		"a negative max":       {-1, domain.BlockNew, "max"},

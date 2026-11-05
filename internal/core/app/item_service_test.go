@@ -74,7 +74,7 @@ func TestCreateItem_ValidationErrorIsNotPersisted(t *testing.T) {
 }
 
 // freePlan is a plan allowing 3 items, with whenOver past the limit.
-func freePlan(whenOver domain.OverLimit) testsupport.FixedEntitlements {
+func freePlan(whenOver domain.OverLimitBehavior) testsupport.FixedEntitlements {
 	return testsupport.FixedEntitlements{
 		Plan:   "free",
 		Limits: map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: whenOver}},
@@ -101,7 +101,7 @@ func serviceWithItems(t *testing.T, entitlements ports.Entitlements, names ...st
 
 // overTheFreePlan returns a service on freePlan(whenOver) whose workspace
 // already has four items, and those items.
-func overTheFreePlan(t *testing.T, whenOver domain.OverLimit) (*app.ItemService, []domain.Item) {
+func overTheFreePlan(t *testing.T, whenOver domain.OverLimitBehavior) (*app.ItemService, []domain.Item) {
 	t.Helper()
 	return serviceWithItems(t, freePlan(whenOver), "First", "Second", "Third", "Fourth")
 }
@@ -142,7 +142,7 @@ func TestRenameItem_UpdatesTimestamp(t *testing.T) {
 
 func TestRenameItem_OverALimit(t *testing.T) {
 	cases := map[string]struct {
-		whenOver domain.OverLimit
+		whenOver domain.OverLimitBehavior
 		refused  bool
 	}{
 		"that makes them read only is refused and saves nothing": {domain.ReadOnly, true},

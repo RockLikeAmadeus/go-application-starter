@@ -20,7 +20,7 @@ func (w *world) registerPlanSteps(sc *godog.ScenarioContext) {
 }
 
 // whenOver is what the scenarios call each over-limit behaviour.
-var whenOver = map[string]domain.OverLimit{
+var whenOver = map[string]domain.OverLimitBehavior{
 	"blocks new ones":      domain.BlockNew,
 	"makes them read only": domain.ReadOnly,
 }

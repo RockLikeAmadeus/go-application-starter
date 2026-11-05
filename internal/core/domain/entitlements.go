@@ -5,22 +5,22 @@ import (
 	"strings"
 )
 
-// OverLimit says what happens when a workspace is over a limit.
-type OverLimit string
+// OverLimitBehavior says what happens when a workspace is over a limit.
+type OverLimitBehavior string
 
 const (
 	// BlockNew keeps existing data changeable and refuses only new data.
-	BlockNew OverLimit = "block-new"
+	BlockNew OverLimitBehavior = "block-new"
 	// ReadOnly also refuses changes to existing data, until the workspace is
 	// back within the limit. Deleting is always allowed.
-	ReadOnly OverLimit = "read-only"
+	ReadOnly OverLimitBehavior = "read-only"
 )
 
 // Limit is a number a plan sets, such as how many items a workspace may have.
 type Limit struct {
 	Name     string
 	Max      int
-	WhenOver OverLimit
+	WhenOver OverLimitBehavior
 }
 
 // Entitlements are what a workspace's plan allows it.
@@ -58,7 +58,7 @@ func (e Entitlements) CheckChange(limit string, count int) error {
 // other than BlockNew or ReadOnly, with a *ValidationError whose Field is the
 // plans file's key ("max", "whenOver"). Build limits through it, never as a
 // literal, so a bad plans file is caught when it's read.
-func NewLimit(name string, max int, whenOver OverLimit) (Limit, error) {
+func NewLimit(name string, max int, whenOver OverLimitBehavior) (Limit, error) {
 	if max < 0 {
 		return Limit{}, &ValidationError{Field: "max", Message: "must not be negative"}
 	}

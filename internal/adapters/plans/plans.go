@@ -38,7 +38,7 @@ type planRecord struct {
 
 type limitRecord struct {
 	Max      int              `json:"max"`
-	WhenOver domain.OverLimit `json:"whenOver"`
+	WhenOver domain.OverLimitBehavior `json:"whenOver"`
 }
 
 // Parse reads a plans document:

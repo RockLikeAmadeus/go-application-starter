@@ -40,7 +40,7 @@ func (s *EntitlementsService) CurrentEntitlements(ctx context.Context) (domain.E
 func toEntitlements(e apiclient.Entitlements) domain.Entitlements {
 	limits := make(map[string]domain.Limit, len(e.Limits))
 	for name, limit := range e.Limits {
-		limits[name] = domain.Limit{Name: name, Max: limit.Max, WhenOver: domain.OverLimit(limit.WhenOver)}
+		limits[name] = domain.Limit{Name: name, Max: limit.Max, WhenOver: domain.OverLimitBehavior(limit.WhenOver)}
 	}
 	features := make(map[string]domain.Feature, len(e.Features))
 	for key, f := range e.Features {
