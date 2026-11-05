@@ -10,7 +10,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
-// testPlans is a ports.Entitlements whose plans the scenarios set: a catalog,
+// testPlans is a ports.EntitlementsProvider whose plans the scenarios set: a catalog,
 // starting from the shipped plans file, and the plan each workspace is on. A
 // workspace no scenario puts on a plan is on the local plan, as in the local
 // edition. It answers through the plans adapter, which it locks around,
@@ -21,7 +21,7 @@ type testPlans struct {
 	assigned map[domain.WorkspaceID]string
 }
 
-var _ ports.Entitlements = (*testPlans)(nil)
+var _ ports.EntitlementsProvider = (*testPlans)(nil)
 
 func newTestPlans() (*testPlans, error) {
 	catalog, err := plans.Default()
@@ -34,7 +34,7 @@ func newTestPlans() (*testPlans, error) {
 func (p *testPlans) For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	adapter := plans.Entitlements{
+	adapter := plans.Provider{
 		Catalog: p.catalog,
 		PlanOf: func(context.Context, domain.WorkspaceID) (string, error) {
 			if plan, ok := p.assigned[workspace]; ok {

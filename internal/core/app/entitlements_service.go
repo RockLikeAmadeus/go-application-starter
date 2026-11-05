@@ -9,15 +9,15 @@ import (
 
 // EntitlementsService implements ports.EntitlementsService.
 type EntitlementsService struct {
-	entitlements ports.Entitlements
-	workspaces   ports.WorkspaceResolver
+	entitlementsProvider ports.EntitlementsProvider
+	workspaces           ports.WorkspaceResolver
 }
 
 var _ ports.EntitlementsService = (*EntitlementsService)(nil)
 
 // NewEntitlementsService wires the use case to its driven ports.
-func NewEntitlementsService(entitlements ports.Entitlements, workspaces ports.WorkspaceResolver) *EntitlementsService {
-	return &EntitlementsService{entitlements: entitlements, workspaces: workspaces}
+func NewEntitlementsService(entitlementsProvider ports.EntitlementsProvider, workspaces ports.WorkspaceResolver) *EntitlementsService {
+	return &EntitlementsService{entitlementsProvider: entitlementsProvider, workspaces: workspaces}
 }
 
 // CurrentEntitlements returns what the current workspace's plan allows it.
@@ -26,5 +26,5 @@ func (s *EntitlementsService) CurrentEntitlements(ctx context.Context) (domain.E
 	if err != nil {
 		return domain.Entitlements{}, err
 	}
-	return s.entitlements.For(ctx, workspace)
+	return s.entitlementsProvider.For(ctx, workspace)
 }

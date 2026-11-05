@@ -13,11 +13,11 @@ import (
 
 // ItemService implements ports.ItemService.
 type ItemService struct {
-	repo         ports.ItemRepository
-	workspaces   ports.WorkspaceResolver
-	entitlements ports.Entitlements
-	clock        ports.Clock
-	ids          ports.IDGenerator
+	repo                 ports.ItemRepository
+	workspaces           ports.WorkspaceResolver
+	entitlementsProvider ports.EntitlementsProvider
+	clock                ports.Clock
+	ids                  ports.IDGenerator
 }
 
 var _ ports.ItemService = (*ItemService)(nil)
@@ -26,11 +26,11 @@ var _ ports.ItemService = (*ItemService)(nil)
 func NewItemService(
 	repo ports.ItemRepository,
 	workspaces ports.WorkspaceResolver,
-	entitlements ports.Entitlements,
+	entitlementsProvider ports.EntitlementsProvider,
 	clock ports.Clock,
 	ids ports.IDGenerator,
 ) *ItemService {
-	return &ItemService{repo: repo, workspaces: workspaces, entitlements: entitlements, clock: clock, ids: ids}
+	return &ItemService{repo: repo, workspaces: workspaces, entitlementsProvider: entitlementsProvider, clock: clock, ids: ids}
 }
 
 // itemsLimit is the name of the plan limit on how many items a workspace has.
@@ -42,7 +42,7 @@ const itemExport = "item-export"
 // itemUsage returns the workspace's entitlements and how many items it has,
 // for checking the items limit.
 func (s *ItemService) itemUsage(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, int, error) {
-	entitlements, err := s.entitlements.For(ctx, workspace)
+	entitlements, err := s.entitlementsProvider.For(ctx, workspace)
 	if err != nil {
 		return domain.Entitlements{}, 0, err
 	}
@@ -132,7 +132,7 @@ func (s *ItemService) ExportItems(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	entitlements, err := s.entitlements.For(ctx, workspace)
+	entitlements, err := s.entitlementsProvider.For(ctx, workspace)
 	if err != nil {
 		return nil, err
 	}

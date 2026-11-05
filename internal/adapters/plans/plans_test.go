@@ -168,7 +168,7 @@ func TestEntitlements_AnswersThePlanTheWorkspaceIsOn(t *testing.T) {
 	}
 	pro := domain.Entitlements{Plan: "pro", Limits: map[string]domain.Limit{}}
 	onPlan := map[domain.WorkspaceID]string{"ws-a": "free", "ws-b": "pro"}
-	adapter := plans.Entitlements{
+	adapter := plans.Provider{
 		Catalog: plans.Catalog{"free": free, "pro": pro},
 		PlanOf: func(_ context.Context, ws domain.WorkspaceID) (string, error) {
 			return onPlan[ws], nil
@@ -206,7 +206,7 @@ func TestEntitlements_FillsTheUpgradeHintWhenHintsAreOn(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			adapter := plans.Entitlements{Catalog: catalog, PlanOf: onFree, ShouldGiveHints: tc.shouldGiveHints, LocalPlan: "local"}
+			adapter := plans.Provider{Catalog: catalog, PlanOf: onFree, ShouldGiveHints: tc.shouldGiveHints, LocalPlan: "local"}
 
 			got, err := adapter.For(context.Background(), "ws-a")
 			if err != nil {
@@ -244,7 +244,7 @@ func TestEntitlements_RefusesAPlanItCantAnswer(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			adapter := plans.Entitlements{Catalog: plans.Catalog{"free": {Plan: "free"}}, PlanOf: tc.planOf}
+			adapter := plans.Provider{Catalog: plans.Catalog{"free": {Plan: "free"}}, PlanOf: tc.planOf}
 			_, err := adapter.For(context.Background(), "ws-a")
 			tc.check(t, err)
 		})

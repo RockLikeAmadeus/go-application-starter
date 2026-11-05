@@ -67,8 +67,8 @@ type EntitlementsService interface {
 	CurrentEntitlements(ctx context.Context) (domain.Entitlements, error)
 }
 
-// Entitlements tells a use case what a workspace's plan allows it.
-type Entitlements interface {
+// EntitlementsProvider tells a use case what a workspace's plan allows it.
+type EntitlementsProvider interface {
 	For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error)
 }
 

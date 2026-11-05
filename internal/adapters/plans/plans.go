@@ -1,4 +1,4 @@
-// Package plans is the config adapter for ports.Entitlements: it reads the
+// Package plans is the config adapter for ports.EntitlementsProvider: it reads the
 // plans file, which defines each plan's limits.
 package plans
 
@@ -126,8 +126,8 @@ func stripComments(data []byte) []byte {
 	return bytes.Join(lines, []byte("\n"))
 }
 
-// Entitlements is the ports.Entitlements adapter over a Catalog.
-type Entitlements struct {
+// Provider is the ports.EntitlementsProvider adapter over a Catalog.
+type Provider struct {
 	// Catalog holds the plans, usually from Parse.
 	Catalog Catalog
 	// PlanOf names the plan a workspace is on. The local edition answers its
@@ -142,32 +142,32 @@ type Entitlements struct {
 	LocalPlan string
 }
 
-var _ ports.Entitlements = Entitlements{}
+var _ ports.EntitlementsProvider = Provider{}
 
 // For returns the entitlements of the plan the workspace is on, with the
 // upgrade hints when ShouldGiveHints is set. It returns PlanOf's error as is, and
 // refuses a plan the catalog doesn't have.
-func (e Entitlements) For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error) {
-	plan, err := e.PlanOf(ctx, workspace)
+func (p Provider) For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error) {
+	plan, err := p.PlanOf(ctx, workspace)
 	if err != nil {
 		return domain.Entitlements{}, err
 	}
-	entitlements, ok := e.Catalog[plan]
+	entitlements, ok := p.Catalog[plan]
 	if !ok {
 		return domain.Entitlements{}, fmt.Errorf("plan %q isn't in the plans file", plan)
 	}
-	if e.ShouldGiveHints {
-		entitlements.Features = e.withHints(entitlements.Features)
+	if p.ShouldGiveHints {
+		entitlements.Features = p.withHints(entitlements.Features)
 	}
 	return entitlements, nil
 }
 
 // withHints returns a copy of features, each with the upgrade hint filled
 // in. It copies, so the catalog's own features stay without hints.
-func (e Entitlements) withHints(features map[string]domain.Feature) map[string]domain.Feature {
+func (p Provider) withHints(features map[string]domain.Feature) map[string]domain.Feature {
 	hinted := maps.Clone(features)
 	for key, feature := range hinted {
-		feature.AvailableOn = e.plansWith(key)
+		feature.AvailableOn = p.plansWith(key)
 		hinted[key] = feature
 	}
 	return hinted
@@ -175,10 +175,10 @@ func (e Entitlements) withHints(features map[string]domain.Feature) map[string]d
 
 // plansWith names, sorted, the catalog's plans that turn the feature on,
 // leaving out LocalPlan.
-func (e Entitlements) plansWith(feature string) []string {
+func (p Provider) plansWith(feature string) []string {
 	var names []string
-	for name, plan := range e.Catalog {
-		if name != e.LocalPlan && plan.Features[feature].IsOn {
+	for name, plan := range p.Catalog {
+		if name != p.LocalPlan && plan.Features[feature].IsOn {
 			names = append(names, name)
 		}
 	}

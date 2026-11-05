@@ -76,7 +76,7 @@ internal/adapters/desktop        desktop app wiring with no Wails import: data f
 internal/adapters/mobile         Android wiring on top of desktop's, no Wails import: the page handler and Serve, the API bridge
 internal/adapters/storage/*      memory, jsonfile, sqlite (goose migrations in sqlite/migrations), + storagetest contract suite
 internal/adapters/workspace      ports.WorkspaceResolver: Local (the local edition's one workspace), FromContext (set with WithID)
-internal/adapters/plans          ports.Entitlements from the plans file (plans.jsonc, built in; STARTER_PLANS_FILE replaces it)
+internal/adapters/plans          ports.EntitlementsProvider from the plans file (plans.jsonc, built in; STARTER_PLANS_FILE replaces it)
 internal/bootstrap               composition root: the only place that picks adapters
 web/                             Vite + React + TS + Tailwind + TanStack Query; components every screen can use (e.g. `ErrorMessage`) go in web/src/components
 mobile/android                   Wails' generated Gradle project for the Android app (see docs/mobile.md)

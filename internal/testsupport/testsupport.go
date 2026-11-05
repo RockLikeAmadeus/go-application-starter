@@ -61,7 +61,7 @@ func (NoWorkspace) CurrentWorkspace(context.Context) (domain.WorkspaceID, error)
 	return "", domain.ErrNoWorkspace
 }
 
-// FixedEntitlements is a ports.Entitlements that answers the same
+// FixedEntitlements is a ports.EntitlementsProvider that answers the same
 // entitlements for every workspace. Its zero value is a plan with no limits.
 type FixedEntitlements domain.Entitlements
 

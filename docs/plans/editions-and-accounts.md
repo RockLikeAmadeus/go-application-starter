@@ -15,7 +15,7 @@ All clients can operate as commercial products, with data kept separate per acco
 - **Plans and entitlements.** Plans are defined in config, not code. Each plan lists on/off **features** and **limits**.
   - For each limit, config says what happens when a workspace is over it (for example after a downgrade): `block-new` keeps the data and refuses new records; `read-only` makes that data read-only.
   - For each feature, config says whether the UI shows it locked, with an upgrade hint, or hides it.
-  - Use cases ask an `Entitlements` port. The API exposes the current workspace's entitlements, so the web app, CLI and TUI can show or hide features.
+  - Use cases ask an `EntitlementsProvider` port. The API exposes the current workspace's entitlements, so the web app, CLI and TUI can show or hide features.
 - **Local feature set: a named plan** from the same config (for example `local`), chosen at build time. A paid local licence later just switches the plan. Local builds show no upgrade hints.
 - **Billing: a port plus a manual adapter.** An admin-only `ChangePlan(workspace, plan)` use case changes a plan. Payment providers are driving adapters that call it, as the REST handlers call the core. The reference adapter is an admin command, `starter admin set-plan`. A detailed guide for template users goes in `docs/billing.md`, covering:
   - the concepts and the plans config;
@@ -55,7 +55,7 @@ SPEC.md §4.8 · [`features/workspaces.feature`](../../features/workspaces.featu
 ### 2. Plans and entitlements — done
 SPEC.md §4.9 · [`features/plans.feature`](../../features/plans.feature) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Features and limits come from plans".
 - **Domain:** `Entitlements` (a plan's name and its limits) with `CheckCreate` and `CheckChange`, `Limit` (built with `NewLimit`), and `LimitError`. Over a `block-new` limit nothing new can be added; over a `read-only` one nothing can be changed either. Deleting always works.
-- **Ports and use case:** the driven `ports.Entitlements` and the driving `ports.EntitlementsService` (`CurrentEntitlements`, failing closed without a workspace).
+- **Ports and use case:** the driven `ports.EntitlementsProvider` and the driving `ports.EntitlementsService` (`CurrentEntitlements`, failing closed without a workspace).
 - **Plans file:** `internal/adapters/plans` reads `plans.jsonc` (JSON with full-line comments, built in, with `local`, `free` and `pro`), or `STARTER_PLANS_FILE`'s file. The local plan is `bootstrap.LocalPlan`, set at build time. A bad file or an unknown local plan fails at start.
 - **API:** `GET /api/v1/entitlements`, and a limit error as a 403 problem with `limit`, `max` and `isReadOnly`; `httpclient` maps both back. The server, desktop and Android apps serve it, and remote mode reads it.
 - **Sample:** `ItemService` checks the items limit when creating and renaming, and refuses when the plan or the count can't be looked up. `free` has the sample items limit (3, block-new), inside a sample block. `task test:init` passes.

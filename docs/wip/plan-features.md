@@ -41,8 +41,8 @@
    - Refactor: `withHints` (copies the map) and `plansWith` helpers; doc comments on `ShouldGiveHints`, `LocalPlan` and `For`. Bootstrap and the harness are left to tasks 5 and 6.
 5. [x] bootstrap (template): a light entitlements-only path that opens no storage, for the CLI's help; the local edition wires no hints (a locked feature has no `AvailableOn`).
    - Red: `TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints` (a plans file with `export` locked on local; no data folder made) failed on the stub's nil service.
-   - Green: `NewEntitlements(cfg)` wraps `localEntitlements` in `app.NewEntitlementsService` with `workspace.Local{}`; no storage opened.
-   - Refactor: doc comments only (`NewEntitlements` says what it skips; `localEntitlements` says it gives no hints). The `--server` branch waits for task 13, whose help needs it.
+   - Green: `NewEntitlementsService(cfg)` wraps `localEntitlementsProvider` in `app.NewEntitlementsService` with `workspace.Local{}`; no storage opened.
+   - Refactor: doc comments only (`NewEntitlementsService` says what it skips; `localEntitlementsProvider` says it gives no hints). The `--server` branch waits for task 13, whose help needs it.
 5b. [x] plans.jsonc (+ bootstrap test in a sample block): the template's `features` section; `item-export` ("Item export", sample block) on for local and pro, locked for free.
    - Red: `TestNewEntitlements_ShippedPlansHaveItemExport` (local / pro / free, through `LocalPlan`) failed: no `item-export` in the shipped file.
    - Green: `plans.jsonc` gets a `features` section and each plan a `features` list; `item-export` and the plans' entries are in sample blocks.

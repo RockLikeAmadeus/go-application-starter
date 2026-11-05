@@ -24,10 +24,10 @@ func newService() (*app.ItemService, *testsupport.FixedClock) {
 // newServiceWith builds the service on the given repository, resolver and
 // entitlements, with a fixed clock and sequential IDs.
 func newServiceWith(
-	repo ports.ItemRepository, workspaces ports.WorkspaceResolver, entitlements ports.Entitlements,
+	repo ports.ItemRepository, workspaces ports.WorkspaceResolver, entitlementsProvider ports.EntitlementsProvider,
 ) (*app.ItemService, *testsupport.FixedClock) {
 	clock := testsupport.NewFixedClock(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
-	return app.NewItemService(repo, workspaces, entitlements, clock, testsupport.NewSequentialIDs("item")), clock
+	return app.NewItemService(repo, workspaces, entitlementsProvider, clock, testsupport.NewSequentialIDs("item")), clock
 }
 
 func TestCreateItem_PutsTheItemInTheCurrentWorkspace(t *testing.T) {
@@ -83,7 +83,7 @@ func freePlan(whenOver domain.OverLimitBehavior) testsupport.FixedEntitlements {
 
 // serviceWithItems returns a service on entitlements whose workspace already
 // has the named items, made on a plan with no limits, and those items.
-func serviceWithItems(t *testing.T, entitlements ports.Entitlements, names ...string) (*app.ItemService, []domain.Item) {
+func serviceWithItems(t *testing.T, entitlementsProvider ports.EntitlementsProvider, names ...string) (*app.ItemService, []domain.Item) {
 	t.Helper()
 	repo := memory.NewItemRepository()
 	unlimited, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), testsupport.FixedEntitlements{})
@@ -95,7 +95,7 @@ func serviceWithItems(t *testing.T, entitlements ports.Entitlements, names ...st
 		}
 		items = append(items, item)
 	}
-	svc, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), entitlements)
+	svc, _ := newServiceWith(repo, testsupport.FixedWorkspace(workspace), entitlementsProvider)
 	return svc, items
 }
 
@@ -202,7 +202,7 @@ var limitedUseCases = map[string]func(context.Context, *app.ItemService, domain.
 // errPlans is the error unavailablePlans fails with.
 var errPlans = errors.New("plans unavailable")
 
-// unavailablePlans is a ports.Entitlements whose lookup always fails.
+// unavailablePlans is a ports.EntitlementsProvider whose lookup always fails.
 type unavailablePlans struct{}
 
 func (unavailablePlans) For(context.Context, domain.WorkspaceID) (domain.Entitlements, error) {

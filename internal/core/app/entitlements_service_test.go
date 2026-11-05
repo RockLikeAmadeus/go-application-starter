@@ -11,7 +11,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
 
-// plansByWorkspace is a ports.Entitlements that answers each workspace's
+// plansByWorkspace is a ports.EntitlementsProvider that answers each workspace's
 // entitlements from a map.
 type plansByWorkspace map[domain.WorkspaceID]domain.Entitlements
 
@@ -36,7 +36,7 @@ func TestCurrentEntitlements_AreTheCurrentWorkspacesPlan(t *testing.T) {
 	}
 }
 
-// unaskedPlans is a ports.Entitlements that counts every call, for tests that
+// unaskedPlans is a ports.EntitlementsProvider that counts every call, for tests that
 // must not reach it.
 type unaskedPlans struct{ calls int }
 

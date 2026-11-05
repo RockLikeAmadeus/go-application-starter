@@ -98,17 +98,17 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	default:
 		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
 	}
-	entitlements, err := localEntitlements(cfg.PlansFile)
+	entitlementsProvider, err := localEntitlementsProvider(cfg.PlansFile)
 	if err != nil {
 		return nil, err
 	}
-	a.Entitlements = app.NewEntitlementsService(entitlements, workspace.Local{})
+	a.Entitlements = app.NewEntitlementsService(entitlementsProvider, workspace.Local{})
 	// Build each use case on its repository and the local edition's driven
 	// ports: workspace.Local{} (the one local workspace, ADR 5), the local
 	// plan's entitlements, system.Clock{} and system.UUIDs{}. See
 	// docs/workspaces.md.
 	// sample:start
-	a.Items = app.NewItemService(itemRepo, workspace.Local{}, entitlements, system.Clock{}, system.UUIDs{})
+	a.Items = app.NewItemService(itemRepo, workspace.Local{}, entitlementsProvider, system.Clock{}, system.UUIDs{})
 	// sample:end
 	return a, nil
 }
@@ -122,11 +122,11 @@ func NewEntitlementsService(cfg config.Config) (ports.EntitlementsService, error
 	if cfg.ServerURL != "" {
 		return httpclient.NewEntitlementsService(cfg.ServerURL)
 	}
-	entitlements, err := localEntitlements(cfg.PlansFile)
+	entitlementsProvider, err := localEntitlementsProvider(cfg.PlansFile)
 	if err != nil {
 		return nil, err
 	}
-	return app.NewEntitlementsService(entitlements, workspace.Local{}), nil
+	return app.NewEntitlementsService(entitlementsProvider, workspace.Local{}), nil
 }
 
 // syncedFolderWarning warns when SQLite's data folder looks kept in sync by
@@ -145,19 +145,19 @@ func syncedFolderWarning(cfg config.Config) (string, bool) {
 		"move the data folder out of it, or keep your data as plain text.", true
 }
 
-// localEntitlements answers LocalPlan, from plansFile or else the plans file
+// localEntitlementsProvider answers LocalPlan, from plansFile or else the plans file
 // built into the binary, for every workspace: the local edition has only
 // one. It gives no upgrade hints, since a local copy can't change plan. It
 // refuses a LocalPlan the file doesn't have.
-func localEntitlements(plansFile string) (plans.Entitlements, error) {
+func localEntitlementsProvider(plansFile string) (plans.Provider, error) {
 	catalog, err := plans.Load(plansFile)
 	if err != nil {
-		return plans.Entitlements{}, err
+		return plans.Provider{}, err
 	}
 	if _, ok := catalog[LocalPlan]; !ok {
-		return plans.Entitlements{}, fmt.Errorf("local plan %q isn't in the plans file", LocalPlan)
+		return plans.Provider{}, fmt.Errorf("local plan %q isn't in the plans file", LocalPlan)
 	}
-	return plans.Entitlements{
+	return plans.Provider{
 		Catalog: catalog,
 		PlanOf: func(context.Context, domain.WorkspaceID) (string, error) {
 			return LocalPlan, nil
