@@ -4,7 +4,7 @@ import { ErrorMessage } from "../../components/ErrorMessage";
 import { useCreateItem, useDeleteItem, useItems, useRenameItem } from "./queries";
 
 export function ItemsPage() {
-  const items = useItems();
+  const itemsQuery = useItems();
   const createItem = useCreateItem();
   const [name, setName] = useState("");
 
@@ -38,10 +38,10 @@ export function ItemsPage() {
       </form>
       {createItem.error && <ErrorMessage error={createItem.error} />}
 
-      {items.isPending && <p className="text-muted">Loading…</p>}
-      {items.error && <ErrorMessage error={items.error} />}
-      {items.data?.length === 0 && <p className="text-muted">No items yet.</p>}
-      {items.data && items.data.length > 0 && (
+      {itemsQuery.isPending && <p className="text-muted">Loading…</p>}
+      {itemsQuery.error && <ErrorMessage error={itemsQuery.error} />}
+      {itemsQuery.data?.length === 0 && <p className="text-muted">No items yet.</p>}
+      {itemsQuery.data && itemsQuery.data.length > 0 && (
         <div className="overflow-hidden rounded-panel border border-line bg-panel soft:border-transparent">
           <table aria-label="Items" className="w-full text-left">
             <thead>
@@ -53,7 +53,7 @@ export function ItemsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {items.data.map((item) => (
+              {itemsQuery.data.map((item) => (
                 <ItemRow key={item.id} item={item} />
               ))}
             </tbody>

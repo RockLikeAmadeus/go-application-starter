@@ -6,10 +6,10 @@ import (
 	"strings"
 )
 
-// optional is the program whose commands may fail without failing the run:
+// optionalProgram is the program whose commands may fail without failing the run:
 // regenerating the web client needs a working Node toolchain, which a fresh
 // clone may not have yet.
-const optional = "pnpm"
+const optionalProgram = "pnpm"
 
 // FollowUp runs a tool's follow-up commands, in order, stopping at the first
 // failure. A command whose program is not installed, or an optional command
@@ -22,7 +22,7 @@ func FollowUp(cmds [][]string, run func([]string) error, isInstalled func(string
 			continue
 		}
 		if err := run(cmd); err != nil {
-			if cmd[0] != optional {
+			if cmd[0] != optionalProgram {
 				return err
 			}
 			fmt.Fprintf(out, "%v, so it was skipped: run task gen once it is fixed.\n", err)

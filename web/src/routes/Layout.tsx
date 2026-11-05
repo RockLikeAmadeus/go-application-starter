@@ -46,7 +46,7 @@ export function Layout() {
 // `-translate-x-full`: that reads `--tw-translate-y`, which is registered and
 // unset, and WebKitGTK 2.52 (the desktop app's engine) then drops the whole
 // declaration inside `@starting-style`, so the drawer appeared without sliding in.
-const drawerMotion = [
+const drawerMotionClasses = [
   "transition-[translate] duration-200 ease-out",
   "starting:open:[translate:-100%_0] data-closing:[translate:-100%_0]",
   "backdrop:bg-black/50 backdrop:transition-[background-color] backdrop:duration-200",
@@ -114,7 +114,7 @@ function MobileNav({ children }: { children: ReactNode }) {
         onClick={closeOnLinkOrBackdropClick}
         onClose={markClosed}
         onCancel={closeOnEscape}
-        className={`m-0 h-dvh max-h-none w-72 max-w-[85vw] border-r border-sidebar-line bg-sidebar p-0 text-sidebar-fg soft:rounded-r-panel ${drawerMotion}`}
+        className={`m-0 h-dvh max-h-none w-72 max-w-[85vw] border-r border-sidebar-line bg-sidebar p-0 text-sidebar-fg soft:rounded-r-panel ${drawerMotionClasses}`}
       >
         {children}
       </dialog>
