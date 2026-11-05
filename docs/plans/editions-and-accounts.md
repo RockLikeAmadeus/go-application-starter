@@ -67,7 +67,8 @@ SPEC.md §4.9 · [`features/plan-features.feature`](../../features/plan-features
 - Done 2026-11-05: on/off features end to end, all template code. Each feature in the plans file's `features` section has a display `name` and a `whenOff` (`show-locked` or `hide`). `Entitlements.CheckFeature` fails closed and returns a `FeatureError`, whose upgrade hint names the plans that have the feature (there are no hints in the local edition). The API serves the features in `/entitlements`, with a 403 `feature` problem that `httpclient` maps back. The CLI help notes locked commands without opening storage, the TUI has `gatedKeyHelp`, and the web app has `useFeature` and `FeatureGate`, with no pop-in.
 - Sample: `item-export` (on for `local` and `pro`, locked for `free`): `ExportItems`, `GET /api/v1/items/export`, `starter item export`, and the Items page's Export button, all in sample files or blocks. The scenarios run on every driver, plus the browser and terminal journeys. `task test:init` passes.
 
-### 4. Changing a workspace's plan — not started
+### 4. Changing a workspace's plan — in progress
+SPEC.md §4.15 · [`features/plan-changes.feature`](../../features/plan-changes.feature) · task list in [`docs/wip/change-a-workspaces-plan.md`](../wip/change-a-workspaces-plan.md).
 - The admin-only `ChangePlan` use case and `starter admin set-plan`.
 - `docs/billing.md`, the template users' guide described above.
 
@@ -135,3 +136,4 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
   - Features got a required display `name`, so template users choose the wording; the CLI help lists locked commands as disabled rather than hiding them, and reads only the entitlements (`bootstrap.NewEntitlementsService`), never opening storage.
   - The web app avoids pop-in: `Layout` prefetches the entitlements for the session, gated pages wait for them in their loading state, and `FeatureGate` has a same-size disabled placeholder.
   - The desktop download was checked by hand on WebKitGTK. `docs/features.md` is the checklist for gating a new feature.
+- 2026-11-05: step 4 started. Decided: the local edition's plan stays fixed (`starter admin set-plan` refuses there, so until step 8 only the tests change plans); ChangePlan is reached only by the admin command, with no API until sign-in; each workspace's plan is stored by the storage adapters (`ports.WorkspacePlanRepository`).

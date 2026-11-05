@@ -37,6 +37,7 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Plan** | What a workspace is allowed to do: which features it has and what its limits are (for example, free or paid). |
 | **Feature** | A capability that a plan turns on or off. |
 | **Limit** | A number a plan sets, such as how many items a workspace may have. |
+| **Admin** | Someone who runs the product and can move a workspace to another plan, for example when its owner starts or stops paying. |
 | **Ready** | A server is ready when it can reach its data, so it can serve requests. |
 
 <!-- sample:start -->
@@ -346,6 +347,26 @@ Data can be kept in a SQLite database instead of as plain text, so that several 
 - Plain-text data in `~/Dropbox/starter` → no warning.
 
 **Specification:** [`features/sqlite-storage.feature`](features/sqlite-storage.feature) and [`features/synced-folder.feature`](features/synced-folder.feature). Every other feature's business scenarios also run on SQLite storage. Refusing a newer layout, and which paths and files mean a synced folder, are checked by unit tests.
+
+### 4.15 Change a workspace's plan
+
+An admin can move a workspace to another plan, for example when its owner starts or stops paying. This is the product's only billing step: anything that takes payments (a payment provider's notifications, or an admin by hand) does it by moving the workspace to the plan that was paid for (ADR 5). How to connect a payment provider is in [`docs/billing.md`](docs/billing.md). This is step 4 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
+
+**Rules**
+- Only an admin can change a workspace's plan, with `starter admin set-plan WORKSPACE PLAN`, run beside the hosted edition's data. Users can't change their own plan, and nothing in the web app or the API changes it. (An admin API waits for sign-in.)
+- The new plan must be one of the plans in the plans file. Any other plan is refused, and the workspace stays on its plan.
+- The change takes effect straight away: the workspace's features and limits are the new plan's (§4.9). Its data is kept, even when it's now over a limit.
+- Moving one workspace leaves every other workspace on its plan.
+- A workspace's plan is kept with its data, so it stays the same after the app restarts.
+- The local edition's plan can't be changed: it's set when the app is built (§4.9). `starter admin set-plan` refuses there, saying so. Until the hosted edition has sign-in, every copy is the local edition, so only the tests change plans for now.
+
+**Examples**
+- An admin moves workspace Alpha from the free plan to the pro plan → Alpha's plan is pro, and it can export its items.
+- An admin tries to move Alpha to the "platinum" plan, which the plans file doesn't have → it's refused, and Alpha stays on the free plan.
+- An admin moves Alpha to the pro plan → Beta stays on the free plan.
+- A user runs `starter admin set-plan local pro` on their own computer → it fails, saying the local edition's plan is set when the app is built.
+
+**Specification:** [`features/plan-changes.feature`](features/plan-changes.feature). The scenarios that move a workspace run on the memory, jsonfile, sqlite and http drivers; the one that switches between workspaces runs on memory, jsonfile and sqlite only; the local edition's refusal runs on the desktop driver. Keeping the plan after a restart is checked by each storage adapter's contract tests. The command's output and exit status are checked by a terminal journey ([`test/terminal/features/command-line.feature`](test/terminal/features/command-line.feature)).
 
 ## 5. Non-functional requirements
 
