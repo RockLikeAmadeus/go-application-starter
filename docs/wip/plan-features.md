@@ -129,7 +129,10 @@
    - Red: `ItemsPage` "stays loading until the plan's features arrive…" (entitlements held back, items answered) failed: no "Loading…", the empty state showed.
    - Green: the page reads `entitlementsQuery`, and "Loading…" lasts while either query is pending; the empty state and table wait for both.
    - Refactor: nothing; a template "entitlements pending" hook would be untested API for one use. Task 19's checklist should say a gated page puts `entitlementsQuery` in its loading state.
-18c. [ ] web e2e (sample): the "Export the items" journey's steps; `task e2e` goes green. Check the download by hand in `task run:desktop` (WebKitGTK).
+18c. [x] web e2e (sample): the "Export the items" journey's steps; `task e2e` goes green.
+   - Red: none. The steps ("I export the items" waits for the download; "the downloaded file lists" reads `items.csv`, its header and the name) passed straight away, since tasks 18 and 18b built the behaviour; asserting a missing name fails on the real file. Kept as a guard. The button is matched `exact`, since the item's name contains "Export".
+   - Refactor: an explicit "no file was downloaded" guard in place of optional chaining.
+18d. [ ] desktop (by hand): check the Items page's Export download in `task run:desktop` (WebKitGTK), including the object URL revoked straight after the click.
 19. [ ] docs: `docs/features.md` (a checklist for gating a new feature), linked from CLAUDE.md's plans rule; ADR 5's step 3 line; the plans file comments; a template-user step for defining their own features if needed; `task test:init`.
 20. [ ] Finish: `task check`, `task accept`, `task e2e`, `task e2e:terminal`; remove `@wip`; mark step 3 done in the plan; delete this file.
 
@@ -145,3 +148,4 @@
 - 2026-11-05 (user, during task 16): task 16 split in two, one test each: 16 is `useFeature`'s states; 16b is `Layout`'s prefetch with a long `staleTime`. `/iterate` now splits such tasks without asking.
 - 2026-11-05 (`/iterate`, task 16b): task 16b split in two, one test each: 16b is `Layout`'s prefetch; 16c keeps the answer for the session (a long `staleTime`).
 - 2026-11-05 (`/iterate`, task 18): task 18 split in three, one test each: 18 is the Export button's download; 18b the page's loading state waiting for the entitlements; 18c the e2e journey and the desktop check by hand.
+- 2026-11-05 (user, during task 18c): the desktop download check by hand moves to its own task, 18d; 18c is the e2e journey only.

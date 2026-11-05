@@ -1,7 +1,11 @@
-import { expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import { type Download, expect, type Page } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 
 const { Given, When, Then } = createBdd();
+
+// The file each page downloaded last, for the step that reads it.
+const exported = new WeakMap<Page, Download>();
 
 // Scenarios run in parallel against one server, so they use distinct item
 // names and assert on presence rather than on the whole list.
@@ -44,4 +48,20 @@ Then("I do not see {string} in the item list", async ({ page }, name: string) =>
 
 Then("I see the error {string}", async ({ page }, message: string) => {
   await expect(page.getByRole("alert")).toContainText(message);
+});
+
+When("I export the items", async ({ page }) => {
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  // Kept on the page so the next step can read the file the browser saved.
+  exported.set(page, await download);
+});
+
+Then("the downloaded file lists {string}", async ({ page }, name: string) => {
+  const download = exported.get(page);
+  if (!download) throw new Error("no file was downloaded");
+  expect(download.suggestedFilename()).toBe("items.csv");
+  const csv = await readFile(await download.path(), "utf8");
+  expect(csv.split("\n")[0]).toBe("name,createdAt");
+  expect(csv).toContain(name);
 });
