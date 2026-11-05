@@ -81,7 +81,10 @@
    - Red: `TestCurrentEntitlements_ReadsTheFeatures` (on with a hint, locked, hidden with none) failed with `Features = map[]`; the round-trip test now wants an empty `Features` map.
    - Green: `toEntitlements` maps each API feature to a `domain.Feature` (key, name, on, whenOff), an empty `availableOn` back to nil. The http driver's "can see whether its plan has the feature" outline now passes.
    - Refactor: `toFeature` helper with a doc comment (why `[]` becomes nil); the service's doc mentions features.
-12b. [ ] httpclient: maps the feature problem back to `*FeatureError` (`feature`, `name`, `availableOn`); the plans rule's domain-error list gets `FeatureError`.
+12b. [x] httpclient: maps the feature problem back to `*FeatureError` (`feature`, `name`, `availableOn`); the plans rule's domain-error list gets `FeatureError`.
+   - Red: `TestAFeatureErrorComesBackAsAFeatureError` (with a hint / without) failed with `server error (403): Export isn't on your plan…`, not a `*FeatureError`.
+   - Green: `toError` maps a `feature` problem to `*FeatureError` (`feature`, `name`, `availableOn`), an empty `availableOn` back to nil.
+   - Refactor: `fromAvailableOn` (`[]` → nil) shared by `toFeature` and `toError`; `FeatureError` added to the plans rule's domain-error list.
 12c. [ ] httpclient (sample): `ExportItems` over `GET /items/export`. The http, desktop and mobile drivers go green.
 13. [ ] CLI (template): the gated-command helper and the help: on → listed plainly; locked → listed as disabled on your plan, with the hint, or without one in the local edition; hidden → not listed; entitlements unreadable → listed with no note. The help opens no storage.
 14. [ ] CLI (sample): `starter item export`; the terminal journey steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.

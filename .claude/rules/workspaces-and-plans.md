@@ -23,4 +23,4 @@ The local edition's plan is `bootstrap.LocalPlan`: `local`, unless a build sets 
 
 ## Domain errors
 
-Domain errors (`domain.ErrNotFound`, `*domain.ValidationError`, `*domain.LimitError`, `domain.ErrNoWorkspace`) are the shared language. `httpapi/problem.go` maps them to HTTP, and `httpclient` maps them back. (`ErrNoWorkspace` isn't mapped yet: nothing over HTTP can lack a workspace until sign-in exists.)
+Domain errors (`domain.ErrNotFound`, `*domain.ValidationError`, `*domain.LimitError`, `*domain.FeatureError`, `domain.ErrNoWorkspace`) are the shared language. `httpapi/problem.go` maps them to HTTP, and `httpclient` maps them back. (`ErrNoWorkspace` isn't mapped yet: nothing over HTTP can lack a workspace until sign-in exists.)

@@ -49,12 +49,17 @@ func toEntitlements(e apiclient.Entitlements) domain.Entitlements {
 	return domain.Entitlements{Plan: e.Plan, Limits: limits, Features: features}
 }
 
-// toFeature reads a feature back as the core built it: the API always sends
-// availableOn as a list, and an empty one (no upgrade hint) becomes nil again.
+// toFeature reads a feature back as the core built it.
 func toFeature(key string, f apiclient.Feature) domain.Feature {
-	var availableOn []string
-	if len(f.AvailableOn) > 0 {
-		availableOn = f.AvailableOn
+	return domain.Feature{Key: key, Name: f.Name, On: f.On, WhenOff: domain.FeatureOff(f.WhenOff), AvailableOn: fromAvailableOn(f.AvailableOn)}
+}
+
+// fromAvailableOn reads an upgrade hint back as the core built it: the API
+// always sends availableOn as a list, and an empty one (no hint) becomes nil
+// again.
+func fromAvailableOn(plans []string) []string {
+	if len(plans) == 0 {
+		return nil
 	}
-	return domain.Feature{Key: key, Name: f.Name, On: f.On, WhenOff: domain.FeatureOff(f.WhenOff), AvailableOn: availableOn}
+	return plans
 }

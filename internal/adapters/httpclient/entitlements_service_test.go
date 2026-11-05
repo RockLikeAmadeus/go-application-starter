@@ -93,3 +93,29 @@ func TestALimitErrorComesBackAsALimitError(t *testing.T) {
 		t.Fatalf("err = %v, want %+v", err, sent)
 	}
 }
+
+// A feature error on the server comes back as the same feature error, with
+// its upgrade hint or without one, so callers can use errors.As whichever way
+// they reach the core.
+func TestAFeatureErrorComesBackAsAFeatureError(t *testing.T) {
+	tests := map[string]*domain.FeatureError{
+		"with a hint":    {Feature: "export", Name: "Export", AvailableOn: []string{"pro", "team"}},
+		"without a hint": {Feature: "export", Name: "Export"},
+	}
+	for name, sent := range tests {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{sent}}))
+			t.Cleanup(srv.Close)
+			client, err := httpclient.NewEntitlementsService(srv.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			_, err = client.CurrentEntitlements(context.Background())
+			var got *domain.FeatureError
+			if !errors.As(err, &got) || !reflect.DeepEqual(got, sent) {
+				t.Fatalf("err = %#v, want %#v", err, sent)
+			}
+		})
+	}
+}
