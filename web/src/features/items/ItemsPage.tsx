@@ -1,13 +1,17 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import type { Item } from "../../api/client";
 import { ErrorMessage } from "../../components/ErrorMessage";
 import { FeatureGate } from "../entitlements/FeatureGate";
+import { entitlementsQuery } from "../entitlements/useFeature";
 import { useCreateItem, useDeleteItem, useExportItems, useItems, useRenameItem } from "./queries";
 
 export function ItemsPage() {
   const itemsQuery = useItems();
   const createItem = useCreateItem();
   const exportItems = useExportItems();
+  const entitlements = useQuery(entitlementsQuery);
+  const isLoading = itemsQuery.isPending || entitlements.isPending;
   const [name, setName] = useState("");
 
   const onSubmit = (e: FormEvent) => {
@@ -54,10 +58,10 @@ export function ItemsPage() {
       </FeatureGate>
       {exportItems.error && <ErrorMessage error={exportItems.error} />}
 
-      {itemsQuery.isPending && <p className="text-muted">Loading…</p>}
+      {isLoading && <p className="text-muted">Loading…</p>}
       {itemsQuery.error && <ErrorMessage error={itemsQuery.error} />}
-      {itemsQuery.data?.length === 0 && <p className="text-muted">No items yet.</p>}
-      {itemsQuery.data && itemsQuery.data.length > 0 && (
+      {!isLoading && itemsQuery.data?.length === 0 && <p className="text-muted">No items yet.</p>}
+      {!isLoading && itemsQuery.data && itemsQuery.data.length > 0 && (
         <div className="overflow-hidden rounded-panel border border-line bg-panel soft:border-transparent">
           <table aria-label="Items" className="w-full text-left">
             <thead>

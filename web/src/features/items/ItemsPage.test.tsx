@@ -106,6 +106,28 @@ describe("ItemsPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("name must not be empty");
   });
 
+  it("stays loading until the plan's features arrive, so Export is in its final state on first paint", async () => {
+    const api = fakeApi();
+    let release!: () => void;
+    const entitlementsHeld = new Promise<void>((resolve) => (release = resolve));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: Request) => {
+        if (new URL(input.url).pathname === "/api/v1/entitlements") await entitlementsHeld;
+        return api(input);
+      }),
+    );
+    const { client } = renderWithClient(<ItemsPage />);
+
+    await waitFor(() => expect(client.getQueryState(["items"])?.status).toBe("success"));
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    expect(screen.queryByText("No items yet.")).not.toBeInTheDocument();
+
+    release();
+    expect(await screen.findByText("No items yet.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Export" })).toBeEnabled();
+  });
+
   it("downloads the items as a CSV file when Export is pressed", async () => {
     const user = userEvent.setup();
     // jsdom has no object URLs, and a real click would navigate.

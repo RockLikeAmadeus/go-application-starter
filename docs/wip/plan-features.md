@@ -125,7 +125,10 @@
    - Red: `ItemsPage` "downloads the items as a CSV file when Export is pressed" (`fakeApi` now routes the entitlements and export by path) failed: no Export button.
    - Green: `useExportItems` (a mutation: `api.GET` the export with `parseAs: "blob"`, then an object URL on an `<a download="items.csv">` clicked and revoked); the page's Export button sits in a `FeatureGate`, its error shown with `ErrorMessage`.
    - Refactor: `saveFile(blob, name)` pulled out of the mutation (kept in the sample `queries.ts`: no template code downloads files yet); a doc comment on `useExportItems`. Whether WebKitGTK minds the URL revoked straight after the click is 18c's check by hand. `task test:init` passes.
-18b. [ ] web (sample): the Items page includes the entitlements in its loading state, so its first paint has the Export control in its final state.
+18b. [x] web (sample): the Items page includes the entitlements in its loading state, so its first paint has the Export control in its final state.
+   - Red: `ItemsPage` "stays loading until the plan's features arrive…" (entitlements held back, items answered) failed: no "Loading…", the empty state showed.
+   - Green: the page reads `entitlementsQuery`, and "Loading…" lasts while either query is pending; the empty state and table wait for both.
+   - Refactor: nothing; a template "entitlements pending" hook would be untested API for one use. Task 19's checklist should say a gated page puts `entitlementsQuery` in its loading state.
 18c. [ ] web e2e (sample): the "Export the items" journey's steps; `task e2e` goes green. Check the download by hand in `task run:desktop` (WebKitGTK).
 19. [ ] docs: `docs/features.md` (a checklist for gating a new feature), linked from CLAUDE.md's plans rule; ADR 5's step 3 line; the plans file comments; a template-user step for defining their own features if needed; `task test:init`.
 20. [ ] Finish: `task check`, `task accept`, `task e2e`, `task e2e:terminal`; remove `@wip`; mark step 3 done in the plan; delete this file.
