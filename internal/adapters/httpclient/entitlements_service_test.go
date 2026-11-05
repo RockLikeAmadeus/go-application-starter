@@ -46,7 +46,7 @@ func TestCurrentEntitlements_ReadsTheFeatures(t *testing.T) {
 		Plan:   "free",
 		Limits: map[string]domain.Limit{},
 		Features: map[string]domain.Feature{
-			"export":  {Key: "export", Name: "Export", On: true, WhenOff: domain.ShowLocked, AvailableOn: []string{"pro"}},
+			"export":  {Key: "export", Name: "Export", IsOn: true, WhenOff: domain.ShowLocked, AvailableOn: []string{"pro"}},
 			"reports": {Key: "reports", Name: "Reports", WhenOff: domain.ShowLocked, AvailableOn: []string{"pro", "team"}},
 			"beta":    {Key: "beta", Name: "Beta", WhenOff: domain.Hide},
 		},
@@ -79,7 +79,7 @@ func (e failingEntitlements) CurrentEntitlements(context.Context) (domain.Entitl
 // A limit error on the server comes back as the same limit error, so callers
 // can use errors.As whichever way they reach the core.
 func TestALimitErrorComesBackAsALimitError(t *testing.T) {
-	sent := &domain.LimitError{Limit: "items", Max: 3, ReadOnly: true}
+	sent := &domain.LimitError{Limit: "items", Max: 3, IsReadOnly: true}
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{sent}}))
 	t.Cleanup(srv.Close)
 	client, err := httpclient.NewEntitlementsService(srv.URL)

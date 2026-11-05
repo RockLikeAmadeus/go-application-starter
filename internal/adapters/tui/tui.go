@@ -19,17 +19,17 @@ type Ports struct {
 
 // Run starts the TUI and blocks until the user quits. warnings show above
 // whichever screen is open.
-func Run(p Ports, warnings []string, opts ...tea.ProgramOption) error {
-	_, err := tea.NewProgram(firstScreen(p, warnings), opts...).Run()
+func Run(drivingPorts Ports, warnings []string, opts ...tea.ProgramOption) error {
+	_, err := tea.NewProgram(firstScreen(drivingPorts, warnings), opts...).Run()
 	return err
 }
 
 // firstScreen picks the screen the TUI opens on.
-func firstScreen(p Ports, warnings []string) tea.Model {
+func firstScreen(drivingPorts Ports, warnings []string) tea.Model {
 	var screen tea.Model = home{}
 	// sample:start
-	if p.Items != nil {
-		screen = newItemsScreen(p.Items)
+	if drivingPorts.Items != nil {
+		screen = newItemsScreen(drivingPorts.Items)
 	}
 	// sample:end
 	return warnedScreen{screen: screen, warnings: warnings}

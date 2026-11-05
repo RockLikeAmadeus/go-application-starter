@@ -29,14 +29,14 @@ func toError(status int, p *apiclient.Problem) error {
 	if p == nil {
 		return fmt.Errorf("unexpected HTTP status %d", status)
 	}
-	typ, detail, field := deref(p.Type), deref(p.Detail), deref(p.Field)
-	switch typ {
+	problemType, detail, field := deref(p.Type), deref(p.Detail), deref(p.Field)
+	switch problemType {
 	case "not_found":
 		return domain.ErrNotFound
 	case "validation":
 		return &domain.ValidationError{Field: field, Message: strings.TrimSpace(strings.TrimPrefix(detail, field))}
 	case "limit":
-		return &domain.LimitError{Limit: deref(p.Limit), Max: deref(p.Max), ReadOnly: deref(p.ReadOnly)}
+		return &domain.LimitError{Limit: deref(p.Limit), Max: deref(p.Max), IsReadOnly: deref(p.IsReadOnly)}
 	case "feature":
 		return &domain.FeatureError{Feature: deref(p.Feature), Name: deref(p.Name), AvailableOn: fromAvailableOn(deref(p.AvailableOn))}
 	default:

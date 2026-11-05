@@ -42,8 +42,8 @@ func (p *testPlans) For(ctx context.Context, workspace domain.WorkspaceID) (doma
 			}
 			return bootstrap.LocalPlan, nil
 		},
-		Hints:     true,
-		LocalPlan: bootstrap.LocalPlan,
+		ShouldGiveHints: true,
+		LocalPlan:       bootstrap.LocalPlan,
 	}
 	return adapter.For(ctx, workspace)
 }

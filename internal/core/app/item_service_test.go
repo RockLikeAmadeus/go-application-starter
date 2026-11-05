@@ -117,7 +117,7 @@ func TestCreateItem_AtTheLimitIsRefusedAndSavesNothing(t *testing.T) {
 
 	_, err := svc.CreateItem(ctx, "Fourth")
 	var limitErr *domain.LimitError
-	if !errors.As(err, &limitErr) || limitErr.Limit != "items" || limitErr.Max != 3 || limitErr.ReadOnly {
+	if !errors.As(err, &limitErr) || limitErr.Limit != "items" || limitErr.Max != 3 || limitErr.IsReadOnly {
 		t.Fatalf("err = %v, want the limit of 3 items reached", err)
 	}
 	if items, _ := svc.ListItems(ctx); len(items) != 3 {
@@ -142,8 +142,8 @@ func TestRenameItem_UpdatesTimestamp(t *testing.T) {
 
 func TestRenameItem_OverALimit(t *testing.T) {
 	cases := map[string]struct {
-		whenOver domain.OverLimitBehavior
-		refused  bool
+		whenOver  domain.OverLimitBehavior
+		isRefused bool
 	}{
 		"that makes them read only is refused and saves nothing": {domain.ReadOnly, true},
 		"that blocks new ones works":                             {domain.BlockNew, false},
@@ -156,14 +156,14 @@ func TestRenameItem_OverALimit(t *testing.T) {
 
 			_, err := svc.RenameItem(ctx, first.ID, "Renamed")
 			got, _ := svc.GetItem(ctx, first.ID)
-			if !tc.refused {
+			if !tc.isRefused {
 				if err != nil || got.Name != "Renamed" {
 					t.Fatalf("RenameItem = %v, name %q; want it renamed", err, got.Name)
 				}
 				return
 			}
 			var limitErr *domain.LimitError
-			if !errors.As(err, &limitErr) || limitErr.Limit != "items" || limitErr.Max != 3 || !limitErr.ReadOnly {
+			if !errors.As(err, &limitErr) || limitErr.Limit != "items" || limitErr.Max != 3 || !limitErr.IsReadOnly {
 				t.Fatalf("err = %v, want items read only while over the limit of 3", err)
 			}
 			if got.Name != "First" {
@@ -263,10 +263,10 @@ func TestUseCases_WhenTheItemsCantBeCountedAreRefusedAndSaveNothing(t *testing.T
 }
 
 // exportPlan is a plan with item export on or off, shown locked when off.
-func exportPlan(on bool) testsupport.FixedEntitlements {
+func exportPlan(isOn bool) testsupport.FixedEntitlements {
 	return testsupport.FixedEntitlements{
 		Features: map[string]domain.Feature{
-			"item-export": {Key: "item-export", Name: "Item export", On: on, WhenOff: domain.ShowLocked},
+			"item-export": {Key: "item-export", Name: "Item export", IsOn: isOn, WhenOff: domain.ShowLocked},
 		},
 	}
 }

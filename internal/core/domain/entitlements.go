@@ -34,24 +34,24 @@ type Entitlements struct {
 // create one more. It refuses with a *LimitError at or over the limit,
 // whatever the limit's WhenOver, and allows anything when the plan has no
 // such limit.
-func (e Entitlements) CheckCreate(limit string, count int) error {
-	l, ok := e.Limits[limit]
-	if !ok || count < l.Max {
+func (e Entitlements) CheckCreate(limitName string, count int) error {
+	limit, ok := e.Limits[limitName]
+	if !ok || count < limit.Max {
 		return nil
 	}
-	return &LimitError{Limit: limit, Max: l.Max}
+	return &LimitError{Limit: limitName, Max: limit.Max}
 }
 
 // CheckChange says whether a workspace that has count of the limited thing may
-// change one of them. It refuses with a *LimitError (ReadOnly) only over a
+// change one of them. It refuses with a *LimitError (IsReadOnly) only over a
 // ReadOnly limit; at the limit, over a BlockNew one, or with no such limit,
 // changes are allowed.
-func (e Entitlements) CheckChange(limit string, count int) error {
-	l, ok := e.Limits[limit]
-	if !ok || l.WhenOver != ReadOnly || count <= l.Max {
+func (e Entitlements) CheckChange(limitName string, count int) error {
+	limit, ok := e.Limits[limitName]
+	if !ok || limit.WhenOver != ReadOnly || count <= limit.Max {
 		return nil
 	}
-	return &LimitError{Limit: limit, Max: l.Max, ReadOnly: true}
+	return &LimitError{Limit: limitName, Max: limit.Max, IsReadOnly: true}
 }
 
 // NewLimit builds a valid Limit. It refuses a negative max, and a WhenOver
@@ -85,8 +85,8 @@ type Feature struct {
 	Key string
 	// Name is what people read ("Item export").
 	Name string
-	// On is set when the workspace's plan has the feature.
-	On      bool
+	// IsOn is set when the workspace's plan has the feature.
+	IsOn    bool
 	WhenOff FeatureOffBehavior
 	// AvailableOn names the plans that have the feature, for the upgrade
 	// hint. It's empty when the edition gives no hints.
@@ -113,16 +113,16 @@ func NewFeature(key, name string, whenOff FeatureOffBehavior) (Feature, error) {
 // error carries the upgrade hint (AvailableOn); a hidden or unknown one has
 // none.
 func (e Entitlements) CheckFeature(key string) error {
-	f, ok := e.Features[key]
+	feature, ok := e.Features[key]
 	if !ok {
 		return &FeatureError{Feature: key, Name: key}
 	}
-	if f.On {
+	if feature.IsOn {
 		return nil
 	}
-	refused := &FeatureError{Feature: key, Name: f.Name}
-	if f.WhenOff == ShowLocked {
-		refused.AvailableOn = f.AvailableOn
+	refused := &FeatureError{Feature: key, Name: feature.Name}
+	if feature.WhenOff == ShowLocked {
+		refused.AvailableOn = feature.AvailableOn
 	}
 	return refused
 }

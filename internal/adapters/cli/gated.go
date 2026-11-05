@@ -33,10 +33,10 @@ func Gated(key string, cmd *cobra.Command) *cobra.Command {
 func noteGatedCommands(root *cobra.Command, loadConfig func() (config.Config, error)) {
 	help := root.HelpFunc()
 	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		if e, ok := readEntitlements(cmd, loadConfig); ok {
+		if entitlements, ok := readEntitlements(cmd, loadConfig); ok {
 			for _, child := range cmd.Commands() {
-				if key, gated := child.Annotations[featureAnnotation]; gated {
-					note(child, e.Features[key])
+				if key, isGated := child.Annotations[featureAnnotation]; isGated {
+					note(child, entitlements.Features[key])
 				}
 			}
 		}
@@ -44,16 +44,16 @@ func noteGatedCommands(root *cobra.Command, loadConfig func() (config.Config, er
 	})
 }
 
-// note shows cmd's feature f in the help: nothing when it's on, hidden when
+// note shows cmd's feature in the help: nothing when it's on, hidden when
 // f hides it, and otherwise noted as disabled, with the upgrade hint when
 // there is one.
-func note(cmd *cobra.Command, f domain.Feature) {
+func note(cmd *cobra.Command, feature domain.Feature) {
 	switch {
-	case f.On:
-	case f.WhenOff == domain.Hide:
+	case feature.IsOn:
+	case feature.WhenOff == domain.Hide:
 		cmd.Hidden = true
-	case len(f.AvailableOn) > 0:
-		cmd.Short += " (disabled on your plan: available on " + domain.PlansPhrase(f.AvailableOn) + ")"
+	case len(feature.AvailableOn) > 0:
+		cmd.Short += " (disabled on your plan: available on " + domain.PlansPhrase(feature.AvailableOn) + ")"
 	default:
 		cmd.Short += " (disabled on your plan)"
 	}
@@ -70,9 +70,9 @@ func readEntitlements(cmd *cobra.Command, loadConfig func() (config.Config, erro
 	if err != nil {
 		return domain.Entitlements{}, false
 	}
-	e, err := service.CurrentEntitlements(cmd.Context())
+	entitlements, err := service.CurrentEntitlements(cmd.Context())
 	if err != nil {
 		return domain.Entitlements{}, false
 	}
-	return e, true
+	return entitlements, true
 }

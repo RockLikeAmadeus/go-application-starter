@@ -110,15 +110,15 @@ func (w *world) itemExportIsForMyWorkspace(ctx context.Context, state, available
 	}
 	switch state {
 	case "on":
-		if !f.On {
+		if !f.IsOn {
 			return fmt.Errorf("item export is off, want on: %+v", f)
 		}
 	case "hidden":
-		if f.On || f.WhenOff != domain.Hide {
+		if f.IsOn || f.WhenOff != domain.Hide {
 			return fmt.Errorf("item export = %+v, want off and hidden", f)
 		}
 	default:
-		if f.On || f.WhenOff != domain.ShowLocked {
+		if f.IsOn || f.WhenOff != domain.ShowLocked {
 			return fmt.Errorf("item export = %+v, want off and shown locked", f)
 		}
 		if want := []string{availableOn}; !slices.Equal(f.AvailableOn, want) {
@@ -136,14 +136,14 @@ func (w *world) itemExportIsForMyWorkspace(ctx context.Context, state, available
 // the catalog hasn't got it. The feature must be in the catalog already (each
 // plan has every feature in the plans file), so its name and whenOff stay the
 // file's.
-func (p *testPlans) setFeature(plan, key string, on bool) error {
+func (p *testPlans) setFeature(plan, key string, isOn bool) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	f, ok := p.catalogFeature(key)
 	if !ok {
 		return fmt.Errorf("no plan has the feature %q", key)
 	}
-	f.On = on
+	f.IsOn = isOn
 	entitlements, ok := p.catalog[plan]
 	if !ok {
 		entitlements = domain.Entitlements{Plan: plan, Limits: map[string]domain.Limit{}}

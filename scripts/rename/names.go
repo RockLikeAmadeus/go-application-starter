@@ -14,12 +14,12 @@ func NewNames(opts Options, current project.Names) (project.Names, error) {
 	if opts.Module != "" {
 		module = opts.Module
 	}
-	n, err := project.NewNames(module, opts.Name)
+	newNames, err := project.NewNames(module, opts.Name)
 	if err != nil {
 		return project.Names{}, err
 	}
-	if n == current {
+	if newNames == current {
 		return project.Names{}, errors.New("nothing to rename")
 	}
-	return n, nil
+	return newNames, nil
 }

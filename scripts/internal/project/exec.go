@@ -18,8 +18,8 @@ func Execute(args []string) error {
 	return nil
 }
 
-// Installed reports whether a program is on the PATH.
-func Installed(name string) bool {
+// IsInstalled reports whether a program is on the PATH.
+func IsInstalled(name string) bool {
 	_, err := exec.LookPath(name)
 	return err == nil
 }

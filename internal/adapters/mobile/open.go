@@ -27,14 +27,14 @@ type App struct {
 // answers 404: the web app's files are built in, so it needs no service
 // worker.
 func Open(getenv func(string) string, storagePath string, webAssets fs.FS) (*App, error) {
-	d, err := desktop.Open(getenv, func() (string, error) { return storagePath, nil }, webAssets)
+	desktopApp, err := desktop.Open(getenv, func() (string, error) { return storagePath, nil }, webAssets)
 	if err != nil {
 		return nil, err
 	}
 	return &App{
-		Handler: AssetHandler(d.Handler),
-		API:     d.Handler,
-		desktop: d,
+		Handler: AssetHandler(desktopApp.Handler),
+		API:     desktopApp.Handler,
+		desktop: desktopApp,
 	}, nil
 }
 

@@ -3,9 +3,9 @@ import { waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { connectionApi } from "../../test/connectionApi";
 import { renderHookWithClient } from "../../test/render";
-import { useConnectionRequired } from "./useConnectionRequired";
+import { useIsConnectionRequired } from "./useIsConnectionRequired";
 
-describe("useConnectionRequired", () => {
+describe("useIsConnectionRequired", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     onlineManager.setOnline(true);
@@ -17,7 +17,7 @@ describe("useConnectionRequired", () => {
       vi.fn(() => new Promise<Response>(() => {})),
     );
 
-    const { result } = renderHookWithClient(() => useConnectionRequired());
+    const { result } = renderHookWithClient(() => useIsConnectionRequired());
 
     expect(result.current).toBe(true);
   });
@@ -25,7 +25,7 @@ describe("useConnectionRequired", () => {
   it("is false when the server says no connection is required", async () => {
     vi.stubGlobal("fetch", connectionApi(false));
 
-    const { result } = renderHookWithClient(() => useConnectionRequired());
+    const { result } = renderHookWithClient(() => useIsConnectionRequired());
 
     await waitFor(() => expect(result.current).toBe(false));
   });
@@ -34,7 +34,7 @@ describe("useConnectionRequired", () => {
     vi.stubGlobal("fetch", connectionApi(false));
     onlineManager.setOnline(false);
 
-    const { result } = renderHookWithClient(() => useConnectionRequired());
+    const { result } = renderHookWithClient(() => useIsConnectionRequired());
 
     await waitFor(() => expect(result.current).toBe(false));
   });
@@ -45,7 +45,7 @@ describe("useConnectionRequired", () => {
     });
     vi.stubGlobal("fetch", fetch);
 
-    const { result } = renderHookWithClient(() => useConnectionRequired());
+    const { result } = renderHookWithClient(() => useIsConnectionRequired());
 
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     await new Promise((resolve) => setTimeout(resolve, 0));

@@ -62,7 +62,7 @@ func TestEntitlements_CheckChange(t *testing.T) {
 		count        int
 		want         *domain.LimitError
 	}{
-		"over a read-only limit":    {entitlementsWithItemLimit(3, domain.ReadOnly), 4, &domain.LimitError{Limit: "items", Max: 3, ReadOnly: true}},
+		"over a read-only limit":    {entitlementsWithItemLimit(3, domain.ReadOnly), 4, &domain.LimitError{Limit: "items", Max: 3, IsReadOnly: true}},
 		"at a read-only limit":      {entitlementsWithItemLimit(3, domain.ReadOnly), 3, nil},
 		"over a block-new limit":    {entitlementsWithItemLimit(3, domain.BlockNew), 4, nil},
 		"a plan without that limit": {domain.Entitlements{Plan: "pro"}, 100, nil},
@@ -81,7 +81,7 @@ func TestLimitError_Message(t *testing.T) {
 		want string
 	}{
 		"reached":   {&domain.LimitError{Limit: "items", Max: 3}, "the limit of 3 items is reached"},
-		"read only": {&domain.LimitError{Limit: "items", Max: 3, ReadOnly: true}, "items are read only while over the limit of 3"},
+		"read only": {&domain.LimitError{Limit: "items", Max: 3, IsReadOnly: true}, "items are read only while over the limit of 3"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -168,8 +168,8 @@ func entitlementsWithFeature(f domain.Feature) domain.Entitlements {
 }
 
 func TestEntitlements_CheckFeature(t *testing.T) {
-	exportFeature := func(on bool, whenOff domain.FeatureOffBehavior, availableOn ...string) domain.Feature {
-		return domain.Feature{Key: "item-export", Name: "Item export", On: on, WhenOff: whenOff, AvailableOn: availableOn}
+	exportFeature := func(isOn bool, whenOff domain.FeatureOffBehavior, availableOn ...string) domain.Feature {
+		return domain.Feature{Key: "item-export", Name: "Item export", IsOn: isOn, WhenOff: whenOff, AvailableOn: availableOn}
 	}
 	cases := map[string]struct {
 		entitlements domain.Entitlements

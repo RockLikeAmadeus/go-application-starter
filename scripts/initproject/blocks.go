@@ -13,25 +13,25 @@ import (
 func RemoveBlocks(text, tag string) (string, error) {
 	start, end := tag+":start", tag+":end"
 	var out strings.Builder
-	inside, openedAt := false, 0
+	isInside, openedAt := false, 0
 	for i, line := range strings.SplitAfter(text, "\n") {
 		lineNo := i + 1
 		switch {
 		case strings.Contains(line, start):
-			if inside {
+			if isInside {
 				return "", fmt.Errorf("line %d: %s inside another %s block", lineNo, start, tag)
 			}
-			inside, openedAt = true, lineNo
+			isInside, openedAt = true, lineNo
 		case strings.Contains(line, end):
-			if !inside {
+			if !isInside {
 				return "", fmt.Errorf("line %d: %s without %s", lineNo, end, start)
 			}
-			inside = false
-		case !inside:
+			isInside = false
+		case !isInside:
 			out.WriteString(line)
 		}
 	}
-	if inside {
+	if isInside {
 		return "", fmt.Errorf("line %d: %s without %s", openedAt, start, end)
 	}
 	return out.String(), nil

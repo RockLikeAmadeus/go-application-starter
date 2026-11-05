@@ -124,8 +124,8 @@ func TestRunRemovesTheSampleOnlyWhenAsked(t *testing.T) {
 
 			for _, rel := range []string{"internal/core/domain/item.go", "web/src/features/items"} {
 				_, err := os.Stat(filepath.Join(dir, filepath.FromSlash(rel)))
-				if exists := err == nil; exists != tt.wantSample {
-					t.Errorf("%s exists = %v, want %v", rel, exists, tt.wantSample)
+				if isPresent := err == nil; isPresent != tt.wantSample {
+					t.Errorf("%s exists = %v, want %v", rel, isPresent, tt.wantSample)
 				}
 			}
 			if got := readFile(t, dir, "internal/bootstrap/bootstrap.go"); got != tt.wantBootstrap {

@@ -23,9 +23,9 @@ func TestOpenAnswersTheAPIOverTheBridgeOnly(t *testing.T) {
 
 	reply := mobile.Serve(app.API, http.MethodGet, "/api/v1/connection", "")
 	var body struct {
-		Required *bool `json:"required"`
+		IsRequired *bool `json:"isRequired"`
 	}
-	if err := json.Unmarshal([]byte(reply.Body), &body); reply.Status != http.StatusOK || err != nil || body.Required == nil || *body.Required {
+	if err := json.Unmarshal([]byte(reply.Body), &body); reply.Status != http.StatusOK || err != nil || body.IsRequired == nil || *body.IsRequired {
 		t.Errorf("connection over the bridge: status %d, body %q; want 200 and required false", reply.Status, reply.Body)
 	}
 

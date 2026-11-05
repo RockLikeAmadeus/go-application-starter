@@ -25,16 +25,16 @@ func ReadRecord(dir string) (Names, error) {
 	if err != nil {
 		return Names{}, err
 	}
-	var r record
-	if err := json.Unmarshal(data, &r); err != nil {
+	var stored record
+	if err := json.Unmarshal(data, &stored); err != nil {
 		return Names{}, err
 	}
-	return Names{Module: r.Module, Brand: r.Name, Slug: r.Slug, App: r.App, EnvPrefix: EnvPrefix(r.Slug)}, nil
+	return Names{Module: stored.Module, Brand: stored.Name, Slug: stored.Slug, App: stored.App, EnvPrefix: EnvPrefix(stored.Slug)}, nil
 }
 
 // WriteRecord records the names the project in dir goes by in its project.json.
-func WriteRecord(dir string, n Names) error {
-	data, err := json.MarshalIndent(record{Module: n.Module, Name: n.Brand, Slug: n.Slug, App: n.App}, "", "  ")
+func WriteRecord(dir string, names Names) error {
+	data, err := json.MarshalIndent(record{Module: names.Module, Name: names.Brand, Slug: names.Slug, App: names.App}, "", "  ")
 	if err != nil {
 		return err
 	}

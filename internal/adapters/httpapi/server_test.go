@@ -76,7 +76,7 @@ func TestReadyzIsReadyWithNoReadinessCheck(t *testing.T) {
 // The server is reached over the network, so by default the web app must
 // treat a lost connection as losing its data.
 func TestConnectionIsRequiredByDefault(t *testing.T) {
-	if !connectionRequired(t, httpapi.Options{}) {
+	if !isConnectionRequired(t, httpapi.Options{}) {
 		t.Error("required = false, want true")
 	}
 }
@@ -84,14 +84,14 @@ func TestConnectionIsRequiredByDefault(t *testing.T) {
 // In the desktop app's local-only mode the data is on this device, so a lost
 // connection doesn't matter.
 func TestConnectionIsNotRequiredForLocalData(t *testing.T) {
-	if connectionRequired(t, httpapi.Options{LocalData: true}) {
+	if isConnectionRequired(t, httpapi.Options{IsDataLocal: true}) {
 		t.Error("required = true, want false")
 	}
 }
 
-// connectionRequired asks a handler built from opts whether the web app needs
+// isConnectionRequired asks a handler built from opts whether the web app needs
 // a connection, failing the test if the answer is missing.
-func connectionRequired(t *testing.T, opts httpapi.Options) bool {
+func isConnectionRequired(t *testing.T, opts httpapi.Options) bool {
 	t.Helper()
 	rec := httptest.NewRecorder()
 	httpapi.NewHandler(opts).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/connection", nil))
@@ -100,15 +100,15 @@ func connectionRequired(t *testing.T, opts httpapi.Options) bool {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
 	}
 	var body struct {
-		Required *bool `json:"required"`
+		IsRequired *bool `json:"isRequired"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode %q: %v", rec.Body.String(), err)
 	}
-	if body.Required == nil {
+	if body.IsRequired == nil {
 		t.Fatalf("body = %s, want a required field", rec.Body)
 	}
-	return *body.Required
+	return *body.IsRequired
 }
 
 // fixedEntitlements is a ports.EntitlementsService that always answers the
@@ -148,7 +148,7 @@ func TestEntitlementsIncludeEveryFeatureByKey(t *testing.T) {
 		Plan: "free",
 		Features: map[string]domain.Feature{
 			"item-export": {Key: "item-export", Name: "Item export", WhenOff: domain.ShowLocked, AvailableOn: []string{"pro"}},
-			"sharing":     {Key: "sharing", Name: "Sharing", On: true, WhenOff: domain.Hide},
+			"sharing":     {Key: "sharing", Name: "Sharing", IsOn: true, WhenOff: domain.Hide},
 			"audit-log":   {Key: "audit-log", Name: "Audit log", WhenOff: domain.Hide},
 		},
 	}
@@ -167,9 +167,9 @@ func TestEntitlementsIncludeEveryFeatureByKey(t *testing.T) {
 	}
 	var want any
 	_ = json.Unmarshal([]byte(`{
-		"item-export": {"name": "Item export", "on": false, "whenOff": "show-locked", "availableOn": ["pro"]},
-		"sharing":     {"name": "Sharing", "on": true, "whenOff": "hide", "availableOn": []},
-		"audit-log":   {"name": "Audit log", "on": false, "whenOff": "hide", "availableOn": []}
+		"item-export": {"name": "Item export", "isOn": false, "whenOff": "show-locked", "availableOn": ["pro"]},
+		"sharing":     {"name": "Sharing", "isOn": true, "whenOff": "hide", "availableOn": []},
+		"audit-log":   {"name": "Audit log", "isOn": false, "whenOff": "hide", "availableOn": []}
 	}`), &want)
 	if !reflect.DeepEqual(got.Features, want) {
 		t.Errorf("features = %v, want %v", got.Features, want)
@@ -187,7 +187,7 @@ func (e failingEntitlements) CurrentEntitlements(context.Context) (domain.Entitl
 // A limit error is forbidden, and its problem document says which limit, so
 // clients can map it back.
 func TestALimitErrorIsAForbiddenProblemNamingTheLimit(t *testing.T) {
-	limitErr := &domain.LimitError{Limit: "items", Max: 3, ReadOnly: true}
+	limitErr := &domain.LimitError{Limit: "items", Max: 3, IsReadOnly: true}
 	rec := httptest.NewRecorder()
 	httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{limitErr}}).
 		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
@@ -204,7 +204,7 @@ func TestALimitErrorIsAForbiddenProblemNamingTheLimit(t *testing.T) {
 	}
 	want := map[string]any{
 		"type": "limit", "title": "Forbidden", "status": 403.0, "detail": limitErr.Error(),
-		"limit": "items", "max": 3.0, "readOnly": true,
+		"limit": "items", "max": 3.0, "isReadOnly": true,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("body = %v, want %v", got, want)

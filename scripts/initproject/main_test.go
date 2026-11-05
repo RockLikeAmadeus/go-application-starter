@@ -14,7 +14,7 @@ func TestMainRunsInAGitRepository(t *testing.T) {
 	}
 	tests := []struct {
 		desc      string
-		dirty     bool
+		isDirty   bool
 		wantErr   string // empty for success
 		wantGoMod string
 	}{
@@ -24,7 +24,7 @@ func TestMainRunsInAGitRepository(t *testing.T) {
 		},
 		{
 			desc:      "uncommitted changes are refused",
-			dirty:     true,
+			isDirty:   true,
 			wantErr:   "commit or stash your changes first",
 			wantGoMod: "module github.com/RockLikeAmadeus/go-application-starter\n\ngo 1.22\n",
 		},
@@ -37,7 +37,7 @@ func TestMainRunsInAGitRepository(t *testing.T) {
 			git(t, dir, "init", "-q")
 			git(t, dir, "add", ".")
 			git(t, dir, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-qm", "template")
-			if tt.dirty {
+			if tt.isDirty {
 				writeFile(t, dir, "notes.txt", "wip\n")
 			}
 

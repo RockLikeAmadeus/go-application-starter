@@ -36,9 +36,9 @@ type Config struct {
 	// PlansFile replaces the plans file built into the binary (plans_file;
 	// STARTER_PLANS_FILE). Empty means the built-in one.
 	PlansFile string
-	// IgnoreSyncedFolder silences the warning that SQLite's data folder
+	// ShouldIgnoreSyncedFolder silences the warning that SQLite's data folder
 	// looks synced (ignore_synced_folder; STARTER_IGNORE_SYNCED_FOLDER).
-	IgnoreSyncedFolder bool
+	ShouldIgnoreSyncedFolder bool
 	// SettingsFile is the settings file Load read, or "" for none.
 	SettingsFile string
 	// Sources says where each setting came from, by its key in the settings
@@ -59,19 +59,19 @@ type Env struct {
 // settingsFile, else from its default, and Sources records which.
 // settingsFile "" means none.
 func Load(env Env, settingsFile string) (Config, error) {
-	k, err := readSettingsFile(settingsFile)
+	fileSettings, err := readSettingsFile(settingsFile)
 	if err != nil {
 		return Config{}, err
 	}
 	sources := map[string]string{}
 	setting := func(key, fallback string) string {
-		if v := env.Getenv(envVars[key]); v != "" {
+		if value := env.Getenv(envVars[key]); value != "" {
 			sources[key] = "environment (" + envVars[key] + ")"
-			return v
+			return value
 		}
-		if v := k.String(key); v != "" {
+		if value := fileSettings.String(key); value != "" {
 			sources[key] = "settings file"
-			return v
+			return value
 		}
 		sources[key] = "built in"
 		return fallback
@@ -94,7 +94,7 @@ func Load(env Env, settingsFile string) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("STARTER_IGNORE_SYNCED_FOLDER: %w", err)
 	}
-	cfg.IgnoreSyncedFolder = ignore
+	cfg.ShouldIgnoreSyncedFolder = ignore
 	return cfg, cfg.Validate()
 }
 
@@ -118,7 +118,7 @@ func (c Config) Settings() []Setting {
 		{"server_url", c.ServerURL},
 		{"log_format", c.LogFormat},
 		{"plans_file", c.PlansFile},
-		{"ignore_synced_folder", c.IgnoreSyncedFolder},
+		{"ignore_synced_folder", c.ShouldIgnoreSyncedFolder},
 	}
 	settings := make([]Setting, len(values))
 	for i, v := range values {
@@ -154,17 +154,17 @@ var envVars = map[string]string{
 // readSettingsFile reads the TOML settings file at path, refusing any key
 // that isn't a setting. An empty path reads nothing.
 func readSettingsFile(path string) (*koanf.Koanf, error) {
-	k := koanf.New(".")
+	fileSettings := koanf.New(".")
 	if path == "" {
-		return k, nil
+		return fileSettings, nil
 	}
-	if err := k.Load(file.Provider(path), toml.Parser()); err != nil {
+	if err := fileSettings.Load(file.Provider(path), toml.Parser()); err != nil {
 		return nil, fmt.Errorf("read the settings file %s: %w", path, err)
 	}
-	for _, key := range k.Keys() {
+	for _, key := range fileSettings.Keys() {
 		if _, ok := envVars[key]; !ok {
 			return nil, fmt.Errorf("settings file %s: unknown setting %q", path, key)
 		}
 	}
-	return k, nil
+	return fileSettings, nil
 }

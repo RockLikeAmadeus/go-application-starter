@@ -56,17 +56,17 @@ const drawerMotion = [
 
 /** The phone-width menu: a button that opens the sidebar's content in a modal drawer. */
 function MobileNav({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   function openMenu() {
-    setOpen(true);
+    setIsOpen(true);
     dialogRef.current?.showModal();
   }
 
   // Every way of closing (a link, Escape, the backdrop) comes here: slide out,
   // then close the dialog. The browser then fires `close`, and markClosed keeps
-  // `open` in step.
+  // `isOpen` in step.
   function closeMenu() {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -78,7 +78,7 @@ function MobileNav({ children }: { children: ReactNode }) {
   }
 
   function markClosed() {
-    setOpen(false);
+    setIsOpen(false);
   }
 
   // Going somewhere from the menu, or tapping outside it, closes it. One handler
@@ -103,7 +103,7 @@ function MobileNav({ children }: { children: ReactNode }) {
     <>
       <button
         type="button"
-        aria-expanded={open}
+        aria-expanded={isOpen}
         className="type-label mb-6 rounded-control border border-line px-3 py-1.5 text-sm text-muted hover:text-fg md:hidden terminal:mb-4 terminal:text-xs"
         onClick={openMenu}
       >

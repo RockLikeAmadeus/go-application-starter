@@ -22,24 +22,24 @@ func Run(dir string, files []string, args []string, porcelain string, out io.Wri
 	if err != nil {
 		return nil, err
 	}
-	old, err := project.ReadRecord(dir)
+	oldNames, err := project.ReadRecord(dir)
 	if err != nil {
 		return nil, err
 	}
-	n, err := NewNames(opts, old)
+	newNames, err := NewNames(opts, oldNames)
 	if err != nil {
 		return nil, err
 	}
-	if opts.DryRun {
-		return nil, previewAll(out, dir, files, old, n)
+	if opts.IsDryRun {
+		return nil, previewAll(out, dir, files, oldNames, newNames)
 	}
 	if err := project.CheckClean(porcelain); err != nil {
 		return nil, err
 	}
-	if err := renameAll(dir, files, old, n); err != nil {
+	if err := renameAll(dir, files, oldNames, newNames); err != nil {
 		return nil, err
 	}
-	if n.Module != old.Module {
+	if newNames.Module != oldNames.Module {
 		return [][]string{tidy}, nil
 	}
 	return nil, nil
@@ -51,12 +51,12 @@ var tidy = []string{"go", "mod", "tidy"}
 
 // previewAll lists on out what renameAll would do to files, without changing
 // them.
-func previewAll(out io.Writer, dir string, files []string, old, n project.Names) error {
+func previewAll(out io.Writer, dir string, files []string, oldNames, newNames project.Names) error {
 	for _, rel := range files {
 		if rel == project.RecordFile {
 			continue
 		}
-		if err := preview(out, dir, rel, old, n); err != nil {
+		if err := preview(out, dir, rel, oldNames, newNames); err != nil {
 			return err
 		}
 	}
@@ -65,33 +65,33 @@ func previewAll(out io.Writer, dir string, files []string, old, n project.Names)
 
 // renameAll gives files the new names, then records them. The record is
 // written afresh, not renamed.
-func renameAll(dir string, files []string, old, n project.Names) error {
+func renameAll(dir string, files []string, oldNames, newNames project.Names) error {
 	keep := func(_, text string) (string, error) { return text, nil }
 	for _, rel := range files {
 		if rel == project.RecordFile {
 			continue
 		}
-		if err := project.RenameFile(dir, rel, old, n, keep); err != nil {
+		if err := project.RenameFile(dir, rel, oldNames, newNames, keep); err != nil {
 			return err
 		}
 	}
-	return project.WriteRecord(dir, n)
+	return project.WriteRecord(dir, newNames)
 }
 
 // preview lists on out what renaming the file rel from the old names to the
 // new ones would do: its changed lines, then its move, if any.
-func preview(out io.Writer, dir, rel string, old, n project.Names) error {
+func preview(out io.Writer, dir, rel string, oldNames, newNames project.Names) error {
 	content, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(rel)))
 	if err != nil {
 		return err
 	}
 	if project.ShouldRewrite(rel, content) {
-		if text := project.Rewrite(string(content), old, n); text != string(content) {
+		if text := project.Rewrite(string(content), oldNames, newNames); text != string(content) {
 			fmt.Fprintln(out, rel)
 			printChangedLines(out, string(content), text)
 		}
 	}
-	if newRel := project.RenamePath(rel, old, n); newRel != rel {
+	if newRel := project.RenamePath(rel, oldNames, newNames); newRel != rel {
 		fmt.Fprintln(out, rel+" -> "+newRel)
 	}
 	return nil
@@ -101,11 +101,11 @@ func preview(out io.Writer, dir, rel string, old, n project.Names) error {
 // "- old" then "+ new". Renaming never adds or removes lines, so the two texts
 // line up.
 func printChangedLines(out io.Writer, before, after string) {
-	a := strings.Split(after, "\n")
+	afterLines := strings.Split(after, "\n")
 	for i, line := range strings.Split(before, "\n") {
-		if line != a[i] {
+		if line != afterLines[i] {
 			fmt.Fprintln(out, "- "+line)
-			fmt.Fprintln(out, "+ "+a[i])
+			fmt.Fprintln(out, "+ "+afterLines[i])
 		}
 	}
 }

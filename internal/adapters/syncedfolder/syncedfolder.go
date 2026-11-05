@@ -9,21 +9,21 @@ import (
 	"strings"
 )
 
-// A sign is a filepath.Match pattern for a file or folder name that a sync
+// A syncSign is a filepath.Match pattern for a file or folder name that a sync
 // service leaves, with the service's name.
-type sign struct{ pattern, service string }
+type syncSign struct{ pattern, service string }
 
 // markers are the files or folders a sync service leaves at the top of the
 // folder it keeps in sync.
-var markers = []sign{
+var markers = []syncSign{
 	{".dropbox", "Dropbox"},
 	{".stfolder", "Syncthing"},
 	{".sync_*.db", "Nextcloud"},
 	{"._sync_*.db", "Nextcloud"},
 }
 
-// names are the names a sync service gives the folder it keeps in sync.
-var names = []sign{
+// folderNames are the names a sync service gives the folder it keeps in sync.
+var folderNames = []syncSign{
 	{"Dropbox", "Dropbox"},
 	{"OneDrive", "OneDrive"},
 	{"OneDrive - *", "OneDrive"}, // a work or school account: "OneDrive - <org>"
@@ -71,10 +71,10 @@ func Detect(dir string) (service string, ok bool) {
 // own path stay plain characters. A folder it can't read holds no markers.
 func markedBy(dir string) (service string, ok bool) {
 	entries, _ := os.ReadDir(dir)
-	for _, m := range markers {
-		for _, e := range entries {
-			if matches(m, e.Name()) {
-				return m.service, true
+	for _, marker := range markers {
+		for _, entry := range entries {
+			if matches(marker, entry.Name()) {
+				return marker.service, true
 			}
 		}
 	}
@@ -83,9 +83,9 @@ func markedBy(dir string) (service string, ok bool) {
 
 // namedFor reports the service whose folder name dir has, if any.
 func namedFor(dir string) (service string, ok bool) {
-	for _, n := range names {
-		if matches(n, filepath.Base(dir)) {
-			return n.service, true
+	for _, folderName := range folderNames {
+		if matches(folderName, filepath.Base(dir)) {
+			return folderName.service, true
 		}
 	}
 	return "", false
@@ -106,7 +106,7 @@ func cloudStorageProvider(dir string) (service string, ok bool) {
 	return provider, true
 }
 
-func matches(s sign, name string) bool {
-	matched, _ := filepath.Match(s.pattern, name)
-	return matched
+func matches(sign syncSign, name string) bool {
+	isMatch, _ := filepath.Match(sign.pattern, name)
+	return isMatch
 }

@@ -31,5 +31,5 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	return project.FollowUp(cmds, project.Execute, project.Installed, os.Stdout)
+	return project.FollowUp(cmds, project.Execute, project.IsInstalled, os.Stdout)
 }

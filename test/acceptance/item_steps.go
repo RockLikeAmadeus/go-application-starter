@@ -121,8 +121,8 @@ func (w *world) names(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	names := make([]string, 0, len(items))
-	for _, it := range items {
-		names = append(names, it.Name)
+	for _, item := range items {
+		names = append(names, item.Name)
 	}
 	return names, nil
 }
@@ -132,9 +132,9 @@ func (w *world) findByName(ctx context.Context, name string) (domain.Item, error
 	if err != nil {
 		return domain.Item{}, err
 	}
-	for _, it := range items {
-		if it.Name == name {
-			return it, nil
+	for _, item := range items {
+		if item.Name == name {
+			return item, nil
 		}
 	}
 	return domain.Item{}, fmt.Errorf("no item named %q", name)

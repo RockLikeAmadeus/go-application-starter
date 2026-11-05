@@ -66,13 +66,13 @@ export function ItemsPage() {
 
 function ItemRow({ item }: { item: Item }) {
   const deleteItem = useDeleteItem();
-  const [editing, setEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  if (editing) {
+  if (isEditing) {
     return (
       <tr>
         <td colSpan={2} className="px-4 py-row soft:px-6">
-          <RenameForm item={item} onDone={() => setEditing(false)} />
+          <RenameForm item={item} onDone={() => setIsEditing(false)} />
         </td>
       </tr>
     );
@@ -87,7 +87,7 @@ function ItemRow({ item }: { item: Item }) {
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={() => setEditing(true)}
+            onClick={() => setIsEditing(true)}
             aria-label={`Rename ${item.name}`}
             className="type-label text-sm text-muted hover:text-fg terminal:text-xs"
           >

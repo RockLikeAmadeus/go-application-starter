@@ -15,7 +15,7 @@ type Handlers struct {
 	items ports.ItemService
 	// sample:end
 	entitlements ports.EntitlementsService
-	localData    bool
+	isDataLocal  bool
 	warnings     []string
 }
 
@@ -28,7 +28,7 @@ func NewHandlers(opts Options) *Handlers {
 		items: opts.Items,
 		// sample:end
 		entitlements: opts.Entitlements,
-		localData:    opts.LocalData,
+		isDataLocal:  opts.IsDataLocal,
 		warnings:     opts.Warnings,
 	}
 }

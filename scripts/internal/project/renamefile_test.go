@@ -92,9 +92,9 @@ func TestRenameFileLeavesSkippedFilesUntouched(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.sum"), []byte(in), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	called := false
+	wasCalled := false
 	extra := func(_, text string) (string, error) {
-		called = true
+		wasCalled = true
 		return text, nil
 	}
 
@@ -102,7 +102,7 @@ func TestRenameFileLeavesSkippedFilesUntouched(t *testing.T) {
 		t.Fatalf("RenameFile error = %v", err)
 	}
 
-	if called {
+	if wasCalled {
 		t.Error("extra was called for go.sum, want it skipped")
 	}
 	data, err := os.ReadFile(filepath.Join(dir, "go.sum"))

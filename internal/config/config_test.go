@@ -119,7 +119,7 @@ func TestStorageAcceptsSQLiteAndTheErrorForAnUnknownOneNamesAllThree(t *testing.
 	}
 }
 
-func TestIgnoreSyncedFolderIsABoolFromTheSettingsFileOrEnvironmentDefaultingToFalse(t *testing.T) {
+func TestShouldIgnoreSyncedFolderIsABoolFromTheSettingsFileOrEnvironmentDefaultingToFalse(t *testing.T) {
 	cases := []struct {
 		name     string
 		file     string
@@ -143,8 +143,8 @@ func TestIgnoreSyncedFolderIsABoolFromTheSettingsFileOrEnvironmentDefaultingToFa
 			if err != nil {
 				t.Fatalf("Load: %v", err)
 			}
-			if cfg.IgnoreSyncedFolder != c.want {
-				t.Errorf("IgnoreSyncedFolder = %v, want %v", cfg.IgnoreSyncedFolder, c.want)
+			if cfg.ShouldIgnoreSyncedFolder != c.want {
+				t.Errorf("ShouldIgnoreSyncedFolder = %v, want %v", cfg.ShouldIgnoreSyncedFolder, c.want)
 			}
 			if !listsSetting(cfg.Settings(), config.Setting{Key: "ignore_synced_folder", Value: c.want, Source: c.wantFrom}) {
 				t.Errorf("Settings() = %v, want ignore_synced_folder = %v from %q", cfg.Settings(), c.want, c.wantFrom)

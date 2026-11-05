@@ -20,7 +20,7 @@ func TestParseArgs(t *testing.T) {
 			args: []string{"--name", "Zenith", "--module", "example.com/zenith/notes"},
 			want: rename.Options{Module: "example.com/zenith/notes", Name: "Zenith"},
 		},
-		{desc: "dry run", args: []string{"--name", "Zenith", "--dry-run"}, want: rename.Options{Name: "Zenith", DryRun: true}},
+		{desc: "dry run", args: []string{"--name", "Zenith", "--dry-run"}, want: rename.Options{Name: "Zenith", IsDryRun: true}},
 		{desc: "no name", args: []string{"--module", "example.com/zenith/notes"}, wantErr: "--name is required"},
 		{
 			desc:    "invalid module path",

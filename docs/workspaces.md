@@ -110,7 +110,7 @@ Then run the isolation suite from the adapter's contract tests:
 storagetest.RunWorkspaceIsolation(t,
 	func(t *testing.T) ports.WorkspaceRepository[domain.Widget] { return newRepo(t) },
 	storagetest.RecordKind[domain.Widget]{
-		New:       func(ws domain.WorkspaceID, id string) domain.Widget { return domain.Widget{ID: id, WorkspaceID: ws, Name: "W"} },
+		New:       func(recordWorkspace domain.WorkspaceID, id string) domain.Widget { return domain.Widget{ID: id, WorkspaceID: recordWorkspace, Name: "W"} },
 		ID:        func(w domain.Widget) string { return w.ID },
 		Workspace: func(w domain.Widget) domain.WorkspaceID { return w.WorkspaceID },
 	})

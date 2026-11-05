@@ -132,7 +132,7 @@ func TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints(t *testing.T) {
 	}
 
 	export, ok := got.Features["export"]
-	if got.Plan != "local" || !ok || export.On || export.WhenOff != domain.ShowLocked || len(export.AvailableOn) != 0 {
+	if got.Plan != "local" || !ok || export.IsOn || export.WhenOff != domain.ShowLocked || len(export.AvailableOn) != 0 {
 		t.Errorf("CurrentEntitlements = %+v, want the local plan with export locked and no hint", got)
 	}
 	if _, err := os.Stat(dataDir); !os.IsNotExist(err) {
@@ -148,7 +148,7 @@ func TestNewEntitlements_ShippedPlansHaveItemExport(t *testing.T) {
 	defer func(plan string) { bootstrap.LocalPlan = plan }(bootstrap.LocalPlan)
 	for _, tc := range []struct {
 		plan string
-		on   bool
+		isOn bool
 	}{{"local", true}, {"pro", true}, {"free", false}} {
 		t.Run(tc.plan, func(t *testing.T) {
 			bootstrap.LocalPlan = tc.plan
@@ -162,8 +162,8 @@ func TestNewEntitlements_ShippedPlansHaveItemExport(t *testing.T) {
 			}
 
 			export, ok := got.Features["item-export"]
-			if !ok || export.Name != "Item export" || export.On != tc.on || export.WhenOff != domain.ShowLocked {
-				t.Errorf("item-export = %+v (found %t), want Item export, on %t, shown locked when off", export, ok, tc.on)
+			if !ok || export.Name != "Item export" || export.IsOn != tc.isOn || export.WhenOff != domain.ShowLocked {
+				t.Errorf("item-export = %+v (found %t), want Item export, on %t, shown locked when off", export, ok, tc.isOn)
 			}
 		})
 	}
@@ -224,7 +224,7 @@ func TestApp_WarnsWhenSQLiteDataLooksSynced(t *testing.T) {
 			return config.Config{Storage: config.StorageJSONFile, DataDir: synced}
 		}, nil},
 		{"SQLite in a synced folder, warning turned off", func(synced string) config.Config {
-			return config.Config{Storage: config.StorageSQLite, DataDir: synced, IgnoreSyncedFolder: true}
+			return config.Config{Storage: config.StorageSQLite, DataDir: synced, ShouldIgnoreSyncedFolder: true}
 		}, nil},
 		{"SQLite in an ordinary folder", func(string) config.Config {
 			return config.Config{Storage: config.StorageSQLite, DataDir: t.TempDir()}

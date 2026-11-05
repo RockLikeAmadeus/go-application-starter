@@ -22,7 +22,7 @@ func TestParseArgs(t *testing.T) {
 		{
 			desc: "removing the sample",
 			args: withDetails("--module", "example.com/acme/tasks", "--name", "Acme", "--remove-sample"),
-			want: wantDetails(initproject.Options{Module: "example.com/acme/tasks", Name: "Acme", RemoveSample: true}),
+			want: wantDetails(initproject.Options{Module: "example.com/acme/tasks", Name: "Acme", ShouldRemoveSample: true}),
 		},
 		{desc: "no module", args: []string{"--name", "Acme"}, wantErr: "--module is required"},
 		{desc: "no name", args: []string{"--module", "example.com/acme/tasks"}, wantErr: "--name is required"},

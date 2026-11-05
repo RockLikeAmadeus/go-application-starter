@@ -22,7 +22,7 @@ import (
 func TestOpenReportsNoConnectionIsRequired(t *testing.T) {
 	app := openAt(t, t.TempDir())
 
-	if connectionRequired(t, app.Handler) {
+	if isConnectionRequired(t, app.Handler) {
 		t.Error("required = true, want false")
 	}
 }
@@ -190,18 +190,18 @@ func openWith(t *testing.T, dataDir string, webApp fs.FS) *desktop.App {
 	return app
 }
 
-// connectionRequired asks the REST API whether the web app needs a
+// isConnectionRequired asks the REST API whether the web app needs a
 // connection, as the SPA does.
-func connectionRequired(t *testing.T, h http.Handler) bool {
+func isConnectionRequired(t *testing.T, h http.Handler) bool {
 	t.Helper()
 	var body struct {
-		Required *bool `json:"required"`
+		IsRequired *bool `json:"isRequired"`
 	}
 	getJSON(t, h, "/api/v1/connection", &body)
-	if body.Required == nil {
+	if body.IsRequired == nil {
 		t.Fatal("connection: the answer has no required field")
 	}
-	return *body.Required
+	return *body.IsRequired
 }
 
 // getJSON asks the REST API for path, as the SPA does, and decodes its

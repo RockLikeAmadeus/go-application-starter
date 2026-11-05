@@ -40,7 +40,7 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 	if err := setPackageDetails(dir, opts, false); err != nil {
 		return nil, err
 	}
-	if opts.RemoveSample {
+	if opts.ShouldRemoveSample {
 		if err := removeAll(dir, SampleFiles); err != nil {
 			return nil, err
 		}
@@ -48,9 +48,9 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 	if err := removeAll(dir, toolFiles); err != nil {
 		return nil, err
 	}
-	strip := func(rel, text string) (string, error) { return stripBlocks(rel, text, opts.RemoveSample) }
+	strip := func(rel, text string) (string, error) { return stripBlocks(rel, text, opts.ShouldRemoveSample) }
 	for _, rel := range files {
-		if rel == project.RecordFile || isUnder(rel, toolFiles) || opts.RemoveSample && IsSample(rel) {
+		if rel == project.RecordFile || isUnder(rel, toolFiles) || opts.ShouldRemoveSample && IsSample(rel) {
 			continue
 		}
 		if err := project.RenameFile(dir, rel, old, n, strip); err != nil {
@@ -63,7 +63,7 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 	if err := project.WriteRecord(dir, n); err != nil {
 		return nil, err
 	}
-	if opts.RemoveSample {
+	if opts.ShouldRemoveSample {
 		return regenerate, nil
 	}
 	return [][]string{tidy}, nil
@@ -73,7 +73,7 @@ func Run(dir string, files []string, args []string, porcelain string) ([][]strin
 // function that sets them.
 var packageFiles = []struct {
 	rel string
-	set func(text string, o Options) (string, error)
+	set func(text string, options Options) (string, error)
 }{
 	{"build/desktop/linux/nfpm.yaml", SetNFPMDetails},
 	{"build/desktop/linux/app.desktop", SetDesktopComment},
@@ -83,18 +83,18 @@ var packageFiles = []struct {
 // setPackageDetails sets the app's details in the packaging files. Without
 // write it only checks that every file exists and has its keys, so Run can
 // refuse before touching anything.
-func setPackageDetails(dir string, o Options, write bool) error {
+func setPackageDetails(dir string, options Options, shouldWrite bool) error {
 	for _, f := range packageFiles {
 		path := filepath.Join(dir, filepath.FromSlash(f.rel))
 		b, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
-		text, err := f.set(string(b), o)
+		text, err := f.set(string(b), options)
 		if err != nil {
 			return fmt.Errorf("%s: %w", f.rel, err)
 		}
-		if write {
+		if shouldWrite {
 			if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
 				return err
 			}
@@ -123,12 +123,12 @@ var goimports = &imports.Options{Comments: true, TabIndent: true, TabWidth: 8}
 // blocks, before project.RenameFile gives it the new names. Go files that lost
 // sample blocks are tidied as goimports would, so the sample's code can be
 // fenced without fencing its imports.
-func stripBlocks(rel, text string, removeSample bool) (string, error) {
+func stripBlocks(rel, text string, shouldRemoveSample bool) (string, error) {
 	text, err := RemoveBlocks(text, templateTag)
 	if err != nil {
 		return "", err
 	}
-	if !removeSample {
+	if !shouldRemoveSample {
 		return text, nil
 	}
 	if text, err = RemoveBlocks(text, sampleTag); err != nil {

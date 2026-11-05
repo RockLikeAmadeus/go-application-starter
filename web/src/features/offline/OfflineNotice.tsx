@@ -1,6 +1,6 @@
 import { noticeClass } from "../../components/notice";
-import { useConnectionRequired } from "./useConnectionRequired";
-import { useOnline } from "./useOnline";
+import { useIsConnectionRequired } from "./useIsConnectionRequired";
+import { useIsOnline } from "./useIsOnline";
 
 /**
  * Says the app is offline, on every page, unless its data needs no connection
@@ -9,11 +9,11 @@ import { useOnline } from "./useOnline";
  * message when it appears.
  */
 export function OfflineNotice() {
-  const online = useOnline();
-  const connectionRequired = useConnectionRequired();
+  const isOnline = useIsOnline();
+  const isConnectionRequired = useIsConnectionRequired();
   return (
     <div role="status">
-      {connectionRequired && !online && (
+      {isConnectionRequired && !isOnline && (
         <p className={noticeClass}>
           You're offline. Data will load when the connection comes back.
         </p>

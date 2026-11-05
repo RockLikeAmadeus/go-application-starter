@@ -28,9 +28,9 @@ type Options struct {
 	Ready func(context.Context) error
 	// WebAssets is the built SPA (web/dist). When nil, "/" serves a hint page.
 	WebAssets fs.FS
-	// LocalData is set when the data is on the same device as the web app
+	// IsDataLocal is set when the data is on the same device as the web app
 	// (the desktop app's local-only mode), so it needs no connection.
-	LocalData bool
+	IsDataLocal bool
 	// Warnings answers GET /api/v1/warnings: messages every front end shows
 	// as given, such as bootstrap.App.Warnings. None when nil.
 	Warnings []string

@@ -9,10 +9,10 @@ export function afterTransition(el: HTMLElement, done: () => void) {
     done();
     return;
   }
-  let finished = false;
+  let hasFinished = false;
   const finish = () => {
-    if (finished) return;
-    finished = true;
+    if (hasFinished) return;
+    hasFinished = true;
     el.removeEventListener("transitionend", onEnd);
     done();
   };

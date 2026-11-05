@@ -55,10 +55,10 @@ func (e OverLimitBehavior) Valid() bool {
 
 // Connection defines model for Connection.
 type Connection struct {
-	// Required True when the app reaches its data over the network (the server).
+	// IsRequired True when the app reaches its data over the network (the server).
 	// False when the data is on this device (the desktop app's local-only
 	// mode), so a lost connection doesn't matter.
-	Required bool `json:"required"`
+	IsRequired bool `json:"isRequired"`
 }
 
 // Entitlements defines model for Entitlements.
@@ -80,11 +80,11 @@ type Feature struct {
 	// the edition gives no hints.
 	AvailableOn []string `json:"availableOn"`
 
+	// IsOn True when the workspace's plan has the feature.
+	IsOn bool `json:"isOn"`
+
 	// Name What people read (e.g. "Item export").
 	Name string `json:"name"`
-
-	// On True when the workspace's plan has the feature.
-	On bool `json:"on"`
 
 	// WhenOff What to show of a feature that's off. show-locked: show it locked,
 	// with the upgrade hint. hide: leave it out.
@@ -142,6 +142,11 @@ type Problem struct {
 	// Field The offending input field, for validation errors.
 	Field *string `json:"field,omitempty"`
 
+	// IsReadOnly For limit errors: true when the change was refused because the
+	// workspace is over a limit that makes things read only, false when
+	// a new one was refused at the limit.
+	IsReadOnly *bool `json:"isReadOnly,omitempty"`
+
 	// Limit The plan limit that was reached (e.g. "items"), for limit errors.
 	Limit *string `json:"limit,omitempty"`
 
@@ -149,14 +154,9 @@ type Problem struct {
 	Max *int `json:"max,omitempty"`
 
 	// Name The feature's display name (e.g. "Item export"), for feature errors.
-	Name *string `json:"name,omitempty"`
-
-	// ReadOnly For limit errors: true when the change was refused because the
-	// workspace is over a limit that makes things read only, false when
-	// a new one was refused at the limit.
-	ReadOnly *bool  `json:"readOnly,omitempty"`
-	Status   int    `json:"status"`
-	Title    string `json:"title"`
+	Name   *string `json:"name,omitempty"`
+	Status int     `json:"status"`
+	Title  string  `json:"title"`
 
 	// Type Machine-readable error code, e.g. "not_found", "validation".
 	Type *string `json:"type,omitempty"`

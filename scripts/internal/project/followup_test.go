@@ -26,10 +26,10 @@ func TestFollowUpSkipsPnpmWhenItIsNotInstalled(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			var ran [][]string
 			run := func(cmd []string) error { ran = append(ran, cmd); return nil }
-			installed := func(name string) bool { return name != "pnpm" || tt.hasPnpm }
+			isInstalled := func(name string) bool { return name != "pnpm" || tt.hasPnpm }
 			var out bytes.Buffer
 
-			if err := project.FollowUp([][]string{tidy, genWeb}, run, installed, &out); err != nil {
+			if err := project.FollowUp([][]string{tidy, genWeb}, run, isInstalled, &out); err != nil {
 				t.Fatalf("FollowUp error = %v", err)
 			}
 
@@ -46,10 +46,10 @@ func TestFollowUpSkipsPnpmWhenItIsNotInstalled(t *testing.T) {
 func TestFollowUpTurnsAFailingWebRegenerationIntoAHint(t *testing.T) {
 	genWeb := []string{"pnpm", "--dir", "web", "gen:api"}
 	run := func([]string) error { return errors.New("ERR_PNPM_UNSUPPORTED_ENGINE") }
-	installed := func(string) bool { return true }
+	isInstalled := func(string) bool { return true }
 	var out bytes.Buffer
 
-	if err := project.FollowUp([][]string{genWeb}, run, installed, &out); err != nil {
+	if err := project.FollowUp([][]string{genWeb}, run, isInstalled, &out); err != nil {
 		t.Fatalf("FollowUp error = %v, want the failure reported as a hint", err)
 	}
 
@@ -64,10 +64,10 @@ func TestFollowUpNamesAFailedCommandOnlyOnce(t *testing.T) {
 	genWeb := []string{"pnpm", "--dir", "web", "gen:api"}
 	// Errors from main's runner already start with the command line.
 	run := func([]string) error { return errors.New("pnpm --dir web gen:api: exit status 1") }
-	installed := func(string) bool { return true }
+	isInstalled := func(string) bool { return true }
 	var out bytes.Buffer
 
-	if err := project.FollowUp([][]string{genWeb}, run, installed, &out); err != nil {
+	if err := project.FollowUp([][]string{genWeb}, run, isInstalled, &out); err != nil {
 		t.Fatalf("FollowUp error = %v", err)
 	}
 

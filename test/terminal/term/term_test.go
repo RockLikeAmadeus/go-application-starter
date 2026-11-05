@@ -134,8 +134,8 @@ func TestAltScreenIsOnWhileTheProgramUsesIt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !tm.AltScreen() {
-		t.Error("AltScreen() = false while the program is on the alternate screen")
+	if !tm.IsShowingAltScreen() {
+		t.Error("IsShowingAltScreen() = false while the program is on the alternate screen")
 	}
 }
 

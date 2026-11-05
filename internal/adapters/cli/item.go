@@ -13,30 +13,30 @@ import (
 )
 
 func newItemCmd(open appOpener) *cobra.Command {
-	var asJSON bool
+	var shouldPrintJSON bool
 
 	cmd := &cobra.Command{Use: "item", Short: "Manage items"}
-	cmd.PersistentFlags().BoolVar(&asJSON, "json", false, "print machine-readable JSON")
+	cmd.PersistentFlags().BoolVar(&shouldPrintJSON, "json", false, "print machine-readable JSON")
 
 	printItems := func(cmd *cobra.Command, items []domain.Item) error {
-		if asJSON {
+		if shouldPrintJSON {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
 			out := make([]itemJSON, 0, len(items))
-			for _, it := range items {
-				out = append(out, toItemJSON(it))
+			for _, item := range items {
+				out = append(out, toItemJSON(item))
 			}
 			return enc.Encode(out)
 		}
 		tw := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 4, 2, ' ', 0)
 		fmt.Fprintln(tw, "ID\tNAME\tUPDATED")
-		for _, it := range items {
-			fmt.Fprintf(tw, "%s\t%s\t%s\n", it.ID, it.Name, it.UpdatedAt.Format(time.RFC3339))
+		for _, item := range items {
+			fmt.Fprintf(tw, "%s\t%s\t%s\n", item.ID, item.Name, item.UpdatedAt.Format(time.RFC3339))
 		}
 		return tw.Flush()
 	}
 	printItem := func(cmd *cobra.Command, item domain.Item) error {
-		if asJSON {
+		if shouldPrintJSON {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
 			return enc.Encode(toItemJSON(item))

@@ -5,12 +5,12 @@ import { renderWithClient } from "../../test/render";
 import { OfflineNotice } from "./OfflineNotice";
 
 /** Starts the browser with or without a connection; returns a way to change it, as the browser would. */
-function connection(online: boolean) {
-  const onLine = vi.spyOn(navigator, "onLine", "get").mockReturnValue(online);
-  return (nowOnline: boolean) => {
-    onLine.mockReturnValue(nowOnline);
+function connection(isOnline: boolean) {
+  const onLine = vi.spyOn(navigator, "onLine", "get").mockReturnValue(isOnline);
+  return (isNowOnline: boolean) => {
+    onLine.mockReturnValue(isNowOnline);
     act(() => {
-      window.dispatchEvent(new Event(nowOnline ? "online" : "offline"));
+      window.dispatchEvent(new Event(isNowOnline ? "online" : "offline"));
     });
   };
 }

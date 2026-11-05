@@ -81,8 +81,8 @@ func Parse(data []byte) (Catalog, error) {
 // buildFeatures validates the file's features, all of them off.
 func buildFeatures(records map[string]featureRecord) (map[string]domain.Feature, error) {
 	features := map[string]domain.Feature{}
-	for key, f := range records {
-		built, err := domain.NewFeature(key, f.Name, f.WhenOff)
+	for key, record := range records {
+		built, err := domain.NewFeature(key, record.Name, record.WhenOff)
 		if err != nil {
 			return nil, fmt.Errorf("feature %q: %w", key, err)
 		}
@@ -93,25 +93,25 @@ func buildFeatures(records map[string]featureRecord) (map[string]domain.Feature,
 
 // entitlements builds the named plan's entitlements, validating each limit,
 // and turns on the features it lists among all the file's features.
-func (p planRecord) entitlements(name string, allFeatures map[string]domain.Feature) (domain.Entitlements, error) {
+func (p planRecord) entitlements(planName string, allFeatures map[string]domain.Feature) (domain.Entitlements, error) {
 	limits := map[string]domain.Limit{}
-	for limit, l := range p.Limits {
-		built, err := domain.NewLimit(limit, l.Max, l.WhenOver)
+	for limitName, record := range p.Limits {
+		built, err := domain.NewLimit(limitName, record.Max, record.WhenOver)
 		if err != nil {
-			return domain.Entitlements{}, fmt.Errorf("limit %q: %w", limit, err)
+			return domain.Entitlements{}, fmt.Errorf("limit %q: %w", limitName, err)
 		}
-		limits[limit] = built
+		limits[limitName] = built
 	}
 	features := maps.Clone(allFeatures)
 	for _, key := range p.Features {
-		f, ok := features[key]
+		feature, ok := features[key]
 		if !ok {
 			return domain.Entitlements{}, fmt.Errorf("feature %q isn't in the file's features", key)
 		}
-		f.On = true
-		features[key] = f
+		feature.IsOn = true
+		features[key] = feature
 	}
-	return domain.Entitlements{Plan: name, Limits: limits, Features: features}, nil
+	return domain.Entitlements{Plan: planName, Limits: limits, Features: features}, nil
 }
 
 // stripComments empties every full-line // comment. It keeps the lines, so a
@@ -134,10 +134,10 @@ type Entitlements struct {
 	// one plan for every workspace; the acceptance tests answer from a map.
 	// Changing a workspace's plan (ChangePlan) will store the answers instead.
 	PlanOf func(ctx context.Context, workspace domain.WorkspaceID) (string, error)
-	// Hints fills each feature's upgrade hint (AvailableOn) with the plans
+	// ShouldGiveHints fills each feature's upgrade hint (AvailableOn) with the plans
 	// that have it. The local edition leaves it off, so it gives no hints;
 	// the acceptance tests turn it on.
-	Hints bool
+	ShouldGiveHints bool
 	// LocalPlan is the local edition's plan, which a hint never names.
 	LocalPlan string
 }
@@ -145,7 +145,7 @@ type Entitlements struct {
 var _ ports.Entitlements = Entitlements{}
 
 // For returns the entitlements of the plan the workspace is on, with the
-// upgrade hints when Hints is set. It returns PlanOf's error as is, and
+// upgrade hints when ShouldGiveHints is set. It returns PlanOf's error as is, and
 // refuses a plan the catalog doesn't have.
 func (e Entitlements) For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error) {
 	plan, err := e.PlanOf(ctx, workspace)
@@ -156,7 +156,7 @@ func (e Entitlements) For(ctx context.Context, workspace domain.WorkspaceID) (do
 	if !ok {
 		return domain.Entitlements{}, fmt.Errorf("plan %q isn't in the plans file", plan)
 	}
-	if e.Hints {
+	if e.ShouldGiveHints {
 		entitlements.Features = e.withHints(entitlements.Features)
 	}
 	return entitlements, nil
@@ -166,9 +166,9 @@ func (e Entitlements) For(ctx context.Context, workspace domain.WorkspaceID) (do
 // in. It copies, so the catalog's own features stay without hints.
 func (e Entitlements) withHints(features map[string]domain.Feature) map[string]domain.Feature {
 	hinted := maps.Clone(features)
-	for key, f := range hinted {
-		f.AvailableOn = e.plansWith(key)
-		hinted[key] = f
+	for key, feature := range hinted {
+		feature.AvailableOn = e.plansWith(key)
+		hinted[key] = feature
 	}
 	return hinted
 }
@@ -178,7 +178,7 @@ func (e Entitlements) withHints(features map[string]domain.Feature) map[string]d
 func (e Entitlements) plansWith(feature string) []string {
 	var names []string
 	for name, plan := range e.Catalog {
-		if name != e.LocalPlan && plan.Features[feature].On {
+		if name != e.LocalPlan && plan.Features[feature].IsOn {
 			names = append(names, name)
 		}
 	}

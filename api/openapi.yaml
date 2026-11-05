@@ -148,9 +148,9 @@ components:
   schemas:
     Connection:
       type: object
-      required: [required]
+      required: [isRequired]
       properties:
-        required:
+        isRequired:
           type: boolean
           description: |
             True when the app reaches its data over the network (the server).
@@ -177,12 +177,12 @@ components:
             $ref: "#/components/schemas/Feature"
     Feature:
       type: object
-      required: [name, on, whenOff, availableOn]
+      required: [name, isOn, whenOff, availableOn]
       properties:
         name:
           type: string
           description: What people read (e.g. "Item export").
-        "on":
+        isOn:
           type: boolean
           description: True when the workspace's plan has the feature.
         whenOff:
@@ -287,7 +287,7 @@ components:
         max:
           type: integer
           description: The plan's maximum for that limit, for limit errors.
-        readOnly:
+        isReadOnly:
           type: boolean
           description: |
             For limit errors: true when the change was refused because the

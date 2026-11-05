@@ -10,11 +10,11 @@ import (
 
 // WorkspaceItems returns the map's values in workspace, ordered by CreatedAt,
 // then ID, which is the contract of ports.ItemRepository.FindAll.
-func WorkspaceItems(m map[string]domain.Item, workspace domain.WorkspaceID) []domain.Item {
-	items := make([]domain.Item, 0, len(m))
-	for _, it := range m {
-		if it.WorkspaceID == workspace {
-			items = append(items, it)
+func WorkspaceItems(itemsByID map[string]domain.Item, workspace domain.WorkspaceID) []domain.Item {
+	items := make([]domain.Item, 0, len(itemsByID))
+	for _, item := range itemsByID {
+		if item.WorkspaceID == workspace {
+			items = append(items, item)
 		}
 	}
 	slices.SortFunc(items, func(a, b domain.Item) int {

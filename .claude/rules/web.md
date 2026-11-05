@@ -18,7 +18,7 @@ The SPA is an installable web app (`VitePWA` in `web/vite.config.ts`). Its servi
 
 ## Local data and offline behaviour
 
-In the local edition, the desktop app keeps its data on the computer (`httpapi.Options.LocalData`; remote mode, which is planned, will leave it unset), so `GET /api/v1/connection` answers `{"required": false}`. The SPA then hides the offline notice and keeps TanStack Query online (`useConnectionRequired`, `useLocalDataOnline`). New offline behaviour in the SPA must respect that answer. The desktop handler answers `/sw.js` with 404, so the service worker never runs there.
+In the local edition, the desktop app keeps its data on the computer (`httpapi.Options.IsDataLocal`; remote mode, which is planned, will leave it unset), so `GET /api/v1/connection` answers `{"isRequired": false}`. The SPA then hides the offline notice and keeps TanStack Query online (`useIsConnectionRequired`, `useLocalDataOnline`). New offline behaviour in the SPA must respect that answer. The desktop handler answers `/sw.js` with 404, so the service worker never runs there.
 
 ## Android bridge (`web/src/api/client.ts`)
 

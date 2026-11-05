@@ -62,7 +62,7 @@ func (j *journey) theTerminalShowsWhatItShowedBefore() error {
 	if err := j.succeeds(); err != nil {
 		return err
 	}
-	if j.term.AltScreen() {
+	if j.term.IsShowingAltScreen() {
 		return fmt.Errorf("the terminal is still on the alternate screen; it shows:\n%s", j.term.Screen())
 	}
 	if screen := j.term.Screen(); strings.Contains(screen, "q quit") {

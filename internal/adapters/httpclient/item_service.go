@@ -55,8 +55,8 @@ func (s *ItemService) ListItems(ctx context.Context) ([]domain.Item, error) {
 		return nil, toError(res.StatusCode(), res.ApplicationproblemJSONDefault)
 	}
 	items := make([]domain.Item, 0, len(res.JSON200.Items))
-	for _, it := range res.JSON200.Items {
-		items = append(items, toItem(it))
+	for _, item := range res.JSON200.Items {
+		items = append(items, toItem(item))
 	}
 	return items, nil
 }

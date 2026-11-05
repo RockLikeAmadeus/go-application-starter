@@ -13,7 +13,7 @@ import (
 // Factory returns a fresh, empty repository for each subtest.
 type Factory func(t *testing.T) ports.ItemRepository
 
-var base = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+var baseTime = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
 // workspace is the workspace the contract's items belong to. Keeping
 // workspaces apart is checked by RunWorkspaceIsolation.
@@ -23,13 +23,13 @@ func item(id, name string, offset time.Duration) domain.Item {
 	return itemIn(workspace, id, name, offset)
 }
 
-func itemIn(ws domain.WorkspaceID, id, name string, offset time.Duration) domain.Item {
+func itemIn(itemWorkspace domain.WorkspaceID, id, name string, offset time.Duration) domain.Item {
 	return domain.Item{
 		ID:          id,
-		WorkspaceID: ws,
+		WorkspaceID: itemWorkspace,
 		Name:        name,
-		CreatedAt:   base.Add(offset),
-		UpdatedAt:   base.Add(offset),
+		CreatedAt:   baseTime.Add(offset),
+		UpdatedAt:   baseTime.Add(offset),
 	}
 }
 
@@ -42,7 +42,9 @@ func RunItemRepositoryContract(t *testing.T, newRepo Factory) {
 		RunWorkspaceIsolation(t,
 			func(t *testing.T) ports.WorkspaceRepository[domain.Item] { return newRepo(t) },
 			RecordKind[domain.Item]{
-				New:       func(ws domain.WorkspaceID, id string) domain.Item { return itemIn(ws, id, "Item "+id, 0) },
+				New: func(recordWorkspace domain.WorkspaceID, id string) domain.Item {
+					return itemIn(recordWorkspace, id, "Item "+id, 0)
+				},
 				ID:        func(i domain.Item) string { return i.ID },
 				Workspace: func(i domain.Item) domain.WorkspaceID { return i.WorkspaceID },
 			})
@@ -71,7 +73,7 @@ func RunItemRepositoryContract(t *testing.T, newRepo Factory) {
 		repo := newRepo(t)
 		mustSave(t, repo, item("a", "Alpha", 0))
 		updated := item("a", "Alpha 2", 0)
-		updated.UpdatedAt = base.Add(time.Hour)
+		updated.UpdatedAt = baseTime.Add(time.Hour)
 		mustSave(t, repo, updated)
 
 		got, _ := repo.FindByID(ctx, workspace, "a")
@@ -93,8 +95,8 @@ func RunItemRepositoryContract(t *testing.T, newRepo Factory) {
 			t.Fatalf("FindAll: %v", err)
 		}
 		var ids []string
-		for _, it := range all {
-			ids = append(ids, it.ID)
+		for _, item := range all {
+			ids = append(ids, item.ID)
 		}
 		if len(ids) != 3 || ids[0] != "a" || ids[1] != "b" || ids[2] != "c" {
 			t.Errorf("order = %v, want [a b c]", ids)
@@ -129,10 +131,10 @@ func RunItemRepositoryContract(t *testing.T, newRepo Factory) {
 
 }
 
-func mustSave(t *testing.T, repo ports.ItemRepository, it domain.Item) {
+func mustSave(t *testing.T, repo ports.ItemRepository, item domain.Item) {
 	t.Helper()
-	if err := repo.Save(context.Background(), it); err != nil {
-		t.Fatalf("Save(%s): %v", it.ID, err)
+	if err := repo.Save(context.Background(), item); err != nil {
+		t.Fatalf("Save(%s): %v", item.ID, err)
 	}
 }
 

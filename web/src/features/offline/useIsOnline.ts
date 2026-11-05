@@ -10,6 +10,6 @@ function subscribe(onChange: () => void) {
 }
 
 /** Whether the browser has a connection, kept up to date as it drops and returns. */
-export function useOnline(): boolean {
+export function useIsOnline(): boolean {
   return useSyncExternalStore(subscribe, () => navigator.onLine);
 }

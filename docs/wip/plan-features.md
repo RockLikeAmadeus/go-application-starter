@@ -13,7 +13,7 @@
 - **Feature keys and display names:** the key (`item-export`) is what code and the API use. The required `name` ("Item export") is what people read, so template users choose its wording and capitals. `FeatureError` and the hints use the name ("Item export isn't on your plan").
 - **Fail closed in the core:** `CheckFeature` refuses a feature that's off, and also one the catalog doesn't know. The use case refuses when the entitlements can't be looked up. The front ends only *display* gating, so when they can't read the entitlements they avoid jarring changes rather than hide things (see Web and CLI below).
 - **The upgrade hint** names the plans that have the feature, worked out from the catalog when it's looked up (so the harness's `define` stays right). It leaves out the local edition's plan (`bootstrap.LocalPlan`). A hidden feature has no hint. **The local edition gives no hints:** bootstrap wires the plans adapter with hints off, and the acceptance harness turns them on. A locked feature with no hint says only that it isn't available.
-- **Domain shape:** `Entitlements.Features map[string]Feature`, where `Feature{Key, Name, On, WhenOff, AvailableOn}` is built with `NewFeature`, `FeatureOffBehavior` is `show-locked` or `hide`, and `CheckFeature(key)` returns a `*FeatureError{Feature, Name, AvailableOn}`. That's a 403 problem with `feature`, `name` and `availableOn`, and `httpclient` maps it back.
+- **Domain shape:** `Entitlements.Features map[string]Feature`, where `Feature{Key, Name, IsOn, WhenOff, AvailableOn}` is built with `NewFeature`, `FeatureOffBehavior` is `show-locked` or `hide`, and `CheckFeature(key)` returns a `*FeatureError{Feature, Name, AvailableOn}`. That's a 403 problem with `feature`, `name` and `availableOn`, and `httpclient` maps it back.
 - **Sample use case:** `ItemService.ExportItems(ctx) ([]byte, error)` checks `item-export`, then encodes the workspace's items with a domain function: CSV with the header `name,createdAt` (RFC 3339), oldest first. Its endpoint is `GET /api/v1/items/export` (`text/csv`).
 - **Front ends:**
   - **CLI:** a gated command carries the feature key as a Cobra annotation. The help lists gated commands and notes the locked ones as disabled on the current plan, with the hint ("disabled on your plan: available on the pro plan"). A `hide` feature isn't listed, honouring the template user's choice (confirmed 2026-11-04). The help **doesn't open the app**: that would create the data folder, run migrations and fail on a locked folder. It reads only the entitlements, through a light bootstrap path (the local edition: the plans file and `LocalPlan`, no storage; `--server`: `GET /api/v1/entitlements`). If that fails, gated commands are listed with no note: the core still refuses them. Running a gated command that's off fails through the core's `FeatureError`. The sample is `starter item export` (CSV on stdout).
@@ -25,20 +25,20 @@
 ## Tasks
 1. [x] domain: `NewFeature` builds a feature, and refuses a blank `name` (Field `name`) and a `whenOff` other than `show-locked` or `hide` (Field `whenOff`) with a `*ValidationError`.
    - Red: `TestNewFeature` (valid + 4 invalid cases) failed on the stub's zero `Feature` and nil error.
-   - Green: `NewFeature(key, name, whenOff)` checks the trimmed name and `whenOff`; `On`/`AvailableOn` left for task 2 and the adapter.
+   - Green: `NewFeature(key, name, whenOff)` checks the trimmed name and `whenOff`; `IsOn`/`AvailableOn` left for task 2 and the adapter.
    - Refactor: doc comments on `FeatureOffBehavior`, its constants, `Feature` and `NewFeature`, matching `NewLimit`'s; the name isn't trimmed when stored (no test asks).
 2. [x] domain: `Entitlements.CheckFeature`: on → nil; off and locked → `*FeatureError` with `AvailableOn`; off and hidden → `*FeatureError` without; unknown → `*FeatureError` without. Test `FeatureError.Error()`'s text, with a hint and without.
    - Red: `TestEntitlements_CheckFeature` (6 cases, each checking the error and its text) failed on the stub's nil; `TestNewFeature` now uses `reflect.DeepEqual` (`AvailableOn` makes `Feature` incomparable).
    - Green: `CheckFeature` refuses off and unknown features (an unknown one's `Name` is its key); `Error()` is "<Name> isn't on your plan", plus ", and is available on the pro plan" / "the pro or team plans".
    - Refactor: one `FeatureError` built, hint added only for `ShowLocked`; doc comments on `CheckFeature`, `FeatureError` and the new `Feature` fields.
-3. [x] plans adapter: `Parse` reads `features` (key, `name`, `whenOff`) and each plan's `features` list into `Entitlements.Features` (every catalog feature, `On` per plan). It refuses an unknown feature, a missing `name` and a bad `whenOff`.
+3. [x] plans adapter: `Parse` reads `features` (key, `name`, `whenOff`) and each plan's `features` list into `Entitlements.Features` (every catalog feature, `IsOn` per plan). It refuses an unknown feature, a missing `name` and a bad `whenOff`.
    - Red: `TestParse_ReadsFeatures` (catalog + 3 refusals) failed on `unknown field "features"`; the older Parse tests now want an empty `Features` map, as `Limits` is.
-   - Green: `Parse` builds the file's `features` with `NewFeature`, gives each plan a copy with `On` set for those it lists, and refuses an unlisted key.
+   - Green: `Parse` builds the file's `features` with `NewFeature`, gives each plan a copy with `IsOn` set for those it lists, and refuses an unlisted key.
    - Refactor: `buildFeatures` helper, `maps.Clone` for each plan's copy, `Parse`'s doc shows the features; errors read `feature "x": …` like limits'.
 4. [x] plans adapter: `For` fills `AvailableOn` (sorted plan names that have the feature, without the local plan) when hints are on, and leaves it empty when they're off.
-   - Red: `TestEntitlements_FillsTheUpgradeHintWhenHintsAreOn` (on / off) failed with `AvailableOn = nil, want {"pro", "team"}`; the adapter got stub `Hints` and `LocalPlan` fields.
-   - Green: with `Hints`, `For` gives each of the plan's features (in a cloned map) the sorted catalog plans that have it on, leaving out `LocalPlan`.
-   - Refactor: `withHints` (copies the map) and `plansWith` helpers; doc comments on `Hints`, `LocalPlan` and `For`. Bootstrap and the harness are left to tasks 5 and 6.
+   - Red: `TestEntitlements_FillsTheUpgradeHintWhenHintsAreOn` (on / off) failed with `AvailableOn = nil, want {"pro", "team"}`; the adapter got stub `ShouldGiveHints` and `LocalPlan` fields.
+   - Green: with `ShouldGiveHints`, `For` gives each of the plan's features (in a cloned map) the sorted catalog plans that have it on, leaving out `LocalPlan`.
+   - Refactor: `withHints` (copies the map) and `plansWith` helpers; doc comments on `ShouldGiveHints`, `LocalPlan` and `For`. Bootstrap and the harness are left to tasks 5 and 6.
 5. [x] bootstrap (template): a light entitlements-only path that opens no storage, for the CLI's help; the local edition wires no hints (a locked feature has no `AvailableOn`).
    - Red: `TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints` (a plans file with `export` locked on local; no data folder made) failed on the stub's nil service.
    - Green: `NewEntitlements(cfg)` wraps `localEntitlements` in `app.NewEntitlementsService` with `workspace.Local{}`; no storage opened.
@@ -50,7 +50,7 @@
    - `task test:init` is red only on the `@wip` plan-features scenarios (undefined steps) in the generated project; expected until tasks 6, 9 and 19 (user, 2026-11-04).
 6. [x] acceptance harness: hints on in `testPlans`; steps for "has / doesn't have item export", "is shown locked / hidden when off" and "item export is … for my workspace" (in a sample steps file).
    - Red: the "can see whether its plan has the feature" outline, with the new steps (`plan_feature_steps.go`, sample, with `testPlans.setFeature` / `setWhenOff`): the locked row failed with `AvailableOn = [], want ["pro"]`.
-   - Green: `testPlans.For` sets `Hints` and `LocalPlan`; the outline passes on memory, jsonfile and sqlite (http, desktop and mobile wait for the API's features, tasks 10–12). `plan-features.feature` and its steps file are in `SampleFiles` now (from task 19).
+   - Green: `testPlans.For` sets `ShouldGiveHints` and `LocalPlan`; the outline passes on memory, jsonfile and sqlite (http, desktop and mobile wait for the API's features, tasks 10–12). `plan-features.feature` and its steps file are in `SampleFiles` now (from task 19).
    - Refactor: `withFeature` (copy a plan's features with one replaced) shared by `setFeature` and `setWhenOff`; the helpers moved from `plans.go` to the sample steps file, since the template without the sample left them unused (golangci-lint).
    - `task test:init`: the sample-removed project passes; the kept-sample one fails only on the `@wip` export steps, still undefined until task 9.
 7. [x] domain (sample): encode items as CSV, with header `name,createdAt`, RFC 3339 and CSV quoting.

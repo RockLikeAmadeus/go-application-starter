@@ -239,15 +239,15 @@ func (l makensisLog) shortcuts() []string {
 // RMDir: [/r] "<folder>" and Delete: "<file>" inside.
 func (l makensisLog) uninstallerRemoves() []string {
 	var found []string
-	inUninstall := false
+	isInUninstall := false
 	for line := range strings.Lines(string(l)) {
 		line = strings.TrimSpace(line)
 		switch {
 		case line == `Section: "uninstall"`:
-			inUninstall = true
+			isInUninstall = true
 		case line == "SectionEnd":
-			inUninstall = false
-		case inUninstall:
+			isInUninstall = false
+		case isInUninstall:
 			for _, prefix := range []string{`RMDir: /r "`, `RMDir: "`, `Delete: "`} {
 				if rest, ok := strings.CutPrefix(line, prefix); ok {
 					path, _, _ := strings.Cut(rest, `"`)

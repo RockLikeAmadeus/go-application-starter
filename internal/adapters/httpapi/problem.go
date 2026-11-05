@@ -22,20 +22,20 @@ const (
 
 // problemFor maps a domain error to an RFC 9457 problem document.
 func problemFor(err error) openapi.Problem {
-	var verr *domain.ValidationError
-	var lerr *domain.LimitError
-	var ferr *domain.FeatureError
+	var validationErr *domain.ValidationError
+	var limitErr *domain.LimitError
+	var featureErr *domain.FeatureError
 	switch {
-	case errors.As(err, &verr):
-		return problem(http.StatusUnprocessableEntity, ProblemValidation, verr.Error(), &verr.Field)
-	case errors.As(err, &lerr):
-		p := problem(http.StatusForbidden, ProblemLimit, lerr.Error(), nil)
-		p.Limit, p.Max, p.ReadOnly = &lerr.Limit, &lerr.Max, &lerr.ReadOnly
+	case errors.As(err, &validationErr):
+		return problem(http.StatusUnprocessableEntity, ProblemValidation, validationErr.Error(), &validationErr.Field)
+	case errors.As(err, &limitErr):
+		p := problem(http.StatusForbidden, ProblemLimit, limitErr.Error(), nil)
+		p.Limit, p.Max, p.IsReadOnly = &limitErr.Limit, &limitErr.Max, &limitErr.IsReadOnly
 		return p
-	case errors.As(err, &ferr):
-		p := problem(http.StatusForbidden, ProblemFeature, ferr.Error(), nil)
-		availableOn := availableOnDTO(ferr.AvailableOn)
-		p.Feature, p.Name, p.AvailableOn = &ferr.Feature, &ferr.Name, &availableOn
+	case errors.As(err, &featureErr):
+		p := problem(http.StatusForbidden, ProblemFeature, featureErr.Error(), nil)
+		availableOn := availableOnDTO(featureErr.AvailableOn)
+		p.Feature, p.Name, p.AvailableOn = &featureErr.Feature, &featureErr.Name, &availableOn
 		return p
 	case errors.Is(err, domain.ErrNotFound):
 		return problem(http.StatusNotFound, ProblemNotFound, err.Error(), nil)

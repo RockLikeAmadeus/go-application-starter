@@ -107,14 +107,14 @@ func (j *journey) succeeds() error {
 	return j.exitStatus(func(status int) bool { return status == 0 }, "0")
 }
 
-// exitStatus waits for the program to end, and checks its exit status is ok
+// exitStatus waits for the program to end, and checks its exit status is expected
 // (described as want), showing the screen if it isn't.
-func (j *journey) exitStatus(ok func(status int) bool, want string) error {
+func (j *journey) exitStatus(isExpected func(status int) bool, want string) error {
 	status, err := j.term.Wait(timeout)
 	if err != nil {
 		return err
 	}
-	if !ok(status) {
+	if !isExpected(status) {
 		return fmt.Errorf("exit status = %d, want %s; the screen shows:\n%s", status, want, j.term.Screen())
 	}
 	return nil
@@ -135,7 +135,7 @@ func (j *journey) startServer() error {
 	}
 	j.serverCmd = cmd
 	j.serverURL = fmt.Sprintf("http://127.0.0.1:%d", port)
-	if !ready(j.serverURL, timeout) {
+	if !wasReadyWithin(j.serverURL, timeout) {
 		j.stopServer() // before reading what it printed
 		return fmt.Errorf("the server at %s wasn't ready within %s; it printed:\n%s", j.serverURL, timeout, j.serverOut.String())
 	}
@@ -162,9 +162,9 @@ func freePort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-// ready waits until the server at url says it's ready, and says whether it
+// wasReadyWithin waits until the server at url says it's ready, and says whether it
 // did within timeout.
-func ready(url string, timeout time.Duration) bool {
+func wasReadyWithin(url string, timeout time.Duration) bool {
 	for deadline := time.Now().Add(timeout); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
 		resp, err := http.Get(url + "/readyz")
 		if err == nil {

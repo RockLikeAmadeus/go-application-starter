@@ -15,9 +15,9 @@ const optional = "pnpm"
 // failure. A command whose program is not installed, or an optional command
 // that fails, is skipped with a note on out, so the web toolchain never blocks
 // the rest of the run.
-func FollowUp(cmds [][]string, run func([]string) error, installed func(string) bool, out io.Writer) error {
+func FollowUp(cmds [][]string, run func([]string) error, isInstalled func(string) bool, out io.Writer) error {
 	for _, cmd := range cmds {
-		if !installed(cmd[0]) {
+		if !isInstalled(cmd[0]) {
 			fmt.Fprintf(out, "%s is not installed, so %q was skipped: run task gen once it is.\n", cmd[0], strings.Join(cmd, " "))
 			continue
 		}

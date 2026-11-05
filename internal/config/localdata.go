@@ -19,11 +19,11 @@ func LocalDataDir(env Env, settingsFile string) (string, error) {
 	if dir := env.Getenv("STARTER_DATA_DIR"); dir != "" {
 		return dir, nil
 	}
-	k, err := readSettingsFile(settingsFile)
+	fileSettings, err := readSettingsFile(settingsFile)
 	if err != nil {
 		return "", err
 	}
-	if dir := k.String("data_dir"); dir != "" {
+	if dir := fileSettings.String("data_dir"); dir != "" {
 		return dir, nil
 	}
 	configDir, err := env.UserConfigDir()

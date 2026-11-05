@@ -54,7 +54,7 @@ func (w *world) iAmToldTheLimitIsReached(max int) error {
 }
 
 func (w *world) iAmToldItemsAreReadOnly(max int) error {
-	return w.expectLimitError(domain.LimitError{Limit: "items", Max: max, ReadOnly: true})
+	return w.expectLimitError(domain.LimitError{Limit: "items", Max: max, IsReadOnly: true})
 }
 
 func (w *world) expectLimitError(want domain.LimitError) error {

@@ -1,12 +1,12 @@
 import { onlineManager } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { useConnectionRequired } from "./useConnectionRequired";
+import { useIsConnectionRequired } from "./useIsConnectionRequired";
 
 /**
  * An onlineManager listener that ignores the browser's online and offline
  * events: local data is reachable whatever the network is doing.
  */
-function alwaysOnline(setOnline: (online: boolean) => void) {
+function alwaysOnline(setOnline: (isOnline: boolean) => void) {
   setOnline(true);
   return () => {};
 }
@@ -16,8 +16,8 @@ function alwaysOnline(setOnline: (online: boolean) => void) {
  * data needs no connection (the desktop app's local-only mode).
  */
 export function useLocalDataOnline(): void {
-  const connectionRequired = useConnectionRequired();
+  const isConnectionRequired = useIsConnectionRequired();
   useEffect(() => {
-    if (!connectionRequired) onlineManager.setEventListener(alwaysOnline);
-  }, [connectionRequired]);
+    if (!isConnectionRequired) onlineManager.setEventListener(alwaysOnline);
+  }, [isConnectionRequired]);
 }

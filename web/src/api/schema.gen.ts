@@ -112,7 +112,7 @@ export interface components {
              *     False when the data is on this device (the desktop app's local-only
              *     mode), so a lost connection doesn't matter.
              */
-            required: boolean;
+            isRequired: boolean;
         };
         Entitlements: {
             /** @description The name of the plan the workspace is on. */
@@ -133,7 +133,7 @@ export interface components {
             /** @description What people read (e.g. "Item export"). */
             name: string;
             /** @description True when the workspace's plan has the feature. */
-            on: boolean;
+            isOn: boolean;
             whenOff: components["schemas"]["FeatureOffBehavior"];
             /**
              * @description The plans that have the feature, for the upgrade hint. Empty when
@@ -201,7 +201,7 @@ export interface components {
              *     workspace is over a limit that makes things read only, false when
              *     a new one was refused at the limit.
              */
-            readOnly?: boolean;
+            isReadOnly?: boolean;
             /** @description The feature's key (e.g. "item-export"), for feature errors. */
             feature?: string;
             /** @description The feature's display name (e.g. "Item export"), for feature errors. */

@@ -17,20 +17,20 @@ func (h *Handlers) GetEntitlements(ctx context.Context, _ openapi.GetEntitlement
 	return openapi.GetEntitlements200JSONResponse(toEntitlementsDTO(entitlements)), nil
 }
 
-func toEntitlementsDTO(e domain.Entitlements) openapi.Entitlements {
-	limits := make(map[string]openapi.Limit, len(e.Limits))
-	for name, limit := range e.Limits {
+func toEntitlementsDTO(entitlements domain.Entitlements) openapi.Entitlements {
+	limits := make(map[string]openapi.Limit, len(entitlements.Limits))
+	for name, limit := range entitlements.Limits {
 		limits[name] = openapi.Limit{Max: limit.Max, WhenOver: openapi.OverLimitBehavior(limit.WhenOver)}
 	}
-	features := make(map[string]openapi.Feature, len(e.Features))
-	for key, f := range e.Features {
-		features[key] = toFeatureDTO(f)
+	features := make(map[string]openapi.Feature, len(entitlements.Features))
+	for key, feature := range entitlements.Features {
+		features[key] = toFeatureDTO(feature)
 	}
-	return openapi.Entitlements{Plan: e.Plan, Limits: limits, Features: features}
+	return openapi.Entitlements{Plan: entitlements.Plan, Limits: limits, Features: features}
 }
 
-func toFeatureDTO(f domain.Feature) openapi.Feature {
-	return openapi.Feature{Name: f.Name, On: f.On, WhenOff: openapi.FeatureOffBehavior(f.WhenOff), AvailableOn: availableOnDTO(f.AvailableOn)}
+func toFeatureDTO(feature domain.Feature) openapi.Feature {
+	return openapi.Feature{Name: feature.Name, IsOn: feature.IsOn, WhenOff: openapi.FeatureOffBehavior(feature.WhenOff), AvailableOn: availableOnDTO(feature.AvailableOn)}
 }
 
 // availableOnDTO keeps the upgrade hint's plans a list, never null, as the

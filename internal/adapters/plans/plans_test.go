@@ -80,10 +80,10 @@ func TestParse_ReadsFeatures(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Parse: %v", err)
 		}
-		catalogFeatures := func(on bool) map[string]domain.Feature {
+		catalogFeatures := func(isOn bool) map[string]domain.Feature {
 			return map[string]domain.Feature{
-				"export": {Key: "export", Name: "Item export", On: on, WhenOff: domain.ShowLocked},
-				"audit":  {Key: "audit", Name: "Audit log", On: on, WhenOff: domain.Hide},
+				"export": {Key: "export", Name: "Item export", IsOn: isOn, WhenOff: domain.ShowLocked},
+				"audit":  {Key: "audit", Name: "Audit log", IsOn: isOn, WhenOff: domain.Hide},
 			}
 		}
 		want := plans.Catalog{
@@ -185,9 +185,9 @@ func TestEntitlements_AnswersThePlanTheWorkspaceIsOn(t *testing.T) {
 }
 
 func TestEntitlements_FillsTheUpgradeHintWhenHintsAreOn(t *testing.T) {
-	feature := func(on bool) map[string]domain.Feature {
+	feature := func(isOn bool) map[string]domain.Feature {
 		return map[string]domain.Feature{
-			"export": {Key: "export", Name: "Item export", On: on, WhenOff: domain.ShowLocked},
+			"export": {Key: "export", Name: "Item export", IsOn: isOn, WhenOff: domain.ShowLocked},
 		}
 	}
 	catalog := plans.Catalog{
@@ -198,15 +198,15 @@ func TestEntitlements_FillsTheUpgradeHintWhenHintsAreOn(t *testing.T) {
 	}
 	onFree := func(context.Context, domain.WorkspaceID) (string, error) { return "free", nil }
 	cases := map[string]struct {
-		hints bool
-		want  []string
+		shouldGiveHints bool
+		want            []string
 	}{
-		"on: the sorted plans with it, without the local plan": {hints: true, want: []string{"pro", "team"}},
-		"off: no hint": {hints: false, want: nil},
+		"on: the sorted plans with it, without the local plan": {shouldGiveHints: true, want: []string{"pro", "team"}},
+		"off: no hint": {shouldGiveHints: false, want: nil},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			adapter := plans.Entitlements{Catalog: catalog, PlanOf: onFree, Hints: tc.hints, LocalPlan: "local"}
+			adapter := plans.Entitlements{Catalog: catalog, PlanOf: onFree, ShouldGiveHints: tc.shouldGiveHints, LocalPlan: "local"}
 
 			got, err := adapter.For(context.Background(), "ws-a")
 			if err != nil {

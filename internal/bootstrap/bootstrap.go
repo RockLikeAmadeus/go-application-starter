@@ -134,7 +134,7 @@ func NewEntitlementsService(cfg config.Config) (ports.EntitlementsService, error
 // turns it off. Plain text is safe there (one device at a time), so only
 // SQLite asks.
 func syncedFolderWarning(cfg config.Config) (string, bool) {
-	if cfg.IgnoreSyncedFolder {
+	if cfg.ShouldIgnoreSyncedFolder {
 		return "", false
 	}
 	service, ok := syncedfolder.Detect(cfg.DataDir)

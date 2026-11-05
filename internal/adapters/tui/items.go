@@ -131,11 +131,11 @@ func (m itemsScreen) View() tea.View {
 	if len(m.items) == 0 {
 		b.WriteString(helpStyle.Render("  No items yet. Press a to add one.") + "\n")
 	}
-	for i, it := range m.items {
+	for i, item := range m.items {
 		if i == m.cursor && m.mode == modeBrowse {
-			b.WriteString(selectedRow(it.Name) + "\n")
+			b.WriteString(selectedRow(item.Name) + "\n")
 		} else {
-			b.WriteString(itemStyle.Render(it.Name) + "\n")
+			b.WriteString(itemStyle.Render(item.Name) + "\n")
 		}
 	}
 

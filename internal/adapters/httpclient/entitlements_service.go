@@ -37,21 +37,21 @@ func (s *EntitlementsService) CurrentEntitlements(ctx context.Context) (domain.E
 	return toEntitlements(*res.JSON200), nil
 }
 
-func toEntitlements(e apiclient.Entitlements) domain.Entitlements {
-	limits := make(map[string]domain.Limit, len(e.Limits))
-	for name, limit := range e.Limits {
+func toEntitlements(entitlements apiclient.Entitlements) domain.Entitlements {
+	limits := make(map[string]domain.Limit, len(entitlements.Limits))
+	for name, limit := range entitlements.Limits {
 		limits[name] = domain.Limit{Name: name, Max: limit.Max, WhenOver: domain.OverLimitBehavior(limit.WhenOver)}
 	}
-	features := make(map[string]domain.Feature, len(e.Features))
-	for key, f := range e.Features {
-		features[key] = toFeature(key, f)
+	features := make(map[string]domain.Feature, len(entitlements.Features))
+	for key, feature := range entitlements.Features {
+		features[key] = toFeature(key, feature)
 	}
-	return domain.Entitlements{Plan: e.Plan, Limits: limits, Features: features}
+	return domain.Entitlements{Plan: entitlements.Plan, Limits: limits, Features: features}
 }
 
 // toFeature reads a feature back as the core built it.
-func toFeature(key string, f apiclient.Feature) domain.Feature {
-	return domain.Feature{Key: key, Name: f.Name, On: f.On, WhenOff: domain.FeatureOffBehavior(f.WhenOff), AvailableOn: fromAvailableOn(f.AvailableOn)}
+func toFeature(key string, feature apiclient.Feature) domain.Feature {
+	return domain.Feature{Key: key, Name: feature.Name, IsOn: feature.IsOn, WhenOff: domain.FeatureOffBehavior(feature.WhenOff), AvailableOn: fromAvailableOn(feature.AvailableOn)}
 }
 
 // fromAvailableOn reads an upgrade hint back as the core built it: the API

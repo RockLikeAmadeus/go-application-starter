@@ -53,7 +53,7 @@ func TestRoundTrip(t *testing.T) {
 // CSV export as it was sent.
 func TestExportItems_ReadsTheCSV(t *testing.T) {
 	plan := testsupport.FixedEntitlements{Features: map[string]domain.Feature{
-		"item-export": {Key: "item-export", Name: "Item export", On: true, WhenOff: domain.ShowLocked},
+		"item-export": {Key: "item-export", Name: "Item export", IsOn: true, WhenOff: domain.ShowLocked},
 	}}
 	client := newClient(t, plan)
 	ctx := context.Background()

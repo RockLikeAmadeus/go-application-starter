@@ -45,7 +45,7 @@ describe("apiFetch", () => {
     const call = vi.fn<BridgeCall>(async () => ({
       status: 200,
       contentType: "application/json",
-      body: '{"required":false}',
+      body: '{"isRequired":false}',
     }));
     const win: BridgeWindow = { wails: { invokeAsync: () => {} } };
 
@@ -56,7 +56,7 @@ describe("apiFetch", () => {
 
     expect(call).toHaveBeenCalledWith("GET", "/api/v1/connection", "");
     expect(fetch).not.toHaveBeenCalled();
-    expect(await response.json()).toEqual({ required: false });
+    expect(await response.json()).toEqual({ isRequired: false });
   });
 
   it("uses plain fetch, looked up per request, when there's no Wails bridge", async () => {
@@ -67,7 +67,7 @@ describe("apiFetch", () => {
     }));
     const send = apiFetch({}, loadCall);
     // Tests stub fetch after the API client's module has loaded.
-    const fetch = vi.fn<typeof globalThis.fetch>(async () => Response.json({ required: true }));
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => Response.json({ isRequired: true }));
     vi.stubGlobal("fetch", fetch);
     const request = new Request("http://localhost/api/v1/connection");
 
@@ -75,6 +75,6 @@ describe("apiFetch", () => {
 
     expect(fetch).toHaveBeenCalledWith(request);
     expect(loadCall).not.toHaveBeenCalled();
-    expect(await response.json()).toEqual({ required: true });
+    expect(await response.json()).toEqual({ isRequired: true });
   });
 });

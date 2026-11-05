@@ -37,14 +37,14 @@ type LimitError struct {
 	Limit string
 	// Max is the plan's limit.
 	Max int
-	// ReadOnly is set when a change to existing data was refused because the
+	// IsReadOnly is set when a change to existing data was refused because the
 	// workspace is over a ReadOnly limit. Otherwise, creating was refused at
 	// the limit.
-	ReadOnly bool
+	IsReadOnly bool
 }
 
 func (e *LimitError) Error() string {
-	if e.ReadOnly {
+	if e.IsReadOnly {
 		return fmt.Sprintf("%s are read only while over the limit of %d", e.Limit, e.Max)
 	}
 	return fmt.Sprintf("the limit of %d %s is reached", e.Max, e.Limit)

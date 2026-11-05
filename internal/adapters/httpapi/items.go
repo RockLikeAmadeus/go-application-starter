@@ -16,8 +16,8 @@ func (h *Handlers) ListItems(ctx context.Context, _ openapi.ListItemsRequestObje
 		return nil, err
 	}
 	out := make([]openapi.Item, 0, len(items))
-	for _, it := range items {
-		out = append(out, toItemDTO(it))
+	for _, item := range items {
+		out = append(out, toItemDTO(item))
 	}
 	return openapi.ListItems200JSONResponse{Items: out}, nil
 }
