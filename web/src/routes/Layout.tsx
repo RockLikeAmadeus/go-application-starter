@@ -1,9 +1,11 @@
 // sample:start
 import { NavLink } from "react-router";
 // sample:end
+import { usePrefetchQuery } from "@tanstack/react-query";
 import { type MouseEvent, type ReactNode, type SyntheticEvent, useRef, useState } from "react";
 import { Link, Outlet } from "react-router";
 import { afterTransition } from "../lib/afterTransition";
+import { entitlementsQuery } from "../features/entitlements/useFeature";
 import { OfflineNotice } from "../features/offline/OfflineNotice";
 import { useLocalDataOnline } from "../features/offline/useLocalDataOnline";
 import type { Style } from "../features/style/style";
@@ -16,6 +18,7 @@ import { WarningsNotice } from "../features/warnings/WarningsNotice";
 
 export function Layout() {
   useLocalDataOnline();
+  usePrefetchQuery(entitlementsQuery);
   const [theme, setTheme] = useTheme();
   const [style, setStyle] = useStyle();
   const content = (

@@ -109,7 +109,11 @@
    - Red: `useFeature.test.ts` (`it.each`, 5 states, `entitlementsApi` fetch fake in `web/src/test`) failed on the stub's `pending` in 4 rows.
    - Green: `useFeature(key)` queries `/api/v1/entitlements` and maps the key's feature to `on` / `locked` + `availableOn` / `hidden`; `pending` before the answer; `locked` with no hint on an error.
    - Refactor: an `entitlementsKey` constant and doc comments. Lint (`noUncheckedIndexedAccess`) wanted a key the plans don't know handled: a sixth row failed with a TypeError, then it shows locked with no hint, as the CLI's help does.
-16b. [ ] web (template): `Layout` starts the entitlements request when the app starts, and the answer is kept for the session (a long `staleTime`).
+16b. [x] web (template): `Layout` starts the entitlements request when the app starts.
+   - Red: `Layout` "starts reading the plan's features when the app starts…" (`entitlementsApi` fetch fake) failed: only `/api/v1/connection` and `/api/v1/warnings` were requested.
+   - Green: `entitlementsQuery` (`queryOptions`) exported from `useFeature.ts`, used by `useFeature` and by `Layout`'s `usePrefetchQuery`.
+   - Refactor: a doc comment on `entitlementsQuery`; the query stays in `useFeature.ts`, where 16c's `staleTime` goes. `task test:init` passes.
+16c. [ ] web (template): the entitlements answer is kept for the session (a long `staleTime`).
 17. [ ] web (template): the gate component: children / locked with hint / locked without hint ("Not available") / nothing / a same-size disabled placeholder while pending.
 18. [ ] web (sample): the Items page's Export button downloads the CSV; e2e steps; `task e2e` goes green. Check the download by hand in `task run:desktop` (WebKitGTK).
 19. [ ] docs: `docs/features.md` (a checklist for gating a new feature), linked from CLAUDE.md's plans rule; ADR 5's step 3 line; the plans file comments; a template-user step for defining their own features if needed; `task test:init`.
@@ -125,3 +129,4 @@
 - 2026-11-04 (user, during task 12): task 12 split in three, one test each: 12 reads the features; 12b maps the feature problem back; 12c is the sample `ExportItems`, which turns the http, desktop and mobile drivers green.
 - 2026-11-05 (user, during task 14): task 14 split in two, one test each: 14 is the CLI's `item export` command; 14b is the terminal journey steps and `task e2e:terminal`.
 - 2026-11-05 (user, during task 16): task 16 split in two, one test each: 16 is `useFeature`'s states; 16b is `Layout`'s prefetch with a long `staleTime`. `/iterate` now splits such tasks without asking.
+- 2026-11-05 (`/iterate`, task 16b): task 16b split in two, one test each: 16b is `Layout`'s prefetch; 16c keeps the answer for the session (a long `staleTime`).

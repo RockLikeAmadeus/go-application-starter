@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { connectionApi } from "../test/connectionApi";
+import { entitlementsApi } from "../test/entitlementsApi";
 import { renderWithClient } from "../test/render";
 import { warningsApi } from "../test/warningsApi";
 import { Layout } from "./Layout";
@@ -189,6 +190,19 @@ describe("Layout", () => {
 
     const warnings = await screen.findByRole("region", { name: "Warnings" });
     expect(warnings).toHaveTextContent("Your data folder looks synced by Dropbox.");
+  });
+
+  it("starts reading the plan's features when the app starts, before any page asks", async () => {
+    const fetch = entitlementsApi({});
+    vi.stubGlobal("fetch", fetch);
+
+    renderLayout();
+
+    await waitFor(() =>
+      expect(fetch.mock.calls.map(([request]) => new URL(request.url).pathname)).toContain(
+        "/api/v1/entitlements",
+      ),
+    );
   });
 
   it("keeps saving after the browser goes offline when no connection is required", async () => {

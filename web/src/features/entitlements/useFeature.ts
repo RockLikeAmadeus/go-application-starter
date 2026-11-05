@@ -1,7 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
 
 const entitlementsKey = ["entitlements"] as const;
+
+/**
+ * The workspace's entitlements, shared by every gated control. `Layout`
+ * prefetches it when the app starts, so pages rarely wait for it.
+ */
+export const entitlementsQuery = queryOptions({
+  queryKey: entitlementsKey,
+  queryFn: async () => unwrap(await api.GET("/api/v1/entitlements")),
+});
 
 /**
  * What to show of a gated feature: `on`, `locked` (with the plans that have
@@ -23,10 +32,7 @@ export type FeatureState =
  * shows it.
  */
 export function useFeature(key: string): FeatureState {
-  const { data, isError } = useQuery({
-    queryKey: entitlementsKey,
-    queryFn: async () => unwrap(await api.GET("/api/v1/entitlements")),
-  });
+  const { data, isError } = useQuery(entitlementsQuery);
   if (isError) return { state: "locked", availableOn: [] };
   if (data === undefined) return { state: "pending" };
   const feature = data.features[key];
