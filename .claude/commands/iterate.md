@@ -25,6 +25,8 @@ Run the three steps below in order, each exactly as its own command would (`.cla
 
 Anything with a conventional answer, or that the code, CLAUDE.md or the `docs/wip/` file settles, isn't a question: decide, and say so in the summary.
 
+**When a task covers two behaviours that each need their own test**, don't ask: split it. Keep the first behaviour as task N and add the other as Nb (then Nc…) right after it, one test each, log the split under "Changes to the plan" in the `docs/wip/` file, and run this cycle on task N.
+
 **When the new test passes straight away.** If it passes because the behaviour already exists (not because the test is wrong: check it can fail, e.g. that it waits for or asserts the right thing), don't ask me: keep it as a guard. Skip green, since no production code is demanded, and still run refactor. Record in the `docs/wip/` file that there was no red, and why. Commit it as `test:` (or `feat:` if refactor changed production code). A test that passes only sometimes is not this case: make it fail reliably for the right reason, as `red.md` says.
 
 **Finish.** `task lint`, `task test` and the acceptance run above, all green.
