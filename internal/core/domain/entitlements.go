@@ -68,15 +68,15 @@ func NewLimit(name string, max int, whenOver OverLimitBehavior) (Limit, error) {
 	return Limit{Name: name, Max: max, WhenOver: whenOver}, nil
 }
 
-// FeatureOff says what front ends show of a feature that's off.
-type FeatureOff string
+// FeatureOffBehavior says what front ends show of a feature that's off.
+type FeatureOffBehavior string
 
 const (
 	// ShowLocked shows the feature as locked, with a hint naming the plans
 	// that have it.
-	ShowLocked FeatureOff = "show-locked"
+	ShowLocked FeatureOffBehavior = "show-locked"
 	// Hide leaves the feature out altogether.
-	Hide FeatureOff = "hide"
+	Hide FeatureOffBehavior = "hide"
 )
 
 // Feature is something a plan turns on or off, such as exporting items.
@@ -87,7 +87,7 @@ type Feature struct {
 	Name string
 	// On is set when the workspace's plan has the feature.
 	On      bool
-	WhenOff FeatureOff
+	WhenOff FeatureOffBehavior
 	// AvailableOn names the plans that have the feature, for the upgrade
 	// hint. It's empty when the edition gives no hints.
 	AvailableOn []string
@@ -97,7 +97,7 @@ type Feature struct {
 // other than ShowLocked or Hide, with a *ValidationError whose Field is the
 // plans file's key ("name", "whenOff"). Build features through it, never as a
 // literal, so a bad plans file is caught when it's read.
-func NewFeature(key, name string, whenOff FeatureOff) (Feature, error) {
+func NewFeature(key, name string, whenOff FeatureOffBehavior) (Feature, error) {
 	if strings.TrimSpace(name) == "" {
 		return Feature{}, &ValidationError{Field: "name", Message: "must not be empty"}
 	}

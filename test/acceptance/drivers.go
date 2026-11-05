@@ -112,9 +112,9 @@ func (h *harness) usePlans(workspaces ports.WorkspaceResolver) error {
 
 // sample:start
 
-// newItems builds the Item use cases on repo, driven by the harness's clock,
+// newItemService builds the Item use cases on repo, driven by the harness's clock,
 // in the workspace that workspaces resolves.
-func (h *harness) newItems(repo ports.ItemRepository, workspaces ports.WorkspaceResolver) *app.ItemService {
+func (h *harness) newItemService(repo ports.ItemRepository, workspaces ports.WorkspaceResolver) *app.ItemService {
 	return app.NewItemService(repo, workspaces, h.plans, h.clock, testsupport.NewSequentialIDs("item"))
 }
 
@@ -126,7 +126,7 @@ func startMemory() (*harness, error) {
 		return nil, err
 	}
 	// sample:start
-	h.items = h.newItems(memory.NewItemRepository(), workspace.FromContext{})
+	h.items = h.newItemService(memory.NewItemRepository(), workspace.FromContext{})
 	// sample:end
 	return h, nil
 }
@@ -151,7 +151,7 @@ func startJSONFile() (*harness, error) {
 		return nil, err
 	}
 	// sample:start
-	h.items = h.newItems(jsonfile.NewItemRepository(store), workspace.FromContext{})
+	h.items = h.newItemService(jsonfile.NewItemRepository(store), workspace.FromContext{})
 	// sample:end
 	return h, nil
 }
@@ -176,7 +176,7 @@ func startSQLite() (*harness, error) {
 		return nil, err
 	}
 	// sample:start
-	h.items = h.newItems(sqlite.NewItemRepository(store), workspace.FromContext{})
+	h.items = h.newItemService(sqlite.NewItemRepository(store), workspace.FromContext{})
 	// sample:end
 	return h, nil
 }
@@ -190,7 +190,7 @@ func startHTTP() (*harness, error) {
 	}
 	opts := httpapi.Options{Entitlements: h.entitlements}
 	// sample:start
-	opts.Items = h.newItems(memory.NewItemRepository(), workspace.Local{})
+	opts.Items = h.newItemService(memory.NewItemRepository(), workspace.Local{})
 	// sample:end
 	srv := httptest.NewServer(httpapi.NewHandler(opts))
 	h.cleanup = srv.Close
@@ -211,7 +211,7 @@ func (h *harness) driveOverHTTP(url string) error {
 	}
 	h.entitlements = entitlements
 	// sample:start
-	client, err := httpclient.New(url)
+	client, err := httpclient.NewItemService(url)
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ type testServer struct {
 
 // start wires the core as cmd/server does, on storage in the server's data
 // folder, and serves it over HTTP.
-func (s *testServer) start(storage config.Storage) error {
+func (s *testServer) start(storage config.StorageBackend) error {
 	core, err := bootstrap.NewEmbedded(config.Config{Storage: storage, DataDir: s.dataDir})
 	if err != nil {
 		return err
@@ -277,7 +277,7 @@ func (s *testServer) stop() {
 
 // restart stops the server and starts it again on storage, in the same data
 // folder.
-func (s *testServer) restart(storage config.Storage) error {
+func (s *testServer) restart(storage config.StorageBackend) error {
 	s.stop()
 	return s.start(storage)
 }
@@ -425,7 +425,7 @@ func (m *mobileApp) open(h *harness) error {
 	}
 	h.entitlements = entitlements
 	// sample:start
-	client, err := httpclient.New(host, apiclient.WithHTTPClient(bridge{app.API}))
+	client, err := httpclient.NewItemService(host, apiclient.WithHTTPClient(bridge{app.API}))
 	if err != nil {
 		return err
 	}

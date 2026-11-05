@@ -27,8 +27,8 @@ type document struct {
 }
 
 type featureRecord struct {
-	Name    string            `json:"name"`
-	WhenOff domain.FeatureOff `json:"whenOff"`
+	Name    string                    `json:"name"`
+	WhenOff domain.FeatureOffBehavior `json:"whenOff"`
 }
 
 type planRecord struct {

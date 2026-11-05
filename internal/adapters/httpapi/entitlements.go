@@ -20,7 +20,7 @@ func (h *Handlers) GetEntitlements(ctx context.Context, _ openapi.GetEntitlement
 func toEntitlementsDTO(e domain.Entitlements) openapi.Entitlements {
 	limits := make(map[string]openapi.Limit, len(e.Limits))
 	for name, limit := range e.Limits {
-		limits[name] = openapi.Limit{Max: limit.Max, WhenOver: openapi.LimitWhenOver(limit.WhenOver)}
+		limits[name] = openapi.Limit{Max: limit.Max, WhenOver: openapi.OverLimitBehavior(limit.WhenOver)}
 	}
 	features := make(map[string]openapi.Feature, len(e.Features))
 	for key, f := range e.Features {
@@ -30,7 +30,7 @@ func toEntitlementsDTO(e domain.Entitlements) openapi.Entitlements {
 }
 
 func toFeatureDTO(f domain.Feature) openapi.Feature {
-	return openapi.Feature{Name: f.Name, On: f.On, WhenOff: openapi.FeatureWhenOff(f.WhenOff), AvailableOn: availableOnDTO(f.AvailableOn)}
+	return openapi.Feature{Name: f.Name, On: f.On, WhenOff: openapi.FeatureOffBehavior(f.WhenOff), AvailableOn: availableOnDTO(f.AvailableOn)}
 }
 
 // availableOnDTO keeps the upgrade hint's plans a list, never null, as the

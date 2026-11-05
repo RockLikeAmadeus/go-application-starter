@@ -28,7 +28,7 @@ func newInfoCmd(open appOpener) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			where, place := dataLocation(cfg)
+			label, location := dataLocation(cfg)
 			settingsFile := cfg.SettingsFile
 			if settingsFile == "" {
 				settingsFile = "none"
@@ -38,15 +38,15 @@ func newInfoCmd(open appOpener) *cobra.Command {
 			for _, s := range cfg.Settings() {
 				fmt.Fprintf(out, "  %s = %s  # %s\n", s.Key, tomlValue(s.Value), s.Source)
 			}
-			_, err = fmt.Fprintf(out, "%s: %s\nPlan: %s\n", where, place, entitlements.Plan)
+			_, err = fmt.Fprintf(out, "%s: %s\nPlan: %s\n", label, location, entitlements.Plan)
 			return err
 		},
 	}
 }
 
-// dataLocation says where cfg keeps the data, as a label and a place: a data
+// dataLocation says where cfg keeps the data, as a label and a location: a data
 // folder, a server, or only memory.
-func dataLocation(cfg config.Config) (where, place string) {
+func dataLocation(cfg config.Config) (label, location string) {
 	switch {
 	case cfg.ServerURL != "":
 		return "Server", cfg.ServerURL

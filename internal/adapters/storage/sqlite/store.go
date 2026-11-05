@@ -118,11 +118,11 @@ func (s *Store) Ready(ctx context.Context) error {
 	if err := s.db.PingContext(ctx); err != nil {
 		return err
 	}
-	now, err := os.Stat(s.path)
+	current, err := os.Stat(s.path)
 	if err != nil {
 		return err
 	}
-	if !os.SameFile(s.opened, now) {
+	if !os.SameFile(s.opened, current) {
 		return fmt.Errorf("database file %s was replaced", s.path)
 	}
 	return nil

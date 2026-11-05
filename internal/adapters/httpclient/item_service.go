@@ -15,8 +15,8 @@ type ItemService struct {
 
 var _ ports.ItemService = (*ItemService)(nil)
 
-// New returns a client for the server at baseURL, e.g. "http://localhost:8080".
-func New(baseURL string, opts ...apiclient.ClientOption) (*ItemService, error) {
+// NewItemService returns a client for the server at baseURL, e.g. "http://localhost:8080".
+func NewItemService(baseURL string, opts ...apiclient.ClientOption) (*ItemService, error) {
 	api, err := newAPI(baseURL, opts...)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (s *ItemService) CreateItem(ctx context.Context, name string) (domain.Item,
 	if res.JSON201 == nil {
 		return domain.Item{}, toError(res.StatusCode(), res.ApplicationproblemJSONDefault)
 	}
-	return toDomain(*res.JSON201), nil
+	return toItem(*res.JSON201), nil
 }
 
 func (s *ItemService) GetItem(ctx context.Context, id string) (domain.Item, error) {
@@ -43,7 +43,7 @@ func (s *ItemService) GetItem(ctx context.Context, id string) (domain.Item, erro
 	if res.JSON200 == nil {
 		return domain.Item{}, toError(res.StatusCode(), res.ApplicationproblemJSONDefault)
 	}
-	return toDomain(*res.JSON200), nil
+	return toItem(*res.JSON200), nil
 }
 
 func (s *ItemService) ListItems(ctx context.Context) ([]domain.Item, error) {
@@ -56,7 +56,7 @@ func (s *ItemService) ListItems(ctx context.Context) ([]domain.Item, error) {
 	}
 	items := make([]domain.Item, 0, len(res.JSON200.Items))
 	for _, it := range res.JSON200.Items {
-		items = append(items, toDomain(it))
+		items = append(items, toItem(it))
 	}
 	return items, nil
 }
@@ -69,7 +69,7 @@ func (s *ItemService) RenameItem(ctx context.Context, id, name string) (domain.I
 	if res.JSON200 == nil {
 		return domain.Item{}, toError(res.StatusCode(), res.ApplicationproblemJSONDefault)
 	}
-	return toDomain(*res.JSON200), nil
+	return toItem(*res.JSON200), nil
 }
 
 func (s *ItemService) DeleteItem(ctx context.Context, id string) error {
@@ -83,7 +83,7 @@ func (s *ItemService) DeleteItem(ctx context.Context, id string) error {
 	return nil
 }
 
-func toDomain(i apiclient.Item) domain.Item {
+func toItem(i apiclient.Item) domain.Item {
 	return domain.Item{ID: i.Id, Name: i.Name, CreatedAt: i.CreatedAt, UpdatedAt: i.UpdatedAt}
 }
 

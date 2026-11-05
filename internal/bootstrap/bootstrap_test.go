@@ -39,7 +39,7 @@ func TestNewEmbedded_IsOnTheLocalPlan(t *testing.T) {
 
 // Storage on disk is ready only while its data folder can be used.
 func TestNewEmbedded_IsNotReadyOnceTheDataFolderIsRemoved(t *testing.T) {
-	for _, storage := range []config.Storage{config.StorageJSONFile, config.StorageSQLite} {
+	for _, storage := range []config.StorageBackend{config.StorageJSONFile, config.StorageSQLite} {
 		t.Run(string(storage), func(t *testing.T) {
 			dir := t.TempDir()
 			a, err := bootstrap.NewEmbedded(config.Config{Storage: storage, DataDir: dir})
@@ -119,7 +119,7 @@ func TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints(t *testing.T) {
 	}`)
 	dataDir := filepath.Join(t.TempDir(), "data")
 
-	svc, err := bootstrap.NewEntitlements(config.Config{Storage: config.StorageSQLite, DataDir: dataDir, PlansFile: path})
+	svc, err := bootstrap.NewEntitlementsService(config.Config{Storage: config.StorageSQLite, DataDir: dataDir, PlansFile: path})
 	if err != nil {
 		t.Fatalf("NewEntitlements: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestNewEntitlements_ShippedPlansHaveItemExport(t *testing.T) {
 	}{{"local", true}, {"pro", true}, {"free", false}} {
 		t.Run(tc.plan, func(t *testing.T) {
 			bootstrap.LocalPlan = tc.plan
-			svc, err := bootstrap.NewEntitlements(config.Config{Storage: config.StorageMemory})
+			svc, err := bootstrap.NewEntitlementsService(config.Config{Storage: config.StorageMemory})
 			if err != nil {
 				t.Fatalf("NewEntitlements: %v", err)
 			}

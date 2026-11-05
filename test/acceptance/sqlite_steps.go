@@ -9,7 +9,7 @@ import (
 )
 
 // sqliteStorage is the storage setting that keeps data in SQLite.
-const sqliteStorage = config.Storage("sqlite")
+const sqliteStorage = config.StorageBackend("sqlite")
 
 // registerSQLiteSteps binds the steps of features/sqlite-storage.feature that
 // choose SQLite storage: on the desktop app's computer (desktop driver) or

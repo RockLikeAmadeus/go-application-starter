@@ -141,7 +141,7 @@ func TestNewFeature(t *testing.T) {
 
 	invalid := map[string]struct {
 		name    string
-		whenOff domain.FeatureOff
+		whenOff domain.FeatureOffBehavior
 		field   string
 	}{
 		"no name":              {"", domain.Hide, "name"},
@@ -168,7 +168,7 @@ func entitlementsWithFeature(f domain.Feature) domain.Entitlements {
 }
 
 func TestEntitlements_CheckFeature(t *testing.T) {
-	exportFeature := func(on bool, whenOff domain.FeatureOff, availableOn ...string) domain.Feature {
+	exportFeature := func(on bool, whenOff domain.FeatureOffBehavior, availableOn ...string) domain.Feature {
 		return domain.Feature{Key: "item-export", Name: "Item export", On: on, WhenOff: whenOff, AvailableOn: availableOn}
 	}
 	cases := map[string]struct {

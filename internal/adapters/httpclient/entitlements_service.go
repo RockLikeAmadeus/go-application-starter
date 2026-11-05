@@ -51,7 +51,7 @@ func toEntitlements(e apiclient.Entitlements) domain.Entitlements {
 
 // toFeature reads a feature back as the core built it.
 func toFeature(key string, f apiclient.Feature) domain.Feature {
-	return domain.Feature{Key: key, Name: f.Name, On: f.On, WhenOff: domain.FeatureOff(f.WhenOff), AvailableOn: fromAvailableOn(f.AvailableOn)}
+	return domain.Feature{Key: key, Name: f.Name, On: f.On, WhenOff: domain.FeatureOffBehavior(f.WhenOff), AvailableOn: fromAvailableOn(f.AvailableOn)}
 }
 
 // fromAvailableOn reads an upgrade hint back as the core built it: the API

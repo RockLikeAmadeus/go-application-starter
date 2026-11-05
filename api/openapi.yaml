@@ -186,11 +186,7 @@ components:
           type: boolean
           description: True when the workspace's plan has the feature.
         whenOff:
-          type: string
-          enum: [show-locked, hide]
-          description: |
-            What to show when the feature is off. show-locked: show it locked,
-            with the upgrade hint. hide: leave it out.
+          $ref: "#/components/schemas/FeatureOffBehavior"
         availableOn:
           type: array
           description: |
@@ -207,12 +203,20 @@ components:
           minimum: 0
           description: How many the plan allows.
         whenOver:
-          type: string
-          enum: [block-new, read-only]
-          description: |
-            What happens at or over the limit. block-new: no new ones can be
-            added. read-only: no new ones either, and over the limit the
-            existing ones can't be changed, only deleted.
+          $ref: "#/components/schemas/OverLimitBehavior"
+    OverLimitBehavior:
+      type: string
+      enum: [block-new, read-only]
+      description: |
+        What happens at or over a limit. block-new: no new ones can be
+        added. read-only: no new ones either, and over the limit the
+        existing ones can't be changed, only deleted.
+    FeatureOffBehavior:
+      type: string
+      enum: [show-locked, hide]
+      description: |
+        What to show of a feature that's off. show-locked: show it locked,
+        with the upgrade hint. hide: leave it out.
     Warnings:
       type: object
       required: [warnings]

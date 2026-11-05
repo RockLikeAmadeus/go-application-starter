@@ -81,7 +81,7 @@ func typeText(t *testing.T, m tea.Model, s string) tea.Model {
 func view(m tea.Model) string { return m.View().Content }
 
 func TestShowsEmptyState(t *testing.T) {
-	m := tea.Model(New(newCore()))
+	m := tea.Model(newItemsScreen(newCore()))
 	m = send(t, m, m.Init()())
 	if !strings.Contains(view(m), "No items yet") {
 		t.Errorf("view missing empty state:\n%s", view(m))
@@ -90,7 +90,7 @@ func TestShowsEmptyState(t *testing.T) {
 
 func TestAddItem(t *testing.T) {
 	core := newCore()
-	m := tea.Model(New(core))
+	m := tea.Model(newItemsScreen(core))
 	m = send(t, m, m.Init()())
 
 	m = send(t, m, key("a"))
@@ -109,7 +109,7 @@ func TestAddItem(t *testing.T) {
 func TestDeleteSelectedItem(t *testing.T) {
 	core := newCore()
 	_, _ = core.CreateItem(context.Background(), "Doomed")
-	m := tea.Model(New(core))
+	m := tea.Model(newItemsScreen(core))
 	m = send(t, m, m.Init()())
 
 	m = send(t, m, key("d"))
@@ -120,7 +120,7 @@ func TestDeleteSelectedItem(t *testing.T) {
 }
 
 func TestValidationErrorIsShown(t *testing.T) {
-	m := tea.Model(New(newCore()))
+	m := tea.Model(newItemsScreen(newCore()))
 	m = send(t, m, m.Init()())
 
 	m = send(t, m, key("a"))
@@ -135,7 +135,7 @@ func TestVimKeysMoveSelection(t *testing.T) {
 	core := newCore()
 	_, _ = core.CreateItem(context.Background(), "First")
 	_, _ = core.CreateItem(context.Background(), "Second")
-	m := tea.Model(New(core))
+	m := tea.Model(newItemsScreen(core))
 	m = send(t, m, m.Init()())
 
 	m = send(t, m, key("j"))
@@ -151,7 +151,7 @@ func TestVimKeysMoveSelection(t *testing.T) {
 
 func TestVimKeysAreTypedWhileEditing(t *testing.T) {
 	core := newCore()
-	m := tea.Model(New(core))
+	m := tea.Model(newItemsScreen(core))
 	m = send(t, m, m.Init()())
 
 	m = send(t, m, key("a"))

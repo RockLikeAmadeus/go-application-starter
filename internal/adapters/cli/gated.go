@@ -66,7 +66,7 @@ func readEntitlements(cmd *cobra.Command, loadConfig func() (config.Config, erro
 	if err != nil {
 		return domain.Entitlements{}, false
 	}
-	service, err := bootstrap.NewEntitlements(cfg)
+	service, err := bootstrap.NewEntitlementsService(cfg)
 	if err != nil {
 		return domain.Entitlements{}, false
 	}

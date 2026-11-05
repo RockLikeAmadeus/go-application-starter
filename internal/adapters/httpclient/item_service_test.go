@@ -77,7 +77,7 @@ func newClient(t *testing.T, plan testsupport.FixedEntitlements) *httpclient.Ite
 		testsupport.NewFixedClock(time.Unix(0, 0).UTC()), testsupport.NewSequentialIDs("item"))
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Items: core}))
 	t.Cleanup(srv.Close)
-	client, err := httpclient.New(srv.URL)
+	client, err := httpclient.NewItemService(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}

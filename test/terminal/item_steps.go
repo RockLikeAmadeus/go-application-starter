@@ -121,9 +121,9 @@ func (j *journey) theExportListsAndThen(first, second string) error {
 		return err
 	}
 	screen := j.term.Screen()
-	header := strings.Index(screen, "name,createdAt")
-	f, s := strings.Index(screen, first+","), strings.Index(screen, second+",")
-	if header < 0 || f < header || s < f {
+	headerAt := strings.Index(screen, "name,createdAt")
+	firstAt, secondAt := strings.Index(screen, first+","), strings.Index(screen, second+",")
+	if headerAt < 0 || firstAt < headerAt || secondAt < firstAt {
 		return fmt.Errorf("the export doesn't list the header, then %q, then %q; the screen shows:\n%s", first, second, screen)
 	}
 	return nil

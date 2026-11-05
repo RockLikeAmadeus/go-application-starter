@@ -29,29 +29,29 @@ func firstScreen(p Ports, warnings []string) tea.Model {
 	var screen tea.Model = home{}
 	// sample:start
 	if p.Items != nil {
-		screen = New(p.Items)
+		screen = newItemsScreen(p.Items)
 	}
 	// sample:end
-	return warned{screen: screen, warnings: warnings}
+	return warnedScreen{screen: screen, warnings: warnings}
 }
 
-// warned shows the app's warnings, each on its own line, above screen, and
+// warnedScreen shows the app's warnings, each on its own line, above screen, and
 // passes everything else to it. It wraps whichever screen opens first, so the
 // warnings stay above it after the sample is removed.
-type warned struct {
+type warnedScreen struct {
 	screen   tea.Model
 	warnings []string
 }
 
-func (w warned) Init() tea.Cmd { return w.screen.Init() }
+func (w warnedScreen) Init() tea.Cmd { return w.screen.Init() }
 
-func (w warned) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (w warnedScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	w.screen, cmd = w.screen.Update(msg)
 	return w, cmd
 }
 
-func (w warned) View() tea.View {
+func (w warnedScreen) View() tea.View {
 	v := w.screen.View()
 	var b strings.Builder
 	for _, m := range w.warnings {

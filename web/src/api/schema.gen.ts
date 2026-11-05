@@ -134,12 +134,7 @@ export interface components {
             name: string;
             /** @description True when the workspace's plan has the feature. */
             on: boolean;
-            /**
-             * @description What to show when the feature is off. show-locked: show it locked,
-             *     with the upgrade hint. hide: leave it out.
-             * @enum {string}
-             */
-            whenOff: "show-locked" | "hide";
+            whenOff: components["schemas"]["FeatureOffBehavior"];
             /**
              * @description The plans that have the feature, for the upgrade hint. Empty when
              *     the edition gives no hints.
@@ -149,14 +144,21 @@ export interface components {
         Limit: {
             /** @description How many the plan allows. */
             max: number;
-            /**
-             * @description What happens at or over the limit. block-new: no new ones can be
-             *     added. read-only: no new ones either, and over the limit the
-             *     existing ones can't be changed, only deleted.
-             * @enum {string}
-             */
-            whenOver: "block-new" | "read-only";
+            whenOver: components["schemas"]["OverLimitBehavior"];
         };
+        /**
+         * @description What happens at or over a limit. block-new: no new ones can be
+         *     added. read-only: no new ones either, and over the limit the
+         *     existing ones can't be changed, only deleted.
+         * @enum {string}
+         */
+        OverLimitBehavior: "block-new" | "read-only";
+        /**
+         * @description What to show of a feature that's off. show-locked: show it locked,
+         *     with the upgrade hint. hide: leave it out.
+         * @enum {string}
+         */
+        FeatureOffBehavior: "show-locked" | "hide";
         Warnings: {
             /** @description The warnings to show, in order. Empty when there are none. */
             warnings: components["schemas"]["Warning"][];

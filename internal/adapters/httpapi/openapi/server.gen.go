@@ -17,14 +17,14 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
-// Defines values for FeatureWhenOff.
+// Defines values for FeatureOffBehavior.
 const (
-	Hide       FeatureWhenOff = "hide"
-	ShowLocked FeatureWhenOff = "show-locked"
+	Hide       FeatureOffBehavior = "hide"
+	ShowLocked FeatureOffBehavior = "show-locked"
 )
 
-// Valid indicates whether the value is a known member of the FeatureWhenOff enum.
-func (e FeatureWhenOff) Valid() bool {
+// Valid indicates whether the value is a known member of the FeatureOffBehavior enum.
+func (e FeatureOffBehavior) Valid() bool {
 	switch e {
 	case Hide:
 		return true
@@ -35,14 +35,14 @@ func (e FeatureWhenOff) Valid() bool {
 	}
 }
 
-// Defines values for LimitWhenOver.
+// Defines values for OverLimitBehavior.
 const (
-	BlockNew LimitWhenOver = "block-new"
-	ReadOnly LimitWhenOver = "read-only"
+	BlockNew OverLimitBehavior = "block-new"
+	ReadOnly OverLimitBehavior = "read-only"
 )
 
-// Valid indicates whether the value is a known member of the LimitWhenOver enum.
-func (e LimitWhenOver) Valid() bool {
+// Valid indicates whether the value is a known member of the OverLimitBehavior enum.
+func (e OverLimitBehavior) Valid() bool {
 	switch e {
 	case BlockNew:
 		return true
@@ -86,14 +86,14 @@ type Feature struct {
 	// On True when the workspace's plan has the feature.
 	On bool `json:"on"`
 
-	// WhenOff What to show when the feature is off. show-locked: show it locked,
+	// WhenOff What to show of a feature that's off. show-locked: show it locked,
 	// with the upgrade hint. hide: leave it out.
-	WhenOff FeatureWhenOff `json:"whenOff"`
+	WhenOff FeatureOffBehavior `json:"whenOff"`
 }
 
-// FeatureWhenOff What to show when the feature is off. show-locked: show it locked,
+// FeatureOffBehavior What to show of a feature that's off. show-locked: show it locked,
 // with the upgrade hint. hide: leave it out.
-type FeatureWhenOff string
+type FeatureOffBehavior string
 
 // Item defines model for Item.
 type Item struct {
@@ -118,16 +118,16 @@ type Limit struct {
 	// Max How many the plan allows.
 	Max int `json:"max"`
 
-	// WhenOver What happens at or over the limit. block-new: no new ones can be
+	// WhenOver What happens at or over a limit. block-new: no new ones can be
 	// added. read-only: no new ones either, and over the limit the
 	// existing ones can't be changed, only deleted.
-	WhenOver LimitWhenOver `json:"whenOver"`
+	WhenOver OverLimitBehavior `json:"whenOver"`
 }
 
-// LimitWhenOver What happens at or over the limit. block-new: no new ones can be
+// OverLimitBehavior What happens at or over a limit. block-new: no new ones can be
 // added. read-only: no new ones either, and over the limit the
 // existing ones can't be changed, only deleted.
-type LimitWhenOver string
+type OverLimitBehavior string
 
 // Problem defines model for Problem.
 type Problem struct {

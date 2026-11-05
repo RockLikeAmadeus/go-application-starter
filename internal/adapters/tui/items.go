@@ -27,33 +27,33 @@ type (
 	errMsg         struct{ err error }
 )
 
-// Model is the Items screen.
-type Model struct {
-	items  ports.ItemService
-	list   []domain.Item
-	cursor int
-	mode   mode
-	input  textinput.Model
-	err    error
+// itemsScreen is the Items screen.
+type itemsScreen struct {
+	service ports.ItemService
+	items   []domain.Item
+	cursor  int
+	mode    mode
+	input   textinput.Model
+	err     error
 }
 
-// New creates the Items screen.
-func New(items ports.ItemService) Model {
+// newItemsScreen creates the Items screen.
+func newItemsScreen(service ports.ItemService) itemsScreen {
 	in := textinput.New()
 	in.Placeholder = "Item name"
 	in.CharLimit = domain.MaxItemNameLength
-	return Model{items: items, input: in}
+	return itemsScreen{service: service, input: in}
 }
 
-func (m Model) Init() tea.Cmd {
+func (m itemsScreen) Init() tea.Cmd {
 	return m.load()
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m itemsScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case itemsLoadedMsg:
-		m.list = msg.items
-		m.cursor = min(m.cursor, max(len(m.list)-1, 0))
+		m.items = msg.items
+		m.cursor = min(m.cursor, max(len(m.items)-1, 0))
 		return m, nil
 	case errMsg:
 		m.err = msg.err
@@ -70,7 +70,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) updateBrowse(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m itemsScreen) updateBrowse(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.err = nil
 	switch msg.String() {
 	case "q", "esc":
@@ -78,7 +78,7 @@ func (m Model) updateBrowse(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "up", "k":
 		m.cursor = max(m.cursor-1, 0)
 	case "down", "j":
-		m.cursor = min(m.cursor+1, max(len(m.list)-1, 0))
+		m.cursor = min(m.cursor+1, max(len(m.items)-1, 0))
 	case "a":
 		m.mode = modeAdd
 		m.input.Reset()
@@ -91,13 +91,13 @@ func (m Model) updateBrowse(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	case "d":
 		if item, ok := m.selected(); ok {
-			return m, m.run(func(ctx context.Context) error { return m.items.DeleteItem(ctx, item.ID) })
+			return m, m.run(func(ctx context.Context) error { return m.service.DeleteItem(ctx, item.ID) })
 		}
 	}
 	return m, nil
 }
 
-func (m Model) updateInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m itemsScreen) updateInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc":
 		m.mode = modeBrowse
@@ -112,9 +112,9 @@ func (m Model) updateInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, m.run(func(ctx context.Context) error {
 			var err error
 			if mode == modeAdd {
-				_, err = m.items.CreateItem(ctx, name)
+				_, err = m.service.CreateItem(ctx, name)
 			} else {
-				_, err = m.items.RenameItem(ctx, item.ID, name)
+				_, err = m.service.RenameItem(ctx, item.ID, name)
 			}
 			return err
 		})
@@ -124,14 +124,14 @@ func (m Model) updateInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Model) View() tea.View {
+func (m itemsScreen) View() tea.View {
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("Items") + "\n\n")
 
-	if len(m.list) == 0 {
+	if len(m.items) == 0 {
 		b.WriteString(helpStyle.Render("  No items yet. Press a to add one.") + "\n")
 	}
-	for i, it := range m.list {
+	for i, it := range m.items {
 		if i == m.cursor && m.mode == modeBrowse {
 			b.WriteString(selectedRow(it.Name) + "\n")
 		} else {
@@ -159,19 +159,19 @@ func (m Model) View() tea.View {
 	return v
 }
 
-func (m Model) selected() (domain.Item, bool) {
-	if m.cursor < 0 || m.cursor >= len(m.list) {
+func (m itemsScreen) selected() (domain.Item, bool) {
+	if m.cursor < 0 || m.cursor >= len(m.items) {
 		return domain.Item{}, false
 	}
-	return m.list[m.cursor], true
+	return m.items[m.cursor], true
 }
 
 // load fetches the item list.
-func (m Model) load() tea.Cmd {
+func (m itemsScreen) load() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		items, err := m.items.ListItems(ctx)
+		items, err := m.service.ListItems(ctx)
 		if err != nil {
 			return errMsg{fmt.Errorf("load items: %w", err)}
 		}
@@ -180,7 +180,7 @@ func (m Model) load() tea.Cmd {
 }
 
 // run performs a mutation and then reloads the list.
-func (m Model) run(op func(context.Context) error) tea.Cmd {
+func (m itemsScreen) run(op func(context.Context) error) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()

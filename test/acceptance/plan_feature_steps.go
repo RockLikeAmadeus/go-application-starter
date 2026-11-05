@@ -32,23 +32,23 @@ func (w *world) registerPlanFeatureSteps(sc *godog.ScenarioContext) {
 
 func (w *world) iExportTheItems(ctx context.Context) error {
 	var err error
-	w.export, err = w.items.ExportItems(ctx)
+	w.exportedCSV, err = w.items.ExportItems(ctx)
 	return err
 }
 
 func (w *world) iTryToExportTheItems(ctx context.Context) error {
-	w.export, w.lastErr = w.items.ExportItems(ctx)
+	w.exportedCSV, w.lastErr = w.items.ExportItems(ctx)
 	return nil
 }
 
 // theExportLists checks the export's names, in order, under its header.
 func (w *world) theExportLists(table *godog.Table) error {
-	records, err := csv.NewReader(bytes.NewReader(w.export)).ReadAll()
+	records, err := csv.NewReader(bytes.NewReader(w.exportedCSV)).ReadAll()
 	if err != nil {
-		return fmt.Errorf("read the export %q: %w", w.export, err)
+		return fmt.Errorf("read the export %q: %w", w.exportedCSV, err)
 	}
 	if len(records) == 0 || !slices.Equal(records[0], []string{"name", "createdAt"}) {
-		return fmt.Errorf("the export has no name,createdAt header: %q", w.export)
+		return fmt.Errorf("the export has no name,createdAt header: %q", w.exportedCSV)
 	}
 	var got, want []string
 	for _, record := range records[1:] {
@@ -79,7 +79,7 @@ func (w *world) iAmToldItemExportIsntOnMyPlan(availableOn string) error {
 }
 
 // whenOff is what the scenarios call each way of showing a feature that's off.
-var whenOff = map[string]domain.FeatureOff{
+var whenOff = map[string]domain.FeatureOffBehavior{
 	"shown locked": domain.ShowLocked,
 	"hidden":       domain.Hide,
 }
@@ -153,7 +153,7 @@ func (p *testPlans) setFeature(plan, key string, on bool) error {
 }
 
 // setWhenOff changes what every plan shows of the feature when it's off.
-func (p *testPlans) setWhenOff(key string, whenOff domain.FeatureOff) {
+func (p *testPlans) setWhenOff(key string, whenOff domain.FeatureOffBehavior) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	for name, entitlements := range p.catalog {

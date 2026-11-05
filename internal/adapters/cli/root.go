@@ -65,7 +65,7 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 			chosenByOption(cfg, "server_url", "server")
 		}
 		if storage != "" {
-			cfg.Storage = config.Storage(storage)
+			cfg.Storage = config.StorageBackend(storage)
 			chosenByOption(cfg, "storage", "storage")
 		}
 		if dataDir != "" {

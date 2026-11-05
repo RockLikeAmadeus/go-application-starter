@@ -65,12 +65,12 @@ func (a *App) Ready(ctx context.Context) error {
 func NewEmbedded(cfg config.Config) (*App, error) {
 	a := &App{}
 	// sample:start
-	var items ports.ItemRepository
+	var itemRepo ports.ItemRepository
 	// sample:end
 	switch cfg.Storage {
 	case config.StorageMemory:
 		// sample:start
-		items = memory.NewItemRepository()
+		itemRepo = memory.NewItemRepository()
 		// sample:end
 	case config.StorageJSONFile:
 		store, err := jsonfile.Open(cfg.DataDir)
@@ -80,7 +80,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		a.close = store.Close
 		a.ready = store.Ready
 		// sample:start
-		items = jsonfile.NewItemRepository(store)
+		itemRepo = jsonfile.NewItemRepository(store)
 		// sample:end
 	case config.StorageSQLite:
 		store, err := sqlite.Open(cfg.DataDir)
@@ -93,7 +93,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 			a.Warnings = append(a.Warnings, warning)
 		}
 		// sample:start
-		items = sqlite.NewItemRepository(store)
+		itemRepo = sqlite.NewItemRepository(store)
 		// sample:end
 	default:
 		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
@@ -108,17 +108,17 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	// plan's entitlements, system.Clock{} and system.UUIDs{}. See
 	// docs/workspaces.md.
 	// sample:start
-	a.Items = app.NewItemService(items, workspace.Local{}, entitlements, system.Clock{}, system.UUIDs{})
+	a.Items = app.NewItemService(itemRepo, workspace.Local{}, entitlements, system.Clock{}, system.UUIDs{})
 	// sample:end
 	return a, nil
 }
 
-// NewEntitlements returns the entitlements service alone: the server's when
+// NewEntitlementsService returns the entitlements service alone: the server's when
 // cfg.ServerURL is set, as NewRemote wires it, else the local edition's, as
 // NewEmbedded wires it, but opening no storage: it creates no data folder,
 // runs no migrations and isn't stopped by a locked folder. The CLI's help
 // reads the plan through it.
-func NewEntitlements(cfg config.Config) (ports.EntitlementsService, error) {
+func NewEntitlementsService(cfg config.Config) (ports.EntitlementsService, error) {
 	if cfg.ServerURL != "" {
 		return httpclient.NewEntitlementsService(cfg.ServerURL)
 	}
@@ -169,7 +169,7 @@ func localEntitlements(plansFile string) (plans.Entitlements, error) {
 func NewRemote(serverURL string) (*App, error) {
 	a := &App{}
 	// sample:start
-	svc, err := httpclient.New(serverURL)
+	svc, err := httpclient.NewItemService(serverURL)
 	if err != nil {
 		return nil, fmt.Errorf("create API client: %w", err)
 	}

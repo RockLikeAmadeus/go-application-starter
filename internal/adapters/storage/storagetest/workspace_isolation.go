@@ -11,9 +11,9 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
-// Records tells RunWorkspaceIsolation how to make and read the records of one
+// RecordKind tells RunWorkspaceIsolation how to make and read the records of one
 // entity.
-type Records[T any] struct {
+type RecordKind[T any] struct {
 	// New returns a valid record with the given workspace and ID.
 	New func(workspace domain.WorkspaceID, id string) T
 	// ID and Workspace read a record's ID and workspace.
@@ -25,43 +25,43 @@ type Records[T any] struct {
 // record is only seen, and only deleted, in its own workspace. Every
 // ports.WorkspaceRepository implementation must pass it. newRepo returns a
 // fresh, empty repository for each subtest.
-func RunWorkspaceIsolation[T any](t *testing.T, newRepo func(*testing.T) ports.WorkspaceRepository[T], records Records[T]) {
+func RunWorkspaceIsolation[T any](t *testing.T, newRepo func(*testing.T) ports.WorkspaceRepository[T], kind RecordKind[T]) {
 	ctx := context.Background()
 	const mine, theirs domain.WorkspaceID = "ws-a", "ws-b"
 
 	save := func(t *testing.T, repo ports.WorkspaceRepository[T], record T) {
 		t.Helper()
 		if err := repo.Save(ctx, record); err != nil {
-			t.Fatalf("Save(%s): %v", records.ID(record), err)
+			t.Fatalf("Save(%s): %v", kind.ID(record), err)
 		}
 	}
 
 	t.Run("Save keeps the record's workspace", func(t *testing.T) {
 		repo := newRepo(t)
-		save(t, repo, records.New(theirs, "a"))
+		save(t, repo, kind.New(theirs, "a"))
 
 		got, err := repo.FindByID(ctx, theirs, "a")
 		if err != nil {
 			t.Fatalf("FindByID: %v", err)
 		}
-		if records.Workspace(got) != theirs {
-			t.Errorf("workspace = %q, want %q", records.Workspace(got), theirs)
+		if kind.Workspace(got) != theirs {
+			t.Errorf("workspace = %q, want %q", kind.Workspace(got), theirs)
 		}
 	})
 
 	t.Run("FindAll lists only the given workspace's records", func(t *testing.T) {
 		repo := newRepo(t)
-		save(t, repo, records.New(mine, "a"))
-		save(t, repo, records.New(theirs, "b"))
+		save(t, repo, kind.New(mine, "a"))
+		save(t, repo, kind.New(theirs, "b"))
 
 		all, err := repo.FindAll(ctx, mine)
 		if err != nil {
 			t.Fatalf("FindAll: %v", err)
 		}
-		if len(all) != 1 || records.ID(all[0]) != "a" {
+		if len(all) != 1 || kind.ID(all[0]) != "a" {
 			var ids []string
 			for _, r := range all {
-				ids = append(ids, records.ID(r))
+				ids = append(ids, kind.ID(r))
 			}
 			t.Errorf("FindAll(%s) IDs = %v, want only [a]", mine, ids)
 		}
@@ -69,7 +69,7 @@ func RunWorkspaceIsolation[T any](t *testing.T, newRepo func(*testing.T) ports.W
 
 	t.Run("FindByID of another workspace's record returns ErrNotFound", func(t *testing.T) {
 		repo := newRepo(t)
-		save(t, repo, records.New(theirs, "a"))
+		save(t, repo, kind.New(theirs, "a"))
 
 		if _, err := repo.FindByID(ctx, mine, "a"); !errors.Is(err, domain.ErrNotFound) {
 			t.Fatalf("err = %v, want ErrNotFound", err)
@@ -78,7 +78,7 @@ func RunWorkspaceIsolation[T any](t *testing.T, newRepo func(*testing.T) ports.W
 
 	t.Run("Delete of another workspace's record returns ErrNotFound and keeps it", func(t *testing.T) {
 		repo := newRepo(t)
-		save(t, repo, records.New(theirs, "a"))
+		save(t, repo, kind.New(theirs, "a"))
 
 		if err := repo.Delete(ctx, mine, "a"); !errors.Is(err, domain.ErrNotFound) {
 			t.Errorf("err = %v, want ErrNotFound", err)

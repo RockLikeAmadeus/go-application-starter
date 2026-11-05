@@ -12,17 +12,17 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-type Storage string
+type StorageBackend string
 
 const (
-	StorageMemory   Storage = "memory"
-	StorageJSONFile Storage = "jsonfile"
-	StorageSQLite   Storage = "sqlite"
+	StorageMemory   StorageBackend = "memory"
+	StorageJSONFile StorageBackend = "jsonfile"
+	StorageSQLite   StorageBackend = "sqlite"
 )
 
 type Config struct {
 	// Storage selects the storage adapter (storage; STARTER_STORAGE).
-	Storage Storage
+	Storage StorageBackend
 	// DataDir is where the jsonfile adapter keeps its files (data_dir;
 	// STARTER_DATA_DIR).
 	DataDir string
@@ -79,7 +79,7 @@ func Load(env Env, settingsFile string) (Config, error) {
 	cfg := Config{
 		SettingsFile: settingsFile,
 		Sources:      sources,
-		Storage:      Storage(setting("storage", string(StorageJSONFile))),
+		Storage:      StorageBackend(setting("storage", string(StorageJSONFile))),
 		DataDir:      setting("data_dir", "./data"),
 		ServerURL:    setting("server_url", ""),
 		LogFormat:    setting("log_format", "text"),

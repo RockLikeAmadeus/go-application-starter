@@ -41,7 +41,7 @@ func RunItemRepositoryContract(t *testing.T, newRepo Factory) {
 	t.Run("workspace isolation", func(t *testing.T) {
 		RunWorkspaceIsolation(t,
 			func(t *testing.T) ports.WorkspaceRepository[domain.Item] { return newRepo(t) },
-			Records[domain.Item]{
+			RecordKind[domain.Item]{
 				New:       func(ws domain.WorkspaceID, id string) domain.Item { return itemIn(ws, id, "Item "+id, 0) },
 				ID:        func(i domain.Item) string { return i.ID },
 				Workspace: func(i domain.Item) domain.WorkspaceID { return i.WorkspaceID },

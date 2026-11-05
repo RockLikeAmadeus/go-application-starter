@@ -17,7 +17,7 @@ func (h *Handlers) ListItems(ctx context.Context, _ openapi.ListItemsRequestObje
 	}
 	out := make([]openapi.Item, 0, len(items))
 	for _, it := range items {
-		out = append(out, toDTO(it))
+		out = append(out, toItemDTO(it))
 	}
 	return openapi.ListItems200JSONResponse{Items: out}, nil
 }
@@ -27,7 +27,7 @@ func (h *Handlers) CreateItem(ctx context.Context, req openapi.CreateItemRequest
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateItem201JSONResponse(toDTO(item)), nil
+	return openapi.CreateItem201JSONResponse(toItemDTO(item)), nil
 }
 
 func (h *Handlers) GetItem(ctx context.Context, req openapi.GetItemRequestObject) (openapi.GetItemResponseObject, error) {
@@ -35,7 +35,7 @@ func (h *Handlers) GetItem(ctx context.Context, req openapi.GetItemRequestObject
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetItem200JSONResponse(toDTO(item)), nil
+	return openapi.GetItem200JSONResponse(toItemDTO(item)), nil
 }
 
 func (h *Handlers) RenameItem(ctx context.Context, req openapi.RenameItemRequestObject) (openapi.RenameItemResponseObject, error) {
@@ -43,7 +43,7 @@ func (h *Handlers) RenameItem(ctx context.Context, req openapi.RenameItemRequest
 	if err != nil {
 		return nil, err
 	}
-	return openapi.RenameItem200JSONResponse(toDTO(item)), nil
+	return openapi.RenameItem200JSONResponse(toItemDTO(item)), nil
 }
 
 func (h *Handlers) DeleteItem(ctx context.Context, req openapi.DeleteItemRequestObject) (openapi.DeleteItemResponseObject, error) {
@@ -61,6 +61,6 @@ func (h *Handlers) ExportItems(ctx context.Context, _ openapi.ExportItemsRequest
 	return openapi.ExportItems200TextcsvResponse{Body: bytes.NewReader(csv), ContentLength: int64(len(csv))}, nil
 }
 
-func toDTO(i domain.Item) openapi.Item {
+func toItemDTO(i domain.Item) openapi.Item {
 	return openapi.Item{Id: i.ID, Name: i.Name, CreatedAt: i.CreatedAt, UpdatedAt: i.UpdatedAt}
 }

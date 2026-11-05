@@ -24,7 +24,7 @@ func newItemCmd(open appOpener) *cobra.Command {
 			enc.SetIndent("", "  ")
 			out := make([]itemJSON, 0, len(items))
 			for _, it := range items {
-				out = append(out, toJSON(it))
+				out = append(out, toItemJSON(it))
 			}
 			return enc.Encode(out)
 		}
@@ -39,7 +39,7 @@ func newItemCmd(open appOpener) *cobra.Command {
 		if asJSON {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
-			return enc.Encode(toJSON(item))
+			return enc.Encode(toItemJSON(item))
 		}
 		return printItems(cmd, []domain.Item{item})
 	}
@@ -131,6 +131,6 @@ type itemJSON struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-func toJSON(i domain.Item) itemJSON {
+func toItemJSON(i domain.Item) itemJSON {
 	return itemJSON{ID: i.ID, Name: i.Name, CreatedAt: i.CreatedAt, UpdatedAt: i.UpdatedAt}
 }

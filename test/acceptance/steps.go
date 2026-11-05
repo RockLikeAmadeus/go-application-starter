@@ -20,8 +20,8 @@ type world struct {
 	cliOut    string
 	cliErrOut string
 	// sample:start
-	// export is the items' CSV that the last export gave.
-	export []byte
+	// exportedCSV is the items' CSV that the last export gave.
+	exportedCSV []byte
 	// sample:end
 }
 
