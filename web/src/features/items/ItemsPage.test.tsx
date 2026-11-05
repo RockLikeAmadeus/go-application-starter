@@ -1,17 +1,40 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Item } from "../../api/client";
 import { renderWithClient } from "../../test/render";
 import { ItemsPage } from "./ItemsPage";
 
-/** A tiny in-memory fake of the items API, installed as global fetch. */
+/**
+ * A tiny in-memory fake of the items API, installed as global fetch. Its plan
+ * has item export, which answers a fixed CSV.
+ */
 function fakeApi(initial: Item[] = []) {
   const items = [...initial];
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
   return vi.fn(async (input: Request) => {
+    const path = new URL(input.url).pathname;
+    if (path === "/api/v1/entitlements") {
+      return json({
+        plan: "pro",
+        limits: {},
+        features: {
+          "item-export": {
+            name: "Item export",
+            isOn: true,
+            whenOff: "show-locked",
+            availableOn: [],
+          },
+        },
+      });
+    }
+    if (path === "/api/v1/items/export") {
+      return new Response("name,createdAt\nWidget,2026-11-05T09:00:00Z\n", {
+        headers: { "Content-Type": "text/csv" },
+      });
+    }
     if (input.method === "GET") return json({ items });
     if (input.method === "POST") {
       const { name } = (await input.json()) as { name: string };
@@ -81,5 +104,29 @@ describe("ItemsPage", () => {
     await user.click(screen.getByRole("button", { name: "Add item" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("name must not be empty");
+  });
+
+  it("downloads the items as a CSV file when Export is pressed", async () => {
+    const user = userEvent.setup();
+    // jsdom has no object URLs, and a real click would navigate.
+    const createObjectURL = vi.fn<(file: Blob) => string>(() => "blob:items");
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    renderWithClient(<ItemsPage />);
+
+    const exportButton = await screen.findByRole("button", { name: "Export" });
+    await waitFor(() => expect(exportButton).toBeEnabled());
+    await user.click(exportButton);
+
+    await waitFor(() => expect(click).toHaveBeenCalledOnce());
+    const link = click.mock.contexts[0] as HTMLAnchorElement;
+    expect(link.download).toBe("items.csv");
+    expect(link.href).toBe("blob:items");
+    expect(await createObjectURL.mock.calls[0]![0].text()).toBe(
+      "name,createdAt\nWidget,2026-11-05T09:00:00Z\n",
+    );
+    click.mockRestore();
+    Reflect.deleteProperty(URL, "createObjectURL");
+    Reflect.deleteProperty(URL, "revokeObjectURL");
   });
 });

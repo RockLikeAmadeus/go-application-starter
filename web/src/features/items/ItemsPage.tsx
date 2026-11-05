@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from "react";
 import type { Item } from "../../api/client";
 import { ErrorMessage } from "../../components/ErrorMessage";
-import { useCreateItem, useDeleteItem, useItems, useRenameItem } from "./queries";
+import { FeatureGate } from "../entitlements/FeatureGate";
+import { useCreateItem, useDeleteItem, useExportItems, useItems, useRenameItem } from "./queries";
 
 export function ItemsPage() {
   const itemsQuery = useItems();
   const createItem = useCreateItem();
+  const exportItems = useExportItems();
   const [name, setName] = useState("");
 
   const onSubmit = (e: FormEvent) => {
@@ -37,6 +39,20 @@ export function ItemsPage() {
         </button>
       </form>
       {createItem.error && <ErrorMessage error={createItem.error} />}
+
+      <FeatureGate feature="item-export">
+        {(control) => (
+          <button
+            type="button"
+            {...control}
+            onClick={() => exportItems.mutate()}
+            className="type-label text-sm text-muted hover:text-fg disabled:opacity-50 terminal:text-xs"
+          >
+            Export
+          </button>
+        )}
+      </FeatureGate>
+      {exportItems.error && <ErrorMessage error={exportItems.error} />}
 
       {itemsQuery.isPending && <p className="text-muted">Loading…</p>}
       {itemsQuery.error && <ErrorMessage error={itemsQuery.error} />}
