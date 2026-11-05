@@ -98,7 +98,9 @@
    - Red: `TestExportPrintsTheItemsAsCSV` (a quoted name, jsonfile) failed: no `export` subcommand, so `item`'s help was printed.
    - Green: `item export` (`Gated("item-export", …)`) writes `ExportItems`' bytes to stdout; a locked plan fails through the core's `FeatureError`.
    - Refactor: nothing; the key stays a literal, like the app's `itemExport`, since keys are the plans file's contract.
-14b. [ ] terminal journeys (sample): the steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.
+14b. [x] terminal journeys (sample): the steps (including a plans-file step that sets `STARTER_PLANS_FILE`); `task e2e:terminal` goes green.
+   - Red: none. The export and help steps (`item_steps.go`, with a plans-file step setting `STARTER_PLANS_FILE`) passed straight away, since tasks 13 and 14 built the behaviour; swapping the outline's plans fails both rows as it should. Kept as a guard.
+   - Refactor: nothing; the steps are short and in the sample file. `task test:init` now passes in full.
 15. [ ] TUI (template): the gated key help helper and its test, outside sample blocks.
 16. [ ] web (template): `useFeature`, stubbing `fetch` of `/api/v1/entitlements`: on / locked + hint / hidden / loading → pending / failed → locked without a hint. `Layout` prefetches the entitlements, with a long `staleTime`.
 17. [ ] web (template): the gate component: children / locked with hint / locked without hint ("Not available") / nothing / a same-size disabled placeholder while pending.

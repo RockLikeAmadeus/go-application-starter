@@ -2,7 +2,14 @@
 
 package terminal
 
-import "github.com/cucumber/godog"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/cucumber/godog"
+)
 
 // registerItemSteps registers the steps of features/items.feature, the
 // sample's journeys.
@@ -14,6 +21,12 @@ func (j *journey) registerItemSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^I have added the items "([^"]*)" and "([^"]*)"$`, j.iHaveAddedTheItems)
 	sc.Step(`^I press (\S+)$`, j.iPress)
 	sc.Step(`^"([^"]*)" is selected$`, j.isSelected)
+	sc.Step(`^I export the items with the command line$`, j.iExportTheItemsWithTheCommandLine)
+	sc.Step(`^the export lists "([^"]*)" and then "([^"]*)"$`, j.theExportListsAndThen)
+	sc.Step(`^a plans file whose local plan doesn't have item export, which is (shown locked|hidden) when off$`, j.aPlansFileWithoutItemExport)
+	sc.Step(`^I ask the command line for help$`, j.iAskTheCommandLineForHelp)
+	sc.Step(`^item export is listed as disabled on your plan in the help$`, j.itemExportIsListedAsDisabled)
+	sc.Step(`^item export is not listed in the help$`, j.itemExportIsNotListed)
 }
 
 // iAddAnItemNamedWithTheCommandLine runs the command and waits for it to end,
@@ -93,4 +106,64 @@ const selectionMark = "> "
 // selected is how the terminal app shows name when its row is selected.
 func selected(name string) string {
 	return selectionMark + name
+}
+
+// iExportTheItemsWithTheCommandLine runs the export; the next step checks
+// how it went.
+func (j *journey) iExportTheItemsWithTheCommandLine() error {
+	return j.run("item", "export")
+}
+
+// theExportListsAndThen checks the export succeeded, printing the CSV's
+// header and then first's and second's rows, in that order.
+func (j *journey) theExportListsAndThen(first, second string) error {
+	if err := j.succeeds(); err != nil {
+		return err
+	}
+	screen := j.term.Screen()
+	header := strings.Index(screen, "name,createdAt")
+	f, s := strings.Index(screen, first+","), strings.Index(screen, second+",")
+	if header < 0 || f < header || s < f {
+		return fmt.Errorf("the export doesn't list the header, then %q, then %q; the screen shows:\n%s", first, second, screen)
+	}
+	return nil
+}
+
+// aPlansFileWithoutItemExport makes the user's plans file one where the local
+// plan has no features, and item export is shown (locked or hidden) when off.
+func (j *journey) aPlansFileWithoutItemExport(shown string) error {
+	whenOff := map[string]string{"shown locked": "show-locked", "hidden": "hide"}[shown]
+	plans := `{
+	"features": {"item-export": {"name": "Item export", "whenOff": "` + whenOff + `"}},
+	"plans": {"local": {"limits": {}, "features": []}}
+}`
+	path := filepath.Join(j.home, "plans.jsonc")
+	if err := os.WriteFile(path, []byte(plans), 0o600); err != nil {
+		return err
+	}
+	j.settings = append(j.settings, "STARTER_PLANS_FILE="+path)
+	return nil
+}
+
+func (j *journey) iAskTheCommandLineForHelp() error {
+	return j.run("item", "--help")
+}
+
+func (j *journey) itemExportIsListedAsDisabled() error {
+	if err := j.term.WaitFor("Export the items as CSV (disabled on your plan)", timeout); err != nil {
+		return err
+	}
+	return j.succeeds()
+}
+
+// itemExportIsNotListed waits for the help to end, so all of it is on the
+// screen, and checks it doesn't list the export.
+func (j *journey) itemExportIsNotListed() error {
+	if err := j.succeeds(); err != nil {
+		return err
+	}
+	if screen := j.term.Screen(); strings.Contains(screen, "Export the items") {
+		return fmt.Errorf("the help lists item export; the screen shows:\n%s", screen)
+	}
+	return nil
 }
