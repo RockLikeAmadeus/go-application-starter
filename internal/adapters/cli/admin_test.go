@@ -116,3 +116,11 @@ func TestAdminSetPlanRefusesAnythingButAWorkspaceAndAPlan(t *testing.T) {
 		})
 	}
 }
+
+func TestAdminSetPlanOverAServerIsRefused(t *testing.T) {
+	err := runAdmin(t, bootstrap.NewBilling, &bytes.Buffer{}, "set-plan", "ws-a", "pro", "--server", "http://localhost:1")
+
+	if !errors.Is(err, bootstrap.ErrNoPlanChangesOverAServer) {
+		t.Errorf("admin set-plan --server = %v, want ErrNoPlanChangesOverAServer", err)
+	}
+}

@@ -121,7 +121,9 @@ Wiring:
    - Red: `TestAdminSetPlanRefusesAnythingButAWorkspaceAndAPlan` fails, three arguments `= <nil>, want a usage error`, and fewer panic with `index out of range`.
    - Green: `set-plan` declares `cobra.ExactArgs(2)`.
    - Refactor: nothing worth changing; `ExactArgs` matches the `item` commands, and the test uses the shared helpers.
-11f. [ ] `admin set-plan --server` reaches `ErrNoPlanChangesOverAServer`, through the real `bootstrap.NewBilling`.
+11f. [x] `admin set-plan --server` reaches `ErrNoPlanChangesOverAServer`, through the real `bootstrap.NewBilling`.
+   - No red: `TestAdminSetPlanOverAServerIsRefused` passed straight away, because `loadConfig` already applies `--server` and task 10b refuses it. Kept as a guard: dropping the flag's override fails it, `admin set-plan --server = the local edition's plan is set when the app is built, want ErrNoPlanChangesOverAServer`. No green.
+   - Refactor: nothing worth changing; the test is one call through the shared `runAdmin`.
 
 Acceptance:
 12. [ ] Harness: each driver's `WorkspacePlanRepository`, `plans` reading it with `bootstrap.LocalPlan` as the default, and `h.billing`. "My workspace is on / moves to" go through `ChangePlan`; drop `testPlans.assign`. Bind the admin and "workspace "X" is on / "X"'s plan is" steps. `features/plans.feature` and `plan-features.feature` must stay green.
