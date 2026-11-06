@@ -63,12 +63,9 @@ func (r *ItemRepository) Save(_ context.Context, item domain.Item) error {
 func (r *ItemRepository) FindByID(_ context.Context, workspace domain.WorkspaceID, id string) (domain.Item, error) {
 	r.store.mu.RLock()
 	defer r.store.mu.RUnlock()
-	rec, err := readRecord[itemRecord](r.store, itemsTable, id)
+	rec, err := r.workspaceRecord(workspace, id)
 	if err != nil {
 		return domain.Item{}, err
-	}
-	if rec.WorkspaceID != workspace {
-		return domain.Item{}, domain.ErrNotFound
 	}
 	return rec.toDomain(), nil
 }
@@ -90,22 +87,21 @@ func (r *ItemRepository) FindAll(_ context.Context, workspace domain.WorkspaceID
 func (r *ItemRepository) Delete(_ context.Context, workspace domain.WorkspaceID, id string) error {
 	r.store.mu.Lock()
 	defer r.store.mu.Unlock()
-	records, err := readRecords[itemRecord](r.store, itemsTable)
-	if err != nil {
+	if _, err := r.workspaceRecord(workspace, id); err != nil {
 		return err
-	}
-	if _, ok := lookup(records, workspace, id); !ok {
-		return domain.ErrNotFound
 	}
 	return deleteRecord(r.store, itemsTable, id)
 }
 
-// lookup returns the workspace's record with the given ID. A record in
-// another workspace is treated as missing.
-func lookup(records map[string]itemRecord, workspace domain.WorkspaceID, id string) (itemRecord, bool) {
-	rec, ok := records[id]
-	if !ok || rec.WorkspaceID != workspace {
-		return itemRecord{}, false
+// workspaceRecord returns the workspace's record with the given ID, from that
+// record's own file. A record in another workspace is treated as missing.
+func (r *ItemRepository) workspaceRecord(workspace domain.WorkspaceID, id string) (itemRecord, error) {
+	rec, err := readRecord[itemRecord](r.store, itemsTable, id)
+	if err != nil {
+		return itemRecord{}, err
 	}
-	return rec, true
+	if rec.WorkspaceID != workspace {
+		return itemRecord{}, domain.ErrNotFound
+	}
+	return rec, nil
 }

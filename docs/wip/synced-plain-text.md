@@ -94,7 +94,10 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: `TestFindByIDReadsOnlyThatItemsFile` failed: `FindByID` stopped at the undecodable `b.json`.
   - Green: `FindByID` uses `readRecord`, and still treats another workspace's item as not found.
   - Refactor: the test explains its undecodable file, as 7c's does. `lookup` stays for `Delete` until 7e, which can remove it. The init suite ran on a copy.
-- [ ] 7e. `ItemRepository.Delete` reads only that item's file. Sample thin use.
+- [x] 7e. `ItemRepository.Delete` reads only that item's file. Sample thin use.
+  - Red: `TestDeleteReadsOnlyThatItemsFile` failed: `Delete` stopped at the undecodable `b.json`.
+  - Green: `Delete` uses `readRecord`, and still treats another workspace's item as not found.
+  - Refactor: `workspaceRecord` replaces `lookup` and holds the workspace check for `FindByID` and `Delete`. The init suite ran on a copy.
 - [ ] 8. `Store.ConflictCopies` lists them across tables, sorted, as paths relative to the data folder, leaving out hidden folders and files that aren't records.
 - [ ] 8b. Benchmarks for `readRecords`, `readRecord` and `ConflictCopies` at 1,000 and 10,000 records. There's no red, as they specify no behaviour. Note the numbers here, for task 15's rough record count in ADR 3.
 - [ ] 9. `bootstrap` puts a conflict copy warning in `App.Warnings` on plain text, naming the files, one or many, regardless of `ignore_synced_folder`. Define the conflict copy steps; turns the first 5 scenarios green.

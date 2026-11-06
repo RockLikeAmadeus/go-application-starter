@@ -2,6 +2,8 @@ package jsonfile_test
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -86,5 +88,25 @@ func TestFindByIDReadsOnlyThatItemsFile(t *testing.T) {
 	got, err := repo.FindByID(ctx, "", "a")
 	if err != nil || got.Name != "Alpha" {
 		t.Fatalf("FindByID = %+v, %v, want Alpha", got, err)
+	}
+}
+
+func TestDeleteReadsOnlyThatItemsFile(t *testing.T) {
+	dir := t.TempDir()
+	ctx := context.Background()
+	repo := jsonfile.NewItemRepository(openStore(t, dir))
+	if err := repo.Save(ctx, domain.Item{ID: "a", Name: "Alpha"}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	// Reading the whole table would stop at this file, which can't be decoded.
+	if err := os.WriteFile(filepath.Join(dir, "items", "b.json"), []byte("not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := repo.Delete(ctx, "", "a"); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "items", "a.json")); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("a's file after Delete: stat error = %v, want not exist", err)
 	}
 }
