@@ -35,6 +35,9 @@ func TestHelpNotesGatedCommandsByThePlan(t *testing.T) {
 		{"locked, with a server's hint", "", &domain.Entitlements{Plan: "free", Features: map[string]domain.Feature{
 			"reports": {Key: "reports", Name: "Reports", WhenOff: domain.ShowLocked, AvailableOn: []string{"pro"}},
 		}}, listed + " (not included in your current plan; available on the pro plan)"},
+		{"locked, with several plans in a server's hint", "", &domain.Entitlements{Plan: "free", Features: map[string]domain.Feature{
+			"reports": {Key: "reports", Name: "Reports", WhenOff: domain.ShowLocked, AvailableOn: []string{"pro", "team"}},
+		}}, listed + " (not included in your current plan; available on the following plans: pro or team)"},
 		{"entitlements unreadable", "", nil, listed},
 	}
 	for _, tt := range tests {

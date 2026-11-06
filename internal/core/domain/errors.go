@@ -71,7 +71,7 @@ func (e *FeatureError) Error() string {
 	if len(e.AvailableOn) == 1 {
 		return upgrade + PlansPhrase(e.AvailableOn) + "."
 	}
-	return upgrade + "one of the following plans: " + planList(e.AvailableOn) + "."
+	return upgrade + "one of the following plans: " + PlanList(e.AvailableOn) + "."
 }
 
 // PlansPhrase names plans for an upgrade hint: "the pro plan", or "the pro
@@ -80,12 +80,12 @@ func PlansPhrase(plans []string) string {
 	if len(plans) == 1 {
 		return "the " + plans[0] + " plan"
 	}
-	return "the " + planList(plans) + " plans"
+	return "the " + PlanList(plans) + " plans"
 }
 
-// planList joins two or more plan names: "pro or team", or "pro, team, or
+// PlanList joins two or more plan names: "pro or team", or "pro, team, or
 // business".
-func planList(plans []string) string {
+func PlanList(plans []string) string {
 	last := len(plans) - 1
 	if last == 1 {
 		return plans[0] + " or " + plans[1]

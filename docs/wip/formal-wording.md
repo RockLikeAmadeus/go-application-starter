@@ -120,7 +120,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestHelpNotesGatedCommandsByThePlan` "locked, with a server's hint" case pins the agreed note; failed on "(disabled on your plan: available on the pro plan)".
   - Green: `note` uses the agreed text around `PlansPhrase`.
   - Refactor: `note`'s comment no longer says "disabled". Left the "(disabled on your plan)" form for task 5cc.
-- [ ] 5cb. The CLI plan note, for several plans.
+- [x] 5cb. The CLI plan note, for several plans.
+  - Red: `TestHelpNotesGatedCommandsByThePlan` "locked, with several plans in a server's hint" case pins the agreed note; failed on "available on the pro or team plans".
+  - Green: `note` uses the agreed text for several plans, through `planList`, now exported as `PlanList`.
+  - Refactor: nothing changed. Left `PlansPhrase`'s several-plans form for task 5d: the TUI still uses it, and folding the CLI's case into it would change the TUI note.
 - [ ] 5cc. The CLI plan note, with no plan to name.
 - [ ] 5d. The TUI plan notes.
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.
