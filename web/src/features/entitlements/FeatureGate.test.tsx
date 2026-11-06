@@ -37,6 +37,22 @@ describe("FeatureGate", () => {
       want: { control: "disabled", note: "Available on the following plans: pro or team" },
     },
     {
+      when: "it's locked, with three plans that have it",
+      fetch: () =>
+        entitlementsApi({
+          export: {
+            ...exportFeature,
+            isOn: false,
+            whenOff: "show-locked",
+            availableOn: ["pro", "team", "business"],
+          },
+        }),
+      want: {
+        control: "disabled",
+        note: "Available on the following plans: pro, team, or business",
+      },
+    },
+    {
       when: "it's locked with no hint",
       fetch: () =>
         entitlementsApi({ export: { ...exportFeature, isOn: false, whenOff: "show-locked" } }),

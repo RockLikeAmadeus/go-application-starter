@@ -112,7 +112,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `FeatureGate` "locked, with the plans that have it" case pins the agreed note; failed on "Available on the pro or team plans".
   - Green: `lockedNote` returns the agreed text for several plans.
   - Refactor: `lockedNote`'s comment shows the new form. Left the join as it is: task 5bb rewrites it.
-- [ ] 5bb. The Oxford comma in the web note for three or more plans.
+- [x] 5bb. The Oxford comma in the web note for three or more plans.
+  - Red: `FeatureGate` "locked, with three plans" case pins the comma; failed on "pro, team or business".
+  - Green: `lockedNote` adds the comma for three or more plans.
+  - Refactor: extracted `planList` from `lockedNote`, matching the domain's. Left the two copies separate: they are in different languages.
 - [ ] 5c. The CLI plan notes.
 - [ ] 5d. The TUI plan notes.
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.

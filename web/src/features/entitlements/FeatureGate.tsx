@@ -37,6 +37,12 @@ export function FeatureGate({
 function lockedNote(plans: string[]): string {
   if (plans.length === 0) return "Not available";
   if (plans.length === 1) return `Available on the ${plans[0]} plan`;
+  return `Available on the following plans: ${planList(plans)}`;
+}
+
+/** "pro or team", or "pro, team, or business". */
+function planList(plans: string[]): string {
   const last = plans.length - 1;
-  return `Available on the following plans: ${plans.slice(0, last).join(", ")} or ${plans[last]}`;
+  if (last === 1) return `${plans[0]} or ${plans[1]}`;
+  return `${plans.slice(0, last).join(", ")}, or ${plans[last]}`;
 }
