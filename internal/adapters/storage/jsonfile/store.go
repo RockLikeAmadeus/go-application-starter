@@ -28,10 +28,7 @@ import (
 // ErrLocked is returned by Open when another process holds the data directory.
 var ErrLocked = errors.New("data directory is locked by another process")
 
-const (
-	fileFormatVersion   = 1
-	recordFormatVersion = 2
-)
+const recordFormatVersion = 2
 
 // Store owns a data directory and its lock. Repositories for individual
 // domain types are created from it and share its mutex.
@@ -71,42 +68,6 @@ func (s *Store) Ready(context.Context) error {
 		return err
 	}
 	return os.Remove(f.Name())
-}
-
-type tableFile[R any] struct {
-	Version int          `json:"version"`
-	Records map[string]R `json:"records"`
-}
-
-// readTable loads <dir>/<name>.json; a missing file is an empty table.
-func readTable[R any](s *Store, name string) (map[string]R, error) {
-	data, err := os.ReadFile(s.path(name))
-	if errors.Is(err, fs.ErrNotExist) {
-		return map[string]R{}, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("read %s: %w", name, err)
-	}
-	var tf tableFile[R]
-	if err := json.Unmarshal(data, &tf); err != nil {
-		return nil, fmt.Errorf("decode %s: %w", name, err)
-	}
-	if tf.Version != fileFormatVersion {
-		return nil, fmt.Errorf("%s: unsupported file version %d", name, tf.Version)
-	}
-	if tf.Records == nil {
-		tf.Records = map[string]R{}
-	}
-	return tf.Records, nil
-}
-
-// writeTable atomically replaces <dir>/<name>.json.
-func writeTable[R any](s *Store, name string, records map[string]R) error {
-	data, err := json.MarshalIndent(tableFile[R]{Version: fileFormatVersion, Records: records}, "", "  ")
-	if err != nil {
-		return fmt.Errorf("encode %s: %w", name, err)
-	}
-	return replaceFile(s.path(name), data)
 }
 
 // recordFile is the on-disk shape of one record. The key is in the file, as
@@ -201,8 +162,4 @@ func replaceFile(path string, data []byte) error {
 		return fmt.Errorf("replace %s: %w", path, err)
 	}
 	return nil
-}
-
-func (s *Store) path(name string) string {
-	return filepath.Join(s.dir, name+".json")
 }

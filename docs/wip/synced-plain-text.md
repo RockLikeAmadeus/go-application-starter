@@ -58,7 +58,10 @@ One file per record (`jsonfile`):
   - Red: `TestEachItemIsKeptInItsOwnFileAndSavingOneLeavesTheOthersUntouched` failed: `items/b.json` doesn't exist. Its `items.json` assertion went from `TestItemsSurviveReopen`.
   - Green: `ItemRepository` uses `writeRecord`, `readRecords` and `deleteRecord`; the step checks `items/<id>.json` for each item, with `desktopAppsDataFolder` shared with `itNamesTheDesktopAppsDataFolder`.
   - Refactor: nothing. `FindByID` and `Delete` still read the whole table, so that task 7's skip covers them; a one-file read isn't worth a second path yet.
-- [ ] 6. `WorkspacePlanRepository` keeps each workspace's plan in its own file.
+- [x] 6. `WorkspacePlanRepository` keeps each workspace's plan in its own file.
+  - Red: `TestEachWorkspacesPlanIsKeptInItsOwnFileAndSavingOneLeavesTheOthersUntouched` failed: `workspace_plans/ws-b.json` doesn't exist.
+  - Green: `WorkspacePlanRepository` uses `writeRecord` and `readRecords`.
+  - Refactor: removed `readTable`, `writeTable`, `tableFile`, `fileFormatVersion`, `Store.path` and their three tests, as nothing calls them now. The package comment still describes the old layout; task 15 rewrites it.
 
 Conflict copies (`jsonfile`, then `bootstrap`):
 - [ ] 7. Reading a table skips a file whose key doesn't match its name, as a table test over each service's naming.
