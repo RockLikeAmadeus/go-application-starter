@@ -18,6 +18,7 @@ func newAdminCmd(loadConfig func() (config.Config, error), newBilling BillingFac
 	admin.AddCommand(&cobra.Command{
 		Use:   "set-plan WORKSPACE PLAN",
 		Short: "Move a workspace to another plan",
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := loadConfig()
 			if err != nil {

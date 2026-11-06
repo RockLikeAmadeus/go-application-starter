@@ -94,3 +94,25 @@ func TestAdminSetPlanReportsSettingsItCannotLoadAndChangesNothing(t *testing.T) 
 		t.Errorf("ChangePlan(%q, %q), want no call", billing.workspace, billing.plan)
 	}
 }
+
+func TestAdminSetPlanRefusesAnythingButAWorkspaceAndAPlan(t *testing.T) {
+	cases := map[string][]string{
+		"three arguments":  {"ws-a", "pro", "extra"},
+		"only a workspace": {"ws-a"},
+		"no arguments":     {},
+	}
+	for name, args := range cases {
+		t.Run(name, func(t *testing.T) {
+			billing := &recordingBilling{}
+
+			err := runAdmin(t, usingBilling(billing), &bytes.Buffer{}, append([]string{"set-plan"}, args...)...)
+
+			if err == nil {
+				t.Errorf("admin set-plan %v = <nil>, want a usage error", args)
+			}
+			if billing.workspace != "" || billing.plan != "" {
+				t.Errorf("ChangePlan(%q, %q), want no call", billing.workspace, billing.plan)
+			}
+		})
+	}
+}

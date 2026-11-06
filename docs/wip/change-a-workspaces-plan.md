@@ -117,7 +117,10 @@ Wiring:
    - Red: `TestAdminSetPlanReportsSettingsItCannotLoadAndChangesNothing` fails, `admin set-plan = <nil>, want the settings error naming "bogus"`, and `ChangePlan("ws-a", "pro"), want no call`.
    - Green: `admin set-plan` returns `loadConfig`'s error before building billing.
    - Refactor: nothing worth changing; the error check is the same three lines as its neighbours, and the test uses the shared helpers.
-11e. [ ] `admin set-plan` refuses anything but a workspace and a plan.
+11e. [x] `admin set-plan` refuses anything but a workspace and a plan.
+   - Red: `TestAdminSetPlanRefusesAnythingButAWorkspaceAndAPlan` fails, three arguments `= <nil>, want a usage error`, and fewer panic with `index out of range`.
+   - Green: `set-plan` declares `cobra.ExactArgs(2)`.
+   - Refactor: nothing worth changing; `ExactArgs` matches the `item` commands, and the test uses the shared helpers.
 11f. [ ] `admin set-plan --server` reaches `ErrNoPlanChangesOverAServer`, through the real `bootstrap.NewBilling`.
 
 Acceptance:
