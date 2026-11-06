@@ -144,7 +144,9 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestOtherDevicesLeavesOutFilesThatAreNotMarks` failed for no device and a device that isn't text: the result was `["laptop" ""]`. The other three kinds already fell out as stale, with a zero time.
   - Green: `OtherDevices` skips a mark with no device.
   - Refactor: `readMark` checks the read and decode errors, which had worked only because a zero time is stale, and says whether the file is a mark.
-- [ ] 11e. A folder with no marks has no other devices.
+- [x] 11e. A folder with no marks has no other devices.
+  - Red: none, and no green. `TestOtherDevicesOfAFolderWithNoMarksIsEmpty` passed first time, as a missing `.devices` reads as no entries. It's kept as a guard: it fails with `["ghost"]` when the list starts non-empty.
+  - Refactor: `OtherDevices`' doc comment says why the read error is ignored: the marks are a best guess.
 - [ ] 12. A mark is written atomically to `.devices/<device>.json`, is renewed on each tick, and is removed on stopping.
 - [ ] 13. `bootstrap` warns about other devices on plain text, naming them. Define the device steps; turns the 3 warning scenarios green.
 - [ ] 14. `bootstrap` marks the folder only when it looks synced and `ignore_synced_folder` is off, and `App.Close` stops the mark before the store closes. Define the mark steps; turns the last 4 scenarios green.

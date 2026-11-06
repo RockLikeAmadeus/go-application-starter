@@ -22,7 +22,8 @@ type deviceMark struct {
 // OtherDevices returns the devices other than thisDevice with a recent mark in
 // dir, as of now. A mark's time comes from the device that wrote it, so a
 // skewed clock can miss a device or keep a stale one. Files that aren't marks
-// are left out.
+// are left out, and a folder with no marks, or none that can be read, has no
+// other devices: this is a best guess, so it never stops the app.
 func OtherDevices(dir, thisDevice string, now time.Time) []string {
 	marksDir := filepath.Join(dir, deviceMarksFolder)
 	entries, _ := os.ReadDir(marksDir)

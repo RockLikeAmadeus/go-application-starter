@@ -95,3 +95,11 @@ func TestOtherDevicesLeavesOutFilesThatAreNotMarks(t *testing.T) {
 		})
 	}
 }
+
+func TestOtherDevicesOfAFolderWithNoMarksIsEmpty(t *testing.T) {
+	got := syncedfolder.OtherDevices(t.TempDir(), "desktop", markTestNow)
+
+	if len(got) != 0 {
+		t.Errorf("OtherDevices() = %q, want none", got)
+	}
+}
