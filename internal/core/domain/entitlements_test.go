@@ -187,6 +187,11 @@ func TestEntitlements_CheckFeature(t *testing.T) {
 			&domain.FeatureError{Feature: "item-export", Name: "Item export", AvailableOn: []string{"pro", "team"}},
 			"Item export is not included in your current plan. To use this feature, please upgrade to one of the following plans: pro or team.",
 		},
+		"off and locked, on three plans": {
+			entitlementsWithFeature(exportFeature(false, domain.ShowLocked, "pro", "team", "business")),
+			&domain.FeatureError{Feature: "item-export", Name: "Item export", AvailableOn: []string{"pro", "team", "business"}},
+			"Item export is not included in your current plan. To use this feature, please upgrade to one of the following plans: pro, team, or business.",
+		},
 		"off and locked, with no hint": {
 			entitlementsWithFeature(exportFeature(false, domain.ShowLocked)),
 			&domain.FeatureError{Feature: "item-export", Name: "Item export"},

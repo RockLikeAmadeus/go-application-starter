@@ -104,7 +104,13 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: the `no hint`, `off and hidden`, and `unknown` cases of `TestEntitlements_CheckFeature` pin the agreed wording; failed on the old text.
   - Green: `FeatureError.Error` returns the agreed text with no plans; the terminal journey quotes it too.
   - Refactor: all three forms share the `refusal` sentence.
-- [ ] 5. The web, CLI and TUI plan notes, with the Oxford comma in lists of three or more plans (`planList` in `domain`, so the feature error gets it too).
+- [x] 5. The Oxford comma in lists of three or more plans (`planList` in `domain`, so the feature error gets it too).
+  - Red: `TestEntitlements_CheckFeature/off_and_locked,_on_three_plans` pins the comma; failed on "pro, team or business".
+  - Green: `planList` adds the comma for three or more plans.
+  - Refactor: `planList`'s comment shows the three-plan form. Left its join separate from the device list in `bootstrap`: the conjunction differs and it is four lines.
+- [ ] 5b. The web plan notes, with the Oxford comma in lists of three or more plans.
+- [ ] 5c. The CLI plan notes.
+- [ ] 5d. The TUI plan notes.
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.
 - [ ] 7. The local plan, over a server, internal and not found errors.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.
@@ -121,3 +127,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 2 split: the one-device and several-device warnings each need their own test, so they are tasks 2 and 2b.
 - Task 2b split: two devices and three or more each need their own test, so they are tasks 2b and 2c.
 - Task 4 split: the one-plan, several-plans, and no-plan feature errors each need their own test, so they are tasks 4, 4b, and 4c.
+- Task 5 split: the Oxford comma and the web, CLI, and TUI notes each need their own test, so they are tasks 5, 5b, 5c, and 5d.

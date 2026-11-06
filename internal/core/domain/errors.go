@@ -83,8 +83,12 @@ func PlansPhrase(plans []string) string {
 	return "the " + planList(plans) + " plans"
 }
 
-// planList joins two or more plan names: "pro or team".
+// planList joins two or more plan names: "pro or team", or "pro, team, or
+// business".
 func planList(plans []string) string {
 	last := len(plans) - 1
-	return strings.Join(plans[:last], ", ") + " or " + plans[last]
+	if last == 1 {
+		return plans[0] + " or " + plans[1]
+	}
+	return strings.Join(plans[:last], ", ") + ", or " + plans[last]
 }
