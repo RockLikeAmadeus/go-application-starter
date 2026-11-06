@@ -240,8 +240,9 @@ func TestNewRemote_IsOnTheServersPlan(t *testing.T) {
 // Plain text there is supported (one device at a time), so it gets none, as
 // does SQLite with the warning turned off, an ordinary folder, or a server.
 func TestApp_WarnsWhenSQLiteDataLooksSynced(t *testing.T) {
-	const dropbox = "Your data folder looks synced by Dropbox. A sync service can damage SQLite data: " +
-		"move the data folder out of it, or keep your data as plain text."
+	const dropbox = "Your data folder appears to be synced by Dropbox. A file sync service can damage SQLite data: " +
+		"please move your data folder out of the synced location before continuing. Alternatively, you can " +
+		"switch to plain-text storage, but your existing data will not be transferred automatically."
 	cases := []struct {
 		name string
 		cfg  func(synced string) config.Config

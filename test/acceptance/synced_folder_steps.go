@@ -128,7 +128,7 @@ func (w *world) theDesktopAppGivesNoWarning() error {
 }
 
 func (w *world) theCommandLineWarnsItsFolderLooksSyncedBy(service string) error {
-	return w.commandLineWarnsSaying("looks synced by " + service)
+	return w.commandLineWarnsSaying("appears to be synced by " + service)
 }
 
 // commandLineWarnsSaying checks the command line's last warnings include want.
@@ -152,7 +152,7 @@ func (w *world) theCommandLineGivesNoWarning() error {
 // warnsSyncedBy checks that the app at url warns, as its web app shows, that
 // its data folder looks synced by service.
 func warnsSyncedBy(url, service string) error {
-	return warnsSaying(url, "looks synced by "+service)
+	return warnsSaying(url, "appears to be synced by "+service)
 }
 
 // warnsSaying checks that the app at url gives a warning, as its web app

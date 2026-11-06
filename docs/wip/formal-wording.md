@@ -88,7 +88,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestApp_WarningListsThreeOtherDevicesWithTheOxfordComma` pins the agreed join; failed with "home-pc and work-laptop and work-phone".
   - Green: `otherDeviceWarning` joins three or more names with commas and ", and ".
   - Refactor: moved the join into `deviceList`. Left separate from `PlansPhrase`: plans end in "or", and tasks 4 and 5 rewrite it.
-- [ ] 3. The SQLite synced folder warning.
+- [x] 3. The SQLite synced folder warning.
+  - Red: `TestApp_WarnsWhenSQLiteDataLooksSynced` pins the agreed wording; failed on the old text.
+  - Green: `syncedFolderWarning` text replaced; acceptance and terminal steps' expected text and `SPEC.md`'s example updated.
+  - Refactor: nothing changed. Left the old text in the `Layout.test.tsx` and `styles_test.go` fixtures, which are arbitrary strings; the Gherkin's "looks synced" stays, as users don't read it.
 - [ ] 4. The feature error, in its one-plan, several-plans and no-plan forms.
 - [ ] 5. The web, CLI and TUI plan notes, with the Oxford comma in lists of three or more plans.
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.

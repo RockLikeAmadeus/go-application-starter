@@ -169,8 +169,9 @@ func syncedFolderWarning(cfg config.Config) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	return "Your data folder looks synced by " + service + ". A sync service can damage SQLite data: " +
-		"move the data folder out of it, or keep your data as plain text.", true
+	return "Your data folder appears to be synced by " + service + ". A file sync service can damage SQLite data: " +
+		"please move your data folder out of the synced location before continuing. Alternatively, you can " +
+		"switch to plain-text storage, but your existing data will not be transferred automatically.", true
 }
 
 // conflictCopyWarning warns about the conflict copies in a plain-text data

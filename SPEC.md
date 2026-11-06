@@ -344,7 +344,7 @@ Data can be kept in a SQLite database instead of as plain text, so that several 
 <!-- sample:end -->
 - A server on SQLite whose data folder is removed → not ready: the data is unavailable.
 - A user opens data saved by a newer version of the app → it isn't opened, and they're told it's from a newer version.
-- The desktop app keeps SQLite data in `~/Dropbox/starter` → its window warns: "Your data folder looks synced by Dropbox. A sync service can damage SQLite data: move the data folder out of it, or keep your data as plain text." `starter item list` still lists the items, with the same warning beside them.
+- The desktop app keeps SQLite data in `~/Dropbox/starter` → its window warns: "Your data folder appears to be synced by Dropbox. A file sync service can damage SQLite data: please move your data folder out of the synced location before continuing. Alternatively, you can switch to plain-text storage, but your existing data will not be transferred automatically." `starter item list` still lists the items, with the same warning beside them.
 - The same user sets `ignore_synced_folder = true` → no warning.
 - Plain-text data in `~/Dropbox/starter` → no warning.
 
