@@ -92,7 +92,12 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestApp_WarnsWhenSQLiteDataLooksSynced` pins the agreed wording; failed on the old text.
   - Green: `syncedFolderWarning` text replaced; acceptance and terminal steps' expected text and `SPEC.md`'s example updated.
   - Refactor: nothing changed. Left the old text in the `Layout.test.tsx` and `styles_test.go` fixtures, which are arbitrary strings; the Gherkin's "looks synced" stays, as users don't read it.
-- [ ] 4. The feature error, in its one-plan, several-plans and no-plan forms.
+- [x] 4. The feature error, in its one-plan form.
+  - Red: `TestEntitlements_CheckFeature/off_and_locked` pins the agreed wording; failed on the old text.
+  - Green: `FeatureError.Error` returns the agreed text for one plan.
+  - Refactor: nothing changed. Left the separate one-plan branch, as 4b and 4c rewrite the others.
+- [ ] 4b. The feature error, in its several-plans form.
+- [ ] 4c. The feature error, in its no-plan form.
 - [ ] 5. The web, CLI and TUI plan notes, with the Oxford comma in lists of three or more plans.
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.
 - [ ] 7. The local plan, over a server, internal and not found errors.
@@ -109,3 +114,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 1 split: the one-copy, several-copies and scan-failed warnings each need their own test, so they are tasks 1, 1b, and 1c.
 - Task 2 split: the one-device and several-device warnings each need their own test, so they are tasks 2 and 2b.
 - Task 2b split: two devices and three or more each need their own test, so they are tasks 2b and 2c.
+- Task 4 split: the one-plan, several-plans, and no-plan feature errors each need their own test, so they are tasks 4, 4b, and 4c.

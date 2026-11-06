@@ -180,7 +180,7 @@ func TestEntitlements_CheckFeature(t *testing.T) {
 		"off and locked": {
 			entitlementsWithFeature(exportFeature(false, domain.ShowLocked, "pro")),
 			&domain.FeatureError{Feature: "item-export", Name: "Item export", AvailableOn: []string{"pro"}},
-			"Item export isn't on your plan, and is available on the pro plan",
+			"Item export is not included in your current plan. To use this feature, please upgrade to the pro plan.",
 		},
 		"off and locked, on two plans": {
 			entitlementsWithFeature(exportFeature(false, domain.ShowLocked, "pro", "team")),

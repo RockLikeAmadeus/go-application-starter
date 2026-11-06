@@ -67,6 +67,9 @@ func (e *FeatureError) Error() string {
 	if len(e.AvailableOn) == 0 {
 		return msg
 	}
+	if len(e.AvailableOn) == 1 {
+		return e.Name + " is not included in your current plan. To use this feature, please upgrade to " + PlansPhrase(e.AvailableOn) + "."
+	}
 	return msg + ", and is available on " + PlansPhrase(e.AvailableOn)
 }
 
