@@ -2,6 +2,7 @@ package bootstrap_test
 
 import (
 	"context"
+	"errors"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -134,6 +135,22 @@ func TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints(t *testing.T) {
 	export, ok := got.Features["export"]
 	if got.Plan != "local" || !ok || export.IsOn || export.WhenOff != domain.ShowLocked || len(export.AvailableOn) != 0 {
 		t.Errorf("CurrentEntitlements = %+v, want the local plan with export locked and no hint", got)
+	}
+	if _, err := os.Stat(dataDir); !os.IsNotExist(err) {
+		t.Errorf("data folder stat error = %v, want it not created", err)
+	}
+}
+
+// The local edition's plan is set when the app is built, so asking for billing
+// there is refused, and it opens no storage: it creates no data folder and
+// isn't stopped by a locked one.
+func TestNewBilling_RefusesInTheLocalEditionWithoutOpeningStorage(t *testing.T) {
+	dataDir := filepath.Join(t.TempDir(), "data")
+
+	_, err := bootstrap.NewBilling(config.Config{Storage: config.StorageSQLite, DataDir: dataDir})
+
+	if !errors.Is(err, bootstrap.ErrLocalPlanIsFixed) {
+		t.Errorf("err = %v, want ErrLocalPlanIsFixed", err)
 	}
 	if _, err := os.Stat(dataDir); !os.IsNotExist(err) {
 		t.Errorf("data folder stat error = %v, want it not created", err)

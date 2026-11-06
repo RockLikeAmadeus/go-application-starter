@@ -93,7 +93,11 @@ Plans adapter:
    - Refactor: `StoredPlanOf`'s comment says other errors are passed on; no code change.
 
 Wiring:
-10. [ ] `bootstrap.NewBilling` refuses in the local edition with `ErrLocalPlanIsFixed`, opening no storage, and refuses `--server`.
+10. [x] `bootstrap.NewBilling` refuses in the local edition with `ErrLocalPlanIsFixed`, opening no storage.
+   - Red: `TestNewBilling_RefusesInTheLocalEditionWithoutOpeningStorage` fails, `err = <nil>, want ErrLocalPlanIsFixed`.
+   - Green: `NewBilling` always returns `ErrLocalPlanIsFixed`; 10b adds `--server`.
+   - Refactor: `NewBilling`'s and `ErrLocalPlanIsFixed`'s comments say why it refuses; no code change. The ignored `cfg` stays for 10b to demand.
+10b. [ ] `bootstrap.NewBilling` refuses `--server`.
 11. [ ] `starter admin set-plan WORKSPACE PLAN` asks `bootstrap.NewBilling`, calls `ChangePlan`, says which plan the workspace is now on, and reports a refusal as an error.
 
 Acceptance:
@@ -111,4 +115,5 @@ Finish:
 - 2026-11-05: task 6 split into 6 and 6b: the contract, then surviving a reopen.
 - 2026-11-06: task 7 split into 7 and 7b: the contract, then surviving a reopen.
 - 2026-11-06: task 9 split into 9, 9b and 9c: the stored plan, the default, and other errors.
+- 2026-11-06: task 10 split into 10 and 10b: the local edition, then `--server`.
 - 2026-11-05: `task test:init` is expected to fail until task 16 removes the `@wip` tags: "The new project is healthy" (both examples) runs `go test ./test/...` with no `~@wip`, so the undefined `@wip` steps fail under Strict. Agreed: in tasks 6 and 7 it counts as passing if only those two fail.

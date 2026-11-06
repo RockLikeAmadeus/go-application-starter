@@ -4,6 +4,7 @@ package bootstrap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -127,6 +128,18 @@ func NewEntitlementsService(cfg config.Config) (ports.EntitlementsService, error
 		return nil, err
 	}
 	return app.NewEntitlementsService(entitlementsProvider, workspace.Local{}), nil
+}
+
+// ErrLocalPlanIsFixed is the refusal to change a plan in the local edition,
+// whose plan is LocalPlan.
+var ErrLocalPlanIsFixed = errors.New("the local edition's plan is set when the app is built")
+
+// NewBilling returns the billing service, for `starter admin set-plan`. Every
+// copy is the local edition until sign-in adds the hosted one, so it always
+// refuses with ErrLocalPlanIsFixed, opening no storage. It will wire the
+// stored plans for the hosted edition.
+func NewBilling(_ config.Config) (ports.BillingService, error) {
+	return nil, ErrLocalPlanIsFixed
 }
 
 // syncedFolderWarning warns when SQLite's data folder looks kept in sync by
