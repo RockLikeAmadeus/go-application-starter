@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-// The repositories exercise these helpers too; testing them directly keeps
-// the adapter covered when a project has no repositories yet.
+// The repositories exercise these helpers too; testing them directly covers
+// what no repository contract does, such as an unknown file version.
 
 type record struct {
 	Name string `json:"name"`

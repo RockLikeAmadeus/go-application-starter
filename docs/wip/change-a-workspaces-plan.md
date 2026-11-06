@@ -59,7 +59,11 @@ Storage:
    - Red: `TestWorkspacePlanRepositoryContract/SavePlan_leaves_another_workspace's_plan_alone` fails, `PlanOf("ws-a") = "free", want "pro"`.
    - Green: memory keeps a mutex-guarded map of plans by workspace, replacing the single field.
    - Refactor: nothing worth changing; the repository already matches `ItemRepository`'s layout.
-6. [ ] jsonfile `WorkspacePlanRepository` passes the contract, and keeps the plans after the store is reopened. Run `task test:init`.
+6. [x] jsonfile `WorkspacePlanRepository` passes the contract. Run `task test:init`.
+   - Red: `TestWorkspacePlanRepositoryContract` (jsonfile) fails all four cases against a stub, e.g. `err = <nil>, want ErrNotFound`.
+   - Green: `workspace_plans.json`, one record per workspace ID, through `readTable`/`writeTable`.
+   - Refactor: the `Store` package comment no longer names items, `mu` loses its `nolint:unused`, and the `table_test.go` comment no longer assumes a project with no repositories; no behaviour change. The read-modify-write stays in each repository: the only other copy is the sample's.
+6b. [ ] jsonfile keeps the plans after the store is reopened.
 7. [ ] sqlite `WorkspacePlanRepository` (a new template migration) passes the contract, and keeps the plans after reopening. Run `task test:init` (the migration comes after the sample's `00002_items.sql`).
 
 Plans adapter:
@@ -82,4 +86,5 @@ Finish:
 ## Changes to the plan
 
 - 2026-11-05: task 5 split into 5, 5b, 5c and 5d, one contract behaviour per test.
+- 2026-11-05: task 6 split into 6 and 6b: the contract, then surviving a reopen.
 - 2026-11-05: `task test:init` is expected to fail until task 16 removes the `@wip` tags: "The new project is healthy" (both examples) runs `go test ./test/...` with no `~@wip`, so the undefined `@wip` steps fail under Strict. Agreed: in tasks 6 and 7 it counts as passing if only those two fail.

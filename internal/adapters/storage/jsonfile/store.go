@@ -1,11 +1,11 @@
 // Package jsonfile is a plain-text storage adapter that keeps one JSON file
 // per domain type ("one file ≈ one table") inside a data directory:
 //
-//	<dir>/items.json   {"version": 1, "records": {"<id>": {...}, ...}}
-//	<dir>/.lock        advisory lock held while a Store is open
+//	<dir>/<table>.json   {"version": 1, "records": {"<key>": {...}, ...}}
+//	<dir>/.lock          advisory lock held while a Store is open
 //
-// Each record carries its workspaceId, and repositories only return records
-// in the workspace they are asked about (see ports.ItemRepository).
+// Every record belongs to a workspace, and repositories only return records
+// in the workspace they are asked about.
 //
 // Trade-offs (see docs/adr/0003-plain-text-storage.md):
 //   - every write rewrites the whole file, so it suits small datasets;
@@ -33,7 +33,7 @@ const fileFormatVersion = 1
 // domain types are created from it and share its mutex.
 type Store struct {
 	dir    string
-	mu     sync.RWMutex //nolint:unused // shared by the repositories built on this Store
+	mu     sync.RWMutex // shared by the repositories built on this Store
 	unlock func() error
 }
 
