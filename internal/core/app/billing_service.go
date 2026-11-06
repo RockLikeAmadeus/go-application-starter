@@ -23,6 +23,9 @@ func NewBillingService(workspacePlans ports.WorkspacePlanRepository, catalog por
 
 // ChangePlan moves the workspace to the plan.
 func (s *BillingService) ChangePlan(ctx context.Context, workspace domain.WorkspaceID, plan string) error {
+	if workspace == "" {
+		return domain.ErrNoWorkspace
+	}
 	known, err := s.catalog.HasPlan(ctx, plan)
 	if err != nil {
 		return fmt.Errorf("look up plan: %w", err)

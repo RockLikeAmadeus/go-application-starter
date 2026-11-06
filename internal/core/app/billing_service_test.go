@@ -11,6 +11,14 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
 
+// assertStoredPlans fails the test unless stored holds exactly the plans in want.
+func assertStoredPlans(t *testing.T, stored, want testsupport.StoredPlans) {
+	t.Helper()
+	if !reflect.DeepEqual(stored, want) {
+		t.Errorf("stored plans = %v, want %v", stored, want)
+	}
+}
+
 func TestChangePlan_SavesThePlanForTheGivenWorkspace(t *testing.T) {
 	stored := testsupport.StoredPlans{"ws-b": "free"}
 	svc := app.NewBillingService(stored, testsupport.KnownPlans{"free", "pro"})
@@ -19,10 +27,7 @@ func TestChangePlan_SavesThePlanForTheGivenWorkspace(t *testing.T) {
 		t.Fatalf("ChangePlan: %v", err)
 	}
 
-	want := testsupport.StoredPlans{"ws-a": "pro", "ws-b": "free"}
-	if !reflect.DeepEqual(stored, want) {
-		t.Errorf("stored plans = %v, want %v", stored, want)
-	}
+	assertStoredPlans(t, stored, testsupport.StoredPlans{"ws-a": "pro", "ws-b": "free"})
 }
 
 func TestChangePlan_RefusesAPlanTheCatalogDoesNotHave(t *testing.T) {
@@ -35,10 +40,7 @@ func TestChangePlan_RefusesAPlanTheCatalogDoesNotHave(t *testing.T) {
 	if !errors.As(err, &verr) || verr.Field != "plan" {
 		t.Fatalf("ChangePlan(platinum) = %v, want a *ValidationError on plan", err)
 	}
-	want := testsupport.StoredPlans{"ws-a": "free"}
-	if !reflect.DeepEqual(stored, want) {
-		t.Errorf("stored plans = %v, want %v", stored, want)
-	}
+	assertStoredPlans(t, stored, testsupport.StoredPlans{"ws-a": "free"})
 }
 
 // errCatalog is the error unreadableCatalog fails with.
@@ -60,8 +62,17 @@ func TestChangePlan_RefusesWhenTheCatalogCannotBeRead(t *testing.T) {
 	if !errors.Is(err, errCatalog) {
 		t.Fatalf("ChangePlan = %v, want the catalog's error", err)
 	}
-	want := testsupport.StoredPlans{"ws-a": "free"}
-	if !reflect.DeepEqual(stored, want) {
-		t.Errorf("stored plans = %v, want %v", stored, want)
+	assertStoredPlans(t, stored, testsupport.StoredPlans{"ws-a": "free"})
+}
+
+func TestChangePlan_RefusesAnEmptyWorkspaceBeforeTouchingTheCatalogOrStorage(t *testing.T) {
+	stored := testsupport.StoredPlans{"ws-a": "free"}
+	svc := app.NewBillingService(stored, unreadableCatalog{})
+
+	err := svc.ChangePlan(context.Background(), "", "pro")
+
+	if !errors.Is(err, domain.ErrNoWorkspace) {
+		t.Fatalf("ChangePlan = %v, want ErrNoWorkspace", err)
 	}
+	assertStoredPlans(t, stored, testsupport.StoredPlans{"ws-a": "free"})
 }

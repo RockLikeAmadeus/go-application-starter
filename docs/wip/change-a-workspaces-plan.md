@@ -38,7 +38,10 @@ Core:
    - Red: `TestChangePlan_RefusesWhenTheCatalogCannotBeRead` fails, `ChangePlan = plan does not exist, want the catalog's error`.
    - Green: `ChangePlan` returns the wrapped lookup error before checking `known`.
    - Refactor: the test's fake is now `unreadableCatalog`, laid out like `unavailablePlans`; no production change.
-4. [ ] `ChangePlan` refuses an empty workspace with `ErrNoWorkspace`, before touching the catalog or storage.
+4. [x] `ChangePlan` refuses an empty workspace with `ErrNoWorkspace`, before touching the catalog or storage.
+   - Red: `TestChangePlan_RefusesAnEmptyWorkspaceBeforeTouchingTheCatalogOrStorage` fails, `ChangePlan = look up plan: catalog unavailable, want ErrNoWorkspace`.
+   - Green: `ChangePlan` returns `ErrNoWorkspace` first when the workspace is empty.
+   - Refactor: the billing tests share `assertStoredPlans`, replacing four copies of the comparison; no production change.
 
 Storage:
 5. [ ] `storagetest.RunWorkspacePlanRepositoryContract`, run by a memory `WorkspacePlanRepository`: no stored plan is `ErrNotFound`; a saved plan is read back; saving again replaces it; one workspace's plan isn't another's.
