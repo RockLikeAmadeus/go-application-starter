@@ -136,7 +136,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestOtherDevicesLeavesOutThisDevice` failed: the result was `["desktop" "laptop"]`.
   - Green: `OtherDevices` skips a mark whose device is `thisDevice`.
   - Refactor: nothing. The check reads the device in the file, not its name, so a conflict copy of our own mark is skipped too. 11c and 11d decide the loop's shape.
-- [ ] 11c. `OtherDevices` leaves out marks five minutes old or more.
+- [x] 11c. `OtherDevices` leaves out marks five minutes old or more.
+  - Red: `TestOtherDevicesLeavesOutMarksFiveMinutesOldOrMore` failed: the result was `["laptop" "phone" "tablet"]`.
+  - Green: `OtherDevices` skips a mark at least `markStaleAfter` old, reading the mark's `time`.
+  - Refactor: `OtherDevices`' doc comment says recent, and notes the clock limit. The one condition stays until 11d reshapes the loop.
 - [ ] 11d. `OtherDevices` leaves out unreadable files, and a folder with no marks has no other devices.
 - [ ] 12. A mark is written atomically to `.devices/<device>.json`, is renewed on each tick, and is removed on stopping.
 - [ ] 13. `bootstrap` warns about other devices on plain text, naming them. Define the device steps; turns the 3 warning scenarios green.
