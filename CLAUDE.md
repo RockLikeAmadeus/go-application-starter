@@ -76,7 +76,7 @@ internal/adapters/desktop        desktop app wiring with no Wails import: data f
 internal/adapters/mobile         Android wiring on top of desktop's, no Wails import: the page handler and Serve, the API bridge
 internal/adapters/storage/*      memory, jsonfile, sqlite (goose migrations in sqlite/migrations), + storagetest contract suite
 internal/adapters/workspace      ports.WorkspaceResolver: Local (the local edition's one workspace), FromContext (set with WithID)
-internal/adapters/plans          ports.EntitlementsProvider from the plans file (plans.jsonc, built in; STARTER_PLANS_FILE replaces it)
+internal/adapters/plans          ports.EntitlementsProvider and ports.PlanCatalog from the plans file (plans.jsonc, built in; STARTER_PLANS_FILE replaces it); plans.StoredPlanOf reads stored plans
 internal/bootstrap               composition root: the only place that picks adapters
 web/                             Vite + React + TS + Tailwind + TanStack Query; components every screen can use (e.g. `ErrorMessage`) go in web/src/components
 mobile/android                   Wails' generated Gradle project for the Android app (see docs/mobile.md)
@@ -92,7 +92,7 @@ test/packaging                   package check: builds the Linux packages and th
 - Business rules live in `domain`. Use cases in `app` only orchestrate.
 - UIs call the core **only** through driving ports (the `…Service` interfaces in `ports`). Never put business logic in handlers, Cobra commands, Bubble Tea models or React components.
 - A new storage backend implements the `…Repository` ports, runs each one's `storagetest` contract suite, and is wired (with its readiness check) in `internal/bootstrap` (`.claude/rules/storage.md`).
-- Data belongs to a workspace, passed **explicitly** to every repository call; plans set a workspace's limits, checked before saving and never on delete; domain errors are the shared language across HTTP. Details are in `.claude/rules/workspaces-and-plans.md`. **Adding an entity: follow the checklist in `docs/workspaces.md`. Gating a feature by plan: `docs/features.md`.**
+- Data belongs to a workspace, passed **explicitly** to every repository call; plans set a workspace's limits, checked before saving and never on delete; domain errors are the shared language across HTTP. Details are in `.claude/rules/workspaces-and-plans.md`. **Adding an entity: follow the checklist in `docs/workspaces.md`. Gating a feature by plan: `docs/features.md`. Connecting a payment provider: `docs/billing.md`.**
 - Time and IDs come from `ports.Clock` / `ports.IDGenerator`. Use `internal/testsupport` fakes in tests.
 
 ### API contract
@@ -111,7 +111,7 @@ Each loads when you read a file matching its paths. Read one directly when a tas
 |---|---|
 | `naming.md` | naming types after what their values are, the "is a" test, renaming |
 | `work-tracking.md` | keeping `docs/wip/` task lists and `docs/plans/` plans |
-| `workspaces-and-plans.md` | workspace scoping, entitlements, the local plan and plans file, domain errors |
+| `workspaces-and-plans.md` | workspace scoping, entitlements, the local plan and plans file, changing a plan, domain errors |
 | `storage.md` | new backends, the jsonfile lock and shared data folder, SQLite (ADR 7) |
 | `configuration.md` | layered settings (ADR 6), adding a setting |
 | `server.md` | SPA embedding, new server routes, `/api/v1/connection` |

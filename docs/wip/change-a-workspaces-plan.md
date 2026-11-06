@@ -148,7 +148,8 @@ Acceptance:
    - Refactor: nothing worth changing; the step is one line, like its neighbours.
 
 Finish:
-15. [ ] Docs: `docs/billing.md`; ADR 5's status; `.claude/rules/workspaces-and-plans.md` (ChangePlan, the stored plan, the local plan staying fixed); CLAUDE.md's architecture block, if `plans` or `storage` lines need it; `docs/workspaces.md` if its checklist is affected.
+15. [x] Docs: `docs/billing.md`; ADR 5's status; `.claude/rules/workspaces-and-plans.md` (ChangePlan, the stored plan, the local plan staying fixed); CLAUDE.md's architecture block, if `plans` or `storage` lines need it; `docs/workspaces.md` if its checklist is affected.
+   - Also: `docs/data-locations.md`; a template-user step in TODO.md; step 8 of the plan now holds the stored-plan wiring from this file's decisions, which goes when this file does.
 16. [ ] `task check`, `task test:init`, `task e2e:terminal`; remove the `@wip` tags; mark step 4 done in the plan; delete this file.
 
 ## Changes to the plan

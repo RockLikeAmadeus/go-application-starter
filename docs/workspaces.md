@@ -12,7 +12,7 @@ driving adapter ──► use case ──► WorkspaceResolver.CurrentWorkspace(
                        └──────────► repository.FindAll(ctx, workspace) ◄───────┘
 ```
 
-1. **A use case asks for the current workspace** through a driven port, `ports.WorkspaceResolver`. It never reads the context itself, and a driving adapter never passes a workspace as a parameter.
+1. **A use case asks for the current workspace** through a driven port, `ports.WorkspaceResolver`. It never reads the context itself, and a driving adapter never passes a workspace as a parameter. The one exception is `ChangePlan` ([`docs/billing.md`](billing.md)), where an admin or a payment provider acts on someone else's workspace.
 2. **It passes the workspace explicitly to every repository call** (`FindByID`, `FindAll`, `Delete`). `Save` uses the workspace the record carries, which the use case set when it created the record.
 3. **A repository treats another workspace's record as missing.** It returns `domain.ErrNotFound`, exactly as for an ID that doesn't exist. The caller can't even tell whether the record exists, so IDs never leak another workspace's data.
 4. **No workspace means no data.** If the resolver can't name a workspace, it returns `domain.ErrNoWorkspace`, and the use case returns that before touching storage. This is "fail closed": a bug that loses the workspace refuses the request rather than showing everyone's data.
@@ -143,9 +143,11 @@ It checks that a record keeps its workspace, that `FindAll` lists only the given
 
 Some data belongs to the whole product, not to a workspace: the plans config, built-in reference data, the list of workspaces itself. Don't force it into a workspace. Give it a repository that doesn't embed `WorkspaceRepository`, and say in its port's doc comment why it isn't scoped. Keep such data read-only to ordinary requests, or a request in one workspace could change what every other workspace sees.
 
+Some data is one value per workspace rather than a list of records, such as which plan a workspace is on. It's still kept apart by workspace, but `WorkspaceRepository[T]` doesn't fit it. Give it its own port and contract suite, as `ports.WorkspacePlanRepository` has, with a case proving that saving one workspace's value leaves another's alone.
+
 ## Pitfalls
 
-- **Taking the workspace from the request.** A workspace ID in an API body, query string or CLI flag would let anyone pick any workspace. Only the resolver decides.
+- **Taking the workspace from the request.** A workspace ID in an API body, query string or CLI flag would let anyone pick any workspace. Only the resolver decides. (`starter admin set-plan` names a workspace, but it runs beside the storage, so whoever can run it already has the data.)
 - **A new query without the workspace.** Search, count, "find by name", exports: each one is a new way to leak. Give it the workspace and its own isolation test.
 - **Returning "forbidden" for another workspace's record.** That tells the caller the record exists. Return `ErrNotFound`.
 - **A cache or index shared across workspaces.** Key it by workspace.

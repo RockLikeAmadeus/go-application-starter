@@ -92,6 +92,7 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
 - This is the existing "Authentication behind a port" TODO item.
 - The OIDC adapter and the dev-only fake login.
 - Auth middleware that sets the workspace, and a personal workspace created at first login.
+- Stored plans in the hosted edition: `bootstrap.NewBilling` wires `app.NewBillingService` beside the hosted storage (the `Local` server keeps refusing), `plans.StoredPlanOf` feeds its `plans.Provider`, and the default plan for a new personal workspace is chosen here (see `docs/billing.md`, "Switching on stored plans").
 - Sign-in is optional on the server. With it off, the server is a self-hosted local edition: it uses the `Local` resolver, as it does today.
 - SPA login and logout. The isolation scenarios run on the http driver.
 - Remove "Authentication and authorization" from SPEC.md §6.

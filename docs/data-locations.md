@@ -116,5 +116,5 @@ The browser keeps two settings per site in local storage: `theme` and `style`. T
 ## Other files the app reads
 
 - **The settings file.** Optional: `config.toml` in the app's folder in the user's settings folder, beside the default data folder (`~/.config/starter/config.toml` on Linux), for the CLI, TUI and desktop app. `STARTER_CONFIG_FILE` names another, and the server reads one only then. Nothing writes to it. See [docs/configuration.md](configuration.md).
-- **The plans file.** The plans are built into the binary (`internal/adapters/plans/plans.jsonc`). `STARTER_PLANS_FILE` names a file to read instead. Nothing writes to it.
+- **The plans file.** The plans are built into the binary (`internal/adapters/plans/plans.jsonc`). `STARTER_PLANS_FILE` names a file to read instead. Nothing writes to it. Which plan a workspace is on is kept with its data (`workspace_plans.json`, or a table in `data.db`), but only the hosted edition will use that: the local edition's plan is set when the app is built.
 - **Logs** go to standard output (`STARTER_LOG_FORMAT`), never to a file. In Docker or on Fly.io, the platform keeps them.

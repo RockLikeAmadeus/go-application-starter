@@ -1,6 +1,6 @@
 # 5. Hosted and local editions share one core
 
-- Status: accepted. Workspaces (step 1) and plan limits (step 2) are built; the rest is planned. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
+- Status: accepted. Workspaces (step 1), plan limits (step 2), plan features (step 3), plan changes (step 4) and SQLite (step 6) are built; the rest is planned. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
 - Date: 2026-10-31
 
 ## Context
@@ -39,6 +39,11 @@ A product built from this template may be sold as a hosted service: many users, 
 
 - An admin-only `ChangePlan` use case is the core's only billing concept. Anything that takes money (Stripe or Paddle webhooks, an admin command) is a driving adapter that calls it.
 - The template ships only the admin command, and a guide (`docs/billing.md`) for adding a provider.
+- `ChangePlan` is its own driving port, `ports.BillingService`, and takes the workspace as an argument, because an admin or a provider acts on someone else's workspace. An admin reaches it only through `starter admin set-plan`, beside the hosted edition's storage. No API changes plans until sign-in and roles exist.
+- Each workspace's plan is stored by the storage adapters, through `ports.WorkspacePlanRepository`.
+- **The local edition never reads a stored plan.** Its plan stays fixed at the one named at build time, so a local user can't upgrade their own copy, and `starter admin set-plan` refuses there.
+- A plan change checks no limits: moving to a smaller plan keeps the data, which the over-limit rules then govern.
+- Built in step 4: all of the above, in every storage adapter. Until sign-in adds the hosted edition, every copy is the local edition, so `bootstrap.NewBilling` refuses and only the tests change plans.
 
 ### Authentication
 
