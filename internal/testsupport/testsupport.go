@@ -5,6 +5,7 @@ package testsupport
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -67,4 +68,28 @@ type FixedEntitlements domain.Entitlements
 
 func (e FixedEntitlements) For(context.Context, domain.WorkspaceID) (domain.Entitlements, error) {
 	return domain.Entitlements(e), nil
+}
+
+// StoredPlans is a ports.WorkspacePlanRepository that holds each workspace's
+// plan in a map.
+type StoredPlans map[domain.WorkspaceID]string
+
+func (p StoredPlans) PlanOf(_ context.Context, workspace domain.WorkspaceID) (string, error) {
+	plan, ok := p[workspace]
+	if !ok {
+		return "", domain.ErrNotFound
+	}
+	return plan, nil
+}
+
+func (p StoredPlans) SavePlan(_ context.Context, workspace domain.WorkspaceID, plan string) error {
+	p[workspace] = plan
+	return nil
+}
+
+// KnownPlans is a ports.PlanCatalog that has only the plans it lists.
+type KnownPlans []string
+
+func (p KnownPlans) HasPlan(_ context.Context, plan string) (bool, error) {
+	return slices.Contains(p, plan), nil
 }

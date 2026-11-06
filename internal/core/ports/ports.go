@@ -72,6 +72,28 @@ type EntitlementsProvider interface {
 	For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error)
 }
 
+// BillingService is the driving port for changing which plan a workspace is
+// on. It takes the workspace as an argument, because an admin acts on someone
+// else's workspace, so nothing resolves a current one.
+type BillingService interface {
+	ChangePlan(ctx context.Context, workspace domain.WorkspaceID, plan string) error
+}
+
+// WorkspacePlanRepository is the driven port for storing which plan each
+// workspace is on. A plan is one value per workspace, not a list of records, so
+// it doesn't embed WorkspaceRepository.
+type WorkspacePlanRepository interface {
+	// PlanOf returns domain.ErrNotFound for a workspace with no stored plan.
+	PlanOf(ctx context.Context, workspace domain.WorkspaceID) (string, error)
+	// SavePlan inserts or replaces the workspace's plan.
+	SavePlan(ctx context.Context, workspace domain.WorkspaceID, plan string) error
+}
+
+// PlanCatalog tells a use case which plans exist.
+type PlanCatalog interface {
+	HasPlan(ctx context.Context, plan string) (bool, error)
+}
+
 // WorkspaceResolver tells a use case which workspace the current request
 // works in.
 type WorkspaceResolver interface {

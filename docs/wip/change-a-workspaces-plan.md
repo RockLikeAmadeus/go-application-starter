@@ -27,8 +27,13 @@ Step 4 of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts
 ## Tasks
 
 Core:
-1. [ ] `app.BillingService.ChangePlan` saves the plan for the given workspace (introduces `ports.BillingService`, `ports.WorkspacePlanRepository`, `ports.PlanCatalog`, and their `testsupport` fakes).
-2. [ ] `ChangePlan` refuses a plan the catalog doesn't have with a `ValidationError` on `plan`, and saves nothing.
+1. [x] `app.BillingService.ChangePlan` saves the plan for the given workspace (introduces `ports.BillingService`, `ports.WorkspacePlanRepository`, `ports.PlanCatalog`, and their `testsupport` fakes).
+   - Green: `ChangePlan` calls `SavePlan`; the catalog is wired but unused until task 2.
+   - Refactor: nothing worth changing; the code mirrors the sibling services and the fakes. `catalog` stays unread until task 2.
+2. [x] `ChangePlan` refuses a plan the catalog doesn't have with a `ValidationError` on `plan`, and saves nothing.
+   - Red: `TestChangePlan_RefusesAPlanTheCatalogDoesNotHave` fails, `ChangePlan(platinum) = <nil>, want a *ValidationError on plan`.
+   - Green: `ChangePlan` asks `catalog.HasPlan` and returns a `ValidationError` on `plan` for an unknown one; the lookup error is ignored until task 3.
+   - Refactor: nothing worth changing; the check is three lines and the test matches its sibling. The ignored lookup error stays for task 3 to demand.
 3. [ ] `ChangePlan` refuses when the catalog can't be read, and saves nothing.
 4. [ ] `ChangePlan` refuses an empty workspace with `ErrNoWorkspace`, before touching the catalog or storage.
 
