@@ -179,7 +179,8 @@ func syncedFolderWarning(cfg config.Config) (string, bool) {
 func conflictCopyWarning(store *jsonfile.Store) (string, bool) {
 	copies, err := store.ConflictCopies()
 	if err != nil {
-		return "Your data folder couldn't be checked for conflict copies, so a change may be missing: " + err.Error(), true
+		return "Your data folder could not be checked for conflicted copies, so a change may be missing from your data. " +
+			"The following error occurred: " + err.Error(), true
 	}
 	if len(copies) == 0 {
 		return "", false

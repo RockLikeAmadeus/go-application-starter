@@ -413,7 +413,7 @@ func TestApp_WarnsWhenConflictCopiesCantBeCheckedAndKeepsWorking(t *testing.T) {
 	t.Cleanup(func() { _ = a.Close() })
 
 	if len(a.Warnings) != 1 ||
-		!strings.HasPrefix(a.Warnings[0], "Your data folder couldn't be checked for conflict copies, so a change may be missing: ") ||
+		!strings.HasPrefix(a.Warnings[0], "Your data folder could not be checked for conflicted copies, so a change may be missing from your data. The following error occurred: ") ||
 		!strings.Contains(a.Warnings[0], "notes") {
 		t.Errorf("Warnings = %q, want one saying the check failed and naming the notes folder", a.Warnings)
 	}
