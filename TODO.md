@@ -57,6 +57,7 @@ Work through them one at a time (each usually starts with `/feature`), tick them
   - [ ] **User account** flows for common tasks like password changes, account deletion, etc. **ONLY FOR HOSTED EDITIONS**.
   - [ ] **Functional feature-flagging support** to toggle unreleased features or modify runtime behavior dynamically without redeploying.
   - [ ] **A sample/placeholder home page** for the hosted edition SPA that provides feature info, pricing details, etc., along with a login button, unless this is more appropriate as a separate hosted site).
+  - [ ] **Report a bug or suggest a feature** feature
   - [ ] **Other features along these same lines likely to be required by template users** that we brainstorm.
 
   

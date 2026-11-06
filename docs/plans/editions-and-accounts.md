@@ -30,7 +30,7 @@ All clients can operate as commercial products, with data kept separate per acco
 - **Synced folders: Level 1 only.** A local data folder may live in a Dropbox, Syncthing, iCloud Drive or Google Drive folder, used from **one device at a time**. The app:
   - uses a plain-text layout of one file per record;
   - detects the sync service's conflict copies and tells the user;
-  - shows a best-effort "in use on another device" warning (a lock file holding the device and a heartbeat).
+  - shows a best-effort "in use on another device" warning (a file per device, holding the device and a heartbeat).
 
   There's no merging and no live use from several devices. Live use from several devices is what the hosted edition is for. (Level 2, merging inside a synced folder, and Level 3, the app's own sync engine, were rejected as too costly to build and maintain.)
 - **Local formats: plain text or SQLite, the user's choice.** SQLite can be corrupted by file-sync services, so the app warns when its folder looks synced.
@@ -73,7 +73,8 @@ SPEC.md §4.15 · [`features/plan-changes.feature`](../../features/plan-changes.
 - The local edition's plan stays fixed, so `bootstrap.NewBilling` refuses every copy until step 8 wires the stored plans. Only the acceptance harness changes plans for now. All template code; the sample use is the item scenarios that move plans. `task test:init` passes.
 - `docs/billing.md`, the template users' guide described above.
 
-### 5. Sync-safe plain text — not started
+### 5. Sync-safe plain text — in progress
+SPEC.md §4.16 · [`features/synced-plain-text.feature`](../../features/synced-plain-text.feature) · [`docs/wip/synced-plain-text.md`](../wip/synced-plain-text.md).
 - jsonfile v2: one file per record. No migration from the v1 `items.json` (the template has no users).
 - Detect conflict copies. Warn about a heartbeat lock file from another device.
 - Update ADR 3.
@@ -140,3 +141,4 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
   - The desktop download was checked by hand on WebKitGTK. `docs/features.md` is the checklist for gating a new feature.
 - 2026-11-05: step 4 started. Decided: the local edition's plan stays fixed (`starter admin set-plan` refuses there, so until step 8 only the tests change plans); ChangePlan is reached only by the admin command, with no API until sign-in; each workspace's plan is stored by the storage adapters (`ports.WorkspacePlanRepository`).
 - 2026-11-06: step 4 finished. Its stored-plan wiring moved to step 8 here, since the task list that held it is gone. `task test:init` found a template step depending on the sample's `in` helper (from task 12c, which didn't run it), so `in` moved to `steps.go`.
+- 2026-11-06: step 5 started. The "lock file" became one mark per device (`.devices/<device>.json`), since two devices rewriting one file would make a conflict copy in exactly the case we warn about. A device writes its mark only when the folder looks synced, and both warnings are checked when the data is opened.

@@ -39,6 +39,8 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Limit** | A number a plan sets, such as how many items a workspace may have. |
 | **Admin** | Someone who runs the product and can move a workspace to another plan, for example when its owner starts or stops paying. |
 | **Ready** | A server is ready when it can reach its data, so it can serve requests. |
+| **Conflict copy** | A second copy of a file that a file-sync service leaves in a synced folder when the same file changed in two places. |
+| **Device** | A computer that uses a data folder, known by its name. |
 
 <!-- sample:start -->
 The sample capability (§4.1) adds one term:
@@ -333,7 +335,7 @@ Data can be kept in a SQLite database instead of as plain text, so that several 
   - the terminal app shows it on its screen;
   - the server logs it when it starts.
 - Telling whether a folder is synced is a best guess, from the folder's path and the files a sync service leaves in it. A user whose folder looks synced but isn't (it's excluded from sync, say) can turn the warning off with the `ignore_synced_folder` setting.
-- Plain-text data in a synced folder gets no warning: it's safe there while one device at a time uses it (ADR 5).
+- Plain-text data doesn't get this warning: it's safe in a synced folder while one device at a time uses it (§4.16, ADR 5).
 
 **Examples**
 - The settings file says `storage = "sqlite"` → the desktop app keeps its data in SQLite, and `starter info` works while the desktop app is open.
@@ -367,6 +369,29 @@ An admin can move a workspace to another plan, for example when its owner starts
 - A user runs `starter admin set-plan local pro` on their own computer → it fails, saying the local edition's plan is set when the app is built.
 
 **Specification:** [`features/plan-changes.feature`](features/plan-changes.feature). The scenarios that move a workspace run on the memory, jsonfile, sqlite and http drivers; the one that switches between workspaces runs on memory, jsonfile and sqlite only; the local edition's refusal runs on the desktop driver. Keeping the plan after a restart is checked by each storage adapter's contract tests. The command's output and exit status are checked by a terminal journey ([`test/terminal/features/command-line.feature`](test/terminal/features/command-line.feature)).
+
+### 4.16 Keep plain-text data in a synced folder
+
+A user can keep plain-text data in a folder that a file-sync service (Dropbox, iCloud Drive, Google Drive, OneDrive, Syncthing, Nextcloud, …) syncs, and use it from one device at a time. The app makes a clash small and visible, and leaves the sync service and the user to settle it. For live use from several devices, there's the hosted edition (ADR 5).
+
+**Rules**
+- Plain-text data keeps each record in its own file, so a clash can touch only that record.
+- The app never merges. When a sync service leaves a conflict copy in the data folder, the app warns, naming the file, and keeps working. A conflict copy isn't read as data, so nothing appears twice.
+- The user settles a conflict by hand: they keep the version they want and delete the other. The warning goes once no conflict copy is left.
+- A conflict copy is itself the evidence, so the warning comes whether or not the folder looks synced, and `ignore_synced_folder` doesn't turn it off.
+- While a copy of the app has plain-text data open in a folder that looks synced, it marks the folder as in use on its device. It renews the mark every minute and removes it on closing. With `ignore_synced_folder` set, or in a folder that doesn't look synced, it leaves no mark.
+- When another device's mark is less than five minutes old, the app warns, naming the device, and keeps working. An older mark doesn't count, so a device that crashed or lost power stops counting by itself.
+- This is a best guess. A sync service can be slow to bring the mark over, and two computers with the same name look like one device.
+- Both warnings appear wherever the §4.14 warning does, and are checked when the data is opened: by each command on the command line, and when the desktop app or the server starts.
+- The mobile app keeps its data in private storage, which no sync service reaches, so none of this applies there.
+
+**Examples**
+- A user's Dropbox leaves `items/6f1c (conflicted copy).json` in the data folder → the desktop app warns: "Your data folder has 1 conflict copy left by a sync service, so a change may be missing: items/6f1c (conflicted copy).json. Keep the version you want and delete the other."
+- The same user deletes the file and opens the app again → no warning.
+- The desktop app is open on a user's laptop, and they open the same folder on their desktop computer → it warns: "Your data folder looks in use on laptop. Using it from two devices at once can lose changes: close the app there first." It keeps working.
+- The laptop lost power an hour ago, with the app open → no warning.
+
+**Specification:** [`features/synced-plain-text.feature`](features/synced-plain-text.feature), on the desktop driver. The layout of the files, what counts as a conflict copy for each sync service, and renewing the mark are checked by unit tests.
 
 ## 5. Non-functional requirements
 
