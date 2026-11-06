@@ -23,6 +23,7 @@ Decided in planning:
 Warnings (`internal/bootstrap`):
 - **Another device, one:** Your data folder appears to be in use on {devices}. Running the application from two devices at once while plain-text storage is enabled can result in lost changes: please close the application on your other device before continuing.
 - **Another device, several:** Your data folder appears to be in use on {devices}. Running the application from multiple devices at once while plain-text storage is enabled can result in lost changes: please close the application on your other devices before continuing.
+- **{devices}, several:** "work-laptop and work-phone"; "work-laptop, work-phone, and home-pc".
 - **One conflict copy:** Your data folder contains 1 conflicted copy, {name}, which appears to have been created by a file sync service. A change may be missing from your data. Please compare it with the original file, then either delete it or use it to replace the original before continuing.
 - **Several conflict copies:** Your data folder contains {n} conflicted copies that appear to have been created by a file sync service: {names}. Changes may be missing from your data. Please compare each one with its original file, then either delete it or use it to replace the original before continuing.
 - **Scan failed:** Your data folder could not be checked for conflicted copies, so a change may be missing from your data. The following error occurred: {error}
@@ -79,7 +80,11 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestApp_WarnsWhenAnotherDeviceIsUsingPlainText` pins the agreed wording; failed on the old text.
   - Green: `otherDeviceWarning` uses the agreed text for one device; `SPEC.md`'s example and the acceptance step's expected text updated.
   - Refactor: nothing changed. Task 2b rewrites the other branch; the Gherkin's "looks in use" stays, as users don't read it.
-- [ ] 2b. The several other devices warning.
+- [x] 2b. The two other devices warning.
+  - Red: `TestApp_WarningNamesEveryOtherDevice` pins the agreed wording; failed on the old text.
+  - Green: `otherDeviceWarning` uses the agreed text, joining the names with " and ".
+  - Refactor: nothing changed. Task 2c replaces the join, so a helper now would be guesswork.
+- [ ] 2c. The warning for three or more other devices, with the Oxford comma.
 - [ ] 3. The SQLite synced folder warning.
 - [ ] 4. The feature error, in its one-plan, several-plans and no-plan forms.
 - [ ] 5. The web, CLI and TUI plan notes, with the Oxford comma in lists of three or more plans.
@@ -97,3 +102,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 
 - Task 1 split: the one-copy, several-copies and scan-failed warnings each need their own test, so they are tasks 1, 1b, and 1c.
 - Task 2 split: the one-device and several-device warnings each need their own test, so they are tasks 2 and 2b.
+- Task 2b split: two devices and three or more each need their own test, so they are tasks 2b and 2c.
