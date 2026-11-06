@@ -133,14 +133,21 @@ func readRecords[R any](s *Store, table string) (map[string]R, error) {
 	return records, nil
 }
 
-// readRecord loads the one record with this key from its own file, or
-// returns domain.ErrNotFound if there is no such file.
+// readRecord loads the one record with this key from its own file. It returns
+// domain.ErrNotFound if there is no such file, or if the file holds another
+// key's record, as it isn't then this key's record.
 func readRecord[R any](s *Store, table, key string) (R, error) {
 	file, err := readRecordFile[R](s, table, recordFileName(key))
 	if errors.Is(err, fs.ErrNotExist) {
 		return file.Record, domain.ErrNotFound
 	}
-	return file.Record, err
+	if err != nil {
+		return file.Record, err
+	}
+	if file.Key != key {
+		return file.Record, domain.ErrNotFound
+	}
+	return file.Record, nil
 }
 
 // readRecordFile reads and decodes one file in <dir>/<table>.

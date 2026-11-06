@@ -78,7 +78,10 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: `TestReadRecordOfAMissingFileIsNotFound` failed: the error was the "no such file or directory" one, not `domain.ErrNotFound`.
   - Green: `readRecord` turns a missing file into `domain.ErrNotFound`.
   - Refactor: nothing. `readRecord` is four lines; 7b3 and 7b4 add to it, so its shape is better judged after them.
-- [ ] 7b3. `readRecord` returns not found for a file whose key doesn't match its name.
+- [x] 7b3. `readRecord` returns not found for a file whose key doesn't match its name.
+  - Red: `TestReadRecordOfAFileWhoseKeyDoesNotMatchItsNameIsNotFound` failed: `readRecord` returned no error for a file holding key 1 under the name `2.json`.
+  - Green: `readRecord` returns `domain.ErrNotFound` when the file's key isn't the one asked for, checked after other errors so that a decode failure stays an error.
+  - Refactor: `readRecord`'s doc comment covers the key check. The body stays as it is until 7b4 adds its last check.
 - [ ] 7b4. `readRecord` refuses a file with an unknown version.
 - [ ] 7c. `WorkspacePlanRepository.PlanOf` reads only that workspace's file.
 - [ ] 7d. `ItemRepository.FindByID` and `Delete` read only that item's file. Sample thin use.

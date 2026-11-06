@@ -207,6 +207,25 @@ func TestReadRecordOfAMissingFileIsNotFound(t *testing.T) {
 	}
 }
 
+func TestReadRecordOfAFileWhoseKeyDoesNotMatchItsNameIsNotFound(t *testing.T) {
+	s := openTestStore(t)
+	if err := writeRecord(s, "things", "1", record{Name: "one"}); err != nil {
+		t.Fatalf("writeRecord error = %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(s.dir, "things", "1.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(s.dir, "things", "2.json"), data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = readRecord[record](s, "things", "2")
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("readRecord error = %v, want domain.ErrNotFound", err)
+	}
+}
+
 func TestDeletingARecordRemovesOnlyItsFile(t *testing.T) {
 	s := openTestStore(t)
 	const key = "workspace/1"
