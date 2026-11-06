@@ -228,6 +228,39 @@ func TestConflictCopiesLeavesOutHiddenFolders(t *testing.T) {
 	}
 }
 
+func TestConflictCopiesLeavesOutFilesThatAreNotRecords(t *testing.T) {
+	tests := []struct {
+		name     string
+		contents string
+	}{
+		{"not JSON", "not json"},
+		{"JSON of another shape", `{"theme": "dark"}`},
+		{"JSON that is not an object", `[1, 2]`},
+		{"a matching version but no key", `{"version": 2, "theme": "dark"}`},
+		{"a version this app doesn't know", `{"version": 99, "key": "1", "record": {}}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := openTestStore(t)
+			folder := filepath.Join(s.dir, "settings")
+			if err := os.Mkdir(folder, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(folder, "editor.json"), []byte(tt.contents), 0o600); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := s.ConflictCopies()
+			if err != nil {
+				t.Fatalf("ConflictCopies error = %v", err)
+			}
+			if len(got) != 0 {
+				t.Errorf("ConflictCopies = %q, want none", got)
+			}
+		})
+	}
+}
+
 func TestReadRecordReturnsOneRecordWithoutReadingAnyOther(t *testing.T) {
 	s := openTestStore(t)
 	if err := writeRecord(s, "things", "1", record{Name: "one"}); err != nil {

@@ -31,6 +31,10 @@ import (
 // ErrLocked is returned by Open when another process holds the data directory.
 var ErrLocked = errors.New("data directory is locked by another process")
 
+// errNotARecord is returned for a file this app can read but can't decode as
+// a record.
+var errNotARecord = errors.New("not a record")
+
 const recordFormatVersion = 2
 
 // Store owns a data directory and its lock. Repositories for individual
@@ -75,7 +79,8 @@ func (s *Store) Ready(context.Context) error {
 
 // ConflictCopies lists the conflict copies in the data directory, as paths
 // relative to it, in order of table and then file name. Hidden folders aren't
-// tables, so it leaves them out.
+// tables and a shared data folder can hold other programs' files, so it leaves
+// out hidden folders and files that aren't records.
 func (s *Store) ConflictCopies() ([]string, error) {
 	entries, err := os.ReadDir(s.dir)
 	if err != nil {
@@ -107,10 +112,13 @@ func (s *Store) conflictCopiesIn(table string) ([]string, error) {
 			continue
 		}
 		file, err := readRecordFile[json.RawMessage](s, table, entry.Name())
+		if errors.Is(err, errNotARecord) {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
-		if !file.matches(entry.Name()) {
+		if file.isConflictCopy(entry.Name()) {
 			copies = append(copies, filepath.Join(table, entry.Name()))
 		}
 	}
@@ -130,6 +138,12 @@ type recordFile[R any] struct {
 // way a sync service named it.
 func (f recordFile[R]) matches(name string) bool {
 	return name == recordFileName(f.Key)
+}
+
+// isConflictCopy reports whether a file called name is a copy of a record,
+// rather than the record itself. With no key, it isn't a record at all.
+func (f recordFile[R]) isConflictCopy(name string) bool {
+	return f.Key != "" && !f.matches(name)
 }
 
 // writeRecord atomically replaces <dir>/<table>/<key>.json.
@@ -211,10 +225,10 @@ func readRecordFile[R any](s *Store, table, name string) (recordFile[R], error) 
 		return file, fmt.Errorf("read %s/%s: %w", table, name, err)
 	}
 	if err := json.Unmarshal(data, &file); err != nil {
-		return file, fmt.Errorf("decode %s/%s: %w", table, name, err)
+		return file, fmt.Errorf("decode %s/%s: %w: %w", table, name, errNotARecord, err)
 	}
 	if file.Version != recordFormatVersion {
-		return file, fmt.Errorf("%s/%s: unsupported file version %d", table, name, file.Version)
+		return file, fmt.Errorf("%s/%s: %w: unsupported file version %d", table, name, errNotARecord, file.Version)
 	}
 	return file, nil
 }
