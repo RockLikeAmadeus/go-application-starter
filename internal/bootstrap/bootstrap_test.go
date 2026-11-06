@@ -339,8 +339,9 @@ func TestApp_WarnsAboutConflictCopiesOnPlainText(t *testing.T) {
 func TestApp_WarnsWhenAnotherDeviceIsUsingPlainText(t *testing.T) {
 	got := warningsWithMarksFrom(t, "work-laptop")
 
-	want := []string{"Your data folder looks in use on work-laptop. " +
-		"Using it from two devices at once can lose changes: close the app there first."}
+	want := []string{"Your data folder appears to be in use on work-laptop. Running the application from two " +
+		"devices at once while plain-text storage is enabled can result in lost changes: please close the " +
+		"application on your other device before continuing."}
 	if !slices.Equal(got, want) {
 		t.Errorf("Warnings = %q, want %q", got, want)
 	}

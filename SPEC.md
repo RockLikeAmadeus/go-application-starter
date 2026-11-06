@@ -388,7 +388,7 @@ A user can keep plain-text data in a folder that a file-sync service (Dropbox, i
 **Examples**
 - A user's Dropbox leaves `items/6f1c (conflicted copy).json` in the data folder → the desktop app warns: "Your data folder contains 1 conflicted copy, items/6f1c (conflicted copy).json, which appears to have been created by a file sync service. A change may be missing from your data. Please compare it with the original file, then either delete it or use it to replace the original before continuing."
 - The same user deletes the file and opens the app again → no warning.
-- The desktop app is open on a user's laptop, and they open the same folder on their desktop computer → it warns: "Your data folder looks in use on laptop. Using it from two devices at once can lose changes: close the app there first." It keeps working.
+- The desktop app is open on a user's laptop, and they open the same folder on their desktop computer → it warns: "Your data folder appears to be in use on laptop. Running the application from two devices at once while plain-text storage is enabled can result in lost changes: please close the application on your other device before continuing." It keeps working.
 - The laptop lost power an hour ago, with the app open → no warning.
 
 **Specification:** [`features/synced-plain-text.feature`](features/synced-plain-text.feature), on the desktop driver. The layout of the files, what counts as a conflict copy for each sync service, and renewing the mark are checked by unit tests.

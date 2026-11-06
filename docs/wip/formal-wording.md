@@ -75,7 +75,11 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestApp_WarnsWhenConflictCopiesCantBeCheckedAndKeepsWorking` pins the agreed wording; failed on the old text.
   - Green: `conflictCopyWarning` uses the agreed text.
   - Refactor: nothing changed. The code comments keep the domain term "conflict copy"; nothing else quotes the old text.
-- [ ] 2. The other device warning, with separate one-device and several-device wording.
+- [x] 2. The one other device warning.
+  - Red: `TestApp_WarnsWhenAnotherDeviceIsUsingPlainText` pins the agreed wording; failed on the old text.
+  - Green: `otherDeviceWarning` uses the agreed text for one device; `SPEC.md`'s example and the acceptance step's expected text updated.
+  - Refactor: nothing changed. Task 2b rewrites the other branch; the Gherkin's "looks in use" stays, as users don't read it.
+- [ ] 2b. The several other devices warning.
 - [ ] 3. The SQLite synced folder warning.
 - [ ] 4. The feature error, in its one-plan, several-plans and no-plan forms.
 - [ ] 5. The web, CLI and TUI plan notes, with the Oxford comma in lists of three or more plans.
@@ -91,6 +95,5 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 
 ## Changes to the plan
 
-## Changes to the plan
-
 - Task 1 split: the one-copy, several-copies and scan-failed warnings each need their own test, so they are tasks 1, 1b, and 1c.
+- Task 2 split: the one-device and several-device warnings each need their own test, so they are tasks 2 and 2b.

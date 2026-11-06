@@ -73,7 +73,7 @@ func (w *world) theDeviceMarkedTheDataFolder(device string, age int, unit string
 
 // looksInUseOn is what a warning about device says.
 func looksInUseOn(device string) string {
-	return "looks in use on " + device
+	return "appears to be in use on " + device
 }
 
 func (w *world) theDesktopAppWarnsTheFolderLooksInUseOn(device string) error {

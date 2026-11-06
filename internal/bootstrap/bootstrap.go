@@ -205,6 +205,11 @@ func otherDeviceWarning(cfg config.Config) (string, bool) {
 	if len(devices) == 0 {
 		return "", false
 	}
+	if len(devices) == 1 {
+		return "Your data folder appears to be in use on " + devices[0] + ". Running the application from two " +
+			"devices at once while plain-text storage is enabled can result in lost changes: please close the " +
+			"application on your other device before continuing.", true
+	}
 	return "Your data folder looks in use on " + strings.Join(devices, ", ") + ". " +
 		"Using it from two devices at once can lose changes: close the app there first.", true
 }
