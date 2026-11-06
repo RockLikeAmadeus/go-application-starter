@@ -32,13 +32,9 @@ func NewWorkspacePlanRepository(store *Store) *WorkspacePlanRepository {
 func (r *WorkspacePlanRepository) PlanOf(_ context.Context, workspace domain.WorkspaceID) (string, error) {
 	r.store.mu.RLock()
 	defer r.store.mu.RUnlock()
-	records, err := readRecords[workspacePlanRecord](r.store, workspacePlansTable)
+	rec, err := readRecord[workspacePlanRecord](r.store, workspacePlansTable, string(workspace))
 	if err != nil {
 		return "", err
-	}
-	rec, ok := records[string(workspace)]
-	if !ok {
-		return "", domain.ErrNotFound
 	}
 	return rec.Plan, nil
 }

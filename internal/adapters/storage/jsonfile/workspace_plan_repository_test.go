@@ -72,3 +72,22 @@ func TestEachWorkspacesPlanIsKeptInItsOwnFileAndSavingOneLeavesTheOthersUntouche
 		t.Errorf("saving ws-a changed ws-b's file:\n%s\nwant:\n%s", got, edited)
 	}
 }
+
+func TestPlanOfReadsOnlyThatWorkspacesFile(t *testing.T) {
+	dir := t.TempDir()
+	ctx := context.Background()
+	repo := jsonfile.NewWorkspacePlanRepository(openStore(t, dir))
+	if err := repo.SavePlan(ctx, "ws-a", "pro"); err != nil {
+		t.Fatalf("SavePlan: %v", err)
+	}
+
+	// Reading the whole table would stop at this file, which can't be decoded.
+	if err := os.WriteFile(filepath.Join(dir, "workspace_plans", "ws-b.json"), []byte("not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := repo.PlanOf(ctx, "ws-a")
+	if err != nil || got != "pro" {
+		t.Fatalf("PlanOf = %q, %v, want \"pro\"", got, err)
+	}
+}

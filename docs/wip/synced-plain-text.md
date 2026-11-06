@@ -86,7 +86,10 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: `TestReadRecordOfAFileWithAnUnknownVersionIsRefused` failed: `readRecord` returned no error for version 99.
   - Green: `readRecord` refuses a file whose version isn't `recordFormatVersion`.
   - Refactor: the version check moved into `readRecordFile`, so both readers share it. It still runs before the key check.
-- [ ] 7c. `WorkspacePlanRepository.PlanOf` reads only that workspace's file.
+- [x] 7c. `WorkspacePlanRepository.PlanOf` reads only that workspace's file.
+  - Red: `TestPlanOfReadsOnlyThatWorkspacesFile` failed: `PlanOf` stopped at the undecodable `ws-b.json`.
+  - Green: `PlanOf` uses `readRecord`.
+  - Refactor: nothing. `PlanOf` is three lines. Only the sample's repository calls `readRecords` in production now, so the init suite ran on a copy here too and stayed green; `table_test.go` keeps it used.
 - [ ] 7d. `ItemRepository.FindByID` and `Delete` read only that item's file. Sample thin use.
 - [ ] 8. `Store.ConflictCopies` lists them across tables, sorted, as paths relative to the data folder, leaving out hidden folders and files that aren't records.
 - [ ] 8b. Benchmarks for `readRecords`, `readRecord` and `ConflictCopies` at 1,000 and 10,000 records. There's no red, as they specify no behaviour. Note the numbers here, for task 15's rough record count in ADR 3.
