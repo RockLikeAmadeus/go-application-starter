@@ -72,12 +72,62 @@ func (s *Store) Ready(context.Context) error {
 	return os.Remove(f.Name())
 }
 
+// ConflictCopies lists the conflict copies in the data directory, as paths
+// relative to it, in order of table and then file name.
+func (s *Store) ConflictCopies() ([]string, error) {
+	entries, err := os.ReadDir(s.dir)
+	if err != nil {
+		return nil, fmt.Errorf("read data dir: %w", err)
+	}
+	var copies []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		tableCopies, err := s.conflictCopiesIn(entry.Name())
+		if err != nil {
+			return nil, err
+		}
+		copies = append(copies, tableCopies...)
+	}
+	return copies, nil
+}
+
+// conflictCopiesIn lists the conflict copies in one table.
+func (s *Store) conflictCopiesIn(table string) ([]string, error) {
+	entries, err := os.ReadDir(filepath.Join(s.dir, table))
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", table, err)
+	}
+	var copies []string
+	for _, entry := range entries {
+		if !isJSONFile(entry) {
+			continue
+		}
+		file, err := readRecordFile[json.RawMessage](s, table, entry.Name())
+		if err != nil {
+			return nil, err
+		}
+		if !file.matches(entry.Name()) {
+			copies = append(copies, filepath.Join(table, entry.Name()))
+		}
+	}
+	return copies, nil
+}
+
 // recordFile is the on-disk shape of one record. The key is in the file, as
 // well as in its name, because not every record holds its own.
 type recordFile[R any] struct {
 	Version int    `json:"version"`
 	Key     string `json:"key"`
 	Record  R      `json:"record"`
+}
+
+// matches reports whether name is this record's own file name. A conflict copy
+// keeps the original's contents, so its key doesn't match its name, whichever
+// way a sync service named it.
+func (f recordFile[R]) matches(name string) bool {
+	return name == recordFileName(f.Key)
 }
 
 // writeRecord atomically replaces <dir>/<table>/<key>.json.
@@ -102,8 +152,7 @@ func recordFileName(key string) string {
 
 // readRecords loads every record in <dir>/<table>, by key; a missing folder
 // is an empty table. It skips anything that isn't a .json file, and conflict
-// copies: a copy keeps the original's contents, so its key doesn't match its
-// name, whichever way a sync service named it.
+// copies.
 func readRecords[R any](s *Store, table string) (map[string]R, error) {
 	dir := filepath.Join(s.dir, table)
 	entries, err := os.ReadDir(dir)
@@ -115,19 +164,23 @@ func readRecords[R any](s *Store, table string) (map[string]R, error) {
 	}
 	records := make(map[string]R, len(entries))
 	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+		if !isJSONFile(entry) {
 			continue
 		}
 		file, err := readRecordFile[R](s, table, entry.Name())
 		if err != nil {
 			return nil, err
 		}
-		if entry.Name() != recordFileName(file.Key) {
-			continue
+		if file.matches(entry.Name()) {
+			records[file.Key] = file.Record
 		}
-		records[file.Key] = file.Record
 	}
 	return records, nil
+}
+
+// isJSONFile reports whether entry is a file that could hold a record.
+func isJSONFile(entry fs.DirEntry) bool {
+	return !entry.IsDir() && filepath.Ext(entry.Name()) == ".json"
 }
 
 // readRecord loads the one record with this key from its own file. It returns

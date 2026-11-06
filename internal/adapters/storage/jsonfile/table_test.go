@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -173,6 +174,31 @@ func TestReadingATableSkipsAFileWhoseKeyDoesNotMatchItsName(t *testing.T) {
 				t.Errorf("readRecords = %v, want only the record under key 2", got)
 			}
 		})
+	}
+}
+
+func TestConflictCopiesListsThemAcrossTables(t *testing.T) {
+	s := openTestStore(t)
+	for _, table := range []string{"notes", "things"} {
+		if err := writeRecord(s, table, "1", record{Name: "one"}); err != nil {
+			t.Fatalf("writeRecord error = %v", err)
+		}
+		original, err := os.ReadFile(filepath.Join(s.dir, table, "1.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(s.dir, table, "1 (1).json"), original, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got, err := s.ConflictCopies()
+	if err != nil {
+		t.Fatalf("ConflictCopies error = %v", err)
+	}
+	want := []string{filepath.Join("notes", "1 (1).json"), filepath.Join("things", "1 (1).json")}
+	if !slices.Equal(got, want) {
+		t.Errorf("ConflictCopies = %q, want %q", got, want)
 	}
 }
 
