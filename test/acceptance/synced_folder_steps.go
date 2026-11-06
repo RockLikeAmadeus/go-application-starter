@@ -147,11 +147,16 @@ func (w *world) theCommandLineGivesNoWarning() error {
 // warnsSyncedBy checks that the app at url warns, as its web app shows, that
 // its data folder looks synced by service.
 func warnsSyncedBy(url, service string) error {
+	return warnsSaying(url, "looks synced by "+service)
+}
+
+// warnsSaying checks that the app at url gives a warning, as its web app
+// shows, with want in it.
+func warnsSaying(url, want string) error {
 	got, err := warnings(url)
 	if err != nil {
 		return err
 	}
-	want := "looks synced by " + service
 	for _, message := range got {
 		if strings.Contains(message, want) {
 			return nil

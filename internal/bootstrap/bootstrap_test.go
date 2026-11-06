@@ -278,3 +278,53 @@ func TestApp_WarnsWhenSQLiteDataLooksSynced(t *testing.T) {
 		})
 	}
 }
+
+// A conflict copy is itself the evidence of a clash, so plain text warns about
+// it, naming each file, wherever the folder is and whatever the synced folder
+// setting says.
+func TestApp_WarnsAboutConflictCopiesOnPlainText(t *testing.T) {
+	first := filepath.Join("notes", "1 (conflicted copy).json")
+	second := filepath.Join("notes", "2 (conflicted copy).json")
+	one := "Your data folder has 1 conflict copy left by a sync service, so a change may be missing: " +
+		first + ". Keep the version you want and delete the other."
+	many := "Your data folder has 2 conflict copies left by a sync service, so changes may be missing: " +
+		first + ", " + second + ". Keep the versions you want and delete the others."
+	cases := []struct {
+		name         string
+		copies       []string
+		ignoreSynced bool
+		want         []string
+	}{
+		{name: "one copy", copies: []string{first}, want: []string{one}},
+		{name: "several copies", copies: []string{first, second}, want: []string{many}},
+		{name: "synced folder warning turned off", copies: []string{first}, ignoreSynced: true, want: []string{one}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.Mkdir(filepath.Join(dir, "notes"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			for _, name := range tc.copies {
+				record := []byte(`{"version": 2, "key": "1", "record": {}}`)
+				if err := os.WriteFile(filepath.Join(dir, name), record, 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			a, err := bootstrap.New(config.Config{
+				Storage:                  config.StorageJSONFile,
+				DataDir:                  dir,
+				ShouldIgnoreSyncedFolder: tc.ignoreSynced,
+			})
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			t.Cleanup(func() { _ = a.Close() })
+
+			if !slices.Equal(a.Warnings, tc.want) {
+				t.Errorf("Warnings = %q, want %q", a.Warnings, tc.want)
+			}
+		})
+	}
+}

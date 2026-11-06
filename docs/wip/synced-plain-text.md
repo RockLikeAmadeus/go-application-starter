@@ -114,7 +114,11 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: none, and no green. `table_bench_test.go` ran first time, and each benchmark fails if it reads the wrong number of records or finds a copy.
   - Numbers (laptop, Intel Ultra 7 155U, small records, files in the page cache): `readRecords` 6 ms at 1,000 and 67 ms at 10,000; `ConflictCopies` 5 ms and 63 ms; `readRecord` 5 µs at both.
   - Refactor: the setup writes the files directly, as `writeRecord`'s fsync took it past three minutes; the run now takes 9 s.
-- [ ] 9. `bootstrap` puts a conflict copy warning in `App.Warnings` on plain text, naming the files, one or many, regardless of `ignore_synced_folder`. Define the conflict copy steps; turns the first 5 scenarios green.
+- [x] 9. `bootstrap` puts a conflict copy warning in `App.Warnings` on plain text, naming the files, one or many, regardless of `ignore_synced_folder`. Define the conflict copy steps; turns the first 5 scenarios green.
+  - Red: `TestApp_WarnsAboutConflictCopiesOnPlainText` failed for all three cases: `Warnings` was empty.
+  - Green: `conflictCopyWarning` in `bootstrap` adds the warning on plain text. A failed scan gives no warning until 9b. `synced_plain_text_steps.go` defines the conflict copy steps.
+  - Refactor: `warnsSaying` is shared by the warning steps, and `conflictCopyPath` by the file steps. The two messages stay as whole sentences, as joining them would make the wording harder to read. The init suite ran on a copy.
+- [ ] 9b. A failed conflict copy scan is a warning saying so, and the app keeps working.
 - [ ] 10. Define the item conflict copy step; turns the sample's scenario green.
 
 Marks (`syncedfolder`, then `bootstrap`):
@@ -138,4 +142,5 @@ Run the init suite at tasks 5b, 7d, 7e, 9 and 10 too: they add code next to the 
 - Tasks 7b–7d and the benchmarks (now 8d) added after task 6, from a question about the cost of opening many files. `readRecords` opens every file even to find one record, so lookups get their own read, and benchmarks replace our estimates. This reverses 5b's note that `FindByID` and `Delete` keep the full read: a direct read can't pick up a conflict copy, because it has a different name, so only the key check is needed. The benchmarks come after 8 so that they cover the scan.
 - Task 7b split: reading is 7b, a missing file 7b2 and a mismatched key 7b3, as each needs its own test. 7b4 is new: without it, moving lookups onto `readRecord` in 7c and 7d would drop task 3b's version refusal for them.
 - Task 7d split: `FindByID` is 7d and `Delete` is 7e, as each needs its own test.
+- Task 9 split: the warning is 9, and a failed scan is 9b, as it needs its own test. The spec says the app keeps working, so a failed scan warns rather than stopping it.
 - Task 8 split: listing is 8, hidden folders 8b and files that aren't records 8c, as each needs its own test. The benchmarks move from 8b to 8d.

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/plans"
@@ -39,7 +40,7 @@ type App struct {
 	// sample:end
 	Entitlements ports.EntitlementsService
 	// Warnings are messages every front end shows the user as given, such
-	// as SQLite's data folder looking synced.
+	// as SQLite's data folder looking synced, or a conflict copy in plain text.
 	Warnings []string
 	close    func() error
 	ready    func(context.Context) error
@@ -80,6 +81,9 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		}
 		a.close = store.Close
 		a.ready = store.Ready
+		if warning, ok := conflictCopyWarning(store); ok {
+			a.Warnings = append(a.Warnings, warning)
+		}
 		// sample:start
 		itemRepo = jsonfile.NewItemRepository(store)
 		// sample:end
@@ -163,6 +167,22 @@ func syncedFolderWarning(cfg config.Config) (string, bool) {
 	}
 	return "Your data folder looks synced by " + service + ". A sync service can damage SQLite data: " +
 		"move the data folder out of it, or keep your data as plain text.", true
+}
+
+// conflictCopyWarning warns about the conflict copies in a plain-text data
+// folder, naming each one.
+func conflictCopyWarning(store *jsonfile.Store) (string, bool) {
+	copies, err := store.ConflictCopies()
+	if err != nil || len(copies) == 0 {
+		return "", false
+	}
+	names := strings.Join(copies, ", ")
+	if len(copies) == 1 {
+		return "Your data folder has 1 conflict copy left by a sync service, so a change may be missing: " +
+			names + ". Keep the version you want and delete the other.", true
+	}
+	return fmt.Sprintf("Your data folder has %d conflict copies left by a sync service, so changes may be missing: "+
+		"%s. Keep the versions you want and delete the others.", len(copies), names), true
 }
 
 // localEntitlementsProvider answers LocalPlan, from plansFile or else the plans file
