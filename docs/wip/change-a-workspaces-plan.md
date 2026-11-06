@@ -105,7 +105,10 @@ Wiring:
    - Red: `TestAdminSetPlanReportsThatBillingRefused` fails, `admin set-plan = unknown command "admin" for "starter", want the refusal`.
    - Green: `admin set-plan` loads the settings and returns `newBilling`'s error; `main` passes `bootstrap.NewBilling`.
    - Refactor: the `cli` package comment names the driving ports, not just `ItemService`, and `admin`'s help is plainer; no code change. The ignored settings error stays for 11d.
-11b. [ ] `admin set-plan` calls `ChangePlan` and says which plan the workspace is now on.
+11b. [x] `admin set-plan` calls `ChangePlan` and says which plan the workspace is now on.
+   - Red: `TestAdminSetPlanMovesTheWorkspaceAndSaysWhichPlanItIsOn` fails, `ChangePlan("", ""), want ("ws-a", "pro")`.
+   - Green: `admin set-plan` calls `ChangePlan` with its two arguments and prints the new plan; `ChangePlan`'s error is ignored until 11c, the arguments unchecked until 11e.
+   - Refactor: the `admin` tests share `runAdmin`; no production change. The ignored `ChangePlan` error stays for 11c, the unchecked arguments for 11e.
 11c. [ ] `admin set-plan` reports `ChangePlan`'s refusal, and doesn't say the workspace moved.
 11d. [ ] `admin set-plan` reports settings it can't load.
 11e. [ ] `admin set-plan` refuses anything but a workspace and a plan.

@@ -4,23 +4,61 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
+
+// recordingBilling remembers the plan change it was asked for.
+type recordingBilling struct {
+	workspace domain.WorkspaceID
+	plan      string
+}
+
+func (b *recordingBilling) ChangePlan(_ context.Context, workspace domain.WorkspaceID, plan string) error {
+	b.workspace, b.plan = workspace, plan
+	return nil
+}
+
+// runAdmin runs `starter admin ARGS...` with the given billing factory.
+func runAdmin(t *testing.T, newBilling cli.BillingFactory, out io.Writer, args ...string) error {
+	t.Helper()
+	cmd := cli.NewRootCmd(bootstrap.New, newBilling, computer(t.TempDir(), nil), out)
+	cmd.SetArgs(append([]string{"admin"}, args...))
+	return cmd.ExecuteContext(context.Background())
+}
 
 func TestAdminSetPlanReportsThatBillingRefused(t *testing.T) {
 	refused := errors.New("refused")
 	newBilling := func(config.Config) (ports.BillingService, error) {
 		return nil, refused
 	}
-	cmd := cli.NewRootCmd(bootstrap.New, newBilling, computer(t.TempDir(), nil), &bytes.Buffer{})
-	cmd.SetArgs([]string{"admin", "set-plan", "ws-a", "pro"})
 
-	if err := cmd.ExecuteContext(context.Background()); !errors.Is(err, refused) {
+	if err := runAdmin(t, newBilling, &bytes.Buffer{}, "set-plan", "ws-a", "pro"); !errors.Is(err, refused) {
 		t.Errorf("admin set-plan = %v, want the refusal", err)
+	}
+}
+
+func TestAdminSetPlanMovesTheWorkspaceAndSaysWhichPlanItIsOn(t *testing.T) {
+	billing := &recordingBilling{}
+	newBilling := func(config.Config) (ports.BillingService, error) {
+		return billing, nil
+	}
+	var out bytes.Buffer
+
+	if err := runAdmin(t, newBilling, &out, "set-plan", "ws-a", "pro"); err != nil {
+		t.Fatalf("admin set-plan: %v", err)
+	}
+	if billing.workspace != "ws-a" || billing.plan != "pro" {
+		t.Errorf("ChangePlan(%q, %q), want (\"ws-a\", \"pro\")", billing.workspace, billing.plan)
+	}
+	if want := "ws-a is now on the pro plan"; !strings.Contains(out.String(), want) {
+		t.Errorf("output = %q, want it to contain %q", out.String(), want)
 	}
 }
