@@ -150,7 +150,7 @@ func (j *journey) iAskTheCommandLineForHelp() error {
 }
 
 func (j *journey) itemExportIsListedAsDisabled() error {
-	if err := j.term.WaitFor("Export the items as CSV (disabled on your plan)", timeout); err != nil {
+	if err := j.term.WaitFor("Export the items as CSV (not included in your current plan)", timeout); err != nil {
 		return err
 	}
 	return j.succeeds()

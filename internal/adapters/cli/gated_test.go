@@ -30,7 +30,7 @@ func TestHelpNotesGatedCommandsByThePlan(t *testing.T) {
 		want   string // the command's line in the help, "" when not listed
 	}{
 		{"on", plansWith(`"show-locked"`, `"reports"`), nil, listed},
-		{"locked, in the local edition", plansWith(`"show-locked"`, ``), nil, listed + " (disabled on your plan)"},
+		{"locked, in the local edition", plansWith(`"show-locked"`, ``), nil, listed + " (not included in your current plan)"},
 		{"hidden", plansWith(`"hide"`, ``), nil, ""},
 		{"locked, with a server's hint", "", &domain.Entitlements{Plan: "free", Features: map[string]domain.Feature{
 			"reports": {Key: "reports", Name: "Reports", WhenOff: domain.ShowLocked, AvailableOn: []string{"pro"}},

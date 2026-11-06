@@ -124,7 +124,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestHelpNotesGatedCommandsByThePlan` "locked, with several plans in a server's hint" case pins the agreed note; failed on "available on the pro or team plans".
   - Green: `note` uses the agreed text for several plans, through `planList`, now exported as `PlanList`.
   - Refactor: nothing changed. Left `PlansPhrase`'s several-plans form for task 5d: the TUI still uses it, and folding the CLI's case into it would change the TUI note.
-- [ ] 5cc. The CLI plan note, with no plan to name.
+- [x] 5cc. The CLI plan note, with no plan to name.
+  - Red: `TestHelpNotesGatedCommandsByThePlan` "locked, in the local edition" case pins the agreed note; failed on "(disabled on your plan)".
+  - Green: `note` uses the agreed text with no plan to name; the terminal journey's expected text too.
+  - Refactor: nothing changed. The three notes stay whole so each reads as written; the Gherkin's "disabled" stays, as users don't read it. `docs/features.md` still quotes the old text, for task 14.
 - [ ] 5d. The TUI plan notes.
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.
 - [ ] 7. The local plan, over a server, internal and not found errors.
