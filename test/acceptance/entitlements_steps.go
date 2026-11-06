@@ -18,6 +18,7 @@ func (w *world) registerEntitlementsSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^my workspace is on the "([^"]*)" plan$`, w.moveMyWorkspaceToThePlan)
 	sc.Step(`^my workspace moves to the "([^"]*)" plan$`, w.moveMyWorkspaceToThePlan)
 	sc.Step(`^an admin moves my workspace to the "([^"]*)" plan$`, w.moveMyWorkspaceToThePlan)
+	sc.Step(`^an admin tries to move my workspace to the "([^"]*)" plan$`, w.anAdminTriesToMoveMyWorkspaceToThePlan)
 	sc.Step(`^my workspace's plan is "([^"]*)"$`, w.myWorkspacesPlanIs)
 }
 
@@ -42,6 +43,11 @@ func (w *world) moveMyWorkspaceToThePlan(ctx context.Context, plan string) error
 		return err
 	}
 	return w.billing.ChangePlan(ctx, ws, plan)
+}
+
+func (w *world) anAdminTriesToMoveMyWorkspaceToThePlan(ctx context.Context, plan string) error {
+	w.lastErr = w.moveMyWorkspaceToThePlan(ctx, plan)
+	return nil
 }
 
 func (w *world) myWorkspacesPlanIs(ctx context.Context, plan string) error {
