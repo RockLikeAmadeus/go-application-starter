@@ -109,7 +109,10 @@ Wiring:
    - Red: `TestAdminSetPlanMovesTheWorkspaceAndSaysWhichPlanItIsOn` fails, `ChangePlan("", ""), want ("ws-a", "pro")`.
    - Green: `admin set-plan` calls `ChangePlan` with its two arguments and prints the new plan; `ChangePlan`'s error is ignored until 11c, the arguments unchecked until 11e.
    - Refactor: the `admin` tests share `runAdmin`; no production change. The ignored `ChangePlan` error stays for 11c, the unchecked arguments for 11e.
-11c. [ ] `admin set-plan` reports `ChangePlan`'s refusal, and doesn't say the workspace moved.
+11c. [x] `admin set-plan` reports `ChangePlan`'s refusal, and doesn't say the workspace moved.
+   - Red: `TestAdminSetPlanReportsChangePlansRefusalAndDoesNotSayTheWorkspaceMoved` fails, `admin set-plan = <nil>, want the refusal`.
+   - Green: `admin set-plan` returns `ChangePlan`'s error before printing.
+   - Refactor: the `admin` tests share `usingBilling`, replacing two copies of the factory; no production change. The refusing factory stays inline, its only use.
 11d. [ ] `admin set-plan` reports settings it can't load.
 11e. [ ] `admin set-plan` refuses anything but a workspace and a plan.
 11f. [ ] `admin set-plan --server` reaches `ErrNoPlanChangesOverAServer`, through the real `bootstrap.NewBilling`.
