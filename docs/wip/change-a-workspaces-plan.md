@@ -63,7 +63,9 @@ Storage:
    - Red: `TestWorkspacePlanRepositoryContract` (jsonfile) fails all four cases against a stub, e.g. `err = <nil>, want ErrNotFound`.
    - Green: `workspace_plans.json`, one record per workspace ID, through `readTable`/`writeTable`.
    - Refactor: the `Store` package comment no longer names items, `mu` loses its `nolint:unused`, and the `table_test.go` comment no longer assumes a project with no repositories; no behaviour change. The read-modify-write stays in each repository: the only other copy is the sample's.
-6b. [ ] jsonfile keeps the plans after the store is reopened.
+6b. [x] jsonfile keeps the plans after the store is reopened.
+   - No red: `TestWorkspacePlansSurviveReopen` passed straight away, because task 6 already writes through `writeTable`. Kept as a guard: a repository holding plans in memory passes the contract but fails it, `after reopen PlanOf = "", not found, want "pro"`. No green.
+   - Refactor: nothing worth changing; the test is short, and `openStore` can't open the first store because it must close before the reopen.
 7. [ ] sqlite `WorkspacePlanRepository` (a new template migration) passes the contract, and keeps the plans after reopening. Run `task test:init` (the migration comes after the sample's `00002_items.sql`).
 
 Plans adapter:
