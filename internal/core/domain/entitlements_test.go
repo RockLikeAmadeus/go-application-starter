@@ -190,17 +190,17 @@ func TestEntitlements_CheckFeature(t *testing.T) {
 		"off and locked, with no hint": {
 			entitlementsWithFeature(exportFeature(false, domain.ShowLocked)),
 			&domain.FeatureError{Feature: "item-export", Name: "Item export"},
-			"Item export isn't on your plan",
+			"Item export is not included in your current plan.",
 		},
 		"off and hidden": {
 			entitlementsWithFeature(exportFeature(false, domain.Hide, "pro")),
 			&domain.FeatureError{Feature: "item-export", Name: "Item export"},
-			"Item export isn't on your plan",
+			"Item export is not included in your current plan.",
 		},
 		"unknown": {
 			domain.Entitlements{Plan: "pro"},
 			&domain.FeatureError{Feature: "item-export", Name: "item-export"},
-			"item-export isn't on your plan",
+			"item-export is not included in your current plan.",
 		},
 	}
 	for name, tc := range cases {

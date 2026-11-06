@@ -63,11 +63,11 @@ type FeatureError struct {
 }
 
 func (e *FeatureError) Error() string {
-	msg := e.Name + " isn't on your plan"
+	refusal := e.Name + " is not included in your current plan."
 	if len(e.AvailableOn) == 0 {
-		return msg
+		return refusal
 	}
-	upgrade := e.Name + " is not included in your current plan. To use this feature, please upgrade to "
+	upgrade := refusal + " To use this feature, please upgrade to "
 	if len(e.AvailableOn) == 1 {
 		return upgrade + PlansPhrase(e.AvailableOn) + "."
 	}

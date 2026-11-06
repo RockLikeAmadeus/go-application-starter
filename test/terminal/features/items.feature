@@ -38,7 +38,7 @@ Feature: Items in a terminal
     When I ask the command line for help
     Then item export is <listed> in the help
     When I export the items with the command line
-    Then it fails, saying "Item export isn't on your plan"
+    Then it fails, saying "Item export is not included in your current plan."
 
     Examples:
       | shown        | listed                          |
