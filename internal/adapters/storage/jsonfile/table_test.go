@@ -2,10 +2,13 @@ package jsonfile
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 // The repositories exercise these helpers too; testing them directly covers
@@ -189,6 +192,18 @@ func TestReadRecordReturnsOneRecordWithoutReadingAnyOther(t *testing.T) {
 	}
 	if got != (record{Name: "one"}) {
 		t.Errorf("readRecord = %+v, want the record named one", got)
+	}
+}
+
+func TestReadRecordOfAMissingFileIsNotFound(t *testing.T) {
+	s := openTestStore(t)
+	if err := writeRecord(s, "things", "1", record{Name: "one"}); err != nil {
+		t.Fatalf("writeRecord error = %v", err)
+	}
+
+	_, err := readRecord[record](s, "things", "2")
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("readRecord error = %v, want domain.ErrNotFound", err)
 	}
 }
 

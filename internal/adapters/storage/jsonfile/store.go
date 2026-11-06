@@ -23,6 +23,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 // ErrLocked is returned by Open when another process holds the data directory.
@@ -131,9 +133,13 @@ func readRecords[R any](s *Store, table string) (map[string]R, error) {
 	return records, nil
 }
 
-// readRecord loads the one record with this key from its own file.
+// readRecord loads the one record with this key from its own file, or
+// returns domain.ErrNotFound if there is no such file.
 func readRecord[R any](s *Store, table, key string) (R, error) {
 	file, err := readRecordFile[R](s, table, recordFileName(key))
+	if errors.Is(err, fs.ErrNotExist) {
+		return file.Record, domain.ErrNotFound
+	}
 	return file.Record, err
 }
 

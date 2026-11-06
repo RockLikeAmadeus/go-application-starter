@@ -74,7 +74,10 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: `TestReadRecordReturnsOneRecordWithoutReadingAnyOther` failed: the stub returned an empty record.
   - Green: `readRecord` reads and decodes `recordFileName(key)` alone. No not found, key or version checks yet (7b2–7b4).
   - Refactor: `readRecordFile` holds the read and decode for `readRecords` and `readRecord`. The version check stays in `readRecords` until 7b4 moves it in.
-- [ ] 7b2. `readRecord` returns not found for a missing file.
+- [x] 7b2. `readRecord` returns not found for a missing file.
+  - Red: `TestReadRecordOfAMissingFileIsNotFound` failed: the error was the "no such file or directory" one, not `domain.ErrNotFound`.
+  - Green: `readRecord` turns a missing file into `domain.ErrNotFound`.
+  - Refactor: nothing. `readRecord` is four lines; 7b3 and 7b4 add to it, so its shape is better judged after them.
 - [ ] 7b3. `readRecord` returns not found for a file whose key doesn't match its name.
 - [ ] 7b4. `readRecord` refuses a file with an unknown version.
 - [ ] 7c. `WorkspacePlanRepository.PlanOf` reads only that workspace's file.
