@@ -193,13 +193,13 @@ func conflictCopyWarning(store *jsonfile.Store) (string, bool) {
 }
 
 // otherDeviceWarning warns when another device's mark says it has a plain-text
-// data folder in use, naming the device.
+// data folder in use, naming every such device.
 func otherDeviceWarning(cfg config.Config) (string, bool) {
 	devices := syncedfolder.OtherDevices(cfg.DataDir, "", system.Clock{}.Now())
 	if len(devices) == 0 {
 		return "", false
 	}
-	return "Your data folder looks in use on " + devices[0] + ". " +
+	return "Your data folder looks in use on " + strings.Join(devices, ", ") + ". " +
 		"Using it from two devices at once can lose changes: close the app there first.", true
 }
 

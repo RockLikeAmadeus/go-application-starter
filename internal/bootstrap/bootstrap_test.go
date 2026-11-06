@@ -353,6 +353,28 @@ func TestApp_WarnsWhenAnotherDeviceIsUsingPlainText(t *testing.T) {
 	}
 }
 
+// Each device could be the one to close, so the warning names them all.
+func TestApp_WarningNamesEveryOtherDevice(t *testing.T) {
+	dir := t.TempDir()
+	for _, device := range []string{"laptop", "phone"} {
+		if err := syncedfolder.WriteMark(dir, device, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	a, err := bootstrap.New(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	want := []string{"Your data folder looks in use on laptop, phone. " +
+		"Using it from two devices at once can lose changes: close the app there first."}
+	if !slices.Equal(a.Warnings, want) {
+		t.Errorf("Warnings = %q, want %q", a.Warnings, want)
+	}
+}
+
 // A scan that fails can't say there are no conflict copies, so plain text says
 // it couldn't look, and the app still opens: the scan guards the data rather
 // than being needed to reach it.

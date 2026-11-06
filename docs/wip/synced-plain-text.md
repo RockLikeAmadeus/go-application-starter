@@ -167,7 +167,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestApp_WarnsWhenAnotherDeviceIsUsingPlainText` failed: `Warnings` was empty.
   - Green: `otherDeviceWarning` names the first device from `OtherDevices`; device steps defined; the 3 warning scenarios pass.
   - Refactor: `commandLineWarnsSaying` replaces the three copies of the command line check. Listing every device waits for 13b.
-- [ ] 13b. The warning names every other device.
+- [x] 13b. The warning names every other device.
+  - Red: `TestApp_WarningNamesEveryOtherDevice` failed: the warning named `laptop` but not `phone`.
+  - Green: `otherDeviceWarning` joins every device from `OtherDevices`, with ", " like the conflict copy list.
+  - Refactor: only its doc comment. The two warning tests share their setup; left until 13c shows what it needs.
 - [ ] 13c. This device's own mark gives no warning.
 - [ ] 14. `bootstrap` marks the folder only when it looks synced and `ignore_synced_folder` is off, and `App.Close` stops the mark before the store closes. Define the mark steps; turns the last 4 scenarios green.
 
