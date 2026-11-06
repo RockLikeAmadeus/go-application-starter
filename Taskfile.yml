@@ -298,6 +298,11 @@ tasks:
     cmds:
       - pnpm --dir web test
 
+  bench:
+    desc: "Go benchmarks: not part of test or check, as a slowdown fails nothing (e.g. task bench -- -bench ConflictCopies)"
+    cmds:
+      - go test ./internal/... -run '^$' -bench . -benchmem {{.CLI_ARGS}}
+
   accept:
     desc: "Godog acceptance tests — the BDD outer loop (e.g. task accept -- --godog.tags=@wip)"
     cmds:

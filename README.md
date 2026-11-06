@@ -60,6 +60,7 @@ task run:desktop                 # desktop app in a native window, data in your 
 task mobile:android:run          # Android app on the emulator or a phone, data on the device (needs the Android tools, see docs/mobile.md)
 task test                        # unit tests (Go + web)
 task accept                      # Godog acceptance tests
+task bench                       # Go benchmarks, only when you run them
 task e2e                         # browser tests against the real server binary
 task e2e:terminal                # terminal journeys: the built CLI and TUI in a terminal (Unix only)
 task gen                         # regenerate code after editing api/openapi.yaml

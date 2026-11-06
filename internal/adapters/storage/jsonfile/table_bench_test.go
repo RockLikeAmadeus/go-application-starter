@@ -9,12 +9,9 @@ import (
 	"testing"
 )
 
-// Run these with:
-//
-//	go test ./internal/adapters/storage/jsonfile/ -run '^$' -bench . -benchmem
-//
-// The files are in the page cache, so the times are for reading data this
-// computer already holds, not for a first read after a restart.
+// Run these with task bench. The files are in the page cache, so the times are
+// for reading data this computer already holds, not for a first read after a
+// restart.
 
 var benchmarkSizes = []int{1_000, 10_000}
 

@@ -47,6 +47,7 @@ Never stage, commit, push or pull unless I explicitly ask. That includes `git ad
 |---|---|
 | Unit tests (Go race + Vitest) | `task test` (`task test:go`, `task test:web`) |
 | One Go test | `go test ./internal/core/app/ -run TestName` |
+| Go benchmarks | `task bench` · narrow it: `task bench -- -bench ConflictCopies` (never run by `task check` or CI) |
 | Acceptance (Godog) | `task accept` · only WIP: `task accept -- --godog.tags=@wip` · one driver: `task accept -- -run 'TestFeatures/memory'` |
 | Browser e2e (playwright-bdd) | `task e2e` (builds the SPA and starts the Go server itself) |
 | Terminal journeys (Godog) | `task e2e:terminal` (builds `starter` and `server`, runs them in a pseudo-terminal; Unix only) · only WIP: `task e2e:terminal -- --godog.tags=@wip` |
