@@ -134,11 +134,18 @@ func NewEntitlementsService(cfg config.Config) (ports.EntitlementsService, error
 // whose plan is LocalPlan.
 var ErrLocalPlanIsFixed = errors.New("the local edition's plan is set when the app is built")
 
+// ErrNoPlanChangesOverAServer is the refusal to change a plan with --server.
+var ErrNoPlanChangesOverAServer = errors.New("a plan can't be changed over a server yet")
+
 // NewBilling returns the billing service, for `starter admin set-plan`. Every
 // copy is the local edition until sign-in adds the hosted one, so it always
-// refuses with ErrLocalPlanIsFixed, opening no storage. It will wire the
-// stored plans for the hosted edition.
-func NewBilling(_ config.Config) (ports.BillingService, error) {
+// refuses with ErrLocalPlanIsFixed, or ErrNoPlanChangesOverAServer with
+// cfg.ServerURL set, opening no storage. It will wire the stored plans for
+// the hosted edition.
+func NewBilling(cfg config.Config) (ports.BillingService, error) {
+	if cfg.ServerURL != "" {
+		return nil, ErrNoPlanChangesOverAServer
+	}
 	return nil, ErrLocalPlanIsFixed
 }
 

@@ -157,6 +157,16 @@ func TestNewBilling_RefusesInTheLocalEditionWithoutOpeningStorage(t *testing.T) 
 	}
 }
 
+// The admin command works beside the hosted edition's storage and no endpoint
+// changes plans, so asking for billing over a server is refused.
+func TestNewBilling_RefusesOverAServer(t *testing.T) {
+	_, err := bootstrap.NewBilling(config.Config{ServerURL: "http://localhost:1"})
+
+	if !errors.Is(err, bootstrap.ErrNoPlanChangesOverAServer) {
+		t.Errorf("err = %v, want ErrNoPlanChangesOverAServer", err)
+	}
+}
+
 // sample:start
 
 // The shipped plans file has the sample's item export: on for the local and
