@@ -114,6 +114,7 @@ Each loads when you read a file matching its paths. Read one directly when a tas
 | File | Covers |
 |---|---|
 | `naming.md` | naming types after what their values are, the "is a" test, renaming |
+| `user-facing-text.md` | agreeing wording with me first, formal style, the Oxford comma |
 | `work-tracking.md` | keeping `docs/wip/` task lists and `docs/plans/` plans |
 | `workspaces-and-plans.md` | workspace scoping, entitlements, the local plan and plans file, changing a plan, domain errors |
 | `storage.md` | new backends, the jsonfile lock and shared data folder, SQLite (ADR 7) |

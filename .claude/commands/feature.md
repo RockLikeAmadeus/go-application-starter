@@ -16,6 +16,7 @@ Follow these steps exactly, then STOP. Do **not** write production code.
    - One behaviour per scenario. Cover the happy path, the business rules, and the important failures.
    - Prefer `Scenario Outline` + `Examples` for rule variations.
    - Tag the new scenarios `@wip`.
+   - If a scenario or the spec quotes user-facing text, agree it with me first (`.claude/rules/user-facing-text.md`). Otherwise, describe the meaning and leave the wording to the cycle that writes it.
    - Only add a browser journey under `web/e2e/features/` if the feature has user-visible UI wiring that the Godog layer cannot prove. Keep those few and thin.
    - Likewise, only add a terminal journey under `test/terminal/features/` if the feature has CLI or TUI wiring the Godog layer cannot prove (options, output, exit status, keys). Keep those few and thin too.
 4. **Prove they fail.** Run `task accept -- --godog.tags=@wip` and confirm the new scenarios fail or are undefined for the *right* reason. Do not write step definitions that contain business logic.

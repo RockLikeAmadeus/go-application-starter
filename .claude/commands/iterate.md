@@ -21,7 +21,8 @@ Run the three steps below in order, each exactly as its own command would (`.cla
 - the task is ambiguous, or the decisions in the `docs/wip/` file don't settle how to do it;
 - making it pass needs more than the task describes, or changes the plan (a new port, a changed API contract, a dropped or reordered task);
 - an existing test has a bug, or something is red that this cycle didn't break;
-- a refactoring would change behaviour or a public contract.
+- a refactoring would change behaviour or a public contract;
+- the cycle adds or changes user-facing text (`.claude/rules/user-facing-text.md`): always, before the test that pins it. This is never a conventional answer.
 
 Anything with a conventional answer, or that the code, CLAUDE.md or the `docs/wip/` file settles, isn't a question: decide, and say so in the summary.
 
