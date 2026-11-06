@@ -40,20 +40,26 @@ func OtherDevices(dir, thisDevice string, now time.Time) []string {
 
 // WriteMark leaves device's mark in dir, dated now.
 func WriteMark(dir, device string, now time.Time) error {
-	marksDir := filepath.Join(dir, deviceMarksFolder)
-	if err := os.MkdirAll(marksDir, 0o750); err != nil {
+	path := markPath(dir, device)
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return fmt.Errorf("create device marks folder: %w", err)
 	}
 	data, err := json.Marshal(deviceMark{Device: device, Time: now})
 	if err != nil {
 		return fmt.Errorf("encode device mark: %w", err)
 	}
-	return replaceMark(filepath.Join(marksDir, device+".json"), data)
+	return replaceMark(path, data)
+}
+
+// markPath returns where device's mark in dir goes.
+func markPath(dir, device string) string {
+	return filepath.Join(dir, deviceMarksFolder, device+".json")
 }
 
 // KeepMark renews device's mark in dir on each tick, dated by the tick, until
-// stop is called. stop returns once the renewing has ended. A mark that can't
-// be written is skipped: this is a best guess, so it never stops the app.
+// stop is called. stop ends the renewing and then removes the mark. A mark that
+// can't be written or removed is skipped: this is a best guess, so it never
+// stops the app, and a mark left behind goes stale.
 func KeepMark(dir, device string, ticks <-chan time.Time) (stop func()) {
 	stopping := make(chan struct{})
 	stopped := make(chan struct{})
@@ -71,6 +77,7 @@ func KeepMark(dir, device string, ticks <-chan time.Time) (stop func()) {
 	return func() {
 		close(stopping)
 		<-stopped
+		_ = os.Remove(markPath(dir, device))
 	}
 }
 

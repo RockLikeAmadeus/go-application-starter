@@ -2,6 +2,8 @@ package syncedfolder_test
 
 import (
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -187,5 +189,19 @@ func TestKeepMarkRenewsTheMarkOnEachTick(t *testing.T) {
 	mark := readMarkFile(t, dir, "desktop")
 	if !mark.Time.Equal(secondTick) {
 		t.Errorf("mark time = %v, want the latest tick, %v", mark.Time, secondTick)
+	}
+}
+
+func TestKeepMarkRemovesTheMarkOnStopping(t *testing.T) {
+	dir := t.TempDir()
+	ticks := make(chan time.Time)
+	stop := syncedfolder.KeepMark(dir, "desktop", ticks)
+	sendTick(t, ticks, markTestNow)
+
+	stop()
+
+	_, err := os.Stat(filepath.Join(dir, ".devices", "desktop.json"))
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("stat of the mark after stopping: err = %v, want it gone", err)
 	}
 }

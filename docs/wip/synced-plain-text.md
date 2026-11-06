@@ -159,7 +159,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestKeepMarkRenewsTheMarkOnEachTick` failed: nothing took the tick.
   - Green: `KeepMark` writes the mark on each tick in a goroutine, dated by the tick; its `stop` waits for the goroutine.
   - Refactor: `readMarkFile` in the tests replaces the two copies of the read and decode. `KeepMark` stays as it is until 12d adds removal.
-- [ ] 12d. A mark is removed on stopping.
+- [x] 12d. A mark is removed on stopping.
+  - Red: `TestKeepMarkRemovesTheMarkOnStopping` failed: the mark was still there after stopping.
+  - Green: `stop` removes the mark once the goroutine has ended.
+  - Refactor: `markPath` holds the mark's path, and `KeepMark`'s doc comment covers removal and why a failure is ignored.
 - [ ] 13. `bootstrap` warns about other devices on plain text, naming them. Define the device steps; turns the 3 warning scenarios green.
 - [ ] 14. `bootstrap` marks the folder only when it looks synced and `ignore_synced_folder` is off, and `App.Close` stops the mark before the store closes. Define the mark steps; turns the last 4 scenarios green.
 
