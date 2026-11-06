@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"time"
 
@@ -27,6 +29,29 @@ func (w *world) registerItemSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^I am told the item was not found$`, w.iAmToldNotFound)
 	sc.Step(`^I list the items from the command line$`, w.iListTheItemsFromTheCommandLine)
 	sc.Step(`^the command line shows "([^"]*)"$`, w.theCommandLineShows)
+	sc.Step(`^each item has its own file in the data folder$`, w.eachItemHasItsOwnFile)
+}
+
+// eachItemHasItsOwnFile checks the files that the plain-text storage keeps,
+// one per item, by the item's ID. That's what a sync service sees.
+func (w *world) eachItemHasItsOwnFile(ctx context.Context) error {
+	dataDir, err := w.desktopAppsDataFolder()
+	if err != nil {
+		return err
+	}
+	items, err := w.items.ListItems(ctx)
+	if err != nil {
+		return err
+	}
+	if len(items) == 0 {
+		return errors.New("there are no items to check")
+	}
+	for _, item := range items {
+		if _, err := os.Stat(filepath.Join(dataDir, "items", item.ID+".json")); err != nil {
+			return fmt.Errorf("item %q has no file of its own: %w", item.Name, err)
+		}
+	}
+	return nil
 }
 
 func (w *world) iListTheItemsFromTheCommandLine(ctx context.Context) error {

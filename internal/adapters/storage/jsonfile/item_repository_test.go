@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -35,9 +34,39 @@ func TestItemsSurviveReopen(t *testing.T) {
 	if err != nil || got.Name != "Alpha" {
 		t.Fatalf("after reopen got %+v, %v", got, err)
 	}
+}
 
-	data, _ := os.ReadFile(filepath.Join(dir, "items.json"))
-	if !strings.Contains(string(data), `"version": 1`) {
-		t.Errorf("items.json missing version header:\n%s", data)
+func TestEachItemIsKeptInItsOwnFileAndSavingOneLeavesTheOthersUntouched(t *testing.T) {
+	dir := t.TempDir()
+	ctx := context.Background()
+	repo := jsonfile.NewItemRepository(openStore(t, dir))
+	saveItem := func(id, name string) {
+		t.Helper()
+		if err := repo.Save(ctx, domain.Item{ID: id, Name: name}); err != nil {
+			t.Fatalf("Save %s: %v", id, err)
+		}
+	}
+	saveItem("a", "Alpha")
+	saveItem("b", "Beta")
+
+	// A hand-edited layout that a rewrite of b's file would lose.
+	otherItem := filepath.Join(dir, "items", "b.json")
+	data, err := os.ReadFile(otherItem)
+	if err != nil {
+		t.Fatalf("reading b's file: %v", err)
+	}
+	edited := append([]byte("\n"), data...)
+	if err := os.WriteFile(otherItem, edited, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	saveItem("a", "Alpha renamed")
+
+	got, err := os.ReadFile(otherItem)
+	if err != nil {
+		t.Fatalf("reading b's file after saving a: %v", err)
+	}
+	if string(got) != string(edited) {
+		t.Errorf("saving a changed b's file:\n%s\nwant:\n%s", got, edited)
 	}
 }

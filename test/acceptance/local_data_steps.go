@@ -48,19 +48,24 @@ func (w *world) iAskChoosingTheDataFolder(ctx context.Context, name string) erro
 }
 
 func (w *world) itNamesTheDesktopAppsDataFolder() error {
-	if w.local == nil {
-		return errNoLocalComputer
-	}
-	env := w.local.configEnv()
-	settingsFile, err := config.LocalConfigFile(env)
-	if err != nil {
-		return err
-	}
-	want, err := config.LocalDataDir(env, settingsFile)
+	want, err := w.desktopAppsDataFolder()
 	if err != nil {
 		return err
 	}
 	return w.commandLineSaid(want)
+}
+
+// desktopAppsDataFolder is the data folder the desktop app's settings choose.
+func (w *world) desktopAppsDataFolder() (string, error) {
+	if w.local == nil {
+		return "", errNoLocalComputer
+	}
+	env := w.local.configEnv()
+	settingsFile, err := config.LocalConfigFile(env)
+	if err != nil {
+		return "", err
+	}
+	return config.LocalDataDir(env, settingsFile)
 }
 
 func (w *world) itNamesTheDataFolder(name string) error {

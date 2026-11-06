@@ -41,9 +41,9 @@ func (r itemRecord) toDomain() domain.Item {
 	}
 }
 
-// ItemRepository persists Items to <dir>/items.json. Reads go to disk each
-// time so the file stays the single source of truth and can be hand-edited
-// while the process is stopped.
+// ItemRepository persists each Item to <dir>/items/<id>.json. Reads go to disk
+// each time so the files stay the single source of truth and can be
+// hand-edited while the process is stopped.
 type ItemRepository struct {
 	store *Store
 }
@@ -57,18 +57,13 @@ func NewItemRepository(store *Store) *ItemRepository {
 func (r *ItemRepository) Save(_ context.Context, item domain.Item) error {
 	r.store.mu.Lock()
 	defer r.store.mu.Unlock()
-	records, err := readTable[itemRecord](r.store, itemsTable)
-	if err != nil {
-		return err
-	}
-	records[item.ID] = toRecord(item)
-	return writeTable(r.store, itemsTable, records)
+	return writeRecord(r.store, itemsTable, item.ID, toRecord(item))
 }
 
 func (r *ItemRepository) FindByID(_ context.Context, workspace domain.WorkspaceID, id string) (domain.Item, error) {
 	r.store.mu.RLock()
 	defer r.store.mu.RUnlock()
-	records, err := readTable[itemRecord](r.store, itemsTable)
+	records, err := readRecords[itemRecord](r.store, itemsTable)
 	if err != nil {
 		return domain.Item{}, err
 	}
@@ -82,7 +77,7 @@ func (r *ItemRepository) FindByID(_ context.Context, workspace domain.WorkspaceI
 func (r *ItemRepository) FindAll(_ context.Context, workspace domain.WorkspaceID) ([]domain.Item, error) {
 	r.store.mu.RLock()
 	defer r.store.mu.RUnlock()
-	records, err := readTable[itemRecord](r.store, itemsTable)
+	records, err := readRecords[itemRecord](r.store, itemsTable)
 	if err != nil {
 		return nil, err
 	}
@@ -96,15 +91,14 @@ func (r *ItemRepository) FindAll(_ context.Context, workspace domain.WorkspaceID
 func (r *ItemRepository) Delete(_ context.Context, workspace domain.WorkspaceID, id string) error {
 	r.store.mu.Lock()
 	defer r.store.mu.Unlock()
-	records, err := readTable[itemRecord](r.store, itemsTable)
+	records, err := readRecords[itemRecord](r.store, itemsTable)
 	if err != nil {
 		return err
 	}
 	if _, ok := lookup(records, workspace, id); !ok {
 		return domain.ErrNotFound
 	}
-	delete(records, id)
-	return writeTable(r.store, itemsTable, records)
+	return deleteRecord(r.store, itemsTable, id)
 }
 
 // lookup returns the workspace's record with the given ID. A record in
