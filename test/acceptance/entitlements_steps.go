@@ -15,8 +15,9 @@ import (
 // workspace is on. "My workspace" is the one the scenario works in.
 func (w *world) registerEntitlementsSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^the "([^"]*)" plan has no limits$`, w.thePlanHasNoLimits)
-	sc.Step(`^my workspace is on the "([^"]*)" plan$`, w.myWorkspaceIsOnThePlan)
-	sc.Step(`^my workspace moves to the "([^"]*)" plan$`, w.myWorkspaceIsOnThePlan)
+	sc.Step(`^my workspace is on the "([^"]*)" plan$`, w.moveMyWorkspaceToThePlan)
+	sc.Step(`^my workspace moves to the "([^"]*)" plan$`, w.moveMyWorkspaceToThePlan)
+	sc.Step(`^an admin moves my workspace to the "([^"]*)" plan$`, w.moveMyWorkspaceToThePlan)
 	sc.Step(`^my workspace's plan is "([^"]*)"$`, w.myWorkspacesPlanIs)
 }
 
@@ -32,7 +33,7 @@ func (w *world) thePlanHasNoLimits(plan string) error {
 	return nil
 }
 
-func (w *world) myWorkspaceIsOnThePlan(ctx context.Context, plan string) error {
+func (w *world) moveMyWorkspaceToThePlan(ctx context.Context, plan string) error {
 	if w.plans == nil {
 		return errFixedPlans
 	}
@@ -40,8 +41,7 @@ func (w *world) myWorkspaceIsOnThePlan(ctx context.Context, plan string) error {
 	if err != nil {
 		return err
 	}
-	w.plans.assign(ws, plan)
-	return nil
+	return w.billing.ChangePlan(ctx, ws, plan)
 }
 
 func (w *world) myWorkspacesPlanIs(ctx context.Context, plan string) error {

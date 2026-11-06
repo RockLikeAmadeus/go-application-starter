@@ -126,7 +126,12 @@ Wiring:
    - Refactor: nothing worth changing; the test is one call through the shared `runAdmin`.
 
 Acceptance:
-12. [ ] Harness: each driver's `WorkspacePlanRepository`, `plans` reading it with `bootstrap.LocalPlan` as the default, and `h.billing`. "My workspace is on / moves to" go through `ChangePlan`; drop `testPlans.assign`. Bind the admin and "workspace "X" is on / "X"'s plan is" steps. `features/plans.feature` and `plan-features.feature` must stay green.
+12. [x] Harness: each driver's `WorkspacePlanRepository`, `plans` reading it with `bootstrap.LocalPlan` as the default, and `h.billing`. "My workspace is on / moves to" go through `ChangePlan`; drop `testPlans.assign`. Bind "an admin moves my workspace". `features/plans.feature` and `plan-features.feature` must stay green. Scenario "An admin moves a workspace to another plan".
+   - Red: with the step stubbed, the scenario fails on memory, jsonfile, sqlite and http, `plan = "free", want "pro"`.
+   - Green: `testPlans` reads each driver's `WorkspacePlanRepository` through `plans.StoredPlanOf` and is the `PlanCatalog` of a new `h.billing`; the steps call `ChangePlan`; `assign` is gone.
+   - Refactor: the step function is `moveMyWorkspaceToThePlan`, and `Provider.PlanOf`'s comment no longer mentions a map; no code change.
+12b. [ ] Bind "an admin tries to move my workspace". Scenario "Moving a workspace to a plan that doesn't exist is refused".
+12c. [ ] Bind "workspace "X" is on", "an admin moves workspace "X"" and ""X"'s plan is". Scenario "Moving one workspace leaves the others on their plans".
 13. [ ] Desktop steps: "I try to move my workspace to the … plan from the command line" runs the CLI in-process, and "I am told the local edition's plan is set when the app is built" checks `ErrLocalPlanIsFixed`.
 14. [ ] Terminal step: "I ask the command line to move the workspace … to the … plan" runs `starter admin set-plan`.
 
@@ -144,4 +149,5 @@ Finish:
 - 2026-11-06: the "not over a server yet" error is `bootstrap.ErrNoPlanChangesOverAServer`.
 - 2026-11-06: task 11 split into 11 to 11f, one behaviour per test. The refusal comes first so that the real command, which always refuses, never reaches a nil service between commits.
 - 2026-11-06: `cli.NewRootCmd` takes a `BillingFactory`, like its `AppFactory`, because `bootstrap.NewBilling` refuses every copy and tests must substitute it to reach a successful change.
-- 2026-11-05: `task test:init` is expected to fail until task 16 removes the `@wip` tags: "The new project is healthy" (both examples) runs `go test ./test/...` with no `~@wip`, so the undefined `@wip` steps fail under Strict. Agreed: in tasks 6 and 7 it counts as passing if only those two fail.
+- 2026-11-06: task 12 split into 12, 12b and 12c, one `@wip` scenario each. Their red is the scenario itself, with the step stubbed so it fails on its assertion rather than as undefined.
+- 2026-11-05: `task test:init` is expected to fail until task 16 removes the `@wip` tags: "The new project is healthy" (both examples) runs `go test ./test/...` with no `~@wip`, so the undefined `@wip` steps fail under Strict. Agreed: in tasks 6, 7 and 12 it counts as passing if only those two fail.

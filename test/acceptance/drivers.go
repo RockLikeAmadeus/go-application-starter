@@ -37,10 +37,11 @@ type harness struct {
 	items ports.ItemService
 	// sample:end
 	entitlements ports.EntitlementsService
-	// plans sets the plans the core answers. Only the drivers that wire the
-	// core themselves set it: the desktop and mobile apps are on the local
-	// plan.
+	// plans sets the plans the core answers, and billing moves workspaces
+	// between them. Only the drivers that wire the core themselves set them:
+	// the desktop and mobile apps are on the local plan.
 	plans   *testPlans
+	billing ports.BillingService
 	clock   *testsupport.FixedClock
 	cleanup func()
 	// reopen closes the desktop or mobile app and opens it again on the same
@@ -98,15 +99,18 @@ func newHarness() *harness {
 	}
 }
 
-// usePlans gives the harness its own plans, and the entitlements use case on
-// them, in the workspace that workspaces resolves.
-func (h *harness) usePlans(workspaces ports.WorkspaceResolver) error {
-	p, err := newTestPlans()
+// usePlans gives the harness its own plans, with each workspace's plan in
+// stored, and the entitlements use case on them, in the workspace that
+// workspaces resolves. An admin moves workspaces on stored directly, as
+// `starter admin set-plan` would.
+func (h *harness) usePlans(stored ports.WorkspacePlanRepository, workspaces ports.WorkspaceResolver) error {
+	p, err := newTestPlans(stored)
 	if err != nil {
 		return err
 	}
 	h.plans = p
 	h.entitlements = app.NewEntitlementsService(p, workspaces)
+	h.billing = app.NewBillingService(stored, p)
 	return nil
 }
 
@@ -122,7 +126,7 @@ func (h *harness) newItemService(repo ports.ItemRepository, workspaces ports.Wor
 
 func startMemory() (*harness, error) {
 	h := newHarness()
-	if err := h.usePlans(workspace.FromContext{}); err != nil {
+	if err := h.usePlans(memory.NewWorkspacePlanRepository(), workspace.FromContext{}); err != nil {
 		return nil, err
 	}
 	// sample:start
@@ -146,7 +150,7 @@ func startJSONFile() (*harness, error) {
 		store.Close()
 		os.RemoveAll(dir)
 	}
-	if err := h.usePlans(workspace.FromContext{}); err != nil {
+	if err := h.usePlans(jsonfile.NewWorkspacePlanRepository(store), workspace.FromContext{}); err != nil {
 		h.cleanup()
 		return nil, err
 	}
@@ -171,7 +175,7 @@ func startSQLite() (*harness, error) {
 		store.Close()
 		os.RemoveAll(dir)
 	}
-	if err := h.usePlans(workspace.FromContext{}); err != nil {
+	if err := h.usePlans(sqlite.NewWorkspacePlanRepository(store), workspace.FromContext{}); err != nil {
 		h.cleanup()
 		return nil, err
 	}
@@ -185,7 +189,7 @@ func startHTTP() (*harness, error) {
 	h := newHarness()
 	// Nothing over HTTP carries a workspace yet, so the server is the local
 	// edition, as cmd/server is.
-	if err := h.usePlans(workspace.Local{}); err != nil {
+	if err := h.usePlans(memory.NewWorkspacePlanRepository(), workspace.Local{}); err != nil {
 		return nil, err
 	}
 	opts := httpapi.Options{Entitlements: h.entitlements}

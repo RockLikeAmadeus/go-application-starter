@@ -133,8 +133,8 @@ type Provider struct {
 	// Catalog holds the plans, usually from Parse.
 	Catalog Catalog
 	// PlanOf names the plan a workspace is on. The local edition answers its
-	// one plan for every workspace; the acceptance tests answer from a map.
-	// StoredPlanOf answers from the plans that ChangePlan stores.
+	// one plan for every workspace. StoredPlanOf answers from the plans that
+	// ChangePlan stores.
 	PlanOf func(ctx context.Context, workspace domain.WorkspaceID) (string, error)
 	// ShouldGiveHints fills each feature's upgrade hint (AvailableOn) with the plans
 	// that have it. The local edition leaves it off, so it gives no hints;
