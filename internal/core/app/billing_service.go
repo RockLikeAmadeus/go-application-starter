@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
@@ -22,7 +23,10 @@ func NewBillingService(workspacePlans ports.WorkspacePlanRepository, catalog por
 
 // ChangePlan moves the workspace to the plan.
 func (s *BillingService) ChangePlan(ctx context.Context, workspace domain.WorkspaceID, plan string) error {
-	known, _ := s.catalog.HasPlan(ctx, plan)
+	known, err := s.catalog.HasPlan(ctx, plan)
+	if err != nil {
+		return fmt.Errorf("look up plan: %w", err)
+	}
 	if !known {
 		return &domain.ValidationError{Field: "plan", Message: "does not exist"}
 	}

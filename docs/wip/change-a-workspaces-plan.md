@@ -34,7 +34,10 @@ Core:
    - Red: `TestChangePlan_RefusesAPlanTheCatalogDoesNotHave` fails, `ChangePlan(platinum) = <nil>, want a *ValidationError on plan`.
    - Green: `ChangePlan` asks `catalog.HasPlan` and returns a `ValidationError` on `plan` for an unknown one; the lookup error is ignored until task 3.
    - Refactor: nothing worth changing; the check is three lines and the test matches its sibling. The ignored lookup error stays for task 3 to demand.
-3. [ ] `ChangePlan` refuses when the catalog can't be read, and saves nothing.
+3. [x] `ChangePlan` refuses when the catalog can't be read, and saves nothing.
+   - Red: `TestChangePlan_RefusesWhenTheCatalogCannotBeRead` fails, `ChangePlan = plan does not exist, want the catalog's error`.
+   - Green: `ChangePlan` returns the wrapped lookup error before checking `known`.
+   - Refactor: the test's fake is now `unreadableCatalog`, laid out like `unavailablePlans`; no production change.
 4. [ ] `ChangePlan` refuses an empty workspace with `ErrNoWorkspace`, before touching the catalog or storage.
 
 Storage:
