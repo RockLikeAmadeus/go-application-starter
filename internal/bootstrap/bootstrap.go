@@ -170,10 +170,14 @@ func syncedFolderWarning(cfg config.Config) (string, bool) {
 }
 
 // conflictCopyWarning warns about the conflict copies in a plain-text data
-// folder, naming each one.
+// folder, naming each one, or that it couldn't look for them: a failed scan
+// doesn't stop the app, but it mustn't read as there being none.
 func conflictCopyWarning(store *jsonfile.Store) (string, bool) {
 	copies, err := store.ConflictCopies()
-	if err != nil || len(copies) == 0 {
+	if err != nil {
+		return "Your data folder couldn't be checked for conflict copies, so a change may be missing: " + err.Error(), true
+	}
+	if len(copies) == 0 {
 		return "", false
 	}
 	names := strings.Join(copies, ", ")

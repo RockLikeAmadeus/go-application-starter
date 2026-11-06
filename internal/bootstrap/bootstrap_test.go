@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -326,5 +327,38 @@ func TestApp_WarnsAboutConflictCopiesOnPlainText(t *testing.T) {
 				t.Errorf("Warnings = %q, want %q", a.Warnings, tc.want)
 			}
 		})
+	}
+}
+
+// A scan that fails can't say there are no conflict copies, so plain text says
+// it couldn't look, and the app still opens: the scan guards the data rather
+// than being needed to reach it.
+func TestApp_WarnsWhenConflictCopiesCantBeCheckedAndKeepsWorking(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("directory permissions don't make a folder unreadable on windows")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("root can read an unreadable directory")
+	}
+	dir := t.TempDir()
+	table := filepath.Join(dir, "notes")
+	if err := os.Mkdir(table, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(table, 0o755) }) // so t.TempDir can remove it
+
+	a, err := bootstrap.New(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	if len(a.Warnings) != 1 ||
+		!strings.HasPrefix(a.Warnings[0], "Your data folder couldn't be checked for conflict copies, so a change may be missing: ") ||
+		!strings.Contains(a.Warnings[0], "notes") {
+		t.Errorf("Warnings = %q, want one saying the check failed and naming the notes folder", a.Warnings)
+	}
+	if err := a.Ready(t.Context()); err != nil {
+		t.Errorf("Ready error = %v, want the app to keep working", err)
 	}
 }

@@ -118,7 +118,10 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: `TestApp_WarnsAboutConflictCopiesOnPlainText` failed for all three cases: `Warnings` was empty.
   - Green: `conflictCopyWarning` in `bootstrap` adds the warning on plain text. A failed scan gives no warning until 9b. `synced_plain_text_steps.go` defines the conflict copy steps.
   - Refactor: `warnsSaying` is shared by the warning steps, and `conflictCopyPath` by the file steps. The two messages stay as whole sentences, as joining them would make the wording harder to read. The init suite ran on a copy.
-- [ ] 9b. A failed conflict copy scan is a warning saying so, and the app keeps working.
+- [x] 9b. A failed conflict copy scan is a warning saying so, and the app keeps working.
+  - Red: `TestApp_WarnsWhenConflictCopiesCantBeCheckedAndKeepsWorking` failed: `Warnings` was empty with an unreadable table folder.
+  - Green: `conflictCopyWarning` returns a warning carrying the scan's error.
+  - Refactor: `conflictCopyWarning`'s doc comment covers a failed scan. SPEC.md has no wording for this warning, and the scenarios don't cover it, as an unreadable folder is unit-test detail.
 - [ ] 10. Define the item conflict copy step; turns the sample's scenario green.
 
 Marks (`syncedfolder`, then `bootstrap`):
