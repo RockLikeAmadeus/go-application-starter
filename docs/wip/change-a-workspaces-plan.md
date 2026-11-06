@@ -55,7 +55,10 @@ Storage:
 5c. [x] Contract: saving again replaces the plan.
    - No red: `TestWorkspacePlanRepositoryContract/SavePlan_replaces_the_saved_plan` passed straight away, because memory's single field already overwrites. Kept as a guard: a first-save-wins mutation fails it, `plan = "pro", want "free"`. No green.
    - Refactor: the contract's tests share `mustSavePlan` and `assertPlan`, as the item contract does; no production change.
-5d. [ ] Contract: one workspace's plan isn't another's.
+5d. [x] Contract: one workspace's plan isn't another's.
+   - Red: `TestWorkspacePlanRepositoryContract/SavePlan_leaves_another_workspace's_plan_alone` fails, `PlanOf("ws-a") = "free", want "pro"`.
+   - Green: memory keeps a mutex-guarded map of plans by workspace, replacing the single field.
+   - Refactor: nothing worth changing; the repository already matches `ItemRepository`'s layout.
 6. [ ] jsonfile `WorkspacePlanRepository` passes the contract, and keeps the plans after the store is reopened. Run `task test:init`.
 7. [ ] sqlite `WorkspacePlanRepository` (a new template migration) passes the contract, and keeps the plans after reopening. Run `task test:init` (the migration comes after the sample's `00002_items.sql`).
 

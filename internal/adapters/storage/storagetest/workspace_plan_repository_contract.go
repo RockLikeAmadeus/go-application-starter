@@ -14,7 +14,10 @@ import (
 // fresh, empty repository for each subtest.
 func RunWorkspacePlanRepositoryContract(t *testing.T, newRepo func(*testing.T) ports.WorkspacePlanRepository) {
 	ctx := context.Background()
-	const mine domain.WorkspaceID = "ws-a"
+	const (
+		mine   domain.WorkspaceID = "ws-a"
+		theirs domain.WorkspaceID = "ws-b"
+	)
 
 	t.Run("PlanOf with no stored plan returns ErrNotFound", func(t *testing.T) {
 		repo := newRepo(t)
@@ -34,6 +37,14 @@ func RunWorkspacePlanRepositoryContract(t *testing.T, newRepo func(*testing.T) p
 		mustSavePlan(t, repo, mine, "pro")
 		mustSavePlan(t, repo, mine, "free")
 		assertPlan(t, repo, mine, "free")
+	})
+
+	t.Run("SavePlan leaves another workspace's plan alone", func(t *testing.T) {
+		repo := newRepo(t)
+		mustSavePlan(t, repo, mine, "pro")
+		mustSavePlan(t, repo, theirs, "free")
+		assertPlan(t, repo, mine, "pro")
+		assertPlan(t, repo, theirs, "free")
 	})
 }
 
