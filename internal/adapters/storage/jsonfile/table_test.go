@@ -149,3 +149,27 @@ func TestRecordWithAnUnknownVersionIsRefused(t *testing.T) {
 		t.Errorf("readRecords error = %v, want unsupported file version 99", err)
 	}
 }
+
+func TestReadingATableSkipsWhatIsNotAJSONFile(t *testing.T) {
+	s := openTestStore(t)
+	if err := writeRecord(s, "things", "1", record{Name: "one"}); err != nil {
+		t.Fatalf("writeRecord error = %v", err)
+	}
+	dir := filepath.Join(s.dir, "things")
+	for _, name := range []string{"1.json.123.tmp", ".1.json.icloud", ".DS_Store"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("not a record"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Mkdir(filepath.Join(dir, "folder.json"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := readRecords[record](s, "things")
+	if err != nil {
+		t.Fatalf("readRecords error = %v", err)
+	}
+	if len(got) != 1 || got["1"] != (record{Name: "one"}) {
+		t.Errorf("readRecords = %v, want one record under key 1", got)
+	}
+}

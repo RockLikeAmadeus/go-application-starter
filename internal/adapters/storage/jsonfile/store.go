@@ -137,8 +137,8 @@ func recordFileName(key string) string {
 	return url.QueryEscape(key) + ".json"
 }
 
-// readRecords loads every record in <dir>/<table>, by key; a missing folder
-// is an empty table.
+// readRecords loads every record in <dir>/<table>, by key, skipping anything
+// that isn't a .json file; a missing folder is an empty table.
 func readRecords[R any](s *Store, table string) (map[string]R, error) {
 	dir := filepath.Join(s.dir, table)
 	entries, err := os.ReadDir(dir)
@@ -150,6 +150,9 @@ func readRecords[R any](s *Store, table string) (map[string]R, error) {
 	}
 	records := make(map[string]R, len(entries))
 	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
 		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("read %s/%s: %w", table, entry.Name(), err)

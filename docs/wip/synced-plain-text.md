@@ -46,7 +46,10 @@ One file per record (`jsonfile`):
   - Red: `TestRecordWithAnUnknownVersionIsRefused` failed: `readRecords` returned no error for version 99.
   - Green: `readRecords` refuses a file whose version isn't `recordFormatVersion`.
   - Refactor: nothing. `readTable`'s matching check goes in tasks 5 and 6.
-- [ ] 4. Reading a table skips what isn't a `.json` file, such as leftover temp files.
+- [x] 4. Reading a table skips what isn't a `.json` file, such as leftover temp files.
+  - Red: `TestReadingATableSkipsWhatIsNotAJSONFile` failed: `readRecords` tried to decode `.1.json.icloud`.
+  - Green: `readRecords` skips folders and names without the `.json` extension.
+  - Refactor: nothing. `readRecords` is still short; tasks 7 and 8 will show whether the per-file decode should be its own function.
 - [ ] 5. `ItemRepository` keeps each item in its own file, and saving one leaves the others untouched (contract and isolation suites stay green). Sample thin use. Define the "each item has its own file" step.
 - [ ] 6. `WorkspacePlanRepository` keeps each workspace's plan in its own file.
 
