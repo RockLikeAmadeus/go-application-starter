@@ -67,10 +67,11 @@ func (e *FeatureError) Error() string {
 	if len(e.AvailableOn) == 0 {
 		return msg
 	}
+	upgrade := e.Name + " is not included in your current plan. To use this feature, please upgrade to "
 	if len(e.AvailableOn) == 1 {
-		return e.Name + " is not included in your current plan. To use this feature, please upgrade to " + PlansPhrase(e.AvailableOn) + "."
+		return upgrade + PlansPhrase(e.AvailableOn) + "."
 	}
-	return msg + ", and is available on " + PlansPhrase(e.AvailableOn)
+	return upgrade + "one of the following plans: " + planList(e.AvailableOn) + "."
 }
 
 // PlansPhrase names plans for an upgrade hint: "the pro plan", or "the pro
@@ -79,6 +80,11 @@ func PlansPhrase(plans []string) string {
 	if len(plans) == 1 {
 		return "the " + plans[0] + " plan"
 	}
+	return "the " + planList(plans) + " plans"
+}
+
+// planList joins two or more plan names: "pro or team".
+func planList(plans []string) string {
 	last := len(plans) - 1
-	return "the " + strings.Join(plans[:last], ", ") + " or " + plans[last] + " plans"
+	return strings.Join(plans[:last], ", ") + " or " + plans[last]
 }

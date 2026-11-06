@@ -96,9 +96,12 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestEntitlements_CheckFeature/off_and_locked` pins the agreed wording; failed on the old text.
   - Green: `FeatureError.Error` returns the agreed text for one plan.
   - Refactor: nothing changed. Left the separate one-plan branch, as 4b and 4c rewrite the others.
-- [ ] 4b. The feature error, in its several-plans form.
+- [x] 4b. The feature error, in its several-plans form.
+  - Red: `TestEntitlements_CheckFeature/off_and_locked,_on_two_plans` pins the agreed wording; failed on the old text.
+  - Green: `FeatureError.Error` returns the agreed text for several plans.
+  - Refactor: extracted `planList`, shared with `PlansPhrase`, and the shared opening sentence. Left the missing Oxford comma for task 5, which also fixes this error through `planList`.
 - [ ] 4c. The feature error, in its no-plan form.
-- [ ] 5. The web, CLI and TUI plan notes, with the Oxford comma in lists of three or more plans.
+- [ ] 5. The web, CLI and TUI plan notes, with the Oxford comma in lists of three or more plans (`planList` in `domain`, so the feature error gets it too).
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.
 - [ ] 7. The local plan, over a server, internal and not found errors.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.
