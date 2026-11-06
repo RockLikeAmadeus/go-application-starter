@@ -19,7 +19,10 @@ func newAdminCmd(loadConfig func() (config.Config, error), newBilling BillingFac
 		Use:   "set-plan WORKSPACE PLAN",
 		Short: "Move a workspace to another plan",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, _ := loadConfig()
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
 			billing, err := newBilling(cfg)
 			if err != nil {
 				return err

@@ -113,7 +113,10 @@ Wiring:
    - Red: `TestAdminSetPlanReportsChangePlansRefusalAndDoesNotSayTheWorkspaceMoved` fails, `admin set-plan = <nil>, want the refusal`.
    - Green: `admin set-plan` returns `ChangePlan`'s error before printing.
    - Refactor: the `admin` tests share `usingBilling`, replacing two copies of the factory; no production change. The refusing factory stays inline, its only use.
-11d. [ ] `admin set-plan` reports settings it can't load.
+11d. [x] `admin set-plan` reports settings it can't load.
+   - Red: `TestAdminSetPlanReportsSettingsItCannotLoadAndChangesNothing` fails, `admin set-plan = <nil>, want the settings error naming "bogus"`, and `ChangePlan("ws-a", "pro"), want no call`.
+   - Green: `admin set-plan` returns `loadConfig`'s error before building billing.
+   - Refactor: nothing worth changing; the error check is the same three lines as its neighbours, and the test uses the shared helpers.
 11e. [ ] `admin set-plan` refuses anything but a workspace and a plan.
 11f. [ ] `admin set-plan --server` reaches `ErrNoPlanChangesOverAServer`, through the real `bootstrap.NewBilling`.
 

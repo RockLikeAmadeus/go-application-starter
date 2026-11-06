@@ -81,3 +81,16 @@ func TestAdminSetPlanReportsChangePlansRefusalAndDoesNotSayTheWorkspaceMoved(t *
 		t.Errorf("output = %q, want no claim that the workspace moved", out.String())
 	}
 }
+
+func TestAdminSetPlanReportsSettingsItCannotLoadAndChangesNothing(t *testing.T) {
+	billing := &recordingBilling{}
+
+	err := runAdmin(t, usingBilling(billing), &bytes.Buffer{}, "set-plan", "ws-a", "pro", "--storage", "bogus")
+
+	if err == nil || !strings.Contains(err.Error(), "bogus") {
+		t.Errorf("admin set-plan = %v, want the settings error naming %q", err, "bogus")
+	}
+	if billing.workspace != "" || billing.plan != "" {
+		t.Errorf("ChangePlan(%q, %q), want no call", billing.workspace, billing.plan)
+	}
+}
