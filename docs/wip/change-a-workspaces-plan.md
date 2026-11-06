@@ -79,7 +79,12 @@ Plans adapter:
    - Red: `TestHasPlan_AnswersWhetherTheCatalogHasThePlan` fails, `HasPlan("free") = false, want true`.
    - Green: `HasPlan` looks the plan up in the catalog, and `Provider` is asserted to be a `ports.PlanCatalog`.
    - Refactor: `Provider`'s comment names both ports; no code change. Its `PlanOf` comment ("will store the answers instead") stays for task 9.
-9. [ ] A `PlanOf` read from a `WorkspacePlanRepository`: the stored plan, else the default for a workspace with none, and any other error passed on.
+9. [x] `plans.StoredPlanOf` reads a `Provider.PlanOf` from a `WorkspacePlanRepository`: the stored plan.
+   - Red: `TestStoredPlanOf_AnswersTheWorkspacesStoredPlan` fails, `PlanOf = "", want "pro"`.
+   - Green: `StoredPlanOf` returns the repository's `PlanOf`; `fallback` stays unread until 9b.
+   - Refactor: `Provider.PlanOf`'s comment now names `StoredPlanOf`; no code change.
+9b. [ ] `StoredPlanOf` answers the default for a workspace with no stored plan.
+9c. [ ] `StoredPlanOf` passes on any other error, never defaulting.
 
 Wiring:
 10. [ ] `bootstrap.NewBilling` refuses in the local edition with `ErrLocalPlanIsFixed`, opening no storage, and refuses `--server`.
@@ -99,4 +104,5 @@ Finish:
 - 2026-11-05: task 5 split into 5, 5b, 5c and 5d, one contract behaviour per test.
 - 2026-11-05: task 6 split into 6 and 6b: the contract, then surviving a reopen.
 - 2026-11-06: task 7 split into 7 and 7b: the contract, then surviving a reopen.
+- 2026-11-06: task 9 split into 9, 9b and 9c: the stored plan, the default, and other errors.
 - 2026-11-05: `task test:init` is expected to fail until task 16 removes the `@wip` tags: "The new project is healthy" (both examples) runs `go test ./test/...` with no `~@wip`, so the undefined `@wip` steps fail under Strict. Agreed: in tasks 6 and 7 it counts as passing if only those two fail.

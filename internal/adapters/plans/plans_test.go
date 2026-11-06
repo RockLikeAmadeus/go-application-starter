@@ -9,6 +9,7 @@ import (
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/plans"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
 
 func TestParse_GivesEachPlansEntitlements(t *testing.T) {
@@ -262,6 +263,18 @@ func TestHasPlan_AnswersWhetherTheCatalogHasThePlan(t *testing.T) {
 		if got != want {
 			t.Errorf("HasPlan(%q) = %v, want %v", plan, got, want)
 		}
+	}
+}
+
+func TestStoredPlanOf_AnswersTheWorkspacesStoredPlan(t *testing.T) {
+	stored := testsupport.StoredPlans{"ws-a": "pro"}
+
+	got, err := plans.StoredPlanOf(stored, "free")(context.Background(), "ws-a")
+	if err != nil {
+		t.Fatalf("PlanOf: %v", err)
+	}
+	if got != "pro" {
+		t.Errorf("PlanOf = %q, want %q", got, "pro")
 	}
 }
 

@@ -133,7 +133,7 @@ type Provider struct {
 	Catalog Catalog
 	// PlanOf names the plan a workspace is on. The local edition answers its
 	// one plan for every workspace; the acceptance tests answer from a map.
-	// Changing a workspace's plan (ChangePlan) will store the answers instead.
+	// StoredPlanOf answers from the plans that ChangePlan stores.
 	PlanOf func(ctx context.Context, workspace domain.WorkspaceID) (string, error)
 	// ShouldGiveHints fills each feature's upgrade hint (AvailableOn) with the plans
 	// that have it. The local edition leaves it off, so it gives no hints;
@@ -194,6 +194,12 @@ func (p Provider) plansWith(feature string) []string {
 	}
 	slices.Sort(names)
 	return names
+}
+
+// StoredPlanOf returns a Provider.PlanOf that reads each workspace's plan from
+// the repository.
+func StoredPlanOf(repository ports.WorkspacePlanRepository, fallback string) func(context.Context, domain.WorkspaceID) (string, error) {
+	return repository.PlanOf
 }
 
 // shipped is the plans file built into the binary.
