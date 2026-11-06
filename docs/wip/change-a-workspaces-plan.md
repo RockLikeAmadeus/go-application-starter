@@ -44,7 +44,13 @@ Core:
    - Refactor: the billing tests share `assertStoredPlans`, replacing four copies of the comparison; no production change.
 
 Storage:
-5. [ ] `storagetest.RunWorkspacePlanRepositoryContract`, run by a memory `WorkspacePlanRepository`: no stored plan is `ErrNotFound`; a saved plan is read back; saving again replaces it; one workspace's plan isn't another's.
+5. [x] `storagetest.RunWorkspacePlanRepositoryContract`, run by a memory `WorkspacePlanRepository`: no stored plan is `ErrNotFound`.
+   - Red: `TestWorkspacePlanRepositoryContract/PlanOf_with_no_stored_plan_returns_ErrNotFound` fails, `err = <nil>, want ErrNotFound`.
+   - Green: memory's `PlanOf` always returns `ErrNotFound`; `SavePlan` does nothing until 5b.
+   - Refactor: the `memory` package comment moved from the sample file to this template file, and no longer names items; no code change.
+5b. [ ] Contract: a saved plan is read back.
+5c. [ ] Contract: saving again replaces the plan.
+5d. [ ] Contract: one workspace's plan isn't another's.
 6. [ ] jsonfile `WorkspacePlanRepository` passes the contract, and keeps the plans after the store is reopened. Run `task test:init`.
 7. [ ] sqlite `WorkspacePlanRepository` (a new template migration) passes the contract, and keeps the plans after reopening. Run `task test:init` (the migration comes after the sample's `00002_items.sql`).
 
@@ -66,3 +72,6 @@ Finish:
 16. [ ] `task check`, `task test:init`, `task e2e:terminal`; remove the `@wip` tags; mark step 4 done in the plan; delete this file.
 
 ## Changes to the plan
+
+- 2026-11-05: task 5 split into 5, 5b, 5c and 5d, one contract behaviour per test.
+- 2026-11-05: `task test:init` is expected to fail until task 16 removes the `@wip` tags: "The new project is healthy" (both examples) runs `go test ./test/...` with no `~@wip`, so the undefined `@wip` steps fail under Strict. Agreed: in tasks 6 and 7 it counts as passing if only those two fail.

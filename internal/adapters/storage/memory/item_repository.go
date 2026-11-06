@@ -1,5 +1,3 @@
-// Package memory is an in-process ItemRepository. It is used by unit and
-// acceptance tests and by `STORAGE=memory`.
 package memory
 
 import (
