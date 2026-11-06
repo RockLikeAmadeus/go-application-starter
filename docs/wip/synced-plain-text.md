@@ -128,7 +128,13 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Refactor: `registerItemSteps`' comment names this feature. The two item file paths stay as they are, as they differ in the part a helper would hide. The init suite ran on a copy.
 
 Marks (`syncedfolder`, then `bootstrap`):
-- [ ] 11. `OtherDevices` returns other devices with a recent mark, and leaves out this device, old marks and unreadable files.
+- [x] 11. `OtherDevices` returns other devices with a recent mark.
+  - Red: `TestOtherDevicesReturnsDevicesWithARecentMark` failed: the stub returned nothing.
+  - Green: `OtherDevices` lists the device named in each file in `.devices`. No filters yet (11b–11d).
+  - Refactor: nothing. The loop is short, and 11c and 11d decide the shape of its read and decode. Lint accepts the two parameters that 11b and 11c will use.
+- [ ] 11b. `OtherDevices` leaves out this device.
+- [ ] 11c. `OtherDevices` leaves out marks five minutes old or more.
+- [ ] 11d. `OtherDevices` leaves out unreadable files, and a folder with no marks has no other devices.
 - [ ] 12. A mark is written atomically to `.devices/<device>.json`, is renewed on each tick, and is removed on stopping.
 - [ ] 13. `bootstrap` warns about other devices on plain text, naming them. Define the device steps; turns the 3 warning scenarios green.
 - [ ] 14. `bootstrap` marks the folder only when it looks synced and `ignore_synced_folder` is off, and `App.Close` stops the mark before the store closes. Define the mark steps; turns the last 4 scenarios green.
@@ -150,3 +156,4 @@ Run the init suite at tasks 5b, 7d, 7e, 9 and 10 too: they add code next to the 
 - Task 7d split: `FindByID` is 7d and `Delete` is 7e, as each needs its own test.
 - Task 9 split: the warning is 9, and a failed scan is 9b, as it needs its own test. The spec says the app keeps working, so a failed scan warns rather than stopping it.
 - Task 8 split: listing is 8, hidden folders 8b and files that aren't records 8c, as each needs its own test. The benchmarks move from 8b to 8d.
+- Task 11 split: recent marks are 11, this device 11b, old marks 11c and unreadable files 11d, as each needs its own test.
