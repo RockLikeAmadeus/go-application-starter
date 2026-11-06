@@ -122,7 +122,10 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: `TestApp_WarnsWhenConflictCopiesCantBeCheckedAndKeepsWorking` failed: `Warnings` was empty with an unreadable table folder.
   - Green: `conflictCopyWarning` returns a warning carrying the scan's error.
   - Refactor: `conflictCopyWarning`'s doc comment covers a failed scan. SPEC.md has no wording for this warning, and the scenarios don't cover it, as an unreadable folder is unit-test detail.
-- [ ] 10. Define the item conflict copy step; turns the sample's scenario green.
+- [x] 10. Define the item conflict copy step; turns the sample's scenario green.
+  - Red: none, and no green. The scenario failed only on its undefined step, as `readRecords` already skips copies. It's kept as a guard: with the skip removed it fails with `["Widget on another device"]`.
+  - The step writes a copy with different contents, Syncthing-named so it's read after the original: an identical or earlier copy passes even with the skip removed, as records are held by key. The scenario's stray `| name |` row is gone: `the items are:` has no header.
+  - Refactor: `registerItemSteps`' comment names this feature. The two item file paths stay as they are, as they differ in the part a helper would hide. The init suite ran on a copy.
 
 Marks (`syncedfolder`, then `bootstrap`):
 - [ ] 11. `OtherDevices` returns other devices with a recent mark, and leaves out this device, old marks and unreadable files.

@@ -59,7 +59,6 @@ Feature: Keep plain-text data in a synced folder
       And a sync service left a conflict copy of "Widget" in the data folder
       When I close the desktop app and open it again
       Then the items are:
-        | name   |
         | Widget |
     # sample:end
 

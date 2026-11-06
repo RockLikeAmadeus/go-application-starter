@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/cucumber/godog"
@@ -15,7 +16,7 @@ import (
 )
 
 // registerItemSteps binds the steps of features/items.feature, and the item
-// steps of features/local-data.feature.
+// steps of features/local-data.feature and features/synced-plain-text.feature.
 func (w *world) registerItemSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^an item named "([^"]*)"$`, w.anItemNamed)
 	sc.Step(`^I create an item named "([^"]*)"$`, w.anItemNamed)
@@ -30,6 +31,29 @@ func (w *world) registerItemSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^I list the items from the command line$`, w.iListTheItemsFromTheCommandLine)
 	sc.Step(`^the command line shows "([^"]*)"$`, w.theCommandLineShows)
 	sc.Step(`^each item has its own file in the data folder$`, w.eachItemHasItsOwnFile)
+	sc.Step(`^a sync service left a conflict copy of "([^"]*)" in the data folder$`, w.aSyncServiceLeftAConflictCopyOf)
+}
+
+// aSyncServiceLeftAConflictCopyOf writes the other device's version of the item
+// beside its own file. The copy keeps the item's key, and a different name for
+// it. Syncthing's naming puts the copy after the original when a table is read,
+// so if reading took it for the record, its name would replace the item's.
+func (w *world) aSyncServiceLeftAConflictCopyOf(ctx context.Context, name string) error {
+	item, err := w.findByName(ctx, name)
+	if err != nil {
+		return err
+	}
+	dataDir, err := w.desktopAppsDataFolder()
+	if err != nil {
+		return err
+	}
+	contents, err := os.ReadFile(filepath.Join(dataDir, "items", item.ID+".json"))
+	if err != nil {
+		return err
+	}
+	otherVersion := strings.ReplaceAll(string(contents), name, name+" on another device")
+	copyPath := filepath.Join(dataDir, "items", item.ID+".sync-conflict-20261106-120000-ABCDEFG.json")
+	return os.WriteFile(copyPath, []byte(otherVersion), 0o644)
 }
 
 // eachItemHasItsOwnFile checks the files that the plain-text storage keeps,
