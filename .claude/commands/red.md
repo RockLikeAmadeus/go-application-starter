@@ -9,7 +9,7 @@ TDD **RED** step for:
 
 Rules:
 
-0. If a `docs/wip/` file exists for the feature in progress, read it first. It holds the task list and the decisions behind it.
+0. Run `task wip:next` first. If a feature is in progress, it prints the open tasks and the decisions behind them.
 1. Write **exactly one** new test (one `func TestXxx` or `t.Run` case in Go, or one `it(...)` in Vitest) that specifies the behaviour above. Pick the innermost layer where the behaviour belongs (domain > app > adapter > UI); see the architecture rules in CLAUDE.md.
 2. Do **not** change production code. The only exception is the minimum needed for the test to *compile*: an empty function, method, or type returning a zero value. A compile failure is not a valid "red".
 3. Run the narrowest test command (e.g. `go test ./internal/core/domain/ -run TestXxx` or `pnpm --dir web test -- -t "name"`).

@@ -308,6 +308,23 @@ tasks:
     cmds:
       - go test ./test/acceptance/ -count=1 {{.CLI_ARGS}}
 
+  wip:next:
+    desc: "What a cycle needs from docs/wip/: the links, decisions and open tasks, without the finished tasks or the plan-change log"
+    silent: true
+    cmds:
+      - |
+        for file in docs/wip/*.md; do
+          [ -f "$file" ] || { echo "No feature in progress."; continue; }
+          echo "== $file"
+          awk '
+            /^## / { skip_section = /Changes to the plan/; skip_task = 0 }
+            skip_section { next }
+            /^- \[x\]/ { skip_task = 1; next }
+            skip_task && /^[[:space:]]+[^[:space:]]/ { next }
+            { skip_task = 0; print }
+          ' "$file"
+        done
+
   # template:start
   test:init:
     desc: "Acceptance tests for the template's init tool (slow: each scenario copies and rebuilds the repo)"

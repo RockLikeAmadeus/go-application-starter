@@ -7,7 +7,7 @@ TDD **GREEN** step. $ARGUMENTS
 
 Rules:
 
-0. If a `docs/wip/` file exists for the feature in progress, read it first. It holds the task list and the decisions behind it.
+0. Run `task wip:next` first. If a feature is in progress, it prints the open tasks and the decisions behind them.
 1. Find the currently failing test (the one just written by `/red`, or the one named above). Run it to see the failure.
 2. Write the **simplest production code that makes it pass**. Hard-coding, duplication, and naive code are acceptable here. Do not add behaviour that no test demands. Do not refactor.
 3. Do **not** modify the test, unless it has an outright bug. If it does, stop and tell me.

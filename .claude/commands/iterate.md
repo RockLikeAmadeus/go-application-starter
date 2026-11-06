@@ -12,7 +12,7 @@ If that's empty, take the first unticked task in the `docs/wip/` file of the fea
 
 Run the three steps below in order, each exactly as its own command would (`.claude/commands/red.md`, `green.md` and `refactor.md`), with every rule they set, except their "STOP" at the end: go straight on to the next step instead. Don't merge the steps: the test must fail for the right reason before any production code is written, and refactoring starts only once everything is green.
 
-0. **Prepare.** Run `git status`, and note whether the working tree is clean: the cycle commits its own changes at the end. Read the feature's `docs/wip/` file, the plan it belongs to (`docs/plans/`), if any, and the code the task touches. If no task is open, STOP and say so.
+0. **Prepare.** Run `git status`, and note whether the working tree is clean: the cycle commits its own changes at the end. Run `task wip:next`, read only the sections of the plan (`docs/plans/`) the task needs, if any, as `.claude/rules/work-tracking.md` says, and read the code the task touches. If no task is open, STOP and say so.
 1. **Red** (`red.md`): exactly one new failing test, failing for the expected reason. Record it in the `docs/wip/` file.
 2. **Green** (`green.md`): the minimum production code to pass it, with the full unit suite green. Record it, and leave the **For refactor:** note.
 3. **Refactor** (`refactor.md`), starting from that note. While the feature's scenarios are still `@wip`, "`task accept` green" means every scenario outside them: `task accept -- --godog.tags='~@wip'`. Report how far the `@wip` ones got (`task accept -- --godog.tags=@wip`), without chasing them. Replace the note with what was done.

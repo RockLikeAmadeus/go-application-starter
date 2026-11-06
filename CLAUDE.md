@@ -27,7 +27,9 @@ Each copy uses one edition, and nothing syncs between them. Outside `internal/bo
 
 `/iterate [behaviour]` runs one whole red → green → refactor cycle for the next open task (or the one given), stopping only to ask me something, and then once at the end. When the cycle goes cleanly, it commits and pushes it.
 
-`TODO.md` is the backlog. A feature's task list lives in `docs/wip/<feature-slug>.md`; a TODO item needing more than one `/feature` has a plan in `docs/plans/<item-slug>.md`. Both are tracked and temporary. **When starting or resuming work, read the relevant plan, then its `docs/wip/` file, first.** How to keep them up to date is in `.claude/rules/work-tracking.md`.
+`TODO.md` is the backlog. A feature's task list lives in `docs/wip/<feature-slug>.md`; a TODO item needing more than one `/feature` has a plan in `docs/plans/<item-slug>.md`. Both are tracked and temporary. **When starting or resuming work, run `task wip:next` first, then read the parts of the plan the task needs.** How to read and update them is in `.claude/rules/work-tracking.md`.
+
+Keep tool output small, as every cycle starts from a cleared context. Search narrowly: `grep -l` or `-m`, a specific path, and `head` on `find`. When output was too long and was saved to a file, `grep` or `tail` that file instead of reading all of it. Read a large file by section, not whole.
 
 When a change leaves something that a developer starting a new project from this template must set up or fill in themselves (a placeholder name, publisher or description, an account, a key), add a step for them in the same change. Until the template's permanent starter TODO list exists, these steps go under the TODO.md item that creates it ("Steps the new file must give the developer using the template"). They are tasks for template users, not for us.
 
@@ -55,6 +57,7 @@ Never stage, commit, push or pull unless I explicitly ask. That includes `git ad
 | Regenerate API code | `task gen` (after editing `api/openapi.yaml`) |
 | Everything CI runs | `task check` |
 | Rename the project | `task rename -- --name "New Name" [--module …] [--dry-run]` (see `docs/rename.md`) |
+| A cycle's view of the feature in progress | `task wip:next` |
 | Run locally | `task dev` (API on :8080, restarted by Air on Go changes + Vite on :5173 with HMR, opened in your browser) · `task run:cli -- --help` · `task run:tui` · `task run:desktop` |
 | Build | `task build` (`bin/server` with the SPA embedded, `bin/starter`) |
 
