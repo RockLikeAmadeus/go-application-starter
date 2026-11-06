@@ -128,7 +128,12 @@ func (w *world) theDesktopAppGivesNoWarning() error {
 }
 
 func (w *world) theCommandLineWarnsItsFolderLooksSyncedBy(service string) error {
-	if want := "looks synced by " + service; !strings.Contains(w.cliErrOut, want) {
+	return w.commandLineWarnsSaying("looks synced by " + service)
+}
+
+// commandLineWarnsSaying checks the command line's last warnings include want.
+func (w *world) commandLineWarnsSaying(want string) error {
+	if !strings.Contains(w.cliErrOut, want) {
 		return fmt.Errorf("the command line warned:\n%s\nwant it to say %q", w.cliErrOut, want)
 	}
 	return nil

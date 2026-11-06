@@ -10,8 +10,10 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/syncedfolder"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
@@ -327,6 +329,27 @@ func TestApp_WarnsAboutConflictCopiesOnPlainText(t *testing.T) {
 				t.Errorf("Warnings = %q, want %q", a.Warnings, tc.want)
 			}
 		})
+	}
+}
+
+// A mark says another device has the data open. Plain text warns, naming the
+// device, and still opens: the mark is a best guess.
+func TestApp_WarnsWhenAnotherDeviceIsUsingPlainText(t *testing.T) {
+	dir := t.TempDir()
+	if err := syncedfolder.WriteMark(dir, "laptop", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+
+	a, err := bootstrap.New(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	want := []string{"Your data folder looks in use on laptop. " +
+		"Using it from two devices at once can lose changes: close the app there first."}
+	if !slices.Equal(a.Warnings, want) {
+		t.Errorf("Warnings = %q, want %q", a.Warnings, want)
 	}
 }
 

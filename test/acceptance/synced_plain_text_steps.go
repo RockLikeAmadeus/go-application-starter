@@ -1,12 +1,13 @@
 package acceptance
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+	"time"
 
 	"github.com/cucumber/godog"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/syncedfolder"
 )
 
 // registerSyncedPlainTextSteps binds the steps of
@@ -16,6 +17,9 @@ func (w *world) registerSyncedPlainTextSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^I delete the conflict copy "([^"]*)"$`, w.iDeleteTheConflictCopy)
 	sc.Step(`^the desktop app warns about the conflict copy "([^"]*)"$`, w.theDesktopAppWarnsAboutTheConflictCopy)
 	sc.Step(`^the command line warns about the conflict copy "([^"]*)"$`, w.theCommandLineWarnsAboutTheConflictCopy)
+	sc.Step(`^the device "([^"]*)" marked the data folder as in use (\d+) (minute|hour)s? ago$`, w.theDeviceMarkedTheDataFolder)
+	sc.Step(`^the desktop app warns that the data folder looks in use on "([^"]*)"$`, w.theDesktopAppWarnsTheFolderLooksInUseOn)
+	sc.Step(`^the command line warns that the data folder looks in use on "([^"]*)"$`, w.theCommandLineWarnsTheFolderLooksInUseOn)
 }
 
 // conflictCopyFile is a conflict copy's path, relative to the data folder. It
@@ -50,10 +54,34 @@ func (w *world) theDesktopAppWarnsAboutTheConflictCopy(name string) error {
 }
 
 func (w *world) theCommandLineWarnsAboutTheConflictCopy(name string) error {
-	if want := conflictCopyFile(name); !strings.Contains(w.cliErrOut, want) {
-		return fmt.Errorf("the command line warned:\n%s\nwant it to name %q", w.cliErrOut, want)
+	return w.commandLineWarnsSaying(conflictCopyFile(name))
+}
+
+// theDeviceMarkedTheDataFolder leaves the mark a sync service would bring from
+// the device, dated as that device wrote it.
+func (w *world) theDeviceMarkedTheDataFolder(device string, age int, unit string) error {
+	dataDir, err := w.desktopAppsDataFolder()
+	if err != nil {
+		return err
 	}
-	return nil
+	ageUnit := time.Minute
+	if unit == "hour" {
+		ageUnit = time.Hour
+	}
+	return syncedfolder.WriteMark(dataDir, device, time.Now().Add(-time.Duration(age)*ageUnit))
+}
+
+// looksInUseOn is what a warning about device says.
+func looksInUseOn(device string) string {
+	return "looks in use on " + device
+}
+
+func (w *world) theDesktopAppWarnsTheFolderLooksInUseOn(device string) error {
+	return warnsSaying(w.apiURL, looksInUseOn(device))
+}
+
+func (w *world) theCommandLineWarnsTheFolderLooksInUseOn(device string) error {
+	return w.commandLineWarnsSaying(looksInUseOn(device))
 }
 
 // conflictCopyPath is where a conflict copy is in the desktop app's data

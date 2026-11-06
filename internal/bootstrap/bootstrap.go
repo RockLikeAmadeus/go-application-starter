@@ -84,6 +84,9 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		if warning, ok := conflictCopyWarning(store); ok {
 			a.Warnings = append(a.Warnings, warning)
 		}
+		if warning, ok := otherDeviceWarning(cfg); ok {
+			a.Warnings = append(a.Warnings, warning)
+		}
 		// sample:start
 		itemRepo = jsonfile.NewItemRepository(store)
 		// sample:end
@@ -187,6 +190,17 @@ func conflictCopyWarning(store *jsonfile.Store) (string, bool) {
 	}
 	return fmt.Sprintf("Your data folder has %d conflict copies left by a sync service, so changes may be missing: "+
 		"%s. Keep the versions you want and delete the others.", len(copies), names), true
+}
+
+// otherDeviceWarning warns when another device's mark says it has a plain-text
+// data folder in use, naming the device.
+func otherDeviceWarning(cfg config.Config) (string, bool) {
+	devices := syncedfolder.OtherDevices(cfg.DataDir, "", system.Clock{}.Now())
+	if len(devices) == 0 {
+		return "", false
+	}
+	return "Your data folder looks in use on " + devices[0] + ". " +
+		"Using it from two devices at once can lose changes: close the app there first.", true
 }
 
 // localEntitlementsProvider answers LocalPlan, from plansFile or else the plans file

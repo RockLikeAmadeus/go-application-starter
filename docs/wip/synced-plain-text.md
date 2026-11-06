@@ -163,7 +163,12 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestKeepMarkRemovesTheMarkOnStopping` failed: the mark was still there after stopping.
   - Green: `stop` removes the mark once the goroutine has ended.
   - Refactor: `markPath` holds the mark's path, and `KeepMark`'s doc comment covers removal and why a failure is ignored.
-- [ ] 13. `bootstrap` warns about other devices on plain text, naming them. Define the device steps; turns the 3 warning scenarios green.
+- [x] 13. `bootstrap` warns about another device on plain text, naming it. Define the device steps; turns the 3 warning scenarios green.
+  - Red: `TestApp_WarnsWhenAnotherDeviceIsUsingPlainText` failed: `Warnings` was empty.
+  - Green: `otherDeviceWarning` names the first device from `OtherDevices`; device steps defined; the 3 warning scenarios pass.
+  - Refactor: `commandLineWarnsSaying` replaces the three copies of the command line check. Listing every device waits for 13b.
+- [ ] 13b. The warning names every other device.
+- [ ] 13c. This device's own mark gives no warning.
 - [ ] 14. `bootstrap` marks the folder only when it looks synced and `ignore_synced_folder` is off, and `App.Close` stops the mark before the store closes. Define the mark steps; turns the last 4 scenarios green.
 
 Finish:
@@ -184,5 +189,6 @@ Run the init suite at tasks 5b, 7d, 7e, 9 and 10 too: they add code next to the 
 - Task 9 split: the warning is 9, and a failed scan is 9b, as it needs its own test. The spec says the app keeps working, so a failed scan warns rather than stopping it.
 - Task 8 split: listing is 8, hidden folders 8b and files that aren't records 8c, as each needs its own test. The benchmarks move from 8b to 8d.
 - Task 11 split: recent marks are 11, this device 11b, old marks 11c and unreadable files 11d, as each needs its own test.
+- Task 13 split: one device is 13, several 13b and this device's own mark 13c, as each needs its own test.
 - Task 11d split: files that aren't marks are 11d, and a folder with no marks is 11e, as each needs its own test.
 - Task 12 split: writing is 12, the atomic replace 12b, renewing 12c and removing 12d, as each needs its own test.
