@@ -27,12 +27,7 @@ func newItemRepository(t *testing.T) *sqlite.ItemRepository {
 // openItemRepository opens a store on dir, closed when the test ends.
 func openItemRepository(t *testing.T, dir string) *sqlite.ItemRepository {
 	t.Helper()
-	store, err := sqlite.Open(dir)
-	if err != nil {
-		t.Fatalf("Open: %v", err)
-	}
-	t.Cleanup(func() { store.Close() })
-	return sqlite.NewItemRepository(store)
+	return sqlite.NewItemRepository(openStore(t, dir))
 }
 
 func TestItemRepositoryFindsASavedItemWithItsTimesInUTCAtFullPrecision(t *testing.T) {

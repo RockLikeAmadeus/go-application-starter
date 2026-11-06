@@ -66,7 +66,11 @@ Storage:
 6b. [x] jsonfile keeps the plans after the store is reopened.
    - No red: `TestWorkspacePlansSurviveReopen` passed straight away, because task 6 already writes through `writeTable`. Kept as a guard: a repository holding plans in memory passes the contract but fails it, `after reopen PlanOf = "", not found, want "pro"`. No green.
    - Refactor: nothing worth changing; the test is short, and `openStore` can't open the first store because it must close before the reopen.
-7. [ ] sqlite `WorkspacePlanRepository` (a new template migration) passes the contract, and keeps the plans after reopening. Run `task test:init` (the migration comes after the sample's `00002_items.sql`).
+7. [x] sqlite `WorkspacePlanRepository` (a new template migration) passes the contract. Run `task test:init` (the migration comes after the sample's `00002_items.sql`).
+   - Red: `TestWorkspacePlanRepositoryContract` (sqlite) fails all four cases against a stub, e.g. `err = <nil>, want ErrNotFound`.
+   - Green: `00003_workspace_plans.sql`, one row per workspace, with `INSERT OR REPLACE` and `ErrNotFound` for no row.
+   - Refactor: `openStore` moved to the template's `store_test.go`, used by the contract test and the sample's `openItemRepository`, as in jsonfile; no production change.
+7b. [ ] sqlite keeps the plans after the store is reopened.
 
 Plans adapter:
 8. [ ] `plans.Provider.HasPlan` answers whether its catalog has the plan (`ports.PlanCatalog`).
@@ -89,4 +93,5 @@ Finish:
 
 - 2026-11-05: task 5 split into 5, 5b, 5c and 5d, one contract behaviour per test.
 - 2026-11-05: task 6 split into 6 and 6b: the contract, then surviving a reopen.
+- 2026-11-06: task 7 split into 7 and 7b: the contract, then surviving a reopen.
 - 2026-11-05: `task test:init` is expected to fail until task 16 removes the `@wip` tags: "The new project is healthy" (both examples) runs `go test ./test/...` with no `~@wip`, so the undefined `@wip` steps fail under Strict. Agreed: in tasks 6 and 7 it counts as passing if only those two fail.

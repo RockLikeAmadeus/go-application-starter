@@ -12,6 +12,17 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
 )
 
+// openStore opens a store on dir, closed when the test ends.
+func openStore(t *testing.T, dir string) *sqlite.Store {
+	t.Helper()
+	store, err := sqlite.Open(dir)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { store.Close() })
+	return store
+}
+
 func TestOpenCreatesAMigratedWALDatabaseThatSeveralStoresShare(t *testing.T) {
 	dir := t.TempDir()
 	first, err := sqlite.Open(dir)
