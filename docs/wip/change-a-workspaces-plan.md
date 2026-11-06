@@ -87,7 +87,10 @@ Plans adapter:
    - Red: `TestStoredPlanOf_AnswersTheDefaultForAWorkspaceWithNoStoredPlan` fails, `PlanOf: not found`.
    - Green: `StoredPlanOf` answers `fallback` on any repository error; 9c narrows that to `ErrNotFound`.
    - Refactor: `StoredPlanOf`'s comment names the fallback; no code change. Defaulting on every error stays for 9c to demand.
-9c. [ ] `StoredPlanOf` passes on any other error, never defaulting.
+9c. [x] `StoredPlanOf` passes on any other error, never defaulting.
+   - Red: `TestStoredPlanOf_PassesOnAnyOtherErrorInsteadOfTheDefault` fails, `PlanOf = "free", <nil>, want the repository's error`.
+   - Green: `StoredPlanOf` answers `fallback` only on `ErrNotFound`, and returns any other error.
+   - Refactor: `StoredPlanOf`'s comment says other errors are passed on; no code change.
 
 Wiring:
 10. [ ] `bootstrap.NewBilling` refuses in the local edition with `ErrLocalPlanIsFixed`, opening no storage, and refuses `--server`.

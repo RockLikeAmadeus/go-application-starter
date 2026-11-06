@@ -288,6 +288,24 @@ func TestStoredPlanOf_AnswersTheDefaultForAWorkspaceWithNoStoredPlan(t *testing.
 	}
 }
 
+// errPlans is the error unreadablePlans fails with.
+var errPlans = errors.New("plans unavailable")
+
+// unreadablePlans is a ports.WorkspacePlanRepository whose read always fails.
+type unreadablePlans struct{ testsupport.StoredPlans }
+
+func (unreadablePlans) PlanOf(context.Context, domain.WorkspaceID) (string, error) {
+	return "", errPlans
+}
+
+func TestStoredPlanOf_PassesOnAnyOtherErrorInsteadOfTheDefault(t *testing.T) {
+	got, err := plans.StoredPlanOf(unreadablePlans{}, "free")(context.Background(), "ws-a")
+
+	if !errors.Is(err, errPlans) {
+		t.Fatalf("PlanOf = %q, %v, want the repository's error", got, err)
+	}
+}
+
 func TestDefault_HasALocalPlanWithNoLimits(t *testing.T) {
 	catalog, err := plans.Default()
 	if err != nil {

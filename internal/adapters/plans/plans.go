@@ -7,6 +7,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -197,14 +198,15 @@ func (p Provider) plansWith(feature string) []string {
 }
 
 // StoredPlanOf returns a Provider.PlanOf that reads each workspace's plan from
-// the repository, answering fallback when it has none.
+// the repository, answering fallback when it has none. Any other error is passed
+// on, so a failed read never puts a workspace on the fallback plan.
 func StoredPlanOf(repository ports.WorkspacePlanRepository, fallback string) func(context.Context, domain.WorkspaceID) (string, error) {
 	return func(ctx context.Context, workspace domain.WorkspaceID) (string, error) {
 		plan, err := repository.PlanOf(ctx, workspace)
-		if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
 			return fallback, nil
 		}
-		return plan, nil
+		return plan, err
 	}
 }
 
