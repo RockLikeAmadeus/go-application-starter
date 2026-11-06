@@ -132,7 +132,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestOtherDevicesReturnsDevicesWithARecentMark` failed: the stub returned nothing.
   - Green: `OtherDevices` lists the device named in each file in `.devices`. No filters yet (11b–11d).
   - Refactor: nothing. The loop is short, and 11c and 11d decide the shape of its read and decode. Lint accepts the two parameters that 11b and 11c will use.
-- [ ] 11b. `OtherDevices` leaves out this device.
+- [x] 11b. `OtherDevices` leaves out this device.
+  - Red: `TestOtherDevicesLeavesOutThisDevice` failed: the result was `["desktop" "laptop"]`.
+  - Green: `OtherDevices` skips a mark whose device is `thisDevice`.
+  - Refactor: nothing. The check reads the device in the file, not its name, so a conflict copy of our own mark is skipped too. 11c and 11d decide the loop's shape.
 - [ ] 11c. `OtherDevices` leaves out marks five minutes old or more.
 - [ ] 11d. `OtherDevices` leaves out unreadable files, and a folder with no marks has no other devices.
 - [ ] 12. A mark is written atomically to `.devices/<device>.json`, is renewed on each tick, and is removed on stopping.

@@ -25,7 +25,9 @@ func OtherDevices(dir, thisDevice string, now time.Time) []string {
 		var mark deviceMark
 		data, _ := os.ReadFile(filepath.Join(marksDir, entry.Name()))
 		_ = json.Unmarshal(data, &mark)
-		devices = append(devices, mark.Device)
+		if mark.Device != thisDevice {
+			devices = append(devices, mark.Device)
+		}
 	}
 	return devices
 }

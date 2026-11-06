@@ -40,3 +40,15 @@ func TestOtherDevicesReturnsDevicesWithARecentMark(t *testing.T) {
 		t.Errorf("OtherDevices() = %q, want %q", got, want)
 	}
 }
+
+func TestOtherDevicesLeavesOutThisDevice(t *testing.T) {
+	dir := t.TempDir()
+	markFolder(t, dir, "desktop", markTestNow.Add(-time.Minute))
+	markFolder(t, dir, "laptop", markTestNow.Add(-time.Minute))
+
+	got := syncedfolder.OtherDevices(dir, "desktop", markTestNow)
+
+	if want := []string{"laptop"}; !slices.Equal(got, want) {
+		t.Errorf("OtherDevices() = %q, want %q", got, want)
+	}
+}
