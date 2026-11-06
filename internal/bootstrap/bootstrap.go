@@ -210,9 +210,18 @@ func otherDeviceWarning(cfg config.Config) (string, bool) {
 			"devices at once while plain-text storage is enabled can result in lost changes: please close the " +
 			"application on your other device before continuing.", true
 	}
-	return "Your data folder appears to be in use on " + strings.Join(devices, " and ") + ". Running the " +
+	return "Your data folder appears to be in use on " + deviceList(devices) + ". Running the " +
 		"application from multiple devices at once while plain-text storage is enabled can result in lost " +
 		"changes: please close the application on your other devices before continuing.", true
+}
+
+// deviceList names two or more devices: "a and b", or "a, b, and c".
+func deviceList(devices []string) string {
+	last := len(devices) - 1
+	if last == 1 {
+		return devices[0] + " and " + devices[1]
+	}
+	return strings.Join(devices[:last], ", ") + ", and " + devices[last]
 }
 
 // localEntitlementsProvider answers LocalPlan, from plansFile or else the plans file

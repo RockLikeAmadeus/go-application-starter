@@ -84,7 +84,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestApp_WarningNamesEveryOtherDevice` pins the agreed wording; failed on the old text.
   - Green: `otherDeviceWarning` uses the agreed text, joining the names with " and ".
   - Refactor: nothing changed. Task 2c replaces the join, so a helper now would be guesswork.
-- [ ] 2c. The warning for three or more other devices, with the Oxford comma.
+- [x] 2c. The warning for three or more other devices, with the Oxford comma.
+  - Red: `TestApp_WarningListsThreeOtherDevicesWithTheOxfordComma` pins the agreed join; failed with "home-pc and work-laptop and work-phone".
+  - Green: `otherDeviceWarning` joins three or more names with commas and ", and ".
+  - Refactor: moved the join into `deviceList`. Left separate from `PlansPhrase`: plans end in "or", and tasks 4 and 5 rewrite it.
 - [ ] 3. The SQLite synced folder warning.
 - [ ] 4. The feature error, in its one-plan, several-plans and no-plan forms.
 - [ ] 5. The web, CLI and TUI plan notes, with the Oxford comma in lists of three or more plans.

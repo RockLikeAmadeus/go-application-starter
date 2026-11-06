@@ -359,6 +359,18 @@ func TestApp_WarningNamesEveryOtherDevice(t *testing.T) {
 	}
 }
 
+// Three or more names are a list, so they take the Oxford comma.
+func TestApp_WarningListsThreeOtherDevicesWithTheOxfordComma(t *testing.T) {
+	got := warningsWithMarksFrom(t, "home-pc", "work-laptop", "work-phone")
+
+	want := []string{"Your data folder appears to be in use on home-pc, work-laptop, and work-phone. Running the " +
+		"application from multiple devices at once while plain-text storage is enabled can result in lost changes: " +
+		"please close the application on your other devices before continuing."}
+	if !slices.Equal(got, want) {
+		t.Errorf("Warnings = %q, want %q", got, want)
+	}
+}
+
 // This computer's own mark is left by the app itself, perhaps a moment ago by
 // another copy of it, so it isn't a reason to warn.
 func TestApp_ThisDevicesOwnMarkGivesNoWarning(t *testing.T) {
