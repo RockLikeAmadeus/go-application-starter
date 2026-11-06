@@ -21,18 +21,30 @@ type deviceMark struct {
 
 // OtherDevices returns the devices other than thisDevice with a recent mark in
 // dir, as of now. A mark's time comes from the device that wrote it, so a
-// skewed clock can miss a device or keep a stale one.
+// skewed clock can miss a device or keep a stale one. Files that aren't marks
+// are left out.
 func OtherDevices(dir, thisDevice string, now time.Time) []string {
 	marksDir := filepath.Join(dir, deviceMarksFolder)
 	entries, _ := os.ReadDir(marksDir)
 	var devices []string
 	for _, entry := range entries {
-		var mark deviceMark
-		data, _ := os.ReadFile(filepath.Join(marksDir, entry.Name()))
-		_ = json.Unmarshal(data, &mark)
-		if mark.Device != thisDevice && now.Sub(mark.Time) < markStaleAfter {
+		mark, ok := readMark(filepath.Join(marksDir, entry.Name()))
+		if ok && mark.Device != thisDevice && now.Sub(mark.Time) < markStaleAfter {
 			devices = append(devices, mark.Device)
 		}
 	}
 	return devices
+}
+
+// readMark returns the mark in the file at path, and whether the file is one.
+func readMark(path string) (deviceMark, bool) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return deviceMark{}, false
+	}
+	var mark deviceMark
+	if err := json.Unmarshal(data, &mark); err != nil {
+		return deviceMark{}, false
+	}
+	return mark, mark.Device != ""
 }

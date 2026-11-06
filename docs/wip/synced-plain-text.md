@@ -140,7 +140,11 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestOtherDevicesLeavesOutMarksFiveMinutesOldOrMore` failed: the result was `["laptop" "phone" "tablet"]`.
   - Green: `OtherDevices` skips a mark at least `markStaleAfter` old, reading the mark's `time`.
   - Refactor: `OtherDevices`' doc comment says recent, and notes the clock limit. The one condition stays until 11d reshapes the loop.
-- [ ] 11d. `OtherDevices` leaves out unreadable files, and a folder with no marks has no other devices.
+- [x] 11d. `OtherDevices` leaves out files that aren't marks.
+  - Red: `TestOtherDevicesLeavesOutFilesThatAreNotMarks` failed for no device and a device that isn't text: the result was `["laptop" ""]`. The other three kinds already fell out as stale, with a zero time.
+  - Green: `OtherDevices` skips a mark with no device.
+  - Refactor: `readMark` checks the read and decode errors, which had worked only because a zero time is stale, and says whether the file is a mark.
+- [ ] 11e. A folder with no marks has no other devices.
 - [ ] 12. A mark is written atomically to `.devices/<device>.json`, is renewed on each tick, and is removed on stopping.
 - [ ] 13. `bootstrap` warns about other devices on plain text, naming them. Define the device steps; turns the 3 warning scenarios green.
 - [ ] 14. `bootstrap` marks the folder only when it looks synced and `ignore_synced_folder` is off, and `App.Close` stops the mark before the store closes. Define the mark steps; turns the last 4 scenarios green.
@@ -163,3 +167,4 @@ Run the init suite at tasks 5b, 7d, 7e, 9 and 10 too: they add code next to the 
 - Task 9 split: the warning is 9, and a failed scan is 9b, as it needs its own test. The spec says the app keeps working, so a failed scan warns rather than stopping it.
 - Task 8 split: listing is 8, hidden folders 8b and files that aren't records 8c, as each needs its own test. The benchmarks move from 8b to 8d.
 - Task 11 split: recent marks are 11, this device 11b, old marks 11c and unreadable files 11d, as each needs its own test.
+- Task 11d split: files that aren't marks are 11d, and a folder with no marks is 11e, as each needs its own test.

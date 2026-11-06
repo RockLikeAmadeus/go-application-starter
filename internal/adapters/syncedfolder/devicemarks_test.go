@@ -65,3 +65,33 @@ func TestOtherDevicesLeavesOutMarksFiveMinutesOldOrMore(t *testing.T) {
 		t.Errorf("OtherDevices() = %q, want %q", got, want)
 	}
 }
+
+func TestOtherDevicesLeavesOutFilesThatAreNotMarks(t *testing.T) {
+	recent := markTestNow.Add(-time.Minute).Format(time.RFC3339)
+	tests := []struct {
+		name     string
+		contents string
+	}{
+		{"not JSON", "not a mark"},
+		{"empty", ""},
+		{"no device", `{"time":"` + recent + `"}`},
+		{"device isn't text", `{"device":5,"time":"` + recent + `"}`},
+		{"time isn't a time", `{"device":"phone","time":"soon"}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			markFolder(t, dir, "laptop", markTestNow.Add(-time.Minute))
+			notAMark := filepath.Join(dir, ".devices", "phone.json")
+			if err := os.WriteFile(notAMark, []byte(tt.contents), 0o600); err != nil {
+				t.Fatal(err)
+			}
+
+			got := syncedfolder.OtherDevices(dir, "desktop", markTestNow)
+
+			if want := []string{"laptop"}; !slices.Equal(got, want) {
+				t.Errorf("OtherDevices() = %q, want %q", got, want)
+			}
+		})
+	}
+}
