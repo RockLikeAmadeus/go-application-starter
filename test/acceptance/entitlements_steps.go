@@ -12,7 +12,8 @@ import (
 )
 
 // registerEntitlementsSteps binds the steps about plans and which one a
-// workspace is on. "My workspace" is the one the scenario works in.
+// workspace is on. "My workspace" is the one the scenario works in; a named
+// workspace needs @workspaces, because only those drivers can switch to it.
 func (w *world) registerEntitlementsSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^the "([^"]*)" plan has no limits$`, w.thePlanHasNoLimits)
 	sc.Step(`^my workspace is on the "([^"]*)" plan$`, w.moveMyWorkspaceToThePlan)
@@ -20,6 +21,9 @@ func (w *world) registerEntitlementsSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^an admin moves my workspace to the "([^"]*)" plan$`, w.moveMyWorkspaceToThePlan)
 	sc.Step(`^an admin tries to move my workspace to the "([^"]*)" plan$`, w.anAdminTriesToMoveMyWorkspaceToThePlan)
 	sc.Step(`^my workspace's plan is "([^"]*)"$`, w.myWorkspacesPlanIs)
+	sc.Step(`^workspace "([^"]*)" is on the "([^"]*)" plan$`, w.moveWorkspaceToThePlan)
+	sc.Step(`^an admin moves workspace "([^"]*)" to the "([^"]*)" plan$`, w.moveWorkspaceToThePlan)
+	sc.Step(`^workspace "([^"]*)"'s plan is "([^"]*)"$`, w.workspacesPlanIs)
 }
 
 // errFixedPlans is returned by the steps that set plans on a driver whose
@@ -35,14 +39,11 @@ func (w *world) thePlanHasNoLimits(plan string) error {
 }
 
 func (w *world) moveMyWorkspaceToThePlan(ctx context.Context, plan string) error {
-	if w.plans == nil {
-		return errFixedPlans
-	}
 	ws, err := workspace.FromContext{}.CurrentWorkspace(ctx)
 	if err != nil {
 		return err
 	}
-	return w.billing.ChangePlan(ctx, ws, plan)
+	return w.moveWorkspaceToThePlan(string(ws), plan)
 }
 
 func (w *world) anAdminTriesToMoveMyWorkspaceToThePlan(ctx context.Context, plan string) error {
@@ -59,4 +60,15 @@ func (w *world) myWorkspacesPlanIs(ctx context.Context, plan string) error {
 		return fmt.Errorf("plan = %q, want %q", got.Plan, plan)
 	}
 	return nil
+}
+
+func (w *world) moveWorkspaceToThePlan(name, plan string) error {
+	if w.plans == nil {
+		return errFixedPlans
+	}
+	return w.billing.ChangePlan(context.Background(), domain.WorkspaceID(name), plan)
+}
+
+func (w *world) workspacesPlanIs(name, plan string) error {
+	return w.myWorkspacesPlanIs(in(name), plan)
 }

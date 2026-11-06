@@ -134,7 +134,10 @@ Acceptance:
    - Red: with the step stubbed, the scenario fails on memory, jsonfile, sqlite and http, `expected a validation error, got <nil>`.
    - Green: the step keeps `moveMyWorkspaceToThePlan`'s refusal in `lastErr`.
    - Refactor: nothing worth changing; the step is one line over its sibling. The `%w` of a nil error in the `iAmTold…` steps' messages is shared by many steps, so it's left.
-12c. [ ] Bind "workspace "X" is on", "an admin moves workspace "X"" and ""X"'s plan is". Scenario "Moving one workspace leaves the others on their plans".
+12c. [x] Bind "workspace "X" is on", "an admin moves workspace "X"" and ""X"'s plan is". Scenario "Moving one workspace leaves the others on their plans".
+   - Red: with the admin step stubbed, the scenario fails on memory, jsonfile and sqlite, `plan = "free", want "pro"`.
+   - Green: the steps call `ChangePlan` with the named workspace and read its plan through `in(name)`.
+   - Refactor: `moveMyWorkspaceToThePlan` resolves the workspace and calls `moveWorkspaceToThePlan`, which alone checks `w.plans`; no production change.
 13. [ ] Desktop steps: "I try to move my workspace to the … plan from the command line" runs the CLI in-process, and "I am told the local edition's plan is set when the app is built" checks `ErrLocalPlanIsFixed`.
 14. [ ] Terminal step: "I ask the command line to move the workspace … to the … plan" runs `starter admin set-plan`.
 
