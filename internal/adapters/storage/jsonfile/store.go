@@ -169,6 +169,14 @@ func readRecords[R any](s *Store, table string) (map[string]R, error) {
 	return records, nil
 }
 
+// deleteRecord removes <dir>/<table>/<key>.json.
+func deleteRecord(s *Store, table, key string) error {
+	if err := os.Remove(filepath.Join(s.dir, table, recordFileName(key))); err != nil {
+		return fmt.Errorf("delete %s/%s: %w", table, key, err)
+	}
+	return nil
+}
+
 // replaceFile atomically writes data, and a final newline, to path: write a
 // temp file in the same directory, fsync it, then rename over the original.
 func replaceFile(path string, data []byte) error {

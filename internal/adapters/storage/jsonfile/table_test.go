@@ -173,3 +173,26 @@ func TestReadingATableSkipsWhatIsNotAJSONFile(t *testing.T) {
 		t.Errorf("readRecords = %v, want one record under key 1", got)
 	}
 }
+
+func TestDeletingARecordRemovesOnlyItsFile(t *testing.T) {
+	s := openTestStore(t)
+	const key = "workspace/1"
+	if err := writeRecord(s, "things", key, record{Name: "one"}); err != nil {
+		t.Fatalf("writeRecord error = %v", err)
+	}
+	if err := writeRecord(s, "things", "2", record{Name: "two"}); err != nil {
+		t.Fatalf("writeRecord error = %v", err)
+	}
+
+	if err := deleteRecord(s, "things", key); err != nil {
+		t.Fatalf("deleteRecord error = %v", err)
+	}
+
+	got, err := readRecords[record](s, "things")
+	if err != nil {
+		t.Fatalf("readRecords error = %v", err)
+	}
+	if len(got) != 1 || got["2"] != (record{Name: "two"}) {
+		t.Errorf("readRecords = %v, want only the record under key 2", got)
+	}
+}

@@ -50,7 +50,11 @@ One file per record (`jsonfile`):
   - Red: `TestReadingATableSkipsWhatIsNotAJSONFile` failed: `readRecords` tried to decode `.1.json.icloud`.
   - Green: `readRecords` skips folders and names without the `.json` extension.
   - Refactor: nothing. `readRecords` is still short; tasks 7 and 8 will show whether the per-file decode should be its own function.
-- [ ] 5. `ItemRepository` keeps each item in its own file, and saving one leaves the others untouched (contract and isolation suites stay green). Sample thin use. Define the "each item has its own file" step.
+- [x] 5. Deleting a record removes its file, and no other.
+  - Red: `TestDeletingARecordRemovesOnlyItsFile` failed: the stub left the record in place.
+  - Green: `deleteRecord` removes `recordFileName(key)` from the table's folder.
+  - Refactor: nothing. The path join in `writeRecord` and `deleteRecord` is one short line, so a helper wouldn't simplify it.
+- [ ] 5b. `ItemRepository` keeps each item in its own file, and saving one leaves the others untouched (contract and isolation suites stay green). Sample thin use. Define the "each item has its own file" step.
 - [ ] 6. `WorkspacePlanRepository` keeps each workspace's plan in its own file.
 
 Conflict copies (`jsonfile`, then `bootstrap`):
@@ -69,9 +73,10 @@ Finish:
 - [ ] 15. Docs: ADR 3 (layout, version 2, what "one file per domain type" became), ADR 5 if a detail changed, `docs/data-locations.md` (including `workspace_plans.json` and the iCloud limit), `docs/configuration.md` (`ignore_synced_folder` also stops the mark), `.claude/rules/storage.md`, the `jsonfile` package comment.
 - [ ] 16. Run `task test:init`, `task check` and `task accept`, remove `@wip`, delete this file, and mark step 5 done in the plan.
 
-Run `task test:init` at tasks 5, 9 and 10 too: they add code next to the sample's.
+Run `task test:init` at tasks 5b, 9 and 10 too: they add code next to the sample's.
 
 ## Changes to the plan
 
 - Task 1: `readTable`/`writeTable` and `table_test.go` can't go until the repositories stop using them, so `writeRecord`/`readRecords` come in beside them, and tasks 5 and 6 remove the old ones.
 - Task 3 split: the missing table is task 3, and refusing an unknown version is task 3b, as each needs its own test.
+- Task 5 split: `deleteRecord` is task 5 and moving `ItemRepository` is 5b. No template repository deletes, so the helper needs a template test of its own, or `unused` fails once `--remove-sample` drops the items. `ItemRepository` needs it first, so it comes first. Run `task test:init` at 5b, not 5.
