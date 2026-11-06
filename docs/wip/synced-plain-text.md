@@ -42,7 +42,10 @@ One file per record (`jsonfile`):
   - Red: `TestTableWithNoRecordsFolderIsEmpty` failed: `readRecords` returned the "no such file or directory" error.
   - Green: `readRecords` returns an empty table when the folder doesn't exist.
   - Refactor: nothing. The same check in `readTable` goes with it in tasks 5 and 6.
-- [ ] 3b. A file with an unknown version is refused.
+- [x] 3b. A file with an unknown version is refused.
+  - Red: `TestRecordWithAnUnknownVersionIsRefused` failed: `readRecords` returned no error for version 99.
+  - Green: `readRecords` refuses a file whose version isn't `recordFormatVersion`.
+  - Refactor: nothing. `readTable`'s matching check goes in tasks 5 and 6.
 - [ ] 4. Reading a table skips what isn't a `.json` file, such as leftover temp files.
 - [ ] 5. `ItemRepository` keeps each item in its own file, and saving one leaves the others untouched (contract and isolation suites stay green). Sample thin use. Define the "each item has its own file" step.
 - [ ] 6. `WorkspacePlanRepository` keeps each workspace's plan in its own file.

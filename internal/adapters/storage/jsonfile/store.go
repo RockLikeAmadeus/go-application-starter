@@ -158,6 +158,9 @@ func readRecords[R any](s *Store, table string) (map[string]R, error) {
 		if err := json.Unmarshal(data, &file); err != nil {
 			return nil, fmt.Errorf("decode %s/%s: %w", table, entry.Name(), err)
 		}
+		if file.Version != recordFormatVersion {
+			return nil, fmt.Errorf("%s/%s: unsupported file version %d", table, entry.Name(), file.Version)
+		}
 		records[file.Key] = file.Record
 	}
 	return records, nil
