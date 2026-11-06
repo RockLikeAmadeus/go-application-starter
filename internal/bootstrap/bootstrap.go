@@ -190,8 +190,9 @@ func conflictCopyWarning(store *jsonfile.Store) (string, bool) {
 			"a file sync service. A change may be missing from your data. Please compare it with the original file, " +
 			"then either delete it or use it to replace the original before continuing.", true
 	}
-	return fmt.Sprintf("Your data folder has %d conflict copies left by a sync service, so changes may be missing: "+
-		"%s. Keep the versions you want and delete the others.", len(copies), names), true
+	return fmt.Sprintf("Your data folder contains %d conflicted copies that appear to have been created by a file "+
+		"sync service: %s. Changes may be missing from your data. Please compare each one with its original file, "+
+		"then either delete it or use it to replace the original before continuing.", len(copies), names), true
 }
 
 // otherDeviceWarning warns when another device's mark says it has a plain-text

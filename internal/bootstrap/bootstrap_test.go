@@ -291,8 +291,9 @@ func TestApp_WarnsAboutConflictCopiesOnPlainText(t *testing.T) {
 	one := "Your data folder contains 1 conflicted copy, " + first + ", which appears to have been created by " +
 		"a file sync service. A change may be missing from your data. Please compare it with the original file, " +
 		"then either delete it or use it to replace the original before continuing."
-	many := "Your data folder has 2 conflict copies left by a sync service, so changes may be missing: " +
-		first + ", " + second + ". Keep the versions you want and delete the others."
+	many := "Your data folder contains 2 conflicted copies that appear to have been created by a file sync service: " +
+		first + ", " + second + ". Changes may be missing from your data. Please compare each one with its original " +
+		"file, then either delete it or use it to replace the original before continuing."
 	cases := []struct {
 		name         string
 		copies       []string

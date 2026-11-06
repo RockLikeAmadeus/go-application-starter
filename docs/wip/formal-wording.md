@@ -67,7 +67,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestApp_WarnsAboutConflictCopiesOnPlainText` pins the one-copy wording; its two one-copy cases failed on the old text.
   - Green: `conflictCopyWarning` uses the agreed text; `SPEC.md`'s rule and example corrected.
   - Refactor: nothing changed; the test spells the text out on purpose, and tasks 1b and 1c rewrite the rest of the function.
-- [ ] 1b. The several conflict copies warning.
+- [x] 1b. The several conflict copies warning.
+  - Red: `TestApp_WarnsAboutConflictCopiesOnPlainText/several_copies` pins the agreed wording; failed on the old text.
+  - Green: `conflictCopyWarning` uses the agreed text.
+  - Refactor: nothing changed. The two wordings stay whole so each reads as written; nothing else quotes the old text.
 - [ ] 1c. The scan failed warning.
 - [ ] 2. The other device warning, with separate one-device and several-device wording.
 - [ ] 3. The SQLite synced folder warning.
