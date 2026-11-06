@@ -226,6 +226,23 @@ func TestReadRecordOfAFileWhoseKeyDoesNotMatchItsNameIsNotFound(t *testing.T) {
 	}
 }
 
+func TestReadRecordOfAFileWithAnUnknownVersionIsRefused(t *testing.T) {
+	s := openTestStore(t)
+	dir := filepath.Join(s.dir, "things")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := []byte(`{"version": 99, "key": "1", "record": {"name": "one"}}`)
+	if err := os.WriteFile(filepath.Join(dir, "1.json"), content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := readRecord[record](s, "things", "1")
+	if err == nil || !strings.Contains(err.Error(), "unsupported file version 99") {
+		t.Errorf("readRecord error = %v, want unsupported file version 99", err)
+	}
+}
+
 func TestDeletingARecordRemovesOnlyItsFile(t *testing.T) {
 	s := openTestStore(t)
 	const key = "workspace/1"

@@ -122,9 +122,6 @@ func readRecords[R any](s *Store, table string) (map[string]R, error) {
 		if err != nil {
 			return nil, err
 		}
-		if file.Version != recordFormatVersion {
-			return nil, fmt.Errorf("%s/%s: unsupported file version %d", table, entry.Name(), file.Version)
-		}
 		if entry.Name() != recordFileName(file.Key) {
 			continue
 		}
@@ -150,7 +147,8 @@ func readRecord[R any](s *Store, table, key string) (R, error) {
 	return file.Record, nil
 }
 
-// readRecordFile reads and decodes one file in <dir>/<table>.
+// readRecordFile reads and decodes one file in <dir>/<table>, and refuses a
+// version it doesn't know.
 func readRecordFile[R any](s *Store, table, name string) (recordFile[R], error) {
 	var file recordFile[R]
 	data, err := os.ReadFile(filepath.Join(s.dir, table, name))
@@ -159,6 +157,9 @@ func readRecordFile[R any](s *Store, table, name string) (recordFile[R], error) 
 	}
 	if err := json.Unmarshal(data, &file); err != nil {
 		return file, fmt.Errorf("decode %s/%s: %w", table, name, err)
+	}
+	if file.Version != recordFormatVersion {
+		return file, fmt.Errorf("%s/%s: unsupported file version %d", table, name, file.Version)
 	}
 	return file, nil
 }

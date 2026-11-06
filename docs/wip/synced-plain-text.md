@@ -82,7 +82,10 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: `TestReadRecordOfAFileWhoseKeyDoesNotMatchItsNameIsNotFound` failed: `readRecord` returned no error for a file holding key 1 under the name `2.json`.
   - Green: `readRecord` returns `domain.ErrNotFound` when the file's key isn't the one asked for, checked after other errors so that a decode failure stays an error.
   - Refactor: `readRecord`'s doc comment covers the key check. The body stays as it is until 7b4 adds its last check.
-- [ ] 7b4. `readRecord` refuses a file with an unknown version.
+- [x] 7b4. `readRecord` refuses a file with an unknown version.
+  - Red: `TestReadRecordOfAFileWithAnUnknownVersionIsRefused` failed: `readRecord` returned no error for version 99.
+  - Green: `readRecord` refuses a file whose version isn't `recordFormatVersion`.
+  - Refactor: the version check moved into `readRecordFile`, so both readers share it. It still runs before the key check.
 - [ ] 7c. `WorkspacePlanRepository.PlanOf` reads only that workspace's file.
 - [ ] 7d. `ItemRepository.FindByID` and `Delete` read only that item's file. Sample thin use.
 - [ ] 8. `Store.ConflictCopies` lists them across tables, sorted, as paths relative to the data folder, leaving out hidden folders and files that aren't records.
