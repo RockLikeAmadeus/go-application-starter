@@ -70,7 +70,13 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: `TestReadingATableSkipsAFileWhoseKeyDoesNotMatchItsName` failed for all six names: the copy came back as record 1.
   - Green: `readRecords` skips a file whose name isn't `recordFileName(file.Key)`.
   - Refactor: `readRecords`' doc comment explains the skip. The per-file decode stays inline until task 7b gives it a second caller.
-- [ ] 7b. `readRecord` returns one record from its own file without reading any other, and a missing file, or one whose key doesn't match its name, is not found.
+- [x] 7b. `readRecord` returns one record from its own file without reading any other.
+  - Red: `TestReadRecordReturnsOneRecordWithoutReadingAnyOther` failed: the stub returned an empty record.
+  - Green: `readRecord` reads and decodes `recordFileName(key)` alone. No not found, key or version checks yet (7b2–7b4).
+  - Refactor: `readRecordFile` holds the read and decode for `readRecords` and `readRecord`. The version check stays in `readRecords` until 7b4 moves it in.
+- [ ] 7b2. `readRecord` returns not found for a missing file.
+- [ ] 7b3. `readRecord` returns not found for a file whose key doesn't match its name.
+- [ ] 7b4. `readRecord` refuses a file with an unknown version.
 - [ ] 7c. `WorkspacePlanRepository.PlanOf` reads only that workspace's file.
 - [ ] 7d. `ItemRepository.FindByID` and `Delete` read only that item's file. Sample thin use.
 - [ ] 8. `Store.ConflictCopies` lists them across tables, sorted, as paths relative to the data folder, leaving out hidden folders and files that aren't records.
@@ -97,3 +103,4 @@ Run the init suite at tasks 5b, 7d, 9 and 10 too: they add code next to the samp
 - Task 5 split: `deleteRecord` is task 5 and moving `ItemRepository` is 5b. No template repository deletes, so the helper needs a template test of its own, or `unused` fails once `--remove-sample` drops the items. `ItemRepository` needs it first, so it comes first. Run `task test:init` at 5b, not 5.
 - Task 5b: `task test:init` is red until the `@wip` tags go (it was at HEAD too), so tasks 5b, 7d, 9 and 10 check on a copy without the feature file, as the note under the task list says.
 - Tasks 7b–7d and 8b added after task 6, from a question about the cost of opening many files. `readRecords` opens every file even to find one record, so lookups get their own read, and benchmarks replace our estimates. This reverses 5b's note that `FindByID` and `Delete` keep the full read: a direct read can't pick up a conflict copy, because it has a different name, so only the key check is needed. 8b comes after 8 so that it covers the scan.
+- Task 7b split: reading is 7b, a missing file 7b2 and a mismatched key 7b3, as each needs its own test. 7b4 is new: without it, moving lookups onto `readRecord` in 7c and 7d would drop task 3b's version refusal for them.

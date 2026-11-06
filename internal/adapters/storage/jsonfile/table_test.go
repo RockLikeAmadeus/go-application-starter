@@ -173,6 +173,25 @@ func TestReadingATableSkipsAFileWhoseKeyDoesNotMatchItsName(t *testing.T) {
 	}
 }
 
+func TestReadRecordReturnsOneRecordWithoutReadingAnyOther(t *testing.T) {
+	s := openTestStore(t)
+	if err := writeRecord(s, "things", "1", record{Name: "one"}); err != nil {
+		t.Fatalf("writeRecord error = %v", err)
+	}
+	// Reading the whole table would fail on this file.
+	if err := os.WriteFile(filepath.Join(s.dir, "things", "2.json"), []byte("not a record"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := readRecord[record](s, "things", "1")
+	if err != nil {
+		t.Fatalf("readRecord error = %v", err)
+	}
+	if got != (record{Name: "one"}) {
+		t.Errorf("readRecord = %+v, want the record named one", got)
+	}
+}
+
 func TestDeletingARecordRemovesOnlyItsFile(t *testing.T) {
 	s := openTestStore(t)
 	const key = "workspace/1"

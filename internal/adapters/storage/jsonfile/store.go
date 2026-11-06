@@ -116,13 +116,9 @@ func readRecords[R any](s *Store, table string) (map[string]R, error) {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		file, err := readRecordFile[R](s, table, entry.Name())
 		if err != nil {
-			return nil, fmt.Errorf("read %s/%s: %w", table, entry.Name(), err)
-		}
-		var file recordFile[R]
-		if err := json.Unmarshal(data, &file); err != nil {
-			return nil, fmt.Errorf("decode %s/%s: %w", table, entry.Name(), err)
+			return nil, err
 		}
 		if file.Version != recordFormatVersion {
 			return nil, fmt.Errorf("%s/%s: unsupported file version %d", table, entry.Name(), file.Version)
@@ -133,6 +129,25 @@ func readRecords[R any](s *Store, table string) (map[string]R, error) {
 		records[file.Key] = file.Record
 	}
 	return records, nil
+}
+
+// readRecord loads the one record with this key from its own file.
+func readRecord[R any](s *Store, table, key string) (R, error) {
+	file, err := readRecordFile[R](s, table, recordFileName(key))
+	return file.Record, err
+}
+
+// readRecordFile reads and decodes one file in <dir>/<table>.
+func readRecordFile[R any](s *Store, table, name string) (recordFile[R], error) {
+	var file recordFile[R]
+	data, err := os.ReadFile(filepath.Join(s.dir, table, name))
+	if err != nil {
+		return file, fmt.Errorf("read %s/%s: %w", table, name, err)
+	}
+	if err := json.Unmarshal(data, &file); err != nil {
+		return file, fmt.Errorf("decode %s/%s: %w", table, name, err)
+	}
+	return file, nil
 }
 
 // deleteRecord removes <dir>/<table>/<key>.json.
