@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"strings"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
@@ -193,9 +194,11 @@ func conflictCopyWarning(store *jsonfile.Store) (string, bool) {
 }
 
 // otherDeviceWarning warns when another device's mark says it has a plain-text
-// data folder in use, naming every such device.
+// data folder in use, naming every such device. This computer's name tells its
+// own mark apart; if it can't be read, every mark counts as another device's.
 func otherDeviceWarning(cfg config.Config) (string, bool) {
-	devices := syncedfolder.OtherDevices(cfg.DataDir, "", system.Clock{}.Now())
+	thisDevice, _ := os.Hostname()
+	devices := syncedfolder.OtherDevices(cfg.DataDir, thisDevice, system.Clock{}.Now())
 	if len(devices) == 0 {
 		return "", false
 	}

@@ -171,7 +171,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestApp_WarningNamesEveryOtherDevice` failed: the warning named `laptop` but not `phone`.
   - Green: `otherDeviceWarning` joins every device from `OtherDevices`, with ", " like the conflict copy list.
   - Refactor: only its doc comment. The two warning tests share their setup; left until 13c shows what it needs.
-- [ ] 13c. This device's own mark gives no warning.
+- [x] 13c. This device's own mark gives no warning.
+  - Red: `TestApp_ThisDevicesOwnMarkGivesNoWarning` failed: the warning named this computer.
+  - Green: `otherDeviceWarning` passes `os.Hostname()` as this device; if it can't be read, every mark counts as another device's.
+  - Refactor: `warningsWithMarksFrom` holds the warning tests' setup; made-up devices are now `work-laptop` and `work-phone`, so a computer named `laptop` doesn't fail them.
 - [ ] 14. `bootstrap` marks the folder only when it looks synced and `ignore_synced_folder` is off, and `App.Close` stops the mark before the store closes. Define the mark steps; turns the last 4 scenarios green.
 
 Finish:

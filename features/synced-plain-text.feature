@@ -66,21 +66,21 @@ Feature: Keep plain-text data in a synced folder
 
     Scenario: The desktop app warns when another device is using the data
       Given the desktop app keeps its data as plain text in a folder synced by Dropbox
-      And the device "laptop" marked the data folder as in use 1 minute ago
+      And the device "work-laptop" marked the data folder as in use 1 minute ago
       When I close the desktop app and open it again
-      Then the desktop app warns that the data folder looks in use on "laptop"
+      Then the desktop app warns that the data folder looks in use on "work-laptop"
 
     Scenario: The command line warns when another device is using the data, and still works
       Given the desktop app keeps its data as plain text in a folder synced by Dropbox
-      And the device "laptop" marked the data folder as in use 1 minute ago
+      And the device "work-laptop" marked the data folder as in use 1 minute ago
       When I close the desktop app
       And I ask the command line where my data is
-      Then the command line warns that the data folder looks in use on "laptop"
+      Then the command line warns that the data folder looks in use on "work-laptop"
       And it names the desktop app's data folder
 
     Scenario: A device that stopped long ago doesn't count
       Given the desktop app keeps its data as plain text in a folder synced by Dropbox
-      And the device "laptop" marked the data folder as in use 1 hour ago
+      And the device "work-laptop" marked the data folder as in use 1 hour ago
       When I close the desktop app and open it again
       Then the desktop app gives no warning
 

@@ -335,28 +335,45 @@ func TestApp_WarnsAboutConflictCopiesOnPlainText(t *testing.T) {
 // A mark says another device has the data open. Plain text warns, naming the
 // device, and still opens: the mark is a best guess.
 func TestApp_WarnsWhenAnotherDeviceIsUsingPlainText(t *testing.T) {
-	dir := t.TempDir()
-	if err := syncedfolder.WriteMark(dir, "laptop", time.Now()); err != nil {
-		t.Fatal(err)
-	}
+	got := warningsWithMarksFrom(t, "work-laptop")
 
-	a, err := bootstrap.New(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	t.Cleanup(func() { _ = a.Close() })
-
-	want := []string{"Your data folder looks in use on laptop. " +
+	want := []string{"Your data folder looks in use on work-laptop. " +
 		"Using it from two devices at once can lose changes: close the app there first."}
-	if !slices.Equal(a.Warnings, want) {
-		t.Errorf("Warnings = %q, want %q", a.Warnings, want)
+	if !slices.Equal(got, want) {
+		t.Errorf("Warnings = %q, want %q", got, want)
 	}
 }
 
 // Each device could be the one to close, so the warning names them all.
 func TestApp_WarningNamesEveryOtherDevice(t *testing.T) {
+	got := warningsWithMarksFrom(t, "work-laptop", "work-phone")
+
+	want := []string{"Your data folder looks in use on work-laptop, work-phone. " +
+		"Using it from two devices at once can lose changes: close the app there first."}
+	if !slices.Equal(got, want) {
+		t.Errorf("Warnings = %q, want %q", got, want)
+	}
+}
+
+// This computer's own mark is left by the app itself, perhaps a moment ago by
+// another copy of it, so it isn't a reason to warn.
+func TestApp_ThisDevicesOwnMarkGivesNoWarning(t *testing.T) {
+	device, err := os.Hostname()
+	if err != nil {
+		t.Skipf("this computer's name can't be read: %v", err)
+	}
+
+	if got := warningsWithMarksFrom(t, device); len(got) != 0 {
+		t.Errorf("Warnings = %q, want none", got)
+	}
+}
+
+// warningsWithMarksFrom opens plain text in a folder with a recent mark from
+// each device, and returns the app's warnings.
+func warningsWithMarksFrom(t *testing.T, devices ...string) []string {
+	t.Helper()
 	dir := t.TempDir()
-	for _, device := range []string{"laptop", "phone"} {
+	for _, device := range devices {
 		if err := syncedfolder.WriteMark(dir, device, time.Now()); err != nil {
 			t.Fatal(err)
 		}
@@ -367,12 +384,7 @@ func TestApp_WarningNamesEveryOtherDevice(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 	t.Cleanup(func() { _ = a.Close() })
-
-	want := []string{"Your data folder looks in use on laptop, phone. " +
-		"Using it from two devices at once can lose changes: close the app there first."}
-	if !slices.Equal(a.Warnings, want) {
-		t.Errorf("Warnings = %q, want %q", a.Warnings, want)
-	}
+	return a.Warnings
 }
 
 // A scan that fails can't say there are no conflict copies, so plain text says
