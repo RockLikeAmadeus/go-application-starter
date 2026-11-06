@@ -38,7 +38,11 @@ One file per record (`jsonfile`):
   - Red: `TestKeyThatCannotBeAFileNameRoundTrips` failed: `writeRecord` couldn't create the temp file, as the `/` in the key named a folder that doesn't exist.
   - Green: `writeRecord` names the file with `url.QueryEscape(key)`.
   - Refactor: the escaping moved to `recordFileName`, ready for task 7 to compare a file's name with its key.
-- [ ] 3. A missing table is empty, and a file with an unknown version is refused.
+- [x] 3. A missing table is empty.
+  - Red: `TestTableWithNoRecordsFolderIsEmpty` failed: `readRecords` returned the "no such file or directory" error.
+  - Green: `readRecords` returns an empty table when the folder doesn't exist.
+  - Refactor: nothing. The same check in `readTable` goes with it in tasks 5 and 6.
+- [ ] 3b. A file with an unknown version is refused.
 - [ ] 4. Reading a table skips what isn't a `.json` file, such as leftover temp files.
 - [ ] 5. `ItemRepository` keeps each item in its own file, and saving one leaves the others untouched (contract and isolation suites stay green). Sample thin use. Define the "each item has its own file" step.
 - [ ] 6. `WorkspacePlanRepository` keeps each workspace's plan in its own file.
@@ -64,3 +68,4 @@ Run `task test:init` at tasks 5, 9 and 10 too: they add code next to the sample'
 ## Changes to the plan
 
 - Task 1: `readTable`/`writeTable` and `table_test.go` can't go until the repositories stop using them, so `writeRecord`/`readRecords` come in beside them, and tasks 5 and 6 remove the old ones.
+- Task 3 split: the missing table is task 3, and refusing an unknown version is task 3b, as each needs its own test.

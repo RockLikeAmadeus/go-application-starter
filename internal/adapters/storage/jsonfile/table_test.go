@@ -122,3 +122,13 @@ func TestKeyThatCannotBeAFileNameRoundTrips(t *testing.T) {
 		t.Errorf("readRecords = %v, want one record under key %q", got, key)
 	}
 }
+
+func TestTableWithNoRecordsFolderIsEmpty(t *testing.T) {
+	got, err := readRecords[record](openTestStore(t), "things")
+	if err != nil {
+		t.Fatalf("readRecords error = %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("readRecords = %v, want an empty table", got)
+	}
+}
