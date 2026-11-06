@@ -278,6 +278,16 @@ func TestStoredPlanOf_AnswersTheWorkspacesStoredPlan(t *testing.T) {
 	}
 }
 
+func TestStoredPlanOf_AnswersTheDefaultForAWorkspaceWithNoStoredPlan(t *testing.T) {
+	got, err := plans.StoredPlanOf(testsupport.StoredPlans{}, "free")(context.Background(), "ws-a")
+	if err != nil {
+		t.Fatalf("PlanOf: %v", err)
+	}
+	if got != "free" {
+		t.Errorf("PlanOf = %q, want %q", got, "free")
+	}
+}
+
 func TestDefault_HasALocalPlanWithNoLimits(t *testing.T) {
 	catalog, err := plans.Default()
 	if err != nil {

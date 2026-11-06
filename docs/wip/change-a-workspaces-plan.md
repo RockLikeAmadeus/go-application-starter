@@ -83,7 +83,10 @@ Plans adapter:
    - Red: `TestStoredPlanOf_AnswersTheWorkspacesStoredPlan` fails, `PlanOf = "", want "pro"`.
    - Green: `StoredPlanOf` returns the repository's `PlanOf`; `fallback` stays unread until 9b.
    - Refactor: `Provider.PlanOf`'s comment now names `StoredPlanOf`; no code change.
-9b. [ ] `StoredPlanOf` answers the default for a workspace with no stored plan.
+9b. [x] `StoredPlanOf` answers the default for a workspace with no stored plan.
+   - Red: `TestStoredPlanOf_AnswersTheDefaultForAWorkspaceWithNoStoredPlan` fails, `PlanOf: not found`.
+   - Green: `StoredPlanOf` answers `fallback` on any repository error; 9c narrows that to `ErrNotFound`.
+   - Refactor: `StoredPlanOf`'s comment names the fallback; no code change. Defaulting on every error stays for 9c to demand.
 9c. [ ] `StoredPlanOf` passes on any other error, never defaulting.
 
 Wiring:

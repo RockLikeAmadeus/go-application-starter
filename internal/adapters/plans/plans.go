@@ -197,9 +197,15 @@ func (p Provider) plansWith(feature string) []string {
 }
 
 // StoredPlanOf returns a Provider.PlanOf that reads each workspace's plan from
-// the repository.
+// the repository, answering fallback when it has none.
 func StoredPlanOf(repository ports.WorkspacePlanRepository, fallback string) func(context.Context, domain.WorkspaceID) (string, error) {
-	return repository.PlanOf
+	return func(ctx context.Context, workspace domain.WorkspaceID) (string, error) {
+		plan, err := repository.PlanOf(ctx, workspace)
+		if err != nil {
+			return fallback, nil
+		}
+		return plan, nil
+	}
 }
 
 // shipped is the plans file built into the binary.
