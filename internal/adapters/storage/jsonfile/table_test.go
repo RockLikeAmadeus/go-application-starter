@@ -136,6 +136,43 @@ func TestReadingATableSkipsWhatIsNotAJSONFile(t *testing.T) {
 	}
 }
 
+func TestReadingATableSkipsAFileWhoseKeyDoesNotMatchItsName(t *testing.T) {
+	copies := map[string]string{
+		"Dropbox":      "1 (Sam's conflicted copy 2026-11-06).json",
+		"Syncthing":    "1.sync-conflict-20261106-120000-ABCDEFG.json",
+		"OneDrive":     "1-DESKTOP-ABC123.json",
+		"Google Drive": "1 (1).json",
+		"iCloud":       "1 2.json",
+		"by hand":      "copy of 1.json",
+	}
+	for service, name := range copies {
+		t.Run(service, func(t *testing.T) {
+			s := openTestStore(t)
+			if err := writeRecord(s, "things", "2", record{Name: "two"}); err != nil {
+				t.Fatalf("writeRecord error = %v", err)
+			}
+			// A copy keeps the original's contents, so rename the original
+			// rather than keep both: most of these names sort before
+			// "1.json", which would then hide a copy that was wrongly read.
+			if err := writeRecord(s, "things", "1", record{Name: "one"}); err != nil {
+				t.Fatalf("writeRecord error = %v", err)
+			}
+			dir := filepath.Join(s.dir, "things")
+			if err := os.Rename(filepath.Join(dir, "1.json"), filepath.Join(dir, name)); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := readRecords[record](s, "things")
+			if err != nil {
+				t.Fatalf("readRecords error = %v", err)
+			}
+			if len(got) != 1 || got["2"] != (record{Name: "two"}) {
+				t.Errorf("readRecords = %v, want only the record under key 2", got)
+			}
+		})
+	}
+}
+
 func TestDeletingARecordRemovesOnlyItsFile(t *testing.T) {
 	s := openTestStore(t)
 	const key = "workspace/1"

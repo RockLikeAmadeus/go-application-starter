@@ -66,7 +66,10 @@ One file per record (`jsonfile`):
   - Refactor: removed `readTable`, `writeTable`, `tableFile`, `fileFormatVersion`, `Store.path` and their three tests, as nothing calls them now. The package comment still describes the old layout; task 15 rewrites it.
 
 Conflict copies (`jsonfile`, then `bootstrap`):
-- [ ] 7. Reading a table skips a file whose key doesn't match its name, as a table test over each service's naming.
+- [x] 7. Reading a table skips a file whose key doesn't match its name, as a table test over each service's naming.
+  - Red: `TestReadingATableSkipsAFileWhoseKeyDoesNotMatchItsName` failed for all six names: the copy came back as record 1.
+  - Green: `readRecords` skips a file whose name isn't `recordFileName(file.Key)`.
+  - Refactor: `readRecords`' doc comment explains the skip. The per-file decode stays inline until task 7b gives it a second caller.
 - [ ] 7b. `readRecord` returns one record from its own file without reading any other, and a missing file, or one whose key doesn't match its name, is not found.
 - [ ] 7c. `WorkspacePlanRepository.PlanOf` reads only that workspace's file.
 - [ ] 7d. `ItemRepository.FindByID` and `Delete` read only that item's file. Sample thin use.

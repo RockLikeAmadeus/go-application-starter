@@ -98,8 +98,10 @@ func recordFileName(key string) string {
 	return url.QueryEscape(key) + ".json"
 }
 
-// readRecords loads every record in <dir>/<table>, by key, skipping anything
-// that isn't a .json file; a missing folder is an empty table.
+// readRecords loads every record in <dir>/<table>, by key; a missing folder
+// is an empty table. It skips anything that isn't a .json file, and conflict
+// copies: a copy keeps the original's contents, so its key doesn't match its
+// name, whichever way a sync service named it.
 func readRecords[R any](s *Store, table string) (map[string]R, error) {
 	dir := filepath.Join(s.dir, table)
 	entries, err := os.ReadDir(dir)
@@ -124,6 +126,9 @@ func readRecords[R any](s *Store, table string) (map[string]R, error) {
 		}
 		if file.Version != recordFormatVersion {
 			return nil, fmt.Errorf("%s/%s: unsupported file version %d", table, entry.Name(), file.Version)
+		}
+		if entry.Name() != recordFileName(file.Key) {
+			continue
 		}
 		records[file.Key] = file.Record
 	}
