@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -73,7 +74,8 @@ func (s *Store) Ready(context.Context) error {
 }
 
 // ConflictCopies lists the conflict copies in the data directory, as paths
-// relative to it, in order of table and then file name.
+// relative to it, in order of table and then file name. Hidden folders aren't
+// tables, so it leaves them out.
 func (s *Store) ConflictCopies() ([]string, error) {
 	entries, err := os.ReadDir(s.dir)
 	if err != nil {
@@ -81,7 +83,7 @@ func (s *Store) ConflictCopies() ([]string, error) {
 	}
 	var copies []string
 	for _, entry := range entries {
-		if !entry.IsDir() {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
 			continue
 		}
 		tableCopies, err := s.conflictCopiesIn(entry.Name())

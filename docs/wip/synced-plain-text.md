@@ -102,7 +102,10 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: `TestConflictCopiesListsThemAcrossTables` failed: the stub returned nothing.
   - Green: `ConflictCopies` walks each folder in the data directory and lists the `.json` files that don't match their key. `os.ReadDir` gives the order, table then name, so there's no separate sort.
   - Refactor: `conflictCopiesIn` holds the per-table loop; `isJSONFile` and `recordFile.matches` are shared with `readRecords`. An undecodable file still stops the scan until 8c.
-- [ ] 8b. `ConflictCopies` leaves out hidden folders.
+- [x] 8b. `ConflictCopies` leaves out hidden folders.
+  - Red: `TestConflictCopiesLeavesOutHiddenFolders` failed: the copy in `.stversions` was listed.
+  - Green: `ConflictCopies` skips folders whose name starts with a dot.
+  - Refactor: `ConflictCopies`' doc comment says hidden folders aren't tables. A helper for the one-line check wouldn't simplify it.
 - [ ] 8c. `ConflictCopies` leaves out files that aren't records.
 - [ ] 8d. Benchmarks for `readRecords`, `readRecord` and `ConflictCopies` at 1,000 and 10,000 records. There's no red, as they specify no behaviour. Note the numbers here, for task 15's rough record count in ADR 3.
 - [ ] 9. `bootstrap` puts a conflict copy warning in `App.Warnings` on plain text, naming the files, one or many, regardless of `ignore_synced_folder`. Define the conflict copy steps; turns the first 5 scenarios green.

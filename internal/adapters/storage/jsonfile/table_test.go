@@ -202,6 +202,32 @@ func TestConflictCopiesListsThemAcrossTables(t *testing.T) {
 	}
 }
 
+func TestConflictCopiesLeavesOutHiddenFolders(t *testing.T) {
+	s := openTestStore(t)
+	if err := writeRecord(s, "things", "1", record{Name: "one"}); err != nil {
+		t.Fatalf("writeRecord error = %v", err)
+	}
+	original, err := os.ReadFile(filepath.Join(s.dir, "things", "1.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	hidden := filepath.Join(s.dir, ".stversions")
+	if err := os.Mkdir(hidden, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hidden, "1 (1).json"), original, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := s.ConflictCopies()
+	if err != nil {
+		t.Fatalf("ConflictCopies error = %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("ConflictCopies = %q, want none", got)
+	}
+}
+
 func TestReadRecordReturnsOneRecordWithoutReadingAnyOther(t *testing.T) {
 	s := openTestStore(t)
 	if err := writeRecord(s, "things", "1", record{Name: "one"}); err != nil {
