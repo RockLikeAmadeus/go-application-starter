@@ -151,7 +151,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestWriteMarkLeavesTheDevicesMarkInItsOwnFile` failed: `.devices/desktop.json` doesn't exist.
   - Green: `WriteMark` creates `.devices` and writes the device and time, with a plain `os.WriteFile` until 12b.
   - Refactor: nothing. The two `filepath.Join` lines are too short for a helper, and 12b reshapes the write.
-- [ ] 12b. Writing a mark replaces the old file atomically.
+- [x] 12b. Writing a mark replaces the old file atomically.
+  - Red: `TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt` failed: the mark was written over in place.
+  - Green: `WriteMark` writes a temp file beside the mark and renames it over.
+  - Refactor: `replaceMark` holds the temp file and rename. It stays apart from `jsonfile.replaceFile`, as neither adapter imports the other and a mark needs no fsync.
 - [ ] 12c. A mark is renewed on each tick.
 - [ ] 12d. A mark is removed on stopping.
 - [ ] 13. `bootstrap` warns about other devices on plain text, naming them. Define the device steps; turns the 3 warning scenarios green.

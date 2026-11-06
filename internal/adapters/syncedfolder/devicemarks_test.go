@@ -126,3 +126,27 @@ func TestWriteMarkLeavesTheDevicesMarkInItsOwnFile(t *testing.T) {
 		t.Errorf("mark = %+v, want desktop at %v", mark, markTestNow)
 	}
 }
+
+func TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt(t *testing.T) {
+	dir := t.TempDir()
+	if err := syncedfolder.WriteMark(dir, "desktop", markTestNow); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, ".devices", "desktop.json")
+	old, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := syncedfolder.WriteMark(dir, "desktop", markTestNow.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+
+	replaced, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if os.SameFile(old, replaced) {
+		t.Error("the mark was written over in place, so a sync service could copy half of it")
+	}
+}

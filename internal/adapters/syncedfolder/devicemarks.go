@@ -48,8 +48,27 @@ func WriteMark(dir, device string, now time.Time) error {
 	if err != nil {
 		return fmt.Errorf("encode device mark: %w", err)
 	}
-	if err := os.WriteFile(filepath.Join(marksDir, device+".json"), data, 0o600); err != nil {
+	return replaceMark(filepath.Join(marksDir, device+".json"), data)
+}
+
+// replaceMark puts data at path in one step, so that a sync service never
+// copies half a mark. It doesn't sync to disk, unlike the store's records: a
+// mark lost in a crash costs nothing, as the next one is a minute away.
+func replaceMark(path string, data []byte) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return fmt.Errorf("create device mark: %w", err)
+	}
+	defer os.Remove(tmp.Name()) // no-op after a successful rename
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
 		return fmt.Errorf("write device mark: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("close device mark: %w", err)
+	}
+	if err := os.Rename(tmp.Name(), path); err != nil {
+		return fmt.Errorf("replace device mark: %w", err)
 	}
 	return nil
 }
