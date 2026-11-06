@@ -13,6 +13,7 @@ func (j *journey) registerCommandLineSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^I ask the command line where my data is, connected to the server$`, j.iAskTheCommandLineWhereMyDataIsConnectedToTheServer)
 	sc.Step(`^it says my data is on the server$`, j.itSaysMyDataIsOnTheServer)
 	sc.Step(`^I give the command line the command "([^"]*)"$`, j.iGiveTheCommandLineTheCommand)
+	sc.Step(`^I ask the command line to move the workspace "([^"]*)" to the "([^"]*)" plan$`, j.iAskTheCommandLineToMoveTheWorkspaceToThePlan)
 	sc.Step(`^it fails, saying "([^"]*)"$`, j.itFailsSaying)
 }
 
@@ -49,6 +50,10 @@ func (j *journey) itSaysMyDataIsOnTheServer() error {
 
 func (j *journey) iGiveTheCommandLineTheCommand(command string) error {
 	return j.run(command)
+}
+
+func (j *journey) iAskTheCommandLineToMoveTheWorkspaceToThePlan(workspace, plan string) error {
+	return j.run("admin", "set-plan", workspace, plan)
 }
 
 func (j *journey) itFailsSaying(message string) error {

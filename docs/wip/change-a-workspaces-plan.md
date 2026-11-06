@@ -142,7 +142,10 @@ Acceptance:
    - Red: with the command-line step stubbed, the scenario fails on desktop, `expected "the local edition's plan is set when the app is built", got <nil>`.
    - Green: the step runs `admin set-plan` for the scenario's workspace through `runCommandLine`; no production change.
    - Refactor: nothing worth changing; the two steps resolving "my workspace" share four plain lines, which a helper wouldn't shorten.
-14. [ ] Terminal step: "I ask the command line to move the workspace … to the … plan" runs `starter admin set-plan`.
+14. [x] Terminal step: "I ask the command line to move the workspace … to the … plan" runs `starter admin set-plan`.
+   - Red: with the step stubbed to run `info`, the journey fails, `the screen didn't show "set when the app is built" within 5s`.
+   - Green: the step runs `admin set-plan` with the scenario's workspace and plan; no production change.
+   - Refactor: nothing worth changing; the step is one line, like its neighbours.
 
 Finish:
 15. [ ] Docs: `docs/billing.md`; ADR 5's status; `.claude/rules/workspaces-and-plans.md` (ChangePlan, the stored plan, the local plan staying fixed); CLAUDE.md's architecture block, if `plans` or `storage` lines need it; `docs/workspaces.md` if its checklist is affected.
