@@ -71,3 +71,8 @@ func (w *world) iAmToldTheFieldIsInvalid(field string) error {
 	}
 	return nil
 }
+
+// in returns a context that works in the named workspace.
+func in(name string) context.Context {
+	return workspace.WithID(context.Background(), domain.WorkspaceID(name))
+}

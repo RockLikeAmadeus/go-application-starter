@@ -67,9 +67,10 @@ SPEC.md §4.9 · [`features/plan-features.feature`](../../features/plan-features
 - Done 2026-11-05: on/off features end to end, all template code. Each feature in the plans file's `features` section has a display `name` and a `whenOff` (`show-locked` or `hide`). `Entitlements.CheckFeature` fails closed and returns a `FeatureError`, whose upgrade hint names the plans that have the feature (there are no hints in the local edition). The API serves the features in `/entitlements`, with a 403 `feature` problem that `httpclient` maps back. The CLI help notes locked commands without opening storage, the TUI has `gatedKeyHelp`, and the web app has `useFeature` and `FeatureGate`, with no pop-in.
 - Sample: `item-export` (on for `local` and `pro`, locked for `free`): `ExportItems`, `GET /api/v1/items/export`, `starter item export`, and the Items page's Export button, all in sample files or blocks. The scenarios run on every driver, plus the browser and terminal journeys. `task test:init` passes.
 
-### 4. Changing a workspace's plan — in progress
-SPEC.md §4.15 · [`features/plan-changes.feature`](../../features/plan-changes.feature) · task list in [`docs/wip/change-a-workspaces-plan.md`](../wip/change-a-workspaces-plan.md).
-- The admin-only `ChangePlan` use case and `starter admin set-plan`.
+### 4. Changing a workspace's plan — done
+SPEC.md §4.15 · [`features/plan-changes.feature`](../../features/plan-changes.feature) · [`docs/billing.md`](../billing.md) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Billing is a driving adapter".
+- Done 2026-11-06: the admin-only `ChangePlan` use case (`ports.BillingService`), reached by `starter admin set-plan`, with no API. Each workspace's plan is stored through `ports.WorkspacePlanRepository` in memory, jsonfile and sqlite, and `plans.StoredPlanOf` reads it. `ports.PlanCatalog` refuses an unknown plan.
+- The local edition's plan stays fixed, so `bootstrap.NewBilling` refuses every copy until step 8 wires the stored plans. Only the acceptance harness changes plans for now. All template code; the sample use is the item scenarios that move plans. `task test:init` passes.
 - `docs/billing.md`, the template users' guide described above.
 
 ### 5. Sync-safe plain text — not started
@@ -138,3 +139,4 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
   - The web app avoids pop-in: `Layout` prefetches the entitlements for the session, gated pages wait for them in their loading state, and `FeatureGate` has a same-size disabled placeholder.
   - The desktop download was checked by hand on WebKitGTK. `docs/features.md` is the checklist for gating a new feature.
 - 2026-11-05: step 4 started. Decided: the local edition's plan stays fixed (`starter admin set-plan` refuses there, so until step 8 only the tests change plans); ChangePlan is reached only by the admin command, with no API until sign-in; each workspace's plan is stored by the storage adapters (`ports.WorkspacePlanRepository`).
+- 2026-11-06: step 4 finished. Its stored-plan wiring moved to step 8 here, since the task list that held it is gone. `task test:init` found a template step depending on the sample's `in` helper (from task 12c, which didn't run it), so `in` moved to `steps.go`.

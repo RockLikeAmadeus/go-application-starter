@@ -11,20 +11,20 @@ Feature: Change a workspace's plan
   # jsonfile and sqlite only. The local edition's refusal runs on the desktop
   # driver, which is the local edition.
 
-  @wip @plans
+  @plans
   Scenario: An admin moves a workspace to another plan
     Given my workspace is on the "free" plan
     When an admin moves my workspace to the "pro" plan
     Then my workspace's plan is "pro"
 
-  @wip @plans
+  @plans
   Scenario: Moving a workspace to a plan that doesn't exist is refused
     Given my workspace is on the "free" plan
     When an admin tries to move my workspace to the "platinum" plan
     Then I am told the "plan" is invalid
     And my workspace's plan is "free"
 
-  @wip @plans @workspaces
+  @plans @workspaces
   Scenario: Moving one workspace leaves the others on their plans
     Given workspace "Alpha" is on the "free" plan
     And workspace "Beta" is on the "free" plan
@@ -32,7 +32,7 @@ Feature: Change a workspace's plan
     Then workspace "Alpha"'s plan is "pro"
     And workspace "Beta"'s plan is "free"
 
-  @wip @desktop
+  @desktop
   Scenario: The local edition's plan can't be changed
     When I try to move my workspace to the "pro" plan from the command line
     Then I am told the local edition's plan is set when the app is built

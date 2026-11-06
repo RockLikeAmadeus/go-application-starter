@@ -8,7 +8,6 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
@@ -22,11 +21,6 @@ func (w *world) registerWorkspaceSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^someone with no workspace tries to list the items$`, w.someoneWithNoWorkspaceTriesToList)
 	sc.Step(`^someone with no workspace tries to create an item named "([^"]*)"$`, w.someoneWithNoWorkspaceTriesToCreate)
 	sc.Step(`^they are told they have no workspace$`, w.theyAreToldTheyHaveNoWorkspace)
-}
-
-// in returns a context that works in the named workspace.
-func in(name string) context.Context {
-	return workspace.WithID(context.Background(), domain.WorkspaceID(name))
 }
 
 func (w *world) workspaceHasAnItemNamed(name, item string) error {

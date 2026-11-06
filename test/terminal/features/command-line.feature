@@ -17,7 +17,6 @@ Feature: The command line in a terminal
     When I give the command line the command "frobnicate"
     Then it fails, saying "unknown command"
 
-  @wip
   Scenario: The command line can't change the local edition's plan
     When I ask the command line to move the workspace "local" to the "pro" plan
     Then it fails, saying "set when the app is built"
