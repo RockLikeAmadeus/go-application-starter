@@ -52,7 +52,9 @@ Storage:
    - Red: `TestWorkspacePlanRepositoryContract/PlanOf_returns_the_saved_plan` fails, `PlanOf: not found`.
    - Green: memory keeps the one saved plan in a field, ignoring the workspace until 5d.
    - Refactor: nothing worth changing; `"pro"` is used twice in one short test. The map and mutex wait for 5d, which demands per-workspace storage.
-5c. [ ] Contract: saving again replaces the plan.
+5c. [x] Contract: saving again replaces the plan.
+   - No red: `TestWorkspacePlanRepositoryContract/SavePlan_replaces_the_saved_plan` passed straight away, because memory's single field already overwrites. Kept as a guard: a first-save-wins mutation fails it, `plan = "pro", want "free"`. No green.
+   - Refactor: the contract's tests share `mustSavePlan` and `assertPlan`, as the item contract does; no production change.
 5d. [ ] Contract: one workspace's plan isn't another's.
 6. [ ] jsonfile `WorkspacePlanRepository` passes the contract, and keeps the plans after the store is reopened. Run `task test:init`.
 7. [ ] sqlite `WorkspacePlanRepository` (a new template migration) passes the contract, and keeps the plans after reopening. Run `task test:init` (the migration comes after the sample's `00002_items.sql`).

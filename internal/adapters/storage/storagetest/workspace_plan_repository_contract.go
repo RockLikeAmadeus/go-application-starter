@@ -25,15 +25,32 @@ func RunWorkspacePlanRepositoryContract(t *testing.T, newRepo func(*testing.T) p
 
 	t.Run("PlanOf returns the saved plan", func(t *testing.T) {
 		repo := newRepo(t)
-		if err := repo.SavePlan(ctx, mine, "pro"); err != nil {
-			t.Fatalf("SavePlan: %v", err)
-		}
-		plan, err := repo.PlanOf(ctx, mine)
-		if err != nil {
-			t.Fatalf("PlanOf: %v", err)
-		}
-		if plan != "pro" {
-			t.Errorf("plan = %q, want %q", plan, "pro")
-		}
+		mustSavePlan(t, repo, mine, "pro")
+		assertPlan(t, repo, mine, "pro")
 	})
+
+	t.Run("SavePlan replaces the saved plan", func(t *testing.T) {
+		repo := newRepo(t)
+		mustSavePlan(t, repo, mine, "pro")
+		mustSavePlan(t, repo, mine, "free")
+		assertPlan(t, repo, mine, "free")
+	})
+}
+
+func mustSavePlan(t *testing.T, repo ports.WorkspacePlanRepository, workspace domain.WorkspaceID, plan string) {
+	t.Helper()
+	if err := repo.SavePlan(context.Background(), workspace, plan); err != nil {
+		t.Fatalf("SavePlan(%q, %q): %v", workspace, plan, err)
+	}
+}
+
+func assertPlan(t *testing.T, repo ports.WorkspacePlanRepository, workspace domain.WorkspaceID, want string) {
+	t.Helper()
+	got, err := repo.PlanOf(context.Background(), workspace)
+	if err != nil {
+		t.Fatalf("PlanOf(%q): %v", workspace, err)
+	}
+	if got != want {
+		t.Errorf("PlanOf(%q) = %q, want %q", workspace, got, want)
+	}
 }
