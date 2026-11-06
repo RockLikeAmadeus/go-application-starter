@@ -186,8 +186,9 @@ func conflictCopyWarning(store *jsonfile.Store) (string, bool) {
 	}
 	names := strings.Join(copies, ", ")
 	if len(copies) == 1 {
-		return "Your data folder has 1 conflict copy left by a sync service, so a change may be missing: " +
-			names + ". Keep the version you want and delete the other.", true
+		return "Your data folder contains 1 conflicted copy, " + names + ", which appears to have been created by " +
+			"a file sync service. A change may be missing from your data. Please compare it with the original file, " +
+			"then either delete it or use it to replace the original before continuing.", true
 	}
 	return fmt.Sprintf("Your data folder has %d conflict copies left by a sync service, so changes may be missing: "+
 		"%s. Keep the versions you want and delete the others.", len(copies), names), true

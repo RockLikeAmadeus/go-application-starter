@@ -377,7 +377,7 @@ A user can keep plain-text data in a folder that a file-sync service (Dropbox, i
 **Rules**
 - Plain-text data keeps each record in its own file, so a clash can touch only that record.
 - The app never merges. When a sync service leaves a conflict copy in the data folder, the app warns, naming the file, and keeps working. A conflict copy isn't read as data, so nothing appears twice.
-- The user settles a conflict by hand: they keep the version they want and delete the other. The warning goes once no conflict copy is left.
+- The user settles a conflict by hand: they compare the copy with the original, then either delete the copy or use it to replace the original. Deleting the original instead would lose the record, as a copy isn't read as data. The warning goes once no conflict copy is left.
 - A conflict copy is itself the evidence, so the warning comes whether or not the folder looks synced, and `ignore_synced_folder` doesn't turn it off.
 - While a copy of the app has plain-text data open in a folder that looks synced, it marks the folder as in use on its device. It renews the mark every minute and removes it on closing. With `ignore_synced_folder` set, or in a folder that doesn't look synced, it leaves no mark.
 - When another device's mark is less than five minutes old, the app warns, naming the device, and keeps working. An older mark doesn't count, so a device that crashed or lost power stops counting by itself.
@@ -386,7 +386,7 @@ A user can keep plain-text data in a folder that a file-sync service (Dropbox, i
 - The mobile app keeps its data in private storage, which no sync service reaches, so none of this applies there.
 
 **Examples**
-- A user's Dropbox leaves `items/6f1c (conflicted copy).json` in the data folder → the desktop app warns: "Your data folder has 1 conflict copy left by a sync service, so a change may be missing: items/6f1c (conflicted copy).json. Keep the version you want and delete the other."
+- A user's Dropbox leaves `items/6f1c (conflicted copy).json` in the data folder → the desktop app warns: "Your data folder contains 1 conflicted copy, items/6f1c (conflicted copy).json, which appears to have been created by a file sync service. A change may be missing from your data. Please compare it with the original file, then either delete it or use it to replace the original before continuing."
 - The same user deletes the file and opens the app again → no warning.
 - The desktop app is open on a user's laptop, and they open the same folder on their desktop computer → it warns: "Your data folder looks in use on laptop. Using it from two devices at once can lose changes: close the app there first." It keeps working.
 - The laptop lost power an hour ago, with the app open → no warning.

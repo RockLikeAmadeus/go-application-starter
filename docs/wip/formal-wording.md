@@ -63,7 +63,12 @@ Command line:
 
 Each is one `/red` → `/green` → `/refactor` cycle.
 
-- [ ] 1. The conflict copy warnings (one, several, scan failed), with `SPEC.md`'s rule corrected.
+- [x] 1. The one conflict copy warning, with `SPEC.md`'s rule corrected.
+  - Red: `TestApp_WarnsAboutConflictCopiesOnPlainText` pins the one-copy wording; its two one-copy cases failed on the old text.
+  - Green: `conflictCopyWarning` uses the agreed text; `SPEC.md`'s rule and example corrected.
+  - Refactor: nothing changed; the test spells the text out on purpose, and tasks 1b and 1c rewrite the rest of the function.
+- [ ] 1b. The several conflict copies warning.
+- [ ] 1c. The scan failed warning.
 - [ ] 2. The other device warning, with separate one-device and several-device wording.
 - [ ] 3. The SQLite synced folder warning.
 - [ ] 4. The feature error, in its one-plan, several-plans and no-plan forms.
@@ -79,3 +84,7 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
 
 ## Changes to the plan
+
+## Changes to the plan
+
+- Task 1 split: the one-copy, several-copies and scan-failed warnings each need their own test, so they are tasks 1, 1b, and 1c.

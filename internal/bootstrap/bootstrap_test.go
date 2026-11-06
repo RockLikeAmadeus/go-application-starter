@@ -288,8 +288,9 @@ func TestApp_WarnsWhenSQLiteDataLooksSynced(t *testing.T) {
 func TestApp_WarnsAboutConflictCopiesOnPlainText(t *testing.T) {
 	first := filepath.Join("notes", "1 (conflicted copy).json")
 	second := filepath.Join("notes", "2 (conflicted copy).json")
-	one := "Your data folder has 1 conflict copy left by a sync service, so a change may be missing: " +
-		first + ". Keep the version you want and delete the other."
+	one := "Your data folder contains 1 conflicted copy, " + first + ", which appears to have been created by " +
+		"a file sync service. A change may be missing from your data. Please compare it with the original file, " +
+		"then either delete it or use it to replace the original before continuing."
 	many := "Your data folder has 2 conflict copies left by a sync service, so changes may be missing: " +
 		first + ", " + second + ". Keep the versions you want and delete the others."
 	cases := []struct {
