@@ -63,12 +63,11 @@ func (r *ItemRepository) Save(_ context.Context, item domain.Item) error {
 func (r *ItemRepository) FindByID(_ context.Context, workspace domain.WorkspaceID, id string) (domain.Item, error) {
 	r.store.mu.RLock()
 	defer r.store.mu.RUnlock()
-	records, err := readRecords[itemRecord](r.store, itemsTable)
+	rec, err := readRecord[itemRecord](r.store, itemsTable, id)
 	if err != nil {
 		return domain.Item{}, err
 	}
-	rec, ok := lookup(records, workspace, id)
-	if !ok {
+	if rec.WorkspaceID != workspace {
 		return domain.Item{}, domain.ErrNotFound
 	}
 	return rec.toDomain(), nil

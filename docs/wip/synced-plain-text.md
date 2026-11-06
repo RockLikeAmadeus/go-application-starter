@@ -90,7 +90,11 @@ Conflict copies (`jsonfile`, then `bootstrap`):
   - Red: `TestPlanOfReadsOnlyThatWorkspacesFile` failed: `PlanOf` stopped at the undecodable `ws-b.json`.
   - Green: `PlanOf` uses `readRecord`.
   - Refactor: nothing. `PlanOf` is three lines. Only the sample's repository calls `readRecords` in production now, so the init suite ran on a copy here too and stayed green; `table_test.go` keeps it used.
-- [ ] 7d. `ItemRepository.FindByID` and `Delete` read only that item's file. Sample thin use.
+- [x] 7d. `ItemRepository.FindByID` reads only that item's file. Sample thin use.
+  - Red: `TestFindByIDReadsOnlyThatItemsFile` failed: `FindByID` stopped at the undecodable `b.json`.
+  - Green: `FindByID` uses `readRecord`, and still treats another workspace's item as not found.
+  - Refactor: the test explains its undecodable file, as 7c's does. `lookup` stays for `Delete` until 7e, which can remove it. The init suite ran on a copy.
+- [ ] 7e. `ItemRepository.Delete` reads only that item's file. Sample thin use.
 - [ ] 8. `Store.ConflictCopies` lists them across tables, sorted, as paths relative to the data folder, leaving out hidden folders and files that aren't records.
 - [ ] 8b. Benchmarks for `readRecords`, `readRecord` and `ConflictCopies` at 1,000 and 10,000 records. There's no red, as they specify no behaviour. Note the numbers here, for task 15's rough record count in ADR 3.
 - [ ] 9. `bootstrap` puts a conflict copy warning in `App.Warnings` on plain text, naming the files, one or many, regardless of `ignore_synced_folder`. Define the conflict copy steps; turns the first 5 scenarios green.
@@ -106,13 +110,14 @@ Finish:
 - [ ] 15. Docs: ADR 3 (layout, version 2, what "one file per domain type" became, a rough record count from task 8b), ADR 5 (plain text is never used in the hosted edition, and any other detail that changed), `docs/data-locations.md` (including `workspace_plans.json` and the iCloud limit), `docs/configuration.md` (`ignore_synced_folder` also stops the mark), `.claude/rules/storage.md`, the `jsonfile` package comment.
 - [ ] 16. Run `task test:init`, `task check` and `task accept`, remove `@wip`, delete this file, and mark step 5 done in the plan.
 
-Run the init suite at tasks 5b, 7d, 9 and 10 too: they add code next to the sample's. Until task 16, `task test:init` itself is red: its `go test ./test/...` has no tag filter, so the undefined `@wip` steps fail in strict mode. So copy the working tree to the scratchpad, delete `features/synced-plain-text.feature`, commit in the copy, and run `go test ./scripts/initproject/acceptance/ -count=1 -timeout 30m` there. Task 16 runs it for real.
+Run the init suite at tasks 5b, 7d, 7e, 9 and 10 too: they add code next to the sample's. Until task 16, `task test:init` itself is red: its `go test ./test/...` has no tag filter, so the undefined `@wip` steps fail in strict mode. So copy the working tree to the scratchpad, delete `features/synced-plain-text.feature`, commit in the copy, and run `go test ./scripts/initproject/acceptance/ -count=1 -timeout 30m` there. Task 16 runs it for real.
 
 ## Changes to the plan
 
 - Task 1: `readTable`/`writeTable` and `table_test.go` can't go until the repositories stop using them, so `writeRecord`/`readRecords` come in beside them, and tasks 5 and 6 remove the old ones.
 - Task 3 split: the missing table is task 3, and refusing an unknown version is task 3b, as each needs its own test.
 - Task 5 split: `deleteRecord` is task 5 and moving `ItemRepository` is 5b. No template repository deletes, so the helper needs a template test of its own, or `unused` fails once `--remove-sample` drops the items. `ItemRepository` needs it first, so it comes first. Run `task test:init` at 5b, not 5.
-- Task 5b: `task test:init` is red until the `@wip` tags go (it was at HEAD too), so tasks 5b, 7d, 9 and 10 check on a copy without the feature file, as the note under the task list says.
+- Task 5b: `task test:init` is red until the `@wip` tags go (it was at HEAD too), so tasks 5b, 7d, 7e, 9 and 10 check on a copy without the feature file, as the note under the task list says.
 - Tasks 7b–7d and 8b added after task 6, from a question about the cost of opening many files. `readRecords` opens every file even to find one record, so lookups get their own read, and benchmarks replace our estimates. This reverses 5b's note that `FindByID` and `Delete` keep the full read: a direct read can't pick up a conflict copy, because it has a different name, so only the key check is needed. 8b comes after 8 so that it covers the scan.
 - Task 7b split: reading is 7b, a missing file 7b2 and a mismatched key 7b3, as each needs its own test. 7b4 is new: without it, moving lookups onto `readRecord` in 7c and 7d would drop task 3b's version refusal for them.
+- Task 7d split: `FindByID` is 7d and `Delete` is 7e, as each needs its own test.
