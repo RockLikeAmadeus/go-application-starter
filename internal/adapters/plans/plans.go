@@ -126,7 +126,8 @@ func stripComments(data []byte) []byte {
 	return bytes.Join(lines, []byte("\n"))
 }
 
-// Provider is the ports.EntitlementsProvider adapter over a Catalog.
+// Provider is the ports.EntitlementsProvider and ports.PlanCatalog adapter over
+// a Catalog.
 type Provider struct {
 	// Catalog holds the plans, usually from Parse.
 	Catalog Catalog
@@ -142,7 +143,10 @@ type Provider struct {
 	LocalPlan string
 }
 
-var _ ports.EntitlementsProvider = Provider{}
+var (
+	_ ports.EntitlementsProvider = Provider{}
+	_ ports.PlanCatalog          = Provider{}
+)
 
 // For returns the entitlements of the plan the workspace is on, with the
 // upgrade hints when ShouldGiveHints is set. It returns PlanOf's error as is, and
@@ -160,6 +164,12 @@ func (p Provider) For(ctx context.Context, workspace domain.WorkspaceID) (domain
 		entitlements.Features = p.withHints(entitlements.Features)
 	}
 	return entitlements, nil
+}
+
+// HasPlan answers whether the catalog has the plan.
+func (p Provider) HasPlan(_ context.Context, plan string) (bool, error) {
+	_, ok := p.Catalog[plan]
+	return ok, nil
 }
 
 // withHints returns a copy of features, each with the upgrade hint filled

@@ -75,7 +75,10 @@ Storage:
    - Refactor: nothing worth changing; the test mirrors jsonfile's, and `openStore` can't open the first store because it must close before the reopen.
 
 Plans adapter:
-8. [ ] `plans.Provider.HasPlan` answers whether its catalog has the plan (`ports.PlanCatalog`).
+8. [x] `plans.Provider.HasPlan` answers whether its catalog has the plan (`ports.PlanCatalog`).
+   - Red: `TestHasPlan_AnswersWhetherTheCatalogHasThePlan` fails, `HasPlan("free") = false, want true`.
+   - Green: `HasPlan` looks the plan up in the catalog, and `Provider` is asserted to be a `ports.PlanCatalog`.
+   - Refactor: `Provider`'s comment names both ports; no code change. Its `PlanOf` comment ("will store the answers instead") stays for task 9.
 9. [ ] A `PlanOf` read from a `WorkspacePlanRepository`: the stored plan, else the default for a workspace with none, and any other error passed on.
 
 Wiring:

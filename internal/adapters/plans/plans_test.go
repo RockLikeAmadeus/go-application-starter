@@ -251,6 +251,20 @@ func TestEntitlements_RefusesAPlanItCantAnswer(t *testing.T) {
 	}
 }
 
+func TestHasPlan_AnswersWhetherTheCatalogHasThePlan(t *testing.T) {
+	adapter := plans.Provider{Catalog: plans.Catalog{"free": {Plan: "free"}}}
+
+	for plan, want := range map[string]bool{"free": true, "platinum": false} {
+		got, err := adapter.HasPlan(context.Background(), plan)
+		if err != nil {
+			t.Fatalf("HasPlan(%q): %v", plan, err)
+		}
+		if got != want {
+			t.Errorf("HasPlan(%q) = %v, want %v", plan, got, want)
+		}
+	}
+}
+
 func TestDefault_HasALocalPlanWithNoLimits(t *testing.T) {
 	catalog, err := plans.Default()
 	if err != nil {
