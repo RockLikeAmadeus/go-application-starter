@@ -108,7 +108,11 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestEntitlements_CheckFeature/off_and_locked,_on_three_plans` pins the comma; failed on "pro, team or business".
   - Green: `planList` adds the comma for three or more plans.
   - Refactor: `planList`'s comment shows the three-plan form. Left its join separate from the device list in `bootstrap`: the conjunction differs and it is four lines.
-- [ ] 5b. The web plan notes, with the Oxford comma in lists of three or more plans.
+- [x] 5b. The web plan notes, for two plans.
+  - Red: `FeatureGate` "locked, with the plans that have it" case pins the agreed note; failed on "Available on the pro or team plans".
+  - Green: `lockedNote` returns the agreed text for several plans.
+  - Refactor: `lockedNote`'s comment shows the new form. Left the join as it is: task 5bb rewrites it.
+- [ ] 5bb. The Oxford comma in the web note for three or more plans.
 - [ ] 5c. The CLI plan notes.
 - [ ] 5d. The TUI plan notes.
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.
@@ -128,3 +132,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 2b split: two devices and three or more each need their own test, so they are tasks 2b and 2c.
 - Task 4 split: the one-plan, several-plans, and no-plan feature errors each need their own test, so they are tasks 4, 4b, and 4c.
 - Task 5 split: the Oxford comma and the web, CLI, and TUI notes each need their own test, so they are tasks 5, 5b, 5c, and 5d.
+- Task 5b split: two plans and three or more each need their own test, so they are tasks 5b and 5bb.

@@ -33,10 +33,10 @@ export function FeatureGate({
   );
 }
 
-/** "Available on the pro plan", "… the pro or team plans", or "Not available". */
+/** "Available on the pro plan", "… the following plans: pro or team", or "Not available". */
 function lockedNote(plans: string[]): string {
   if (plans.length === 0) return "Not available";
   if (plans.length === 1) return `Available on the ${plans[0]} plan`;
   const last = plans.length - 1;
-  return `Available on the ${plans.slice(0, last).join(", ")} or ${plans[last]} plans`;
+  return `Available on the following plans: ${plans.slice(0, last).join(", ")} or ${plans[last]}`;
 }

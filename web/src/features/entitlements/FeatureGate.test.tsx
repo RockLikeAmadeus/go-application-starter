@@ -34,7 +34,7 @@ describe("FeatureGate", () => {
             availableOn: ["pro", "team"],
           },
         }),
-      want: { control: "disabled", note: "Available on the pro or team plans" },
+      want: { control: "disabled", note: "Available on the following plans: pro or team" },
     },
     {
       when: "it's locked with no hint",
