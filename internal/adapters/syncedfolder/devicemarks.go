@@ -51,6 +51,29 @@ func WriteMark(dir, device string, now time.Time) error {
 	return replaceMark(filepath.Join(marksDir, device+".json"), data)
 }
 
+// KeepMark renews device's mark in dir on each tick, dated by the tick, until
+// stop is called. stop returns once the renewing has ended. A mark that can't
+// be written is skipped: this is a best guess, so it never stops the app.
+func KeepMark(dir, device string, ticks <-chan time.Time) (stop func()) {
+	stopping := make(chan struct{})
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		for {
+			select {
+			case now := <-ticks:
+				_ = WriteMark(dir, device, now)
+			case <-stopping:
+				return
+			}
+		}
+	}()
+	return func() {
+		close(stopping)
+		<-stopped
+	}
+}
+
 // replaceMark puts data at path in one step, so that a sync service never
 // copies half a mark. It doesn't sync to disk, unlike the store's records: a
 // mark lost in a crash costs nothing, as the next one is a minute away.

@@ -29,6 +29,26 @@ func markFolder(t *testing.T, dir, device string, markedAt time.Time) {
 	}
 }
 
+// A markFile is what a device's mark file holds.
+type markFile struct {
+	Device string    `json:"device"`
+	Time   time.Time `json:"time"`
+}
+
+// readMarkFile returns what device's mark file in dir holds.
+func readMarkFile(t *testing.T, dir, device string) markFile {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(dir, ".devices", device+".json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mark markFile
+	if err := json.Unmarshal(data, &mark); err != nil {
+		t.Fatal(err)
+	}
+	return mark
+}
+
 func TestOtherDevicesReturnsDevicesWithARecentMark(t *testing.T) {
 	dir := t.TempDir()
 	markFolder(t, dir, "laptop", markTestNow.Add(-time.Minute))
@@ -111,17 +131,7 @@ func TestWriteMarkLeavesTheDevicesMarkInItsOwnFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(dir, ".devices", "desktop.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var mark struct {
-		Device string    `json:"device"`
-		Time   time.Time `json:"time"`
-	}
-	if err := json.Unmarshal(data, &mark); err != nil {
-		t.Fatal(err)
-	}
+	mark := readMarkFile(t, dir, "desktop")
 	if mark.Device != "desktop" || !mark.Time.Equal(markTestNow) {
 		t.Errorf("mark = %+v, want desktop at %v", mark, markTestNow)
 	}
@@ -148,5 +158,34 @@ func TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt(t *testing.T) {
 	}
 	if os.SameFile(old, replaced) {
 		t.Error("the mark was written over in place, so a sync service could copy half of it")
+	}
+}
+
+// sendTick gives the mark's loop a tick. The channel is unbuffered, so this
+// returns once the loop has finished with the tick before.
+func sendTick(t *testing.T, ticks chan<- time.Time, at time.Time) {
+	t.Helper()
+	select {
+	case ticks <- at:
+	case <-time.After(5 * time.Second):
+		t.Fatalf("nothing took the tick at %v", at)
+	}
+}
+
+func TestKeepMarkRenewsTheMarkOnEachTick(t *testing.T) {
+	dir := t.TempDir()
+	ticks := make(chan time.Time)
+	stop := syncedfolder.KeepMark(dir, "desktop", ticks)
+	t.Cleanup(stop)
+
+	firstTick := markTestNow
+	secondTick := markTestNow.Add(time.Minute)
+	sendTick(t, ticks, firstTick)
+	sendTick(t, ticks, secondTick)
+	sendTick(t, ticks, secondTick) // returns once the second tick is written
+
+	mark := readMarkFile(t, dir, "desktop")
+	if !mark.Time.Equal(secondTick) {
+		t.Errorf("mark time = %v, want the latest tick, %v", mark.Time, secondTick)
 	}
 }

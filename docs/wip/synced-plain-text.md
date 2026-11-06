@@ -155,7 +155,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt` failed: the mark was written over in place.
   - Green: `WriteMark` writes a temp file beside the mark and renames it over.
   - Refactor: `replaceMark` holds the temp file and rename. It stays apart from `jsonfile.replaceFile`, as neither adapter imports the other and a mark needs no fsync.
-- [ ] 12c. A mark is renewed on each tick.
+- [x] 12c. A mark is renewed on each tick.
+  - Red: `TestKeepMarkRenewsTheMarkOnEachTick` failed: nothing took the tick.
+  - Green: `KeepMark` writes the mark on each tick in a goroutine, dated by the tick; its `stop` waits for the goroutine.
+  - Refactor: `readMarkFile` in the tests replaces the two copies of the read and decode. `KeepMark` stays as it is until 12d adds removal.
 - [ ] 12d. A mark is removed on stopping.
 - [ ] 13. `bootstrap` warns about other devices on plain text, naming them. Define the device steps; turns the 3 warning scenarios green.
 - [ ] 14. `bootstrap` marks the folder only when it looks synced and `ignore_synced_folder` is off, and `App.Close` stops the mark before the store closes. Define the mark steps; turns the last 4 scenarios green.
