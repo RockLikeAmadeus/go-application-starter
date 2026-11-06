@@ -10,7 +10,9 @@ import (
 )
 
 // WorkspacePlanRepository stores which plan each workspace is on.
-type WorkspacePlanRepository struct{}
+type WorkspacePlanRepository struct {
+	plan string
+}
 
 var _ ports.WorkspacePlanRepository = (*WorkspacePlanRepository)(nil)
 
@@ -21,10 +23,14 @@ func NewWorkspacePlanRepository() *WorkspacePlanRepository {
 
 // PlanOf returns the workspace's plan.
 func (r *WorkspacePlanRepository) PlanOf(_ context.Context, _ domain.WorkspaceID) (string, error) {
-	return "", domain.ErrNotFound
+	if r.plan == "" {
+		return "", domain.ErrNotFound
+	}
+	return r.plan, nil
 }
 
 // SavePlan stores the workspace's plan.
-func (r *WorkspacePlanRepository) SavePlan(_ context.Context, _ domain.WorkspaceID, _ string) error {
+func (r *WorkspacePlanRepository) SavePlan(_ context.Context, _ domain.WorkspaceID, plan string) error {
+	r.plan = plan
 	return nil
 }

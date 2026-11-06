@@ -22,4 +22,18 @@ func RunWorkspacePlanRepositoryContract(t *testing.T, newRepo func(*testing.T) p
 			t.Fatalf("err = %v, want ErrNotFound", err)
 		}
 	})
+
+	t.Run("PlanOf returns the saved plan", func(t *testing.T) {
+		repo := newRepo(t)
+		if err := repo.SavePlan(ctx, mine, "pro"); err != nil {
+			t.Fatalf("SavePlan: %v", err)
+		}
+		plan, err := repo.PlanOf(ctx, mine)
+		if err != nil {
+			t.Fatalf("PlanOf: %v", err)
+		}
+		if plan != "pro" {
+			t.Errorf("plan = %q, want %q", plan, "pro")
+		}
+	})
 }

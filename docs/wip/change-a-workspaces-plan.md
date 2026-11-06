@@ -48,7 +48,10 @@ Storage:
    - Red: `TestWorkspacePlanRepositoryContract/PlanOf_with_no_stored_plan_returns_ErrNotFound` fails, `err = <nil>, want ErrNotFound`.
    - Green: memory's `PlanOf` always returns `ErrNotFound`; `SavePlan` does nothing until 5b.
    - Refactor: the `memory` package comment moved from the sample file to this template file, and no longer names items; no code change.
-5b. [ ] Contract: a saved plan is read back.
+5b. [x] Contract: a saved plan is read back.
+   - Red: `TestWorkspacePlanRepositoryContract/PlanOf_returns_the_saved_plan` fails, `PlanOf: not found`.
+   - Green: memory keeps the one saved plan in a field, ignoring the workspace until 5d.
+   - Refactor: nothing worth changing; `"pro"` is used twice in one short test. The map and mutex wait for 5d, which demands per-workspace storage.
 5c. [ ] Contract: saving again replaces the plan.
 5d. [ ] Contract: one workspace's plan isn't another's.
 6. [ ] jsonfile `WorkspacePlanRepository` passes the contract, and keeps the plans after the store is reopened. Run `task test:init`.
