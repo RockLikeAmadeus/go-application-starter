@@ -18,7 +18,7 @@ func main() {
 	defer stop()
 
 	env := config.Env{Getenv: os.Getenv, UserConfigDir: os.UserConfigDir}
-	if err := cli.NewRootCmd(bootstrap.New, env, os.Stdout).ExecuteContext(ctx); err != nil {
+	if err := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, env, os.Stdout).ExecuteContext(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}

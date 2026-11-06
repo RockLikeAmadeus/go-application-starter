@@ -101,7 +101,15 @@ Wiring:
    - Red: `TestNewBilling_RefusesOverAServer` fails, `err = the local edition's plan is set when the app is built, want ErrNoPlanChangesOverAServer`.
    - Green: `NewBilling` returns `ErrNoPlanChangesOverAServer` when `cfg.ServerURL` is set, before the local refusal.
    - Refactor: `NewBilling`'s comment names the `--server` refusal; no code change.
-11. [ ] `starter admin set-plan WORKSPACE PLAN` asks `bootstrap.NewBilling`, calls `ChangePlan`, says which plan the workspace is now on, and reports a refusal as an error.
+11. [x] `starter admin set-plan WORKSPACE PLAN` reports `bootstrap.NewBilling`'s refusal as an error.
+   - Red: `TestAdminSetPlanReportsThatBillingRefused` fails, `admin set-plan = unknown command "admin" for "starter", want the refusal`.
+   - Green: `admin set-plan` loads the settings and returns `newBilling`'s error; `main` passes `bootstrap.NewBilling`.
+   - Refactor: the `cli` package comment names the driving ports, not just `ItemService`, and `admin`'s help is plainer; no code change. The ignored settings error stays for 11d.
+11b. [ ] `admin set-plan` calls `ChangePlan` and says which plan the workspace is now on.
+11c. [ ] `admin set-plan` reports `ChangePlan`'s refusal, and doesn't say the workspace moved.
+11d. [ ] `admin set-plan` reports settings it can't load.
+11e. [ ] `admin set-plan` refuses anything but a workspace and a plan.
+11f. [ ] `admin set-plan --server` reaches `ErrNoPlanChangesOverAServer`, through the real `bootstrap.NewBilling`.
 
 Acceptance:
 12. [ ] Harness: each driver's `WorkspacePlanRepository`, `plans` reading it with `bootstrap.LocalPlan` as the default, and `h.billing`. "My workspace is on / moves to" go through `ChangePlan`; drop `testPlans.assign`. Bind the admin and "workspace "X" is on / "X"'s plan is" steps. `features/plans.feature` and `plan-features.feature` must stay green.
@@ -120,4 +128,6 @@ Finish:
 - 2026-11-06: task 9 split into 9, 9b and 9c: the stored plan, the default, and other errors.
 - 2026-11-06: task 10 split into 10 and 10b: the local edition, then `--server`.
 - 2026-11-06: the "not over a server yet" error is `bootstrap.ErrNoPlanChangesOverAServer`.
+- 2026-11-06: task 11 split into 11 to 11f, one behaviour per test. The refusal comes first so that the real command, which always refuses, never reaches a nil service between commits.
+- 2026-11-06: `cli.NewRootCmd` takes a `BillingFactory`, like its `AppFactory`, because `bootstrap.NewBilling` refuses every copy and tests must substitute it to reach a successful change.
 - 2026-11-05: `task test:init` is expected to fail until task 16 removes the `@wip` tags: "The new project is healthy" (both examples) runs `go test ./test/...` with no `~@wip`, so the undefined `@wip` steps fail under Strict. Agreed: in tasks 6 and 7 it counts as passing if only those two fail.

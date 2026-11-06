@@ -49,7 +49,7 @@ func TestHelpNotesGatedCommandsByThePlan(t *testing.T) {
 				args = append([]string{"--server", entitlementsServer(t, *tt.server)}, args...)
 			}
 			var out bytes.Buffer
-			root := cli.NewRootCmd(bootstrap.New, computer(t.TempDir(), vars), &out)
+			root := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, computer(t.TempDir(), vars), &out)
 			root.AddCommand(cli.Gated("reports", &cobra.Command{
 				Use: "report", Short: "Make a report",
 				RunE: func(*cobra.Command, []string) error { return nil },

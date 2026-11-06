@@ -1,6 +1,6 @@
-// Package cli is the Cobra driving adapter. Commands depend on
-// ports.ItemService only; the composition root decides whether that is the
-// embedded core or a remote server.
+// Package cli is the Cobra driving adapter. Commands depend on the driving
+// ports only; the composition root decides whether those are the embedded
+// core or a remote server.
 package cli
 
 import (
@@ -11,10 +11,15 @@ import (
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
 // AppFactory builds the application for a command. Tests substitute their own.
 type AppFactory func(cfg config.Config) (*bootstrap.App, error)
+
+// BillingFactory builds the billing service for `starter admin set-plan`.
+// Tests substitute their own.
+type BillingFactory func(cfg config.Config) (ports.BillingService, error)
 
 // appOpener opens the application, and says which configuration it opened
 // it with. Commands call it only when they run, so --help and --version work
@@ -28,7 +33,7 @@ var Version = "dev"
 // (config.Env, with os.Getenv and os.UserConfigDir in production): its
 // environment, and its local data folder, which commands use unless
 // --data-dir names another.
-func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command {
+func NewRootCmd(newApp AppFactory, newBilling BillingFactory, env config.Env, out io.Writer) *cobra.Command {
 	var (
 		serverURL  string
 		dataDir    string
@@ -101,6 +106,7 @@ func NewRootCmd(newApp AppFactory, env config.Env, out io.Writer) *cobra.Command
 
 	root.AddCommand(newTUICmd(openApp))
 	root.AddCommand(newInfoCmd(openApp))
+	root.AddCommand(newAdminCmd(loadConfig, newBilling))
 	// sample:start
 	root.AddCommand(newItemCmd(openApp))
 	// sample:end
