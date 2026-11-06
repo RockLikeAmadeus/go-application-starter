@@ -70,7 +70,9 @@ Storage:
    - Red: `TestWorkspacePlanRepositoryContract` (sqlite) fails all four cases against a stub, e.g. `err = <nil>, want ErrNotFound`.
    - Green: `00003_workspace_plans.sql`, one row per workspace, with `INSERT OR REPLACE` and `ErrNotFound` for no row.
    - Refactor: `openStore` moved to the template's `store_test.go`, used by the contract test and the sample's `openItemRepository`, as in jsonfile; no production change.
-7b. [ ] sqlite keeps the plans after the store is reopened.
+7b. [x] sqlite keeps the plans after the store is reopened.
+   - No red: `TestWorkspacePlansSurviveReopen` passed straight away, because task 7 already writes to the database file. Kept as a guard: a `CREATE TEMP TABLE` migration passes the contract but fails it, `after reopen PlanOf = "", no such table: workspace_plans`. No green.
+   - Refactor: nothing worth changing; the test mirrors jsonfile's, and `openStore` can't open the first store because it must close before the reopen.
 
 Plans adapter:
 8. [ ] `plans.Provider.HasPlan` answers whether its catalog has the plan (`ports.PlanCatalog`).
