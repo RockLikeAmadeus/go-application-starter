@@ -34,7 +34,10 @@ One file per record (`jsonfile`):
   - Red: `TestRecordIsKeptInItsOwnVersion2FileAndReadsBack` failed: `things/1.json` doesn't exist.
   - Green: `writeRecord` and `readRecords` keep each record in `<table>/<key>.json`, version 2. Reading has no version check or filters yet (tasks 3, 4, 7).
   - Refactor: the atomic write moved to `replaceFile`, shared with `writeTable`. The `record` helpers stay in `store.go` until the old ones go.
-- [ ] 2. Keys that can't be file names (`/`, `:`) round-trip.
+- [x] 2. Keys that can't be file names (`/`, `:`) round-trip.
+  - Red: `TestKeyThatCannotBeAFileNameRoundTrips` failed: `writeRecord` couldn't create the temp file, as the `/` in the key named a folder that doesn't exist.
+  - Green: `writeRecord` names the file with `url.QueryEscape(key)`.
+  - Refactor: the escaping moved to `recordFileName`, ready for task 7 to compare a file's name with its key.
 - [ ] 3. A missing table is empty, and a file with an unknown version is refused.
 - [ ] 4. Reading a table skips what isn't a `.json` file, such as leftover temp files.
 - [ ] 5. `ItemRepository` keeps each item in its own file, and saving one leaves the others untouched (contract and isolation suites stay green). Sample thin use. Define the "each item has its own file" step.

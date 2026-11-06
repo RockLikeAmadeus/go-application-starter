@@ -94,3 +94,31 @@ func TestRecordIsKeptInItsOwnVersion2FileAndReadsBack(t *testing.T) {
 		t.Errorf("readRecords = %v, want one record under key 1", got)
 	}
 }
+
+func TestKeyThatCannotBeAFileNameRoundTrips(t *testing.T) {
+	s := openTestStore(t)
+	const key = `workspace/1:a\b*c?d"e<f>g|h`
+
+	if err := writeRecord(s, "things", key, record{Name: "one"}); err != nil {
+		t.Fatalf("writeRecord error = %v", err)
+	}
+
+	entries, err := os.ReadDir(filepath.Join(s.dir, "things"))
+	if err != nil {
+		t.Fatalf("reading the table's folder: %v", err)
+	}
+	if len(entries) != 1 || entries[0].IsDir() {
+		t.Fatalf("table folder holds %v, want one file", entries)
+	}
+	if name := entries[0].Name(); strings.ContainsAny(name, `/:\*?"<>|`) {
+		t.Errorf("file name = %q, want no character a file system can refuse", name)
+	}
+
+	got, err := readRecords[record](s, "things")
+	if err != nil {
+		t.Fatalf("readRecords error = %v", err)
+	}
+	if len(got) != 1 || got[key] != (record{Name: "one"}) {
+		t.Errorf("readRecords = %v, want one record under key %q", got, key)
+	}
+}

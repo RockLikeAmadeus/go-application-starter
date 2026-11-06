@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -126,7 +127,14 @@ func writeRecord[R any](s *Store, table, key string, rec R) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create %s: %w", table, err)
 	}
-	return replaceFile(filepath.Join(dir, key+".json"), data)
+	return replaceFile(filepath.Join(dir, recordFileName(key)), data)
+}
+
+// recordFileName is the name of the file holding the record with this key.
+// Escaping keeps it a single file name on every platform: url.PathEscape
+// wouldn't do, as it leaves the ":" that Windows refuses.
+func recordFileName(key string) string {
+	return url.QueryEscape(key) + ".json"
 }
 
 // readRecords loads every record in <dir>/<table>, by key.
