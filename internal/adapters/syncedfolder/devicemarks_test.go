@@ -103,3 +103,26 @@ func TestOtherDevicesOfAFolderWithNoMarksIsEmpty(t *testing.T) {
 		t.Errorf("OtherDevices() = %q, want none", got)
 	}
 }
+
+func TestWriteMarkLeavesTheDevicesMarkInItsOwnFile(t *testing.T) {
+	dir := t.TempDir()
+
+	if err := syncedfolder.WriteMark(dir, "desktop", markTestNow); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, ".devices", "desktop.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mark struct {
+		Device string    `json:"device"`
+		Time   time.Time `json:"time"`
+	}
+	if err := json.Unmarshal(data, &mark); err != nil {
+		t.Fatal(err)
+	}
+	if mark.Device != "desktop" || !mark.Time.Equal(markTestNow) {
+		t.Errorf("mark = %+v, want desktop at %v", mark, markTestNow)
+	}
+}

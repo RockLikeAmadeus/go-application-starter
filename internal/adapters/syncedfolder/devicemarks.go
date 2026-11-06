@@ -2,6 +2,7 @@ package syncedfolder
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -35,6 +36,22 @@ func OtherDevices(dir, thisDevice string, now time.Time) []string {
 		}
 	}
 	return devices
+}
+
+// WriteMark leaves device's mark in dir, dated now.
+func WriteMark(dir, device string, now time.Time) error {
+	marksDir := filepath.Join(dir, deviceMarksFolder)
+	if err := os.MkdirAll(marksDir, 0o750); err != nil {
+		return fmt.Errorf("create device marks folder: %w", err)
+	}
+	data, err := json.Marshal(deviceMark{Device: device, Time: now})
+	if err != nil {
+		return fmt.Errorf("encode device mark: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(marksDir, device+".json"), data, 0o600); err != nil {
+		return fmt.Errorf("write device mark: %w", err)
+	}
+	return nil
 }
 
 // readMark returns the mark in the file at path, and whether the file is one.
