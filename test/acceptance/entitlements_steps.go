@@ -8,6 +8,7 @@ import (
 	"github.com/cucumber/godog"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
@@ -20,6 +21,8 @@ func (w *world) registerEntitlementsSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^my workspace moves to the "([^"]*)" plan$`, w.moveMyWorkspaceToThePlan)
 	sc.Step(`^an admin moves my workspace to the "([^"]*)" plan$`, w.moveMyWorkspaceToThePlan)
 	sc.Step(`^an admin tries to move my workspace to the "([^"]*)" plan$`, w.anAdminTriesToMoveMyWorkspaceToThePlan)
+	sc.Step(`^I try to move my workspace to the "([^"]*)" plan from the command line$`, w.iTryToMoveMyWorkspaceFromTheCommandLine)
+	sc.Step(`^I am told the local edition's plan is set when the app is built$`, w.iAmToldTheLocalPlanIsFixed)
 	sc.Step(`^my workspace's plan is "([^"]*)"$`, w.myWorkspacesPlanIs)
 	sc.Step(`^workspace "([^"]*)" is on the "([^"]*)" plan$`, w.moveWorkspaceToThePlan)
 	sc.Step(`^an admin moves workspace "([^"]*)" to the "([^"]*)" plan$`, w.moveWorkspaceToThePlan)
@@ -48,6 +51,21 @@ func (w *world) moveMyWorkspaceToThePlan(ctx context.Context, plan string) error
 
 func (w *world) anAdminTriesToMoveMyWorkspaceToThePlan(ctx context.Context, plan string) error {
 	w.lastErr = w.moveMyWorkspaceToThePlan(ctx, plan)
+	return nil
+}
+
+func (w *world) iTryToMoveMyWorkspaceFromTheCommandLine(ctx context.Context, plan string) error {
+	ws, err := workspace.FromContext{}.CurrentWorkspace(ctx)
+	if err != nil {
+		return err
+	}
+	return w.runCommandLine(ctx, "admin", "set-plan", string(ws), plan)
+}
+
+func (w *world) iAmToldTheLocalPlanIsFixed() error {
+	if !errors.Is(w.lastErr, bootstrap.ErrLocalPlanIsFixed) {
+		return fmt.Errorf("expected %q, got %w", bootstrap.ErrLocalPlanIsFixed.Error(), w.lastErr)
+	}
 	return nil
 }
 

@@ -138,7 +138,10 @@ Acceptance:
    - Red: with the admin step stubbed, the scenario fails on memory, jsonfile and sqlite, `plan = "free", want "pro"`.
    - Green: the steps call `ChangePlan` with the named workspace and read its plan through `in(name)`.
    - Refactor: `moveMyWorkspaceToThePlan` resolves the workspace and calls `moveWorkspaceToThePlan`, which alone checks `w.plans`; no production change.
-13. [ ] Desktop steps: "I try to move my workspace to the … plan from the command line" runs the CLI in-process, and "I am told the local edition's plan is set when the app is built" checks `ErrLocalPlanIsFixed`.
+13. [x] Desktop steps: "I try to move my workspace to the … plan from the command line" runs the CLI in-process, and "I am told the local edition's plan is set when the app is built" checks `ErrLocalPlanIsFixed`.
+   - Red: with the command-line step stubbed, the scenario fails on desktop, `expected "the local edition's plan is set when the app is built", got <nil>`.
+   - Green: the step runs `admin set-plan` for the scenario's workspace through `runCommandLine`; no production change.
+   - Refactor: nothing worth changing; the two steps resolving "my workspace" share four plain lines, which a helper wouldn't shorten.
 14. [ ] Terminal step: "I ask the command line to move the workspace … to the … plan" runs `starter admin set-plan`.
 
 Finish:
