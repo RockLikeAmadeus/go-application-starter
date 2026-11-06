@@ -74,13 +74,13 @@ func (e *FeatureError) Error() string {
 	return upgrade + "one of the following plans: " + PlanList(e.AvailableOn) + "."
 }
 
-// PlansPhrase names plans for an upgrade hint: "the pro plan", or "the pro
-// or team plans". plans must not be empty.
+// PlansPhrase names plans for an "available on" hint: "the pro plan", or "the
+// following plans: pro or team". plans must not be empty.
 func PlansPhrase(plans []string) string {
 	if len(plans) == 1 {
 		return "the " + plans[0] + " plan"
 	}
-	return "the " + PlanList(plans) + " plans"
+	return "the following plans: " + PlanList(plans)
 }
 
 // PlanList joins two or more plan names: "pro or team", or "pro, team, or

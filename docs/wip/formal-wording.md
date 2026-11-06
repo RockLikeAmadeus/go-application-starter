@@ -128,7 +128,11 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestHelpNotesGatedCommandsByThePlan` "locked, in the local edition" case pins the agreed note; failed on "(disabled on your plan)".
   - Green: `note` uses the agreed text with no plan to name; the terminal journey's expected text too.
   - Refactor: nothing changed. The three notes stay whole so each reads as written; the Gherkin's "disabled" stays, as users don't read it. `docs/features.md` still quotes the old text, for task 14.
-- [ ] 5d. The TUI plan notes.
+- [x] 5d. The TUI plan note, for several plans.
+  - Red: `TestGatedKeyHelpShowsTheKeyByItsFeaturesState` "locked, with a hint" case pins the agreed note; failed on "available on the pro or team plans".
+  - Green: `gatedKeyHelp` uses the agreed text for several plans, through `PlanList`.
+  - Refactor: `PlansPhrase`'s several-plans form is now the agreed one, so the CLI and TUI each lost their extra case. `FeatureError` keeps its own, as it reads "one of the following plans".
+- [ ] 5db. The TUI plan note, for one plan: already agreed text, but no test pins it.
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.
 - [ ] 7. The local plan, over a server, internal and not found errors.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.
@@ -148,3 +152,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 5 split: the Oxford comma and the web, CLI, and TUI notes each need their own test, so they are tasks 5, 5b, 5c, and 5d.
 - Task 5b split: two plans and three or more each need their own test, so they are tasks 5b and 5bb.
 - Task 5c split: one plan, several plans, and no plan each need their own test, so they are tasks 5c, 5cb, and 5cc.
+- Task 5d split: several plans needs a change, and one plan needs its own test to pin it, so they are tasks 5d and 5db. The no-plan form is already pinned.

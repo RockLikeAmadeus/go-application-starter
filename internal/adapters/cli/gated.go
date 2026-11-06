@@ -52,8 +52,6 @@ func note(cmd *cobra.Command, feature domain.Feature) {
 	case feature.IsOn:
 	case feature.WhenOff == domain.Hide:
 		cmd.Hidden = true
-	case len(feature.AvailableOn) > 1:
-		cmd.Short += " (not included in your current plan; available on the following plans: " + domain.PlanList(feature.AvailableOn) + ")"
 	case len(feature.AvailableOn) > 0:
 		cmd.Short += " (not included in your current plan; available on " + domain.PlansPhrase(feature.AvailableOn) + ")"
 	default:
