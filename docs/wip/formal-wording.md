@@ -116,7 +116,12 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `FeatureGate` "locked, with three plans" case pins the comma; failed on "pro, team or business".
   - Green: `lockedNote` adds the comma for three or more plans.
   - Refactor: extracted `planList` from `lockedNote`, matching the domain's. Left the two copies separate: they are in different languages.
-- [ ] 5c. The CLI plan notes.
+- [x] 5c. The CLI plan note, for one plan.
+  - Red: `TestHelpNotesGatedCommandsByThePlan` "locked, with a server's hint" case pins the agreed note; failed on "(disabled on your plan: available on the pro plan)".
+  - Green: `note` uses the agreed text around `PlansPhrase`.
+  - Refactor: `note`'s comment no longer says "disabled". Left the "(disabled on your plan)" form for task 5cc.
+- [ ] 5cb. The CLI plan note, for several plans.
+- [ ] 5cc. The CLI plan note, with no plan to name.
 - [ ] 5d. The TUI plan notes.
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.
 - [ ] 7. The local plan, over a server, internal and not found errors.
@@ -136,3 +141,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 4 split: the one-plan, several-plans, and no-plan feature errors each need their own test, so they are tasks 4, 4b, and 4c.
 - Task 5 split: the Oxford comma and the web, CLI, and TUI notes each need their own test, so they are tasks 5, 5b, 5c, and 5d.
 - Task 5b split: two plans and three or more each need their own test, so they are tasks 5b and 5bb.
+- Task 5c split: one plan, several plans, and no plan each need their own test, so they are tasks 5c, 5cb, and 5cc.

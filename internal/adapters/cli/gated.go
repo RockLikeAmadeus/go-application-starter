@@ -45,15 +45,15 @@ func noteGatedCommands(root *cobra.Command, loadConfig func() (config.Config, er
 }
 
 // note shows cmd's feature in the help: nothing when it's on, hidden when
-// f hides it, and otherwise noted as disabled, with the upgrade hint when
-// there is one.
+// f hides it, and otherwise noted as not included in the plan, with the
+// upgrade hint when there is one.
 func note(cmd *cobra.Command, feature domain.Feature) {
 	switch {
 	case feature.IsOn:
 	case feature.WhenOff == domain.Hide:
 		cmd.Hidden = true
 	case len(feature.AvailableOn) > 0:
-		cmd.Short += " (disabled on your plan: available on " + domain.PlansPhrase(feature.AvailableOn) + ")"
+		cmd.Short += " (not included in your current plan; available on " + domain.PlansPhrase(feature.AvailableOn) + ")"
 	default:
 		cmd.Short += " (disabled on your plan)"
 	}
