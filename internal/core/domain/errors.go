@@ -49,7 +49,7 @@ func (e *LimitError) Error() string {
 	if e.IsReadOnly {
 		return fmt.Sprintf("%s are read only while over the limit of %d", e.Limit, e.Max)
 	}
-	return fmt.Sprintf("the limit of %d %s is reached", e.Max, e.Limit)
+	return fmt.Sprintf("You have reached the limit of %d %s on the %s plan.", e.Max, e.Limit, e.Plan)
 }
 
 // FeatureError is returned when the workspace's plan refuses a feature.

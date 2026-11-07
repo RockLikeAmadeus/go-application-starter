@@ -152,7 +152,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestEntitlements_CheckChange` expects `Plan: "free"`; failed as the refusal had no plan.
   - Green: `CheckChange` sets `Plan`. The "read only" step compared the whole error, so its scenario now names the plan.
   - Refactor: nothing changed. The two `LimitError` literals are one line each and differ by a field, so a shared helper wouldn't pay for itself.
-- [ ] 6e. The limit reached message.
+- [x] 6e. The limit reached message.
+  - Red: `TestLimitError_Message/reached` expects the agreed text; failed with the old "the limit of 3 items is reached".
+  - Green: `LimitError.Error` uses the agreed text, with the plan.
+  - Refactor: nothing changed. The message is one line, and `SPEC.md`'s paraphrase waits for task 14.
 - [ ] 6f. The read-only message.
 - [ ] 7. The local plan, over a server, internal and not found errors.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.

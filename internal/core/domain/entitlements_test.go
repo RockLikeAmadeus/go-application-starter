@@ -80,7 +80,7 @@ func TestLimitError_Message(t *testing.T) {
 		err  *domain.LimitError
 		want string
 	}{
-		"reached":   {&domain.LimitError{Limit: "items", Max: 3}, "the limit of 3 items is reached"},
+		"reached":   {&domain.LimitError{Limit: "items", Max: 3, Plan: "free"}, "You have reached the limit of 3 items on the free plan."},
 		"read only": {&domain.LimitError{Limit: "items", Max: 3, IsReadOnly: true}, "items are read only while over the limit of 3"},
 	}
 	for name, tc := range cases {
