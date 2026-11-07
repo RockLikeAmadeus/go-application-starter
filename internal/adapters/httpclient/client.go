@@ -40,7 +40,8 @@ func toError(status int, p *apiclient.Problem) error {
 	case "feature":
 		return &domain.FeatureError{Feature: deref(p.Feature), Name: deref(p.Name), AvailableOn: fromAvailableOn(deref(p.AvailableOn))}
 	default:
-		return fmt.Errorf("server error (%d): %s", status, detail)
+		//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
+		return fmt.Errorf("The server returned an error (%d): %s", status, detail)
 	}
 }
 

@@ -131,3 +131,13 @@ func TestAFeatureErrorComesBackAsAFeatureError(t *testing.T) {
 		})
 	}
 }
+
+// An error the client has no domain error for reads as a sentence, with the
+// status and what the server said.
+func TestAnyOtherServerErrorReadsAsASentence(t *testing.T) {
+	err := errorOverHTTP(t, errors.New("boom"))
+	want := "The server returned an error (500): An unexpected error occurred on the server. Please try again later."
+	if err == nil || err.Error() != want {
+		t.Fatalf("err = %v, want %q", err, want)
+	}
+}

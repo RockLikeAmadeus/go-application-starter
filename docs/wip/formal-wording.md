@@ -246,7 +246,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestALockedDataFolderErrorOffersTheServerOption` failed for `info` and `tui` with `start application: Your data folder is in use ... try again.`
   - Green: `LockedError` gains an optional `Alternative`, and `openApp` returned it set, without the `start application: ` wrapper.
   - Refactor: the CLI no longer imports `jsonfile`: new `bootstrap.LockedFolderError` builds the error, tested in `bootstrap`. Other errors keep the wrapper for task 13.
-- [ ] 11. The other server error.
+- [x] 11. The other server error.
+  - Red: `TestAnyOtherServerErrorReadsAsASentence` failed with `server error (500): An unexpected error occurred on the server. Please try again later.`
+  - Green: `toError`'s default case uses the agreed sentence.
+  - Refactor: nothing worth changing. `toError`'s `unexpected HTTP status` for a response with no problem document is left, as its wording isn't agreed.
 - [ ] 12. The `info` and `admin` help, and the `set-plan` and `item delete` output.
 - [ ] 13. The `Warning:` and `Error:` prefixes.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
