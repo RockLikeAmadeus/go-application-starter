@@ -79,7 +79,7 @@ func (e failingEntitlements) CurrentEntitlements(context.Context) (domain.Entitl
 // A limit error on the server comes back as the same limit error, so callers
 // can use errors.As whichever way they reach the core.
 func TestALimitErrorComesBackAsALimitError(t *testing.T) {
-	sent := &domain.LimitError{Limit: "items", Max: 3, IsReadOnly: true}
+	sent := &domain.LimitError{Limit: "items", Max: 3, Plan: "free", IsReadOnly: true}
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{sent}}))
 	t.Cleanup(srv.Close)
 	client, err := httpclient.NewEntitlementsService(srv.URL)
@@ -90,7 +90,7 @@ func TestALimitErrorComesBackAsALimitError(t *testing.T) {
 	_, err = client.CurrentEntitlements(context.Background())
 	var got *domain.LimitError
 	if !errors.As(err, &got) || *got != *sent {
-		t.Fatalf("err = %v, want %+v", err, sent)
+		t.Fatalf("err = %v (%+v), want %+v", err, got, sent)
 	}
 }
 

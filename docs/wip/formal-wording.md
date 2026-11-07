@@ -140,7 +140,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestALimitErrorIsAForbiddenProblemNamingTheLimit` expects `"plan": "free"`; failed on a body with no `plan`.
   - Green: `plan` added to `Problem` in `api/openapi.yaml`, and `problemFor` sets it.
   - Refactor: nothing changed. Kept `problemFor`'s four-part assignment, which matches the feature error's beside it.
-- [ ] 6b. `httpclient` rebuilds the plan on a `LimitError`.
+- [x] 6b. `httpclient` rebuilds the plan on a `LimitError`.
+  - Red: `TestALimitErrorComesBackAsALimitError` sends a plan; failed as the rebuilt error had none.
+  - Green: `toError` copies `plan` from the problem.
+  - Refactor: the test's failure message now prints the error's fields, as `Error()` leaves out the plan.
 - [ ] 6c. `CheckCreate`'s refusal names the plan.
 - [ ] 6d. `CheckChange`'s refusal names the plan.
 - [ ] 6e. The limit reached message.
