@@ -177,7 +177,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAPanicIsAnInternalProblemWithTheAgreedWording` expects the agreed text; failed with the old "internal server error".
   - Green: `recoverer` uses the agreed text.
   - Refactor: `internalProblem` holds the sentence for `problemFor` and `recoverer`; `assertInternalProblem` holds the two tests' shared check.
-- [ ] 7d. The not found error.
+- [x] 7d. The not found error.
+  - Red: `TestErrNotFound_Message` failed with the old "not found".
+  - Green: `ErrNotFound` uses the agreed text, with the ST1005 `nolint`.
+  - Refactor: nothing changed. The app layer never wraps this error, so users read the sentence alone.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.
 - [ ] 9. The settings errors.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.

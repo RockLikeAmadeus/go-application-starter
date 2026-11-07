@@ -7,7 +7,9 @@ import (
 )
 
 // ErrNotFound is returned when a requested entity does not exist.
-var ErrNotFound = errors.New("not found")
+//
+//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
+var ErrNotFound = errors.New("The requested record could not be found.")
 
 // ErrNoWorkspace is returned when a request has no workspace to work in.
 var ErrNoWorkspace = errors.New("no workspace")
