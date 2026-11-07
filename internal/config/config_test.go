@@ -136,6 +136,15 @@ func TestAnUnknownStorageErrorReadsAsASentence(t *testing.T) {
 	}
 }
 
+func TestAnUnknownLogFormatErrorReadsAsASentence(t *testing.T) {
+	_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_LOG_FORMAT": "xml"})}, "")
+
+	want := `The log format setting "xml" is not recognized. Please use "text" or "json".`
+	if err == nil || err.Error() != want {
+		t.Errorf("error = %v, want %q", err, want)
+	}
+}
+
 func TestShouldIgnoreSyncedFolderIsABoolFromTheSettingsFileOrEnvironmentDefaultingToFalse(t *testing.T) {
 	cases := []struct {
 		name     string

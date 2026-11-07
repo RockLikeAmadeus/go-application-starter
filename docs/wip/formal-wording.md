@@ -233,7 +233,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAnUnknownStorageErrorReadsAsASentence` failed with `unknown storage "disk" (want "memory", "jsonfile" or "sqlite")`.
   - Green: `Config.Validate` uses the agreed sentence, with a `nolint` for ST1005.
   - Refactor: cut the old storage test to `TestStorageAcceptsSQLite`, as the new exact test covers its error half.
-- [ ] 9d. The log format setting error.
+- [x] 9d. The log format setting error.
+  - Red: `TestAnUnknownLogFormatErrorReadsAsASentence` failed with `unknown log format "xml"`.
+  - Green: `Config.Validate` uses the agreed sentence, with a `nolint` for ST1005.
+  - Refactor: nothing worth changing; no older test covered this error.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.
 - [ ] 11. The other server error.
 - [ ] 12. The `info` and `admin` help, and the `set-plan` and `item delete` output.
