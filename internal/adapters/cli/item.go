@@ -103,7 +103,7 @@ func newItemCmd(open appOpener) *cobra.Command {
 				if err := app.Items.DeleteItem(cmd.Context(), args[0]); err != nil {
 					return err
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "deleted %s\n", args[0])
+				fmt.Fprintf(cmd.OutOrStdout(), "Item %s has been deleted.\n", args[0])
 				return nil
 			}),
 		},

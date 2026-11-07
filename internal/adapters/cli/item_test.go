@@ -59,3 +59,21 @@ func TestExportPrintsTheItemsAsCSV(t *testing.T) {
 		t.Errorf("export output = %q, want it to start with %q", out, want)
 	}
 }
+
+func TestDeleteConfirmsInAFullSentence(t *testing.T) {
+	dir := t.TempDir()
+	added, err := run(t, dir, "item", "add", "Widget")
+	if err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	_, row, _ := strings.Cut(added, "\n")
+	id, _, _ := strings.Cut(row, " ")
+
+	out, err := run(t, dir, "item", "delete", id)
+	if err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if want := "Item " + id + " has been deleted.\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}

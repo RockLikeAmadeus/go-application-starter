@@ -262,7 +262,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAdminSetPlanConfirmsTheMoveInAFullSentence` failed with `ws-a is now on the pro plan\n`.
   - Green: `set-plan` prints the agreed sentence.
   - Refactor: the old test now checks only the move, as `TestAdminSetPlanMovesTheWorkspace`; the new test owns the output. `docs/billing.md` waits for task 14.
-- [ ] 12d. The `item delete` output.
+- [x] 12d. The `item delete` output.
+  - Red: `TestDeleteConfirmsInAFullSentence` failed with `deleted {id}\n`.
+  - Green: `item delete` prints the agreed sentence.
+  - Refactor: nothing worth changing; the text sits in one place.
 - [ ] 13. The `Warning:` and `Error:` prefixes.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
 
