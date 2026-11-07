@@ -60,7 +60,7 @@ func (e Entitlements) CheckChange(limitName string, count int) error {
 // literal, so a bad plans file is caught when it's read.
 func NewLimit(name string, max int, whenOver OverLimitBehavior) (Limit, error) {
 	if max < 0 {
-		return Limit{}, &ValidationError{Field: "max", Message: "max must not be negative"}
+		return Limit{}, &ValidationError{Field: "max", Message: "The max value cannot be negative."}
 	}
 	if whenOver != BlockNew && whenOver != ReadOnly {
 		return Limit{}, &ValidationError{Field: "whenOver", Message: fmt.Sprintf("whenOver must be %q or %q", BlockNew, ReadOnly)}

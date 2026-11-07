@@ -46,6 +46,10 @@ Errors:
 - **Internal:** An unexpected error occurred on the server. Please try again later.
 - **Not found:** The requested record could not be found.
 - **Validation:** The name cannot be empty. / The name cannot be longer than 200 characters. / The specified plan does not exist. Other fields follow the same pattern.
+- **Plans file, `max`:** The max value cannot be negative.
+- **Plans file, `whenOver`:** The whenOver value "delete-all" is not recognized. Please use "block-new" or "read-only". The quoted value is whatever the file held, so a missing key reads "".
+- **Plans file, `whenOff`:** The whenOff value "grey-out" is not recognized. Please use "show-locked" or "hide". The quoted value is whatever the file held, so a missing key reads "".
+- **Plans file, a feature's `name`:** The feature name cannot be empty.
 - **Unknown setting:** The settings file {path} contains an unknown setting: "colour".
 - **Unreadable settings:** The settings file {path} could not be read: {error}
 - **Storage setting:** The storage setting "disk" is not recognized. Please use "memory", "jsonfile", or "sqlite".
@@ -201,7 +205,13 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestChangePlan_UnknownPlanErrorReadsAsASentence` failed with "plan does not exist".
   - Green: `ChangePlan` uses the agreed sentence.
   - Refactor: nothing worth changing; the new test is as short as its neighbours, and the message stays inline like the other `ValidationError`s.
-- [ ] 8f. The plans file fields (`max`, `whenOver`, `whenOff`, and a feature's `name`).
+- [x] 8f. The plans file's `max` sentence.
+  - Red: `TestNewLimit_NegativeMaxErrorReadsAsASentence` failed with "max must not be negative".
+  - Green: `NewLimit` uses the agreed sentence.
+  - Refactor: the new test now reads like its neighbours in `item_test.go`; `NewLimit` is unchanged, as 8fb replaces its other message.
+- [ ] 8fb. The plans file's `whenOver` sentence.
+- [ ] 8fc. The plans file's `whenOff` sentence.
+- [ ] 8fd. The plans file's feature `name` sentence.
 - [ ] 9. The settings errors.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.
 - [ ] 11. The other server error.
@@ -223,3 +233,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 7 split: the local plan, over a server, internal, and not found errors each need their own test, so they are tasks 7 to 7d.
 - Task 7c split: an unexpected error and a panic build the internal error separately, and each needs its own test, so they are tasks 7c and 7cb.
 - Task 8 split: the pattern, `httpclient`, the three agreed sentences, and the plans file's fields each need their own test, so they are tasks 8 to 8f. "The specified plan does not exist." can't be built from "The {field} {message}." with `Field` still "plan", so `Message` holds the whole sentence.
+- Task 8f split: the plans file's four fields each need their own test, so they are tasks 8f to 8fd. Their wording was agreed on 2026-11-06, and the location prefix (`plans file: plan "free", limit "items":`) stays as it is.

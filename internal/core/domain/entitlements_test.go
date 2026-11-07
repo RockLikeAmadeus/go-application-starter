@@ -127,6 +127,16 @@ func TestNewLimit(t *testing.T) {
 	}
 }
 
+func TestNewLimit_NegativeMaxErrorReadsAsASentence(t *testing.T) {
+	_, err := domain.NewLimit("items", -1, domain.BlockNew)
+	if err == nil {
+		t.Fatal("err = nil, want a validation error")
+	}
+	if want := "The max value cannot be negative."; err.Error() != want {
+		t.Errorf("err = %q, want %q", err, want)
+	}
+}
+
 func TestNewFeature(t *testing.T) {
 	t.Run("a valid feature", func(t *testing.T) {
 		got, err := domain.NewFeature("item-export", "Item export", domain.ShowLocked)
