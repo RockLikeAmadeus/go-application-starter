@@ -57,6 +57,7 @@ Errors:
 - **Data folder locked, CLI and TUI:** Your data folder is in use by another program on this computer ({path}). Please close the other program and try again, or connect to a running server with --server.
 - **Data folder locked, elsewhere:** Your data folder is in use by another program on this computer ({path}). Please close the other program and try again.
 - **Other server error:** The server returned an error ({status}): {detail}
+- **Server error with no problem document:** The server returned an unexpected response ({status}).
 
 Command line:
 - **`info` help:** Show the data location and the current plan
@@ -282,6 +283,12 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAnAppThatCannotStartPrintsItsErrorOnStderr` failed with exit status 0 and an empty stderr, against a stub `desktop.RunAndReport`.
   - Green: `desktop.RunAndReport` runs the app, prints `Error: {text}` on stderr and returns the exit status; `cmd/desktop`'s `main` calls it. Run for real: `STARTER_STORAGE=disk` prints the agreed line and exits 1.
   - Refactor: the test's stand-in error is lower-case, so it needs no `nolint`; `RunAndReport` shares too little with the server's `runAndReport` to extract.
+- [x] 13e. The CLI's `start application: ` wrapper goes, for every error, so the agreed text follows `Error:` directly. The plans file's location prefix stays.
+  - Red: `TestAnErrorStartingTheApplicationFollowsThePrefixDirectly` failed with `Error: start application: plans file: plan "local", limit "items": The max value cannot be negative.`
+  - Green: `openApp` returns the error as it is given.
+  - Refactor: nothing worth changing; `openApp` still asks `LockedFolderError` first, as only the CLI adds the `--server` ending, and the two `run_test.go` tests share too little setup to extract.
+- [ ] 13f. A server error with no problem document uses the agreed sentence, in place of `unexpected HTTP status {status}`.
+- [ ] 13g. `bootstrap`'s `unsupported storage` error uses the agreed storage setting sentence.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
 
 ## Changes to the plan
@@ -303,3 +310,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 10 split: the error itself and the CLI and TUI's `--server` ending each need their own test, so they are tasks 10 and 10b.
 - Task 13 split: the CLI's `Warning:` prefix and the `Error:` prefix in `starter`, the server, and the desktop app each need their own test, so they are tasks 13 to 13d.
 - Task 12 split: the `info` help, the `admin` help, the `set-plan` output, and the `item delete` output each need their own test, so they are tasks 12 to 12d.
+- Tasks 13e to 13g added before task 14, on the user's decision: the `start application: ` wrapper was left by task 13, and two errors were missing from the agreed wording.

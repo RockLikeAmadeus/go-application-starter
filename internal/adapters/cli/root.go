@@ -100,7 +100,7 @@ func NewRootCmd(newApp AppFactory, newBilling BillingFactory, env config.Env, ou
 			return nil, cfg, locked
 		}
 		if err != nil {
-			return nil, cfg, fmt.Errorf("start application: %w", err)
+			return nil, cfg, err
 		}
 		printWarnings(root.ErrOrStderr(), app.Warnings)
 		return app, cfg, nil
