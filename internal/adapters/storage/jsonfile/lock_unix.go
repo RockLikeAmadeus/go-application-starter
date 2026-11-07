@@ -17,7 +17,7 @@ func lockDir(path string) (func() error, error) {
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
 		f.Close()
 		if errors.Is(err, syscall.EWOULDBLOCK) {
-			return nil, fmt.Errorf("%w (%s)", ErrLocked, path)
+			return nil, ErrLocked
 		}
 		return nil, fmt.Errorf("lock data dir: %w", err)
 	}

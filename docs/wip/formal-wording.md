@@ -237,7 +237,12 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAnUnknownLogFormatErrorReadsAsASentence` failed with `unknown log format "xml"`.
   - Green: `Config.Validate` uses the agreed sentence, with a `nolint` for ST1005.
   - Refactor: nothing worth changing; no older test covered this error.
-- [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.
+- [x] 10. The data folder locked error, without the `--server` ending.
+  - Red: `TestALockedDataFolderErrorReadsAsASentence` failed with `data directory is locked by another process ({dir}/.lock)`.
+  - Green: `Open` returns a new `*LockedError` holding the data folder, which `errors.Is` still matches to `ErrLocked`.
+  - Refactor: nothing worth changing; `ErrLocked`'s own text is left, as nobody reads it now, like `ErrValidation`'s.
+- [ ] 10b. The `--server` ending of the data folder locked error, for the CLI and TUI only.
+  - `{path}` is the data folder, not its `.lock` file. The CLI's `start application: ` wrapper in `root.go` comes before this text, so a sentence-only error needs it gone here or in task 13.
 - [ ] 11. The other server error.
 - [ ] 12. The `info` and `admin` help, and the `set-plan` and `item delete` output.
 - [ ] 13. The `Warning:` and `Error:` prefixes.
@@ -259,3 +264,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 8 split: the pattern, `httpclient`, the three agreed sentences, and the plans file's fields each need their own test, so they are tasks 8 to 8f. "The specified plan does not exist." can't be built from "The {field} {message}." with `Field` still "plan", so `Message` holds the whole sentence.
 - Task 8f split: the plans file's four fields each need their own test, so they are tasks 8f to 8fd. Their wording was agreed on 2026-11-06, and the location prefix (`plans file: plan "free", limit "items":`) stays as it is.
 - Task 9 split: the unknown setting, unreadable settings, storage, and log format errors each need their own test, so they are tasks 9 to 9d.
+- Task 10 split: the error itself and the CLI and TUI's `--server` ending each need their own test, so they are tasks 10 and 10b.

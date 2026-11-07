@@ -28,8 +28,24 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
-// ErrLocked is returned by Open when another process holds the data directory.
+// ErrLocked is the sentinel matched by every *LockedError via errors.Is.
 var ErrLocked = errors.New("data directory is locked by another process")
+
+// LockedError is returned by Open when another process holds the data
+// directory.
+type LockedError struct {
+	// Path is the data directory.
+	Path string
+}
+
+func (e *LockedError) Error() string {
+	return fmt.Sprintf("Your data folder is in use by another program on this computer (%s). Please close the other program and try again.", e.Path)
+}
+
+// Is lets callers use errors.Is(err, ErrLocked).
+func (e *LockedError) Is(target error) bool {
+	return target == ErrLocked
+}
 
 // errNotARecord is returned for a file this app can read but can't decode as
 // a record.
@@ -51,6 +67,9 @@ func Open(dir string) (*Store, error) {
 		return nil, fmt.Errorf("create data dir: %w", err)
 	}
 	unlock, err := lockDir(filepath.Join(dir, ".lock"))
+	if errors.Is(err, ErrLocked) {
+		return nil, &LockedError{Path: dir}
+	}
 	if err != nil {
 		return nil, err
 	}

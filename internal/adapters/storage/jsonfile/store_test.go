@@ -28,6 +28,21 @@ func TestOpenFailsWhenDirectoryIsLocked(t *testing.T) {
 	}
 }
 
+func TestALockedDataFolderErrorReadsAsASentence(t *testing.T) {
+	dir := t.TempDir()
+	openStore(t, dir)
+
+	_, err := jsonfile.Open(dir)
+	if err == nil {
+		t.Fatal("second Open err = nil, want the locked data folder error")
+	}
+
+	want := "Your data folder is in use by another program on this computer (" + dir + "). Please close the other program and try again."
+	if got := err.Error(); got != want {
+		t.Errorf("error = %q, want %q", got, want)
+	}
+}
+
 func TestOpenSucceedsOnceTheLockingStoreIsClosed(t *testing.T) {
 	dir := t.TempDir()
 	first, err := jsonfile.Open(dir)

@@ -20,7 +20,7 @@ func lockDir(path string) (func() error, error) {
 	if err := windows.LockFileEx(h, windows.LOCKFILE_EXCLUSIVE_LOCK|windows.LOCKFILE_FAIL_IMMEDIATELY, 0, 1, 0, ol); err != nil {
 		f.Close()
 		if errors.Is(err, windows.ERROR_LOCK_VIOLATION) {
-			return nil, fmt.Errorf("%w (%s)", ErrLocked, path)
+			return nil, ErrLocked
 		}
 		return nil, fmt.Errorf("lock data dir: %w", err)
 	}
