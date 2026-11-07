@@ -40,7 +40,7 @@ func problemFor(err error) openapi.Problem {
 	case errors.Is(err, domain.ErrNotFound):
 		return problem(http.StatusNotFound, ProblemNotFound, err.Error(), nil)
 	default:
-		return problem(http.StatusInternalServerError, ProblemInternal, "internal server error", nil)
+		return problem(http.StatusInternalServerError, ProblemInternal, "An unexpected error occurred on the server. Please try again later.", nil)
 	}
 }
 

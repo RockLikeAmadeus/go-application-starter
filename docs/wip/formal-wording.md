@@ -169,7 +169,11 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestNewBilling_OverAServerRefusalWording` expects the agreed text; failed with the old "a plan can't be changed over a server yet".
   - Green: `ErrNoPlanChangesOverAServer` uses the agreed text, with the ST1005 `nolint`.
   - Refactor: nothing changed. The wording test stays apart from `TestNewBilling_RefusesOverAServer`, which pins the sentinel, as with task 7's pair.
-- [ ] 7c. The internal error.
+- [x] 7c. The internal error, for an unexpected error.
+  - Red: `TestAnUnexpectedErrorIsAnInternalProblemWithTheAgreedWording` expects the agreed text; failed with the old "internal server error".
+  - Green: `problemFor`'s default uses the agreed text.
+  - Refactor: nothing changed. A shared constant waits for 7cb, as `recoverer` still has the old text.
+- [ ] 7cb. The internal error, for a panic.
 - [ ] 7d. The not found error.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.
 - [ ] 9. The settings errors.
@@ -191,3 +195,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 5d split: several plans needs a change, and one plan needs its own test to pin it, so they are tasks 5d and 5db. The no-plan form is already pinned.
 - Task 6 split: the API, `httpclient`, the two checks, and the two messages each need their own test, so they are tasks 6 to 6f. The messages go last, so no step shows a blank plan name.
 - Task 7 split: the local plan, over a server, internal, and not found errors each need their own test, so they are tasks 7 to 7d.
+- Task 7c split: an unexpected error and a panic build the internal error separately, and each needs its own test, so they are tasks 7c and 7cb.

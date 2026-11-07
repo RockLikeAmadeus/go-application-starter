@@ -184,6 +184,29 @@ func (e failingEntitlements) CurrentEntitlements(context.Context) (domain.Entitl
 	return domain.Entitlements{}, e.err
 }
 
+// An error no domain rule explains tells the user only that something went
+// wrong on the server, never what.
+func TestAnUnexpectedErrorIsAnInternalProblemWithTheAgreedWording(t *testing.T) {
+	rec := httptest.NewRecorder()
+	httpapi.NewHandler(httpapi.Options{
+		Logger:       slog.New(slog.DiscardHandler),
+		Entitlements: failingEntitlements{errors.New("disk on fire")},
+	}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
+	}
+	var got struct {
+		Detail string `json:"detail"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode %q: %v", rec.Body.String(), err)
+	}
+	if want := "An unexpected error occurred on the server. Please try again later."; got.Detail != want {
+		t.Errorf("detail = %q, want %q", got.Detail, want)
+	}
+}
+
 // A limit error is forbidden, and its problem document says which limit on
 // which plan, so clients can map it back.
 func TestALimitErrorIsAForbiddenProblemNamingTheLimit(t *testing.T) {
