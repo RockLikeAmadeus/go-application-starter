@@ -270,7 +270,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: the `one` case of `TestCommandsPrintTheAppsWarningsOnStderr` failed with `warning: a warning\n`.
   - Green: `printWarnings` uses the agreed prefix; the `two` case takes it too, and the terminal journey now waits for the TUI's screen first, as the CLI's line reads the same.
   - Refactor: nothing worth changing; the prefix sits in one place. `docs/data-locations.md` waits for task 14.
-- [ ] 13b. The `Error:` prefix in `starter`.
+- [x] 13b. The `Error:` prefix in `starter`.
+  - Red: `TestRunPrintsAFailedCommandsErrorOnStderr` failed with exit status 0 and an empty stderr, against a stub `cli.Run`.
+  - Green: `cli.Run` runs the commands, prints `Error: {text}` on stderr and returns the exit status; `cmd/starter` calls it.
+  - Refactor: nothing worth changing; the prefix sits in one place, and the `Warning:` and `Error:` lines share too little to extract.
 - [ ] 13c. The `Error:` prefix in the server.
 - [ ] 13d. The `Error:` prefix in the desktop app.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.

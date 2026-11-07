@@ -4,6 +4,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -134,6 +135,17 @@ func settingsFileFor(configFile string, env config.Env) (string, error) {
 // this computer: not on a server, and not only in memory.
 func keepsDataInAFolder(cfg config.Config) bool {
 	return cfg.ServerURL == "" && (cfg.Storage == config.StorageJSONFile || cfg.Storage == config.StorageSQLite)
+}
+
+// Run runs the command tree and returns the program's exit status. A failed
+// command's error goes on root's stderr, so a command's output, which scripts
+// read, stays as it is.
+func Run(ctx context.Context, root *cobra.Command) int {
+	if err := root.ExecuteContext(ctx); err != nil {
+		fmt.Fprintln(root.ErrOrStderr(), "Error:", err)
+		return 1
+	}
+	return 0
 }
 
 // printWarnings prints each of the app's warnings as it is given, on errOut

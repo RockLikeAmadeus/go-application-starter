@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 
@@ -18,8 +17,7 @@ func main() {
 	defer stop()
 
 	env := config.Env{Getenv: os.Getenv, UserConfigDir: os.UserConfigDir}
-	if err := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, env, os.Stdout).ExecuteContext(ctx); err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
-		os.Exit(1)
+	if status := cli.Run(ctx, cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, env, os.Stdout)); status != 0 {
+		os.Exit(status)
 	}
 }
