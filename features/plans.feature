@@ -83,7 +83,7 @@ Feature: Plans and limits
     And an item named "Fourth"
     When my workspace moves to the "free" plan
     And I try to rename "First" to "Renamed"
-    Then I am told items are read only while over the limit of 3
+    Then I am told items are read only while over the limit of 3 on the "free" plan
     And the items are:
       | First  |
       | Second |

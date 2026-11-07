@@ -51,7 +51,7 @@ func (e Entitlements) CheckChange(limitName string, count int) error {
 	if !ok || limit.WhenOver != ReadOnly || count <= limit.Max {
 		return nil
 	}
-	return &LimitError{Limit: limitName, Max: limit.Max, IsReadOnly: true}
+	return &LimitError{Limit: limitName, Max: limit.Max, Plan: e.Plan, IsReadOnly: true}
 }
 
 // NewLimit builds a valid Limit. It refuses a negative max, and a WhenOver

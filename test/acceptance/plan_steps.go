@@ -16,7 +16,7 @@ func (w *world) registerPlanSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^the "([^"]*)" plan allows (\d+) items, and (blocks new ones|makes them read only) when over$`, w.thePlanAllowsItems)
 	sc.Step(`^its item limit is (\d+), which (blocks new ones|makes them read only) when over$`, w.itsItemLimitIs)
 	sc.Step(`^I am told the limit of (\d+) items on the "([^"]*)" plan is reached$`, w.iAmToldTheLimitIsReached)
-	sc.Step(`^I am told items are read only while over the limit of (\d+)$`, w.iAmToldItemsAreReadOnly)
+	sc.Step(`^I am told items are read only while over the limit of (\d+) on the "([^"]*)" plan$`, w.iAmToldItemsAreReadOnly)
 }
 
 // whenOver is what the scenarios call each over-limit behaviour.
@@ -53,8 +53,8 @@ func (w *world) iAmToldTheLimitIsReached(max int, plan string) error {
 	return w.expectLimitError(domain.LimitError{Limit: "items", Max: max, Plan: plan})
 }
 
-func (w *world) iAmToldItemsAreReadOnly(max int) error {
-	return w.expectLimitError(domain.LimitError{Limit: "items", Max: max, IsReadOnly: true})
+func (w *world) iAmToldItemsAreReadOnly(max int, plan string) error {
+	return w.expectLimitError(domain.LimitError{Limit: "items", Max: max, Plan: plan, IsReadOnly: true})
 }
 
 func (w *world) expectLimitError(want domain.LimitError) error {

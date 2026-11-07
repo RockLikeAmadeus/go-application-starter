@@ -62,7 +62,7 @@ func TestEntitlements_CheckChange(t *testing.T) {
 		count        int
 		want         *domain.LimitError
 	}{
-		"over a read-only limit":    {entitlementsWithItemLimit(3, domain.ReadOnly), 4, &domain.LimitError{Limit: "items", Max: 3, IsReadOnly: true}},
+		"over a read-only limit":    {entitlementsWithItemLimit(3, domain.ReadOnly), 4, &domain.LimitError{Limit: "items", Max: 3, Plan: "free", IsReadOnly: true}},
 		"at a read-only limit":      {entitlementsWithItemLimit(3, domain.ReadOnly), 3, nil},
 		"over a block-new limit":    {entitlementsWithItemLimit(3, domain.BlockNew), 4, nil},
 		"a plan without that limit": {domain.Entitlements{Plan: "pro"}, 100, nil},

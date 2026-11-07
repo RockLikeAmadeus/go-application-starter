@@ -148,7 +148,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestEntitlements_CheckCreate` expects `Plan: "free"`; failed as the refusal had no plan.
   - Green: `CheckCreate` sets `Plan`. The "limit is reached" step compared the whole error, so its scenario now names the plan.
   - Refactor: nothing changed. Sharing the `LimitError` construction waits for 6d, if it's worth it then.
-- [ ] 6d. `CheckChange`'s refusal names the plan.
+- [x] 6d. `CheckChange`'s refusal names the plan.
+  - Red: `TestEntitlements_CheckChange` expects `Plan: "free"`; failed as the refusal had no plan.
+  - Green: `CheckChange` sets `Plan`. The "read only" step compared the whole error, so its scenario now names the plan.
+  - Refactor: nothing changed. The two `LimitError` literals are one line each and differ by a field, so a shared helper wouldn't pay for itself.
 - [ ] 6e. The limit reached message.
 - [ ] 6f. The read-only message.
 - [ ] 7. The local plan, over a server, internal and not found errors.
