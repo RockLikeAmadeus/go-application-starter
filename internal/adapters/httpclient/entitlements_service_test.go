@@ -3,6 +3,7 @@ package httpclient_test
 import (
 	"context"
 	"errors"
+	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
@@ -23,12 +24,7 @@ func TestCurrentEntitlements_RoundTrip(t *testing.T) {
 		Features: map[string]domain.Feature{},
 	}
 	core := app.NewEntitlementsService(testsupport.FixedEntitlements(free), testsupport.FixedWorkspace(domain.LocalWorkspace))
-	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core}))
-	t.Cleanup(srv.Close)
-	client, err := httpclient.NewEntitlementsService(srv.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := clientOf(t, httpapi.NewHandler(httpapi.Options{Entitlements: core}))
 
 	got, err := client.CurrentEntitlements(context.Background())
 	if err != nil {
@@ -52,12 +48,7 @@ func TestCurrentEntitlements_ReadsTheFeatures(t *testing.T) {
 		},
 	}
 	core := app.NewEntitlementsService(testsupport.FixedEntitlements(sent), testsupport.FixedWorkspace(domain.LocalWorkspace))
-	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core}))
-	t.Cleanup(srv.Close)
-	client, err := httpclient.NewEntitlementsService(srv.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := clientOf(t, httpapi.NewHandler(httpapi.Options{Entitlements: core}))
 
 	got, err := client.CurrentEntitlements(context.Background())
 	if err != nil {
@@ -76,17 +67,24 @@ func (e failingEntitlements) CurrentEntitlements(context.Context) (domain.Entitl
 	return domain.Entitlements{}, e.err
 }
 
-// errorOverHTTP returns what the client reports when the core fails with sent
-// on the server.
-func errorOverHTTP(t *testing.T, sent error) error {
+// clientOf returns a client of a test server that answers with handler.
+func clientOf(t *testing.T, handler http.Handler) *httpclient.EntitlementsService {
 	t.Helper()
-	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{sent}}))
+	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
 	client, err := httpclient.NewEntitlementsService(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = client.CurrentEntitlements(context.Background())
+	return client
+}
+
+// errorOverHTTP returns what the client reports when the core fails with sent
+// on the server.
+func errorOverHTTP(t *testing.T, sent error) error {
+	t.Helper()
+	client := clientOf(t, httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{sent}}))
+	_, err := client.CurrentEntitlements(context.Background())
 	return err
 }
 
@@ -137,6 +135,21 @@ func TestAFeatureErrorComesBackAsAFeatureError(t *testing.T) {
 func TestAnyOtherServerErrorReadsAsASentence(t *testing.T) {
 	err := errorOverHTTP(t, errors.New("boom"))
 	want := "The server returned an error (500): An unexpected error occurred on the server. Please try again later."
+	if err == nil || err.Error() != want {
+		t.Fatalf("err = %v, want %q", err, want)
+	}
+}
+
+// An answer that isn't a problem document, such as a proxy's error page, reads
+// as a sentence with the status, as the client has no detail to pass on.
+func TestAServerErrorWithNoProblemDocumentReadsAsASentence(t *testing.T) {
+	client := clientOf(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "bad gateway", http.StatusBadGateway)
+	}))
+
+	_, err := client.CurrentEntitlements(context.Background())
+
+	want := "The server returned an unexpected response (502)."
 	if err == nil || err.Error() != want {
 		t.Fatalf("err = %v, want %q", err, want)
 	}

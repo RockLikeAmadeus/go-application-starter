@@ -27,7 +27,8 @@ func newAPI(baseURL string, opts ...apiclient.ClientOption) (*apiclient.ClientWi
 // transport.
 func toError(status int, p *apiclient.Problem) error {
 	if p == nil {
-		return fmt.Errorf("unexpected HTTP status %d", status)
+		//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
+		return fmt.Errorf("The server returned an unexpected response (%d).", status)
 	}
 	problemType, detail, field := deref(p.Type), deref(p.Detail), deref(p.Field)
 	switch problemType {

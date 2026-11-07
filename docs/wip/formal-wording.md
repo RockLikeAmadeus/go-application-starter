@@ -287,7 +287,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAnErrorStartingTheApplicationFollowsThePrefixDirectly` failed with `Error: start application: plans file: plan "local", limit "items": The max value cannot be negative.`
   - Green: `openApp` returns the error as it is given.
   - Refactor: nothing worth changing; `openApp` still asks `LockedFolderError` first, as only the CLI adds the `--server` ending, and the two `run_test.go` tests share too little setup to extract.
-- [ ] 13f. A server error with no problem document uses the agreed sentence, in place of `unexpected HTTP status {status}`.
+- [x] 13f. A server error with no problem document uses the agreed sentence, in place of `unexpected HTTP status {status}`.
+  - Red: `TestAServerErrorWithNoProblemDocumentReadsAsASentence` failed with `unexpected HTTP status 502`.
+  - Green: `toError` returns the agreed sentence, with the ST1005 `nolint`.
+  - Refactor: `clientOf` replaces the test server and client setup repeated four times in `entitlements_service_test.go`; `item_service_test.go`'s `newClient` is left, as it builds the sample's client.
 - [ ] 13g. `bootstrap`'s `unsupported storage` error uses the agreed storage setting sentence.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
 
