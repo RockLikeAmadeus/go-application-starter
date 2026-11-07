@@ -31,7 +31,7 @@ func (s *BillingService) ChangePlan(ctx context.Context, workspace domain.Worksp
 		return fmt.Errorf("look up plan: %w", err)
 	}
 	if !known {
-		return &domain.ValidationError{Field: "plan", Message: "does not exist"}
+		return &domain.ValidationError{Field: "plan", Message: "plan does not exist"}
 	}
 	return s.workspacePlans.SavePlan(ctx, workspace, plan)
 }

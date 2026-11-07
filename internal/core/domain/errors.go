@@ -19,12 +19,15 @@ var ErrValidation = errors.New("validation failed")
 
 // ValidationError describes why an input violates a business rule.
 type ValidationError struct {
-	Field   string
+	// Field is the input it refuses ("name"). The API and front ends use it to
+	// tell which input was at fault.
+	Field string
+	// Message is what people read, as a whole sentence.
 	Message string
 }
 
 func (e *ValidationError) Error() string {
-	return fmt.Sprintf("%s %s", e.Field, e.Message)
+	return e.Message
 }
 
 // Is lets callers use errors.Is(err, ErrValidation).

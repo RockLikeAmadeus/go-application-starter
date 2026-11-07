@@ -12,3 +12,12 @@ func TestErrNotFound_Message(t *testing.T) {
 		t.Errorf("Error() = %q, want %q", got, want)
 	}
 }
+
+func TestValidationError_ReadsAsItsMessage(t *testing.T) {
+	err := &domain.ValidationError{Field: "name", Message: "The name cannot be empty."}
+
+	want := "The name cannot be empty."
+	if got := err.Error(); got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
+	}
+}

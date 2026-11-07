@@ -60,10 +60,10 @@ func (e Entitlements) CheckChange(limitName string, count int) error {
 // literal, so a bad plans file is caught when it's read.
 func NewLimit(name string, max int, whenOver OverLimitBehavior) (Limit, error) {
 	if max < 0 {
-		return Limit{}, &ValidationError{Field: "max", Message: "must not be negative"}
+		return Limit{}, &ValidationError{Field: "max", Message: "max must not be negative"}
 	}
 	if whenOver != BlockNew && whenOver != ReadOnly {
-		return Limit{}, &ValidationError{Field: "whenOver", Message: fmt.Sprintf("must be %q or %q", BlockNew, ReadOnly)}
+		return Limit{}, &ValidationError{Field: "whenOver", Message: fmt.Sprintf("whenOver must be %q or %q", BlockNew, ReadOnly)}
 	}
 	return Limit{Name: name, Max: max, WhenOver: whenOver}, nil
 }
@@ -99,10 +99,10 @@ type Feature struct {
 // literal, so a bad plans file is caught when it's read.
 func NewFeature(key, name string, whenOff FeatureOffBehavior) (Feature, error) {
 	if strings.TrimSpace(name) == "" {
-		return Feature{}, &ValidationError{Field: "name", Message: "must not be empty"}
+		return Feature{}, &ValidationError{Field: "name", Message: "name must not be empty"}
 	}
 	if whenOff != ShowLocked && whenOff != Hide {
-		return Feature{}, &ValidationError{Field: "whenOff", Message: fmt.Sprintf("must be %q or %q", ShowLocked, Hide)}
+		return Feature{}, &ValidationError{Field: "whenOff", Message: fmt.Sprintf("whenOff must be %q or %q", ShowLocked, Hide)}
 	}
 	return Feature{Key: key, Name: name, WhenOff: whenOff}, nil
 }

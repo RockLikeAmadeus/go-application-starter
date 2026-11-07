@@ -52,10 +52,10 @@ func (i *Item) Rename(name string, now time.Time) error {
 func normalizeName(name string) (string, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return "", &ValidationError{Field: "name", Message: "must not be empty"}
+		return "", &ValidationError{Field: "name", Message: "name must not be empty"}
 	}
 	if utf8.RuneCountInString(name) > MaxItemNameLength {
-		return "", &ValidationError{Field: "name", Message: "must be at most 200 characters"}
+		return "", &ValidationError{Field: "name", Message: "name must be at most 200 characters"}
 	}
 	return name, nil
 }

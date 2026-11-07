@@ -181,7 +181,15 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestErrNotFound_Message` failed with the old "not found".
   - Green: `ErrNotFound` uses the agreed text, with the ST1005 `nolint`.
   - Refactor: nothing changed. The app layer never wraps this error, so users read the sentence alone.
-- [ ] 8. The validation pattern, with `httpclient` recovering the message.
+- [x] 8. The validation pattern: `ValidationError` reads as its `Message`, a whole sentence.
+  - Red: `TestValidationError_ReadsAsItsMessage` failed with "name The name cannot be empty.".
+  - Green: `Error()` returns `Message`; each `Message` gains its field name, so the text is unchanged until 8c to 8f. Until 8b, a message over a server loses its field name.
+  - Refactor: doc comments on `Field` and `Message`, which now holds the whole sentence. The constructors' field-name prefixes stay, as 8c to 8f replace them.
+- [ ] 8b. `httpclient` keeps the server's sentence as the `Message`, instead of stripping the field name.
+- [ ] 8c. The empty name sentence.
+- [ ] 8d. The too long name sentence.
+- [ ] 8e. The unknown plan sentence.
+- [ ] 8f. The plans file fields (`max`, `whenOver`, `whenOff`, and a feature's `name`).
 - [ ] 9. The settings errors.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.
 - [ ] 11. The other server error.
@@ -202,3 +210,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 6 split: the API, `httpclient`, the two checks, and the two messages each need their own test, so they are tasks 6 to 6f. The messages go last, so no step shows a blank plan name.
 - Task 7 split: the local plan, over a server, internal, and not found errors each need their own test, so they are tasks 7 to 7d.
 - Task 7c split: an unexpected error and a panic build the internal error separately, and each needs its own test, so they are tasks 7c and 7cb.
+- Task 8 split: the pattern, `httpclient`, the three agreed sentences, and the plans file's fields each need their own test, so they are tasks 8 to 8f. "The specified plan does not exist." can't be built from "The {field} {message}." with `Field` still "plan", so `Message` holds the whole sentence.
