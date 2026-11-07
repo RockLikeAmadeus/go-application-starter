@@ -291,7 +291,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAServerErrorWithNoProblemDocumentReadsAsASentence` failed with `unexpected HTTP status 502`.
   - Green: `toError` returns the agreed sentence, with the ST1005 `nolint`.
   - Refactor: `clientOf` replaces the test server and client setup repeated four times in `entitlements_service_test.go`; `item_service_test.go`'s `newClient` is left, as it builds the sample's client.
-- [ ] 13g. `bootstrap`'s `unsupported storage` error uses the agreed storage setting sentence.
+- [x] 13g. `bootstrap`'s `unsupported storage` error uses the agreed storage setting sentence.
+  - Red: `TestNewEmbedded_AnUnknownStorageErrorReadsAsASentence` failed with `unsupported storage "disk"`.
+  - Green: `NewEmbedded` returns the agreed sentence, with the ST1005 `nolint`.
+  - Refactor: `config.UnrecognizedStorageError` holds the sentence, for both `Validate` and `NewEmbedded`.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
 
 ## Changes to the plan

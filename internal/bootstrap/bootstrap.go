@@ -106,7 +106,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		itemRepo = sqlite.NewItemRepository(store)
 		// sample:end
 	default:
-		return nil, fmt.Errorf("unsupported storage %q", cfg.Storage)
+		return nil, config.UnrecognizedStorageError(cfg.Storage)
 	}
 	entitlementsProvider, err := localEntitlementsProvider(cfg.PlansFile)
 	if err != nil {

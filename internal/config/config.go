@@ -131,14 +131,20 @@ func (c Config) Validate() error {
 	switch c.Storage {
 	case StorageMemory, StorageJSONFile, StorageSQLite:
 	default:
-		//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
-		return fmt.Errorf("The storage setting %q is not recognized. Please use %q, %q, or %q.", c.Storage, StorageMemory, StorageJSONFile, StorageSQLite)
+		return UnrecognizedStorageError(c.Storage)
 	}
 	if c.LogFormat != "json" && c.LogFormat != "text" {
 		//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
 		return fmt.Errorf("The log format setting %q is not recognized. Please use \"text\" or \"json\".", c.LogFormat)
 	}
 	return nil
+}
+
+// UnrecognizedStorageError is the error for a storage setting this program
+// doesn't have.
+func UnrecognizedStorageError(storage StorageBackend) error {
+	//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
+	return fmt.Errorf("The storage setting %q is not recognized. Please use %q, %q, or %q.", storage, StorageMemory, StorageJSONFile, StorageSQLite)
 }
 
 // envVars are the settings, by their key in a settings file, each with the

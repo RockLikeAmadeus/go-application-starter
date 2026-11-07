@@ -83,6 +83,15 @@ func TestNewEmbedded_RefusesALocalPlanThePlansFileDoesntHave(t *testing.T) {
 	}
 }
 
+func TestNewEmbedded_AnUnknownStorageErrorReadsAsASentence(t *testing.T) {
+	_, err := bootstrap.NewEmbedded(config.Config{Storage: "disk"})
+
+	want := `The storage setting "disk" is not recognized. Please use "memory", "jsonfile", or "sqlite".`
+	if err == nil || err.Error() != want {
+		t.Errorf("err = %v, want %q", err, want)
+	}
+}
+
 func TestNewEmbedded_WithAPlansFile(t *testing.T) {
 	t.Run("uses it instead of the shipped one", func(t *testing.T) {
 		path := writePlansFile(t, `{"plans": {"local": {"limits": {"items": {"max": 5, "whenOver": "read-only"}}}}}`)
