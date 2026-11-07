@@ -99,7 +99,7 @@ type Feature struct {
 // literal, so a bad plans file is caught when it's read.
 func NewFeature(key, name string, whenOff FeatureOffBehavior) (Feature, error) {
 	if strings.TrimSpace(name) == "" {
-		return Feature{}, &ValidationError{Field: "name", Message: "name must not be empty"}
+		return Feature{}, &ValidationError{Field: "name", Message: "The feature name cannot be empty."}
 	}
 	if whenOff != ShowLocked && whenOff != Hide {
 		return Feature{}, unrecognizedBehavior("whenOff", whenOff, ShowLocked, Hide)

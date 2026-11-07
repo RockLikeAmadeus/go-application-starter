@@ -159,6 +159,17 @@ func TestNewFeature_UnknownWhenOffErrorReadsAsASentence(t *testing.T) {
 	}
 }
 
+func TestNewFeature_EmptyNameErrorReadsAsASentence(t *testing.T) {
+	_, err := domain.NewFeature("item-export", "", domain.ShowLocked)
+	if err == nil {
+		t.Fatal("err = nil, want a validation error")
+	}
+	want := "The feature name cannot be empty."
+	if err.Error() != want {
+		t.Errorf("err = %q, want %q", err, want)
+	}
+}
+
 func TestNewFeature(t *testing.T) {
 	t.Run("a valid feature", func(t *testing.T) {
 		got, err := domain.NewFeature("item-export", "Item export", domain.ShowLocked)

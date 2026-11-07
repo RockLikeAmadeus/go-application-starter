@@ -217,7 +217,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestNewFeature_UnknownWhenOffErrorReadsAsASentence` failed with `whenOff must be "show-locked" or "hide"`.
   - Green: `NewFeature` uses the agreed sentence, quoting the value it was given.
   - Refactor: `unrecognizedBehavior` holds the sentence for `NewLimit` and `NewFeature`, and the tests stay as they are, as each pins its own text.
-- [ ] 8fd. The plans file's feature `name` sentence.
+- [x] 8fd. The plans file's feature `name` sentence.
+  - Red: `TestNewFeature_EmptyNameErrorReadsAsASentence` failed with "name must not be empty".
+  - Green: `NewFeature` uses the agreed sentence.
+  - Refactor: nothing worth changing; the test matches its `whenOff` neighbour, and `plans_test.go` still pins the location prefix.
 - [ ] 9. The settings errors.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.
 - [ ] 11. The other server error.
