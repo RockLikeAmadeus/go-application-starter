@@ -43,6 +43,19 @@ func TestChangePlan_RefusesAPlanTheCatalogDoesNotHave(t *testing.T) {
 	assertStoredPlans(t, stored, testsupport.StoredPlans{"ws-a": "free"})
 }
 
+func TestChangePlan_UnknownPlanErrorReadsAsASentence(t *testing.T) {
+	svc := app.NewBillingService(testsupport.StoredPlans{"ws-a": "free"}, testsupport.KnownPlans{"free", "pro"})
+
+	err := svc.ChangePlan(context.Background(), "ws-a", "platinum")
+
+	if err == nil {
+		t.Fatal("err = nil, want a validation error")
+	}
+	if want := "The specified plan does not exist."; err.Error() != want {
+		t.Errorf("err = %q, want %q", err, want)
+	}
+}
+
 // errCatalog is the error unreadableCatalog fails with.
 var errCatalog = errors.New("catalog unavailable")
 

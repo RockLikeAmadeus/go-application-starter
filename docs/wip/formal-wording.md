@@ -197,7 +197,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestNewItem_TooLongNameErrorReadsAsASentence` failed with "name must be at most 200 characters".
   - Green: `normalizeName` uses the agreed sentence.
   - Refactor: nothing changed; 200 stays literal so the agreed sentence reads whole, and sample code's small test repetition isn't worth tidying.
-- [ ] 8e. The unknown plan sentence.
+- [x] 8e. The unknown plan sentence.
+  - Red: `TestChangePlan_UnknownPlanErrorReadsAsASentence` failed with "plan does not exist".
+  - Green: `ChangePlan` uses the agreed sentence.
+  - Refactor: nothing worth changing; the new test is as short as its neighbours, and the message stays inline like the other `ValidationError`s.
 - [ ] 8f. The plans file fields (`max`, `whenOver`, `whenOff`, and a feature's `name`).
 - [ ] 9. The settings errors.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.
