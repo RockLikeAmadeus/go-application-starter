@@ -148,6 +148,17 @@ func TestNewLimit_UnknownWhenOverErrorReadsAsASentence(t *testing.T) {
 	}
 }
 
+func TestNewFeature_UnknownWhenOffErrorReadsAsASentence(t *testing.T) {
+	_, err := domain.NewFeature("item-export", "Item export", "grey-out")
+	if err == nil {
+		t.Fatal("err = nil, want a validation error")
+	}
+	want := `The whenOff value "grey-out" is not recognized. Please use "show-locked" or "hide".`
+	if err.Error() != want {
+		t.Errorf("err = %q, want %q", err, want)
+	}
+}
+
 func TestNewFeature(t *testing.T) {
 	t.Run("a valid feature", func(t *testing.T) {
 		got, err := domain.NewFeature("item-export", "Item export", domain.ShowLocked)

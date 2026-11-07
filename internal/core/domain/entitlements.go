@@ -63,7 +63,7 @@ func NewLimit(name string, max int, whenOver OverLimitBehavior) (Limit, error) {
 		return Limit{}, &ValidationError{Field: "max", Message: "The max value cannot be negative."}
 	}
 	if whenOver != BlockNew && whenOver != ReadOnly {
-		return Limit{}, &ValidationError{Field: "whenOver", Message: fmt.Sprintf("The whenOver value %q is not recognized. Please use %q or %q.", whenOver, BlockNew, ReadOnly)}
+		return Limit{}, unrecognizedBehavior("whenOver", whenOver, BlockNew, ReadOnly)
 	}
 	return Limit{Name: name, Max: max, WhenOver: whenOver}, nil
 }
@@ -102,9 +102,15 @@ func NewFeature(key, name string, whenOff FeatureOffBehavior) (Feature, error) {
 		return Feature{}, &ValidationError{Field: "name", Message: "name must not be empty"}
 	}
 	if whenOff != ShowLocked && whenOff != Hide {
-		return Feature{}, &ValidationError{Field: "whenOff", Message: fmt.Sprintf("whenOff must be %q or %q", ShowLocked, Hide)}
+		return Feature{}, unrecognizedBehavior("whenOff", whenOff, ShowLocked, Hide)
 	}
 	return Feature{Key: key, Name: name, WhenOff: whenOff}, nil
+}
+
+// unrecognizedBehavior refuses a plans file value that isn't one of the two
+// behaviors the field allows.
+func unrecognizedBehavior[B ~string](field string, value, first, second B) *ValidationError {
+	return &ValidationError{Field: field, Message: fmt.Sprintf("The %s value %q is not recognized. Please use %q or %q.", field, value, first, second)}
 }
 
 // CheckFeature says whether the workspace may use the feature. It refuses

@@ -213,7 +213,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestNewLimit_UnknownWhenOverErrorReadsAsASentence` failed with `whenOver must be "block-new" or "read-only"`.
   - Green: `NewLimit` uses the agreed sentence, quoting the value it was given.
   - Refactor: nothing worth changing; the test matches its `max` neighbour, and a shared helper can wait until 8fc and 8fd show the shape.
-- [ ] 8fc. The plans file's `whenOff` sentence.
+- [x] 8fc. The plans file's `whenOff` sentence.
+  - Red: `TestNewFeature_UnknownWhenOffErrorReadsAsASentence` failed with `whenOff must be "show-locked" or "hide"`.
+  - Green: `NewFeature` uses the agreed sentence, quoting the value it was given.
+  - Refactor: `unrecognizedBehavior` holds the sentence for `NewLimit` and `NewFeature`, and the tests stay as they are, as each pins its own text.
 - [ ] 8fd. The plans file's feature `name` sentence.
 - [ ] 9. The settings errors.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.
