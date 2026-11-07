@@ -34,7 +34,7 @@ func toError(status int, p *apiclient.Problem) error {
 	case "not_found":
 		return domain.ErrNotFound
 	case "validation":
-		return &domain.ValidationError{Field: field, Message: strings.TrimSpace(strings.TrimPrefix(detail, field))}
+		return &domain.ValidationError{Field: field, Message: detail}
 	case "limit":
 		return &domain.LimitError{Limit: deref(p.Limit), Max: deref(p.Max), Plan: deref(p.Plan), IsReadOnly: deref(p.IsReadOnly)}
 	case "feature":

@@ -76,18 +76,37 @@ func (e failingEntitlements) CurrentEntitlements(context.Context) (domain.Entitl
 	return domain.Entitlements{}, e.err
 }
 
-// A limit error on the server comes back as the same limit error, so callers
-// can use errors.As whichever way they reach the core.
-func TestALimitErrorComesBackAsALimitError(t *testing.T) {
-	sent := &domain.LimitError{Limit: "items", Max: 3, Plan: "free", IsReadOnly: true}
+// errorOverHTTP returns what the client reports when the core fails with sent
+// on the server.
+func errorOverHTTP(t *testing.T, sent error) error {
+	t.Helper()
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{sent}}))
 	t.Cleanup(srv.Close)
 	client, err := httpclient.NewEntitlementsService(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	_, err = client.CurrentEntitlements(context.Background())
+	return err
+}
+
+// A validation error on the server comes back as the same validation error,
+// with its sentence whole even when it starts with the field's name, so
+// callers show what the server said.
+func TestAValidationErrorComesBackAsAValidationError(t *testing.T) {
+	sent := &domain.ValidationError{Field: "name", Message: "name is the field this sentence starts with."}
+	err := errorOverHTTP(t, sent)
+	var got *domain.ValidationError
+	if !errors.As(err, &got) || *got != *sent {
+		t.Fatalf("err = %v (%+v), want %+v", err, got, sent)
+	}
+}
+
+// A limit error on the server comes back as the same limit error, so callers
+// can use errors.As whichever way they reach the core.
+func TestALimitErrorComesBackAsALimitError(t *testing.T) {
+	sent := &domain.LimitError{Limit: "items", Max: 3, Plan: "free", IsReadOnly: true}
+	err := errorOverHTTP(t, sent)
 	var got *domain.LimitError
 	if !errors.As(err, &got) || *got != *sent {
 		t.Fatalf("err = %v (%+v), want %+v", err, got, sent)
@@ -104,14 +123,7 @@ func TestAFeatureErrorComesBackAsAFeatureError(t *testing.T) {
 	}
 	for name, sent := range tests {
 		t.Run(name, func(t *testing.T) {
-			srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{sent}}))
-			t.Cleanup(srv.Close)
-			client, err := httpclient.NewEntitlementsService(srv.URL)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			_, err = client.CurrentEntitlements(context.Background())
+			err := errorOverHTTP(t, sent)
 			var got *domain.FeatureError
 			if !errors.As(err, &got) || !reflect.DeepEqual(got, sent) {
 				t.Fatalf("err = %#v, want %#v", err, sent)

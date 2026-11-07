@@ -185,7 +185,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestValidationError_ReadsAsItsMessage` failed with "name The name cannot be empty.".
   - Green: `Error()` returns `Message`; each `Message` gains its field name, so the text is unchanged until 8c to 8f. Until 8b, a message over a server loses its field name.
   - Refactor: doc comments on `Field` and `Message`, which now holds the whole sentence. The constructors' field-name prefixes stay, as 8c to 8f replace them.
-- [ ] 8b. `httpclient` keeps the server's sentence as the `Message`, instead of stripping the field name.
+- [x] 8b. `httpclient` keeps the server's sentence as the `Message`, instead of stripping the field name.
+  - Red: `TestAValidationErrorComesBackAsAValidationError` failed with the leading "name" stripped from the `Message`.
+  - Green: `toError` uses the problem's `detail` as the `Message`.
+  - Refactor: the error tests share an `errorOverHTTP` helper.
 - [ ] 8c. The empty name sentence.
 - [ ] 8d. The too long name sentence.
 - [ ] 8e. The unknown plan sentence.
