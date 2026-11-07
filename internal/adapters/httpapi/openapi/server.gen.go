@@ -154,7 +154,10 @@ type Problem struct {
 	Max *int `json:"max,omitempty"`
 
 	// Name The feature's display name (e.g. "Item export"), for feature errors.
-	Name   *string `json:"name,omitempty"`
+	Name *string `json:"name,omitempty"`
+
+	// Plan The plan that sets the limit (e.g. "free"), for limit errors.
+	Plan   *string `json:"plan,omitempty"`
 	Status int     `json:"status"`
 	Title  string  `json:"title"`
 

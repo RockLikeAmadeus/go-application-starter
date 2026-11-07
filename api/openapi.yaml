@@ -287,6 +287,9 @@ components:
         max:
           type: integer
           description: The plan's maximum for that limit, for limit errors.
+        plan:
+          type: string
+          description: The plan that sets the limit (e.g. "free"), for limit errors.
         isReadOnly:
           type: boolean
           description: |

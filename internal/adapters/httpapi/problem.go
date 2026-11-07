@@ -30,7 +30,7 @@ func problemFor(err error) openapi.Problem {
 		return problem(http.StatusUnprocessableEntity, ProblemValidation, validationErr.Error(), &validationErr.Field)
 	case errors.As(err, &limitErr):
 		p := problem(http.StatusForbidden, ProblemLimit, limitErr.Error(), nil)
-		p.Limit, p.Max, p.IsReadOnly = &limitErr.Limit, &limitErr.Max, &limitErr.IsReadOnly
+		p.Limit, p.Max, p.Plan, p.IsReadOnly = &limitErr.Limit, &limitErr.Max, &limitErr.Plan, &limitErr.IsReadOnly
 		return p
 	case errors.As(err, &featureErr):
 		p := problem(http.StatusForbidden, ProblemFeature, featureErr.Error(), nil)

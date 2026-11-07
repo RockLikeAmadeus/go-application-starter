@@ -184,10 +184,10 @@ func (e failingEntitlements) CurrentEntitlements(context.Context) (domain.Entitl
 	return domain.Entitlements{}, e.err
 }
 
-// A limit error is forbidden, and its problem document says which limit, so
-// clients can map it back.
+// A limit error is forbidden, and its problem document says which limit on
+// which plan, so clients can map it back.
 func TestALimitErrorIsAForbiddenProblemNamingTheLimit(t *testing.T) {
-	limitErr := &domain.LimitError{Limit: "items", Max: 3, IsReadOnly: true}
+	limitErr := &domain.LimitError{Limit: "items", Max: 3, Plan: "free", IsReadOnly: true}
 	rec := httptest.NewRecorder()
 	httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{limitErr}}).
 		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
@@ -204,7 +204,7 @@ func TestALimitErrorIsAForbiddenProblemNamingTheLimit(t *testing.T) {
 	}
 	want := map[string]any{
 		"type": "limit", "title": "Forbidden", "status": 403.0, "detail": limitErr.Error(),
-		"limit": "items", "max": 3.0, "isReadOnly": true,
+		"limit": "items", "max": 3.0, "plan": "free", "isReadOnly": true,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("body = %v, want %v", got, want)

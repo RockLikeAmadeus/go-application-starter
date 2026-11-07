@@ -196,6 +196,8 @@ export interface components {
             limit?: string;
             /** @description The plan's maximum for that limit, for limit errors. */
             max?: number;
+            /** @description The plan that sets the limit (e.g. "free"), for limit errors. */
+            plan?: string;
             /**
              * @description For limit errors: true when the change was refused because the
              *     workspace is over a limit that makes things read only, false when

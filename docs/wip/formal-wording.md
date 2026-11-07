@@ -136,7 +136,15 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: none. `TestGatedKeyHelpShowsTheKeyByItsFeaturesState` "locked, with one plan to name" case passed straight away, as the text was already agreed; kept as a guard, and checked that it fails when the note changes.
   - Green: skipped, as no production code was demanded.
   - Refactor: renamed the test's locked cases by how many plans they name. No production change.
-- [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.
+- [x] 6. The problem document for a limit error carries the plan, through `api/openapi.yaml`.
+  - Red: `TestALimitErrorIsAForbiddenProblemNamingTheLimit` expects `"plan": "free"`; failed on a body with no `plan`.
+  - Green: `plan` added to `Problem` in `api/openapi.yaml`, and `problemFor` sets it.
+  - Refactor: nothing changed. Kept `problemFor`'s four-part assignment, which matches the feature error's beside it.
+- [ ] 6b. `httpclient` rebuilds the plan on a `LimitError`.
+- [ ] 6c. `CheckCreate`'s refusal names the plan.
+- [ ] 6d. `CheckChange`'s refusal names the plan.
+- [ ] 6e. The limit reached message.
+- [ ] 6f. The read-only message.
 - [ ] 7. The local plan, over a server, internal and not found errors.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.
 - [ ] 9. The settings errors.
@@ -156,3 +164,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 5b split: two plans and three or more each need their own test, so they are tasks 5b and 5bb.
 - Task 5c split: one plan, several plans, and no plan each need their own test, so they are tasks 5c, 5cb, and 5cc.
 - Task 5d split: several plans needs a change, and one plan needs its own test to pin it, so they are tasks 5d and 5db. The no-plan form is already pinned.
+- Task 6 split: the API, `httpclient`, the two checks, and the two messages each need their own test, so they are tasks 6 to 6f. The messages go last, so no step shows a blank plan name.

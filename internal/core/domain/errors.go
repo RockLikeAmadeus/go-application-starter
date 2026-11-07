@@ -37,6 +37,8 @@ type LimitError struct {
 	Limit string
 	// Max is the plan's limit.
 	Max int
+	// Plan names the plan that sets the limit.
+	Plan string
 	// IsReadOnly is set when a change to existing data was refused because the
 	// workspace is over a ReadOnly limit. Otherwise, creating was refused at
 	// the limit.
