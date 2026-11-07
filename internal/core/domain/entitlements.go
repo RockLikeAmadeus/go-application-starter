@@ -63,7 +63,7 @@ func NewLimit(name string, max int, whenOver OverLimitBehavior) (Limit, error) {
 		return Limit{}, &ValidationError{Field: "max", Message: "The max value cannot be negative."}
 	}
 	if whenOver != BlockNew && whenOver != ReadOnly {
-		return Limit{}, &ValidationError{Field: "whenOver", Message: fmt.Sprintf("whenOver must be %q or %q", BlockNew, ReadOnly)}
+		return Limit{}, &ValidationError{Field: "whenOver", Message: fmt.Sprintf("The whenOver value %q is not recognized. Please use %q or %q.", whenOver, BlockNew, ReadOnly)}
 	}
 	return Limit{Name: name, Max: max, WhenOver: whenOver}, nil
 }

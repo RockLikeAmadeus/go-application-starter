@@ -137,6 +137,17 @@ func TestNewLimit_NegativeMaxErrorReadsAsASentence(t *testing.T) {
 	}
 }
 
+func TestNewLimit_UnknownWhenOverErrorReadsAsASentence(t *testing.T) {
+	_, err := domain.NewLimit("items", 3, "delete-all")
+	if err == nil {
+		t.Fatal("err = nil, want a validation error")
+	}
+	want := `The whenOver value "delete-all" is not recognized. Please use "block-new" or "read-only".`
+	if err.Error() != want {
+		t.Errorf("err = %q, want %q", err, want)
+	}
+}
+
 func TestNewFeature(t *testing.T) {
 	t.Run("a valid feature", func(t *testing.T) {
 		got, err := domain.NewFeature("item-export", "Item export", domain.ShowLocked)

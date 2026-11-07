@@ -209,7 +209,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestNewLimit_NegativeMaxErrorReadsAsASentence` failed with "max must not be negative".
   - Green: `NewLimit` uses the agreed sentence.
   - Refactor: the new test now reads like its neighbours in `item_test.go`; `NewLimit` is unchanged, as 8fb replaces its other message.
-- [ ] 8fb. The plans file's `whenOver` sentence.
+- [x] 8fb. The plans file's `whenOver` sentence.
+  - Red: `TestNewLimit_UnknownWhenOverErrorReadsAsASentence` failed with `whenOver must be "block-new" or "read-only"`.
+  - Green: `NewLimit` uses the agreed sentence, quoting the value it was given.
+  - Refactor: nothing worth changing; the test matches its `max` neighbour, and a shared helper can wait until 8fc and 8fd show the shape.
 - [ ] 8fc. The plans file's `whenOff` sentence.
 - [ ] 8fd. The plans file's feature `name` sentence.
 - [ ] 9. The settings errors.
