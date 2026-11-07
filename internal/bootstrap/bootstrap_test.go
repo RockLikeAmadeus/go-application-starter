@@ -404,6 +404,31 @@ func warningsWithMarksFrom(t *testing.T, devices ...string) []string {
 	return a.Warnings
 }
 
+// A plain-text folder that looks synced gets this device's mark on opening, so
+// that other devices can warn about it.
+func TestApp_MarksAPlainTextFolderThatLooksSynced(t *testing.T) {
+	device, err := os.Hostname()
+	if err != nil {
+		t.Skipf("this computer's name can't be read: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".dropbox"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(root, "data")
+
+	a, err := bootstrap.New(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	got := syncedfolder.OtherDevices(dir, "another-device", time.Now())
+	if want := []string{device}; !slices.Equal(got, want) {
+		t.Errorf("devices with a mark = %q, want %q", got, want)
+	}
+}
+
 // A scan that fails can't say there are no conflict copies, so plain text says
 // it couldn't look, and the app still opens: the scan guards the data rather
 // than being needed to reach it.

@@ -175,7 +175,14 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestApp_ThisDevicesOwnMarkGivesNoWarning` failed: the warning named this computer.
   - Green: `otherDeviceWarning` passes `os.Hostname()` as this device; if it can't be read, every mark counts as another device's.
   - Refactor: `warningsWithMarksFrom` holds the warning tests' setup; made-up devices are now `work-laptop` and `work-phone`, so a computer named `laptop` doesn't fail them.
-- [ ] 14. `bootstrap` marks the folder only when it looks synced and `ignore_synced_folder` is off, and `App.Close` stops the mark before the store closes. Define the mark steps; turns the last 4 scenarios green.
+- [x] 14. `bootstrap` marks a plain-text folder that looks synced on opening.
+  - Red: `TestApp_MarksAPlainTextFolderThatLooksSynced` failed: no device had a mark, want this computer.
+  - Green: `markFolder` writes this device's mark once on opening plain text, with no check yet that the folder looks synced (14b, 14c) and no renewing or removal (14d). With no computer name it leaves no mark.
+  - Refactor: nothing. `markFolder` is short, and the test's `.dropbox` setup, also in the SQLite test, is left until 14c shows whether a helper fits. The init suite ran on a copy.
+- [ ] 14b. A folder that doesn't look synced gets no mark.
+- [ ] 14c. `ignore_synced_folder` means no mark.
+- [ ] 14d. The mark is renewed every minute, and `App.Close` stops it before the store closes.
+- [ ] 14e. Define the mark steps; turns the last 4 scenarios green.
 
 Finish:
 - [ ] 15. Docs: ADR 3 (layout, version 2, what "one file per domain type" became, a rough record count from task 8d), ADR 5 (plain text is never used in the hosted edition, and any other detail that changed), `docs/data-locations.md` (including `workspace_plans.json` and the iCloud limit), `docs/configuration.md` (`ignore_synced_folder` also stops the mark), `.claude/rules/storage.md`, the `jsonfile` package comment.
@@ -198,3 +205,4 @@ Run the init suite at tasks 5b, 7d, 7e, 9 and 10 too: they add code next to the 
 - Task 13 split: one device is 13, several 13b and this device's own mark 13c, as each needs its own test.
 - Task 11d split: files that aren't marks are 11d, and a folder with no marks is 11e, as each needs its own test.
 - Task 12 split: writing is 12, the atomic replace 12b, renewing 12c and removing 12d, as each needs its own test.
+- Task 14 split: marking is 14, an unsynced folder 14b, the setting 14c, renewing and stopping 14d and the steps 14e, as each needs its own test.

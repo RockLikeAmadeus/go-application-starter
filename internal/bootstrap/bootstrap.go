@@ -88,6 +88,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		if warning, ok := otherDeviceWarning(cfg); ok {
 			a.Warnings = append(a.Warnings, warning)
 		}
+		markFolder(cfg)
 		// sample:start
 		itemRepo = jsonfile.NewItemRepository(store)
 		// sample:end
@@ -214,6 +215,16 @@ func otherDeviceWarning(cfg config.Config) (string, bool) {
 	return "Your data folder appears to be in use on " + deviceList(devices) + ". Running the " +
 		"application from multiple devices at once while plain-text storage is enabled can result in lost " +
 		"changes: please close the application on your other devices before continuing.", true
+}
+
+// markFolder leaves this device's mark in the data folder. If this computer's
+// name can't be read, it leaves none.
+func markFolder(cfg config.Config) {
+	device, err := os.Hostname()
+	if err != nil {
+		return
+	}
+	_ = syncedfolder.WriteMark(cfg.DataDir, device, system.Clock{}.Now())
 }
 
 // deviceList names two or more devices: "a and b", or "a, b, and c".
