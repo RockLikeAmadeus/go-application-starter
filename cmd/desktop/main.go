@@ -6,7 +6,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -16,9 +15,8 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "desktop:", err)
-		os.Exit(1)
+	if status := desktop.RunAndReport(run, os.Stderr); status != 0 {
+		os.Exit(status)
 	}
 }
 

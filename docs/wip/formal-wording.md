@@ -278,7 +278,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAServerThatCannotStartPrintsItsErrorOnStderr` failed with exit status 0 and an empty stderr, against a stub `runAndReport`.
   - Green: `runAndReport` runs the server, prints `Error: {text}` on stderr and returns the exit status; `main` calls it, and `run` takes the environment.
   - Refactor: nothing worth changing; the prefix sits in one place, and `runAndReport` shares too little with `cli.Run` to extract.
-- [ ] 13d. The `Error:` prefix in the desktop app.
+- [x] 13d. The `Error:` prefix in the desktop app.
+  - Red: `TestAnAppThatCannotStartPrintsItsErrorOnStderr` failed with exit status 0 and an empty stderr, against a stub `desktop.RunAndReport`.
+  - Green: `desktop.RunAndReport` runs the app, prints `Error: {text}` on stderr and returns the exit status; `cmd/desktop`'s `main` calls it. Run for real: `STARTER_STORAGE=disk` prints the agreed line and exits 1.
+  - Refactor: the test's stand-in error is lower-case, so it needs no `nolint`; `RunAndReport` shares too little with the server's `runAndReport` to extract.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
 
 ## Changes to the plan
