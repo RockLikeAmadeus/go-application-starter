@@ -165,7 +165,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestNewBilling_LocalEditionRefusalWording` expects the agreed text; failed with the old "the local edition's plan is set when the app is built".
   - Green: `ErrLocalPlanIsFixed` uses the agreed text; the terminal journey's expected text too.
   - Refactor: nothing changed. The wording test stays apart from `TestNewBilling_RefusesInTheLocalEditionWithoutOpeningStorage`, which is about opening no storage. The Gherkin's "the app" stays, as users don't read it. `SPEC.md` and the docs paraphrase the old text, for task 14.
-- [ ] 7b. The over a server error.
+- [x] 7b. The over a server error.
+  - Red: `TestNewBilling_OverAServerRefusalWording` expects the agreed text; failed with the old "a plan can't be changed over a server yet".
+  - Green: `ErrNoPlanChangesOverAServer` uses the agreed text, with the ST1005 `nolint`.
+  - Refactor: nothing changed. The wording test stays apart from `TestNewBilling_RefusesOverAServer`, which pins the sentinel, as with task 7's pair.
 - [ ] 7c. The internal error.
 - [ ] 7d. The not found error.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.

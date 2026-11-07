@@ -146,7 +146,9 @@ func NewEntitlementsService(cfg config.Config) (ports.EntitlementsService, error
 var ErrLocalPlanIsFixed = errors.New("The plan for the local edition is set when the application is built and cannot be changed.")
 
 // ErrNoPlanChangesOverAServer is the refusal to change a plan with --server.
-var ErrNoPlanChangesOverAServer = errors.New("a plan can't be changed over a server yet")
+//
+//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
+var ErrNoPlanChangesOverAServer = errors.New("A plan cannot be changed through a server connection.")
 
 // NewBilling returns the billing service, for `starter admin set-plan`. Every
 // copy is the local edition until sign-in adds the hosted one, so it always

@@ -180,6 +180,16 @@ func TestNewBilling_RefusesOverAServer(t *testing.T) {
 	}
 }
 
+// The refusal is shown to whoever runs the command, as it stands.
+func TestNewBilling_OverAServerRefusalWording(t *testing.T) {
+	_, err := bootstrap.NewBilling(config.Config{ServerURL: "http://localhost:1"})
+
+	want := "A plan cannot be changed through a server connection."
+	if err == nil || err.Error() != want {
+		t.Errorf("err = %v, want %q", err, want)
+	}
+}
+
 // sample:start
 
 // The shipped plans file has the sample's item export: on for the local and
