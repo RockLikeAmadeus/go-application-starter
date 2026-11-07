@@ -193,7 +193,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestNewItem_EmptyNameErrorReadsAsASentence` failed with "name must not be empty".
   - Green: `normalizeName` uses the agreed sentence; the TUI, web, and journey tests pin it too. `NewFeature`'s blank name stays for 8f.
   - Refactor: nothing worth changing; `normalizeName`'s too long message is 8d.
-- [ ] 8d. The too long name sentence.
+- [x] 8d. The too long name sentence.
+  - Red: `TestNewItem_TooLongNameErrorReadsAsASentence` failed with "name must be at most 200 characters".
+  - Green: `normalizeName` uses the agreed sentence.
+  - Refactor: nothing changed; 200 stays literal so the agreed sentence reads whole, and sample code's small test repetition isn't worth tidying.
 - [ ] 8e. The unknown plan sentence.
 - [ ] 8f. The plans file fields (`max`, `whenOver`, `whenOff`, and a feature's `name`).
 - [ ] 9. The settings errors.

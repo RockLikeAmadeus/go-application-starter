@@ -55,7 +55,7 @@ func normalizeName(name string) (string, error) {
 		return "", &ValidationError{Field: "name", Message: "The name cannot be empty."}
 	}
 	if utf8.RuneCountInString(name) > MaxItemNameLength {
-		return "", &ValidationError{Field: "name", Message: "name must be at most 200 characters"}
+		return "", &ValidationError{Field: "name", Message: "The name cannot be longer than 200 characters."}
 	}
 	return name, nil
 }
