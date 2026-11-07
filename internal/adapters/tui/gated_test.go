@@ -18,11 +18,15 @@ func TestGatedKeyHelpShowsTheKeyByItsFeaturesState(t *testing.T) {
 			domain.Feature{Key: "item-export", Name: "Item export", IsOn: true, WhenOff: domain.ShowLocked, AvailableOn: []string{"pro"}},
 			"x export",
 		},
-		"locked, with a hint": {
+		"locked, with one plan to name": {
+			domain.Feature{Key: "item-export", Name: "Item export", WhenOff: domain.ShowLocked, AvailableOn: []string{"pro"}},
+			"x export (locked: available on the pro plan)",
+		},
+		"locked, with several plans to name": {
 			domain.Feature{Key: "item-export", Name: "Item export", WhenOff: domain.ShowLocked, AvailableOn: []string{"pro", "team"}},
 			"x export (locked: available on the following plans: pro or team)",
 		},
-		"locked, without a hint": {
+		"locked, with no plan to name": {
 			domain.Feature{Key: "item-export", Name: "Item export", WhenOff: domain.ShowLocked},
 			"x export (locked)",
 		},

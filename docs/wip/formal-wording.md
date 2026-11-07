@@ -132,7 +132,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestGatedKeyHelpShowsTheKeyByItsFeaturesState` "locked, with a hint" case pins the agreed note; failed on "available on the pro or team plans".
   - Green: `gatedKeyHelp` uses the agreed text for several plans, through `PlanList`.
   - Refactor: `PlansPhrase`'s several-plans form is now the agreed one, so the CLI and TUI each lost their extra case. `FeatureError` keeps its own, as it reads "one of the following plans".
-- [ ] 5db. The TUI plan note, for one plan: already agreed text, but no test pins it.
+- [x] 5db. The TUI plan note, for one plan.
+  - Red: none. `TestGatedKeyHelpShowsTheKeyByItsFeaturesState` "locked, with one plan to name" case passed straight away, as the text was already agreed; kept as a guard, and checked that it fails when the note changes.
+  - Green: skipped, as no production code was demanded.
+  - Refactor: renamed the test's locked cases by how many plans they name. No production change.
 - [ ] 6. Limit errors name the plan, through `api/openapi.yaml` and `httpclient`.
 - [ ] 7. The local plan, over a server, internal and not found errors.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.
