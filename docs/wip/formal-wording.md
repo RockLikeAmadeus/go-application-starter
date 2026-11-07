@@ -156,7 +156,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestLimitError_Message/reached` expects the agreed text; failed with the old "the limit of 3 items is reached".
   - Green: `LimitError.Error` uses the agreed text, with the plan.
   - Refactor: nothing changed. The message is one line, and `SPEC.md`'s paraphrase waits for task 14.
-- [ ] 6f. The read-only message.
+- [x] 6f. The read-only message.
+  - Red: `TestLimitError_Message/read_only` expects the agreed text; failed with the old "items are read only while over the limit of 3".
+  - Green: `LimitError.Error` uses the agreed text, with the plan.
+  - Refactor: nothing changed. The message is one line, the read-only check's failure text in `item_service_test.go` is a developer note, and `SPEC.md`'s paraphrase of it is unaffected.
 - [ ] 7. The local plan, over a server, internal and not found errors.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.
 - [ ] 9. The settings errors.

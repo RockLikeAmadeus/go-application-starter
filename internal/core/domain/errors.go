@@ -47,7 +47,7 @@ type LimitError struct {
 
 func (e *LimitError) Error() string {
 	if e.IsReadOnly {
-		return fmt.Sprintf("%s are read only while over the limit of %d", e.Limit, e.Max)
+		return fmt.Sprintf("Your %s are read-only because you have exceeded the limit of %d %s on the %s plan.", e.Limit, e.Max, e.Limit, e.Plan)
 	}
 	return fmt.Sprintf("You have reached the limit of %d %s on the %s plan.", e.Max, e.Limit, e.Plan)
 }
