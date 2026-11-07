@@ -173,7 +173,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAnUnexpectedErrorIsAnInternalProblemWithTheAgreedWording` expects the agreed text; failed with the old "internal server error".
   - Green: `problemFor`'s default uses the agreed text.
   - Refactor: nothing changed. A shared constant waits for 7cb, as `recoverer` still has the old text.
-- [ ] 7cb. The internal error, for a panic.
+- [x] 7cb. The internal error, for a panic.
+  - Red: `TestAPanicIsAnInternalProblemWithTheAgreedWording` expects the agreed text; failed with the old "internal server error".
+  - Green: `recoverer` uses the agreed text.
+  - Refactor: `internalProblem` holds the sentence for `problemFor` and `recoverer`; `assertInternalProblem` holds the two tests' shared check.
 - [ ] 7d. The not found error.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.
 - [ ] 9. The settings errors.

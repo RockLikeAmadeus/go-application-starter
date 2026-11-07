@@ -184,15 +184,8 @@ func (e failingEntitlements) CurrentEntitlements(context.Context) (domain.Entitl
 	return domain.Entitlements{}, e.err
 }
 
-// An error no domain rule explains tells the user only that something went
-// wrong on the server, never what.
-func TestAnUnexpectedErrorIsAnInternalProblemWithTheAgreedWording(t *testing.T) {
-	rec := httptest.NewRecorder()
-	httpapi.NewHandler(httpapi.Options{
-		Logger:       slog.New(slog.DiscardHandler),
-		Entitlements: failingEntitlements{errors.New("disk on fire")},
-	}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
-
+func assertInternalProblem(t *testing.T, rec *httptest.ResponseRecorder) {
+	t.Helper()
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
 	}
@@ -205,6 +198,35 @@ func TestAnUnexpectedErrorIsAnInternalProblemWithTheAgreedWording(t *testing.T) 
 	if want := "An unexpected error occurred on the server. Please try again later."; got.Detail != want {
 		t.Errorf("detail = %q, want %q", got.Detail, want)
 	}
+}
+
+// An error no domain rule explains tells the user only that something went
+// wrong on the server, never what.
+func TestAnUnexpectedErrorIsAnInternalProblemWithTheAgreedWording(t *testing.T) {
+	rec := httptest.NewRecorder()
+	httpapi.NewHandler(httpapi.Options{
+		Logger:       slog.New(slog.DiscardHandler),
+		Entitlements: failingEntitlements{errors.New("disk on fire")},
+	}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
+
+	assertInternalProblem(t, rec)
+}
+
+type panickingEntitlements struct{}
+
+func (panickingEntitlements) CurrentEntitlements(context.Context) (domain.Entitlements, error) {
+	panic("disk on fire")
+}
+
+// A panic tells the user no more than an unexpected error does.
+func TestAPanicIsAnInternalProblemWithTheAgreedWording(t *testing.T) {
+	rec := httptest.NewRecorder()
+	httpapi.NewHandler(httpapi.Options{
+		Logger:       slog.New(slog.DiscardHandler),
+		Entitlements: panickingEntitlements{},
+	}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
+
+	assertInternalProblem(t, rec)
 }
 
 // A limit error is forbidden, and its problem document says which limit on

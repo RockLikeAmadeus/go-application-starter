@@ -133,7 +133,7 @@ func recoverer(log *slog.Logger, next http.Handler) http.Handler {
 		defer func() {
 			if v := recover(); v != nil {
 				log.ErrorContext(r.Context(), "panic", "value", v, "path", r.URL.Path)
-				writeProblem(w, problem(http.StatusInternalServerError, ProblemInternal, "internal server error", nil))
+				writeProblem(w, internalProblem())
 			}
 		}()
 		next.ServeHTTP(w, r)

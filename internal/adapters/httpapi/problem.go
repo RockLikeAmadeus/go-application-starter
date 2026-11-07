@@ -40,8 +40,13 @@ func problemFor(err error) openapi.Problem {
 	case errors.Is(err, domain.ErrNotFound):
 		return problem(http.StatusNotFound, ProblemNotFound, err.Error(), nil)
 	default:
-		return problem(http.StatusInternalServerError, ProblemInternal, "An unexpected error occurred on the server. Please try again later.", nil)
+		return internalProblem()
 	}
+}
+
+// internalProblem says only that something went wrong on the server, never what.
+func internalProblem() openapi.Problem {
+	return problem(http.StatusInternalServerError, ProblemInternal, "An unexpected error occurred on the server. Please try again later.", nil)
 }
 
 func problem(status int, typ, detail string, field *string) openapi.Problem {
