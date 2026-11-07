@@ -224,12 +224,12 @@ Each workspace is on a **plan**, which turns **features** on or off and sets its
 
 <!-- sample:start -->
 **Examples**
-- The free plan allows 3 items. A workspace on it with 3 items tries to create a fourth → it's told the limit of 3 items is reached, and still has 3 items.
+- The free plan allows 3 items. A workspace on it with 3 items tries to create a fourth → it's told "You have reached the limit of 3 items on the free plan.", and still has 3 items.
 - The free plan allows 3 items and makes them read only when over. A workspace with 4 items moves to it → it can't rename an item, but can delete one; with 3 items left, it can rename again.
 - The pro plan has no item limit → a workspace on it can create a fourth item.
 - **Item export** is the sample feature: it gives the workspace's items as a CSV file (spreadsheet text), one row per item, oldest first. The local and pro plans have it; the free plan shows it locked.
   - A workspace on the pro plan exports its items → it gets "First" and "Second", in that order.
-  - A workspace on the free plan tries to export → it's told item export isn't on its plan, and is available on the pro plan. The web app shows the export button locked, with that hint. `starter --help` lists the command as disabled on the plan, with the hint, and `starter item export` refuses, saying the same.
+  - A workspace on the free plan tries to export → it's told "Item export is not included in your current plan. To use this feature, please upgrade to the pro plan." The web app shows the export button locked, with the note "Available on the pro plan". `starter --help` lists the command with "(not included in your current plan; available on the pro plan)", and `starter item export` refuses with the same message.
   - With item export hidden when off, a workspace on the free plan sees no export button, and `starter --help` doesn't list the command.
 
 **Specification:** [`features/plans.feature`](features/plans.feature) (limits) and [`features/plan-features.feature`](features/plan-features.feature) (features). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile, sqlite and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
@@ -366,7 +366,7 @@ An admin can move a workspace to another plan, for example when its owner starts
 - An admin moves workspace Alpha from the free plan to the pro plan → Alpha's plan is pro, and it can export its items.
 - An admin tries to move Alpha to the "platinum" plan, which the plans file doesn't have → it's refused, and Alpha stays on the free plan.
 - An admin moves Alpha to the pro plan → Beta stays on the free plan.
-- A user runs `starter admin set-plan local pro` on their own computer → it fails, saying the local edition's plan is set when the app is built.
+- A user runs `starter admin set-plan local pro` on their own computer → it fails with "The plan for the local edition is set when the application is built and cannot be changed."
 
 **Specification:** [`features/plan-changes.feature`](features/plan-changes.feature). The scenarios that move a workspace run on the memory, jsonfile, sqlite and http drivers; the one that switches between workspaces runs on memory, jsonfile and sqlite only; the local edition's refusal runs on the desktop driver. Keeping the plan after a restart is checked by each storage adapter's contract tests. The command's output and exit status are checked by a terminal journey ([`test/terminal/features/command-line.feature`](test/terminal/features/command-line.feature)).
 

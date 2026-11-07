@@ -42,6 +42,6 @@ Wails mobile is experimental (outside its stability promise), and the bridge dep
 
 - One UI and one contract: a feature built for the browser works in every shell, and the SPA's tests cover it.
 - Building the desktop app needs system packages (GTK 4 and WebKitGTK 6.0 on Linux; see the README), and the Android app needs a JDK, the Android SDK and the NDK. Plain `go build ./...` and `task check` need neither.
-- The desktop app locks its data folder like the server does, so a second copy, or the CLI against the same folder, fails fast with "data in use".
+- The desktop app locks its data folder like the server does, so a second copy, or the CLI against the same folder, fails fast, saying the data folder is in use.
 - Wails upgrades need care on Android: the Go module and the `@wailsio/runtime` npm package must move together, and the generated Gradle project may need regenerating.
 - Packaging (AppImage, .deb, .dmg, .msi), remote mode, iOS, and Play Store signing are follow-ups in `TODO.md`.

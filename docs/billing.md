@@ -7,7 +7,7 @@ This guide explains how a product built from this template gets paid. It covers 
 **The template doesn't take payments.** It ships the one step that billing comes down to, moving a workspace to a plan, and an admin command that runs it.
 
 - **Built:** `ChangePlan`, each storage adapter's stored plans, `plans.StoredPlanOf`, and `starter admin set-plan`, all proved by the acceptance tests.
-- **Not built:** the hosted edition. Sign-in is step 8 of `docs/plans/editions-and-accounts.md`. Until then every copy is the local edition, so `bootstrap.NewBilling` refuses and `starter admin set-plan` fails, saying the plan is set when the app is built.
+- **Not built:** the hosted edition. Sign-in is step 8 of `docs/plans/editions-and-accounts.md`. Until then every copy is the local edition, so `bootstrap.NewBilling` refuses and `starter admin set-plan` fails with "The plan for the local edition is set when the application is built and cannot be changed."
 
 Everything below that changes a real workspace's plan needs that step, or your own version of it. See [Switching on stored plans](#switching-on-stored-plans).
 
@@ -62,7 +62,7 @@ You don't need a payment provider to start charging. Send an invoice, and when i
 starter admin set-plan WORKSPACE pro
 ```
 
-It prints `WORKSPACE is now on the pro plan`. To end a paid account, run it again with your free plan.
+It prints `Workspace WORKSPACE is now on the pro plan.` To end a paid account, run it again with your free plan.
 
 - **It's not a network API.** The command works on the storage directly, so being able to run it means having access to the storage. It refuses `--server`. An admin API waits for sign-in and roles.
 - **It takes effect straight away in the core.** The web app keeps the entitlements it read for the session, so someone already using it sees the new plan after reloading. Until then the core still applies the new plan.

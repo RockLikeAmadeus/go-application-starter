@@ -135,7 +135,7 @@ func TestOpenUsesTheSettingsFilesDataFolder(t *testing.T) {
 
 // SQLite has no lock, so with it the desktop app can be opened while another
 // program (here, a second copy) has the same data folder open. On plain text
-// the second Open fails with "data directory is locked".
+// the second Open fails with a *jsonfile.LockedError.
 func TestOpenOnTheSettingsFilesSQLiteCanBeOpenedTwiceOnOneDataFolder(t *testing.T) {
 	settings := t.TempDir()
 	writeSettings(t, settings, `storage = "sqlite"`)

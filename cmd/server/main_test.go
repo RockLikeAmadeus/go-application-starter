@@ -54,7 +54,6 @@ func TestTheServerReadsTheSettingsFileStarterConfigFileNames(t *testing.T) {
 	}
 }
 
-// The server's web app shows the app's warnings, so the handler serves them.
 // A server that can't start says why on stderr, and ends with a failing exit
 // status.
 func TestAServerThatCannotStartPrintsItsErrorOnStderr(t *testing.T) {
@@ -72,6 +71,7 @@ func TestAServerThatCannotStartPrintsItsErrorOnStderr(t *testing.T) {
 	}
 }
 
+// The server's web app shows the app's warnings, so the handler serves them.
 func TestTheServerServesTheAppsWarnings(t *testing.T) {
 	want := []string{"first warning", "second warning"}
 	handler := httpapi.NewHandler(handlerOptions(&bootstrap.App{Warnings: want}, nil))

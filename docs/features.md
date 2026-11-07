@@ -11,7 +11,7 @@ plans.jsonc ──► plans adapter ──► Entitlements.Features ──► us
 ```
 
 1. **The plans file defines the feature.** You add it to the top-level `features` section with a key, a `name` that people read, and `whenOff`. Each plan lists the keys it turns on. A feature a plan doesn't list is off for that plan. The file fails to load if a plan lists an unknown key, a `name` is missing or blank, or `whenOff` isn't `show-locked` or `hide`.
-2. **The core refuses, and the front ends only show.** The use case gets the workspace's entitlements and calls `entitlements.CheckFeature(key)` before doing anything else. That returns a `*domain.FeatureError` ("Item export isn't on your plan…") when the feature is off, or when the key isn't in the catalog. If the entitlements can't be looked up, the use case refuses too. A front end never decides on its own whether a feature can be used.
+2. **The core refuses, and the front ends only show.** The use case gets the workspace's entitlements and calls `entitlements.CheckFeature(key)` before doing anything else. That returns a `*domain.FeatureError` ("Item export is not included in your current plan. To use this feature, please upgrade to the pro plan.") when the feature is off, or when the key isn't in the catalog. If the entitlements can't be looked up, the use case refuses too. A front end never decides on its own whether a feature can be used.
 3. **The error is the same everywhere.** Over HTTP it's a 403 problem with `feature`, `name` and `availableOn`, and `httpclient` turns it back into the same `*FeatureError`. The CLI and TUI print it the same way in `--server` mode as with local data.
 4. **The upgrade hint** (`Feature.AvailableOn`) lists the plans that have the feature, leaving out the local edition's plan. A hidden feature has no hint. The local edition gives no hints at all, so a locked feature there just says it isn't available.
 
@@ -20,7 +20,7 @@ plans.jsonc ──► plans adapter ──► Entitlements.Features ──► us
 | `whenOff` | Web (`FeatureGate`) | CLI help (`cli.Gated`) | TUI help line (`gatedKeyHelp`) |
 |---|---|---|---|
 | on | the control | listed as usual | the key's help |
-| `show-locked` | the control disabled, with "Available on the pro plan" (or "Not available") | listed, "(disabled on your plan: available on the pro plan)" | "x export (locked: available on the pro plan)" |
+| `show-locked` | the control disabled, with "Available on the pro plan" (or "Not available") | listed, "(not included in your current plan; available on the pro plan)" | "x export (locked: available on the pro plan)" |
 | `hide` | nothing | not listed | nothing |
 | can't read the entitlements | disabled, "Not available" | listed as usual (the core still refuses) | |
 
