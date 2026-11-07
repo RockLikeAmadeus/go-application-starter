@@ -241,8 +241,11 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestALockedDataFolderErrorReadsAsASentence` failed with `data directory is locked by another process ({dir}/.lock)`.
   - Green: `Open` returns a new `*LockedError` holding the data folder, which `errors.Is` still matches to `ErrLocked`.
   - Refactor: nothing worth changing; `ErrLocked`'s own text is left, as nobody reads it now, like `ErrValidation`'s.
-- [ ] 10b. The `--server` ending of the data folder locked error, for the CLI and TUI only.
+- [x] 10b. The `--server` ending of the data folder locked error, for the CLI and TUI only.
   - `{path}` is the data folder, not its `.lock` file. The CLI's `start application: ` wrapper in `root.go` comes before this text, so a sentence-only error needs it gone here or in task 13.
+  - Red: `TestALockedDataFolderErrorOffersTheServerOption` failed for `info` and `tui` with `start application: Your data folder is in use ... try again.`
+  - Green: `LockedError` gains an optional `Alternative`, and `openApp` returned it set, without the `start application: ` wrapper.
+  - Refactor: the CLI no longer imports `jsonfile`: new `bootstrap.LockedFolderError` builds the error, tested in `bootstrap`. Other errors keep the wrapper for task 13.
 - [ ] 11. The other server error.
 - [ ] 12. The `info` and `admin` help, and the `set-plan` and `item delete` output.
 - [ ] 13. The `Warning:` and `Error:` prefixes.

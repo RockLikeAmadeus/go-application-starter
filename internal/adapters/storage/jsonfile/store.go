@@ -36,10 +36,18 @@ var ErrLocked = errors.New("data directory is locked by another process")
 type LockedError struct {
 	// Path is the data directory.
 	Path string
+	// Alternative is what the user can do instead of closing the other
+	// program, for a front end that offers something. It's a phrase that
+	// follows "or".
+	Alternative string
 }
 
 func (e *LockedError) Error() string {
-	return fmt.Sprintf("Your data folder is in use by another program on this computer (%s). Please close the other program and try again.", e.Path)
+	text := fmt.Sprintf("Your data folder is in use by another program on this computer (%s). Please close the other program and try again", e.Path)
+	if e.Alternative != "" {
+		text += ", or " + e.Alternative
+	}
+	return text + "."
 }
 
 // Is lets callers use errors.Is(err, ErrLocked).

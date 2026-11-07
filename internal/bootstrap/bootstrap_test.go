@@ -3,6 +3,7 @@ package bootstrap_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/syncedfolder"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -147,6 +149,30 @@ func TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints(t *testing.T) {
 // The local edition's plan is set when the app is built, so asking for billing
 // there is refused, and it opens no storage: it creates no data folder and
 // isn't stopped by a locked one.
+func TestLockedFolderError_OffersTheAlternativeForALockedFolderOnly(t *testing.T) {
+	dir := t.TempDir()
+	cfg := config.Config{Storage: config.StorageJSONFile, DataDir: dir}
+	a, err := bootstrap.NewEmbedded(cfg)
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	_, err = bootstrap.NewEmbedded(cfg)
+	got := bootstrap.LockedFolderError(fmt.Errorf("open: %w", err), "try this")
+
+	want := "Your data folder is in use by another program on this computer (" + dir + "). Please close the other program and try again, or try this."
+	if got == nil || got.Error() != want {
+		t.Errorf("error = %v, want %q", got, want)
+	}
+	if !errors.Is(got, jsonfile.ErrLocked) {
+		t.Errorf("error = %v, want it to match ErrLocked", got)
+	}
+	if got := bootstrap.LockedFolderError(errors.New("another error"), "try this"); got != nil {
+		t.Errorf("another error gave %v, want nil", got)
+	}
+}
+
 func TestNewBilling_RefusesInTheLocalEditionWithoutOpeningStorage(t *testing.T) {
 	dataDir := filepath.Join(t.TempDir(), "data")
 

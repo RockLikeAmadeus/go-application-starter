@@ -61,6 +61,23 @@ func TestInfoSaysTheDataIsInUseWhileAnotherProgramHasItOpen(t *testing.T) {
 	}
 }
 
+func TestALockedDataFolderErrorOffersTheServerOption(t *testing.T) {
+	dir := t.TempDir()
+	other, err := jsonfile.Open(dir)
+	if err != nil {
+		t.Fatalf("open the data folder first: %v", err)
+	}
+	defer other.Close()
+
+	want := "Your data folder is in use by another program on this computer (" + dir + "). Please close the other program and try again, or connect to a running server with --server."
+	for _, command := range []string{"info", "tui"} {
+		_, err = runCLI(t, "--data-dir", dir, "--storage", "jsonfile", command)
+		if err == nil || err.Error() != want {
+			t.Errorf("%s error = %v, want %q", command, err, want)
+		}
+	}
+}
+
 func TestInfoNamesTheWorkspacesPlan(t *testing.T) {
 	out, err := runCLI(t, "--data-dir", t.TempDir(), "--storage", "jsonfile", "info")
 	if err != nil {

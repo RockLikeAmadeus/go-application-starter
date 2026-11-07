@@ -162,6 +162,17 @@ func NewBilling(cfg config.Config) (ports.BillingService, error) {
 	return nil, ErrLocalPlanIsFixed
 }
 
+// LockedFolderError returns the error for a locked data folder that also
+// offers the user alternative, a phrase that follows "or", or nil if err isn't
+// that error.
+func LockedFolderError(err error, alternative string) error {
+	var locked *jsonfile.LockedError
+	if !errors.As(err, &locked) {
+		return nil
+	}
+	return &jsonfile.LockedError{Path: locked.Path, Alternative: alternative}
+}
+
 // syncedFolderWarning warns when SQLite's data folder looks kept in sync by
 // a file-sync service, which can damage the database, unless the setting
 // turns it off. Plain text is safe there (one device at a time), so only

@@ -95,6 +95,9 @@ func NewRootCmd(newApp AppFactory, newBilling BillingFactory, env config.Env, ou
 			return nil, cfg, err
 		}
 		app, err := newApp(cfg)
+		if locked := bootstrap.LockedFolderError(err, "connect to a running server with --server"); locked != nil {
+			return nil, cfg, locked
+		}
 		if err != nil {
 			return nil, cfg, fmt.Errorf("start application: %w", err)
 		}
