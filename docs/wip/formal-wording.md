@@ -254,7 +254,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestInfoHelpSaysWhatItShows` failed with `Show where the data is, and the plan`.
   - Green: the `info` command's `Short` uses the agreed text.
   - Refactor: nothing worth changing; the text sits in one place.
-- [ ] 12b. The `admin` help.
+- [x] 12b. The `admin` help.
+  - Red: `TestAdminHelpSaysWhoItsCommandsAreFor` failed with `Commands for whoever runs the product`.
+  - Green: the `admin` command's `Short` uses the agreed text.
+  - Refactor: nothing worth changing; the text sits in one place.
 - [ ] 12c. The `set-plan` output.
 - [ ] 12d. The `item delete` output.
 - [ ] 13. The `Warning:` and `Error:` prefixes.

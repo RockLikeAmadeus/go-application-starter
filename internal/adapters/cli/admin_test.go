@@ -43,6 +43,16 @@ func runAdmin(t *testing.T, newBilling cli.BillingFactory, out io.Writer, args .
 	return cmd.ExecuteContext(context.Background())
 }
 
+func TestAdminHelpSaysWhoItsCommandsAreFor(t *testing.T) {
+	out, err := runCLI(t, "admin", "--help")
+	if err != nil {
+		t.Fatalf("admin --help: %v", err)
+	}
+	if want := "Commands for product administrators"; !strings.Contains(out, want) {
+		t.Errorf("admin --help doesn't say %q:\n%s", want, out)
+	}
+}
+
 func TestAdminSetPlanReportsThatBillingRefused(t *testing.T) {
 	refused := errors.New("refused")
 	newBilling := func(config.Config) (ports.BillingService, error) {

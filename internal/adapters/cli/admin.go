@@ -13,7 +13,7 @@ import (
 func newAdminCmd(loadConfig func() (config.Config, error), newBilling BillingFactory) *cobra.Command {
 	admin := &cobra.Command{
 		Use:   "admin",
-		Short: "Commands for whoever runs the product",
+		Short: "Commands for product administrators",
 	}
 	admin.AddCommand(&cobra.Command{
 		Use:   "set-plan WORKSPACE PLAN",
