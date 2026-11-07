@@ -229,7 +229,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAnUnreadableSettingsFileErrorReadsAsASentence` failed with `read the settings file {path}: open ...`.
   - Green: `readSettingsFile` uses the agreed sentence, with a `nolint` for ST1005.
   - Refactor: nothing worth changing; `TestASettingsFileThatIsntTOMLFailsNamingTheFile` stays, as it covers bad TOML rather than a missing file.
-- [ ] 9c. The storage setting error.
+- [x] 9c. The storage setting error.
+  - Red: `TestAnUnknownStorageErrorReadsAsASentence` failed with `unknown storage "disk" (want "memory", "jsonfile" or "sqlite")`.
+  - Green: `Config.Validate` uses the agreed sentence, with a `nolint` for ST1005.
+  - Refactor: cut the old storage test to `TestStorageAcceptsSQLite`, as the new exact test covers its error half.
 - [ ] 9d. The log format setting error.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.
 - [ ] 11. The other server error.

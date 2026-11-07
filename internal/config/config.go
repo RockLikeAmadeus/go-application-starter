@@ -131,7 +131,8 @@ func (c Config) Validate() error {
 	switch c.Storage {
 	case StorageMemory, StorageJSONFile, StorageSQLite:
 	default:
-		return fmt.Errorf("unknown storage %q (want %q, %q or %q)", c.Storage, StorageMemory, StorageJSONFile, StorageSQLite)
+		//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
+		return fmt.Errorf("The storage setting %q is not recognized. Please use %q, %q, or %q.", c.Storage, StorageMemory, StorageJSONFile, StorageSQLite)
 	}
 	if c.LogFormat != "json" && c.LogFormat != "text" {
 		return fmt.Errorf("unknown log format %q", c.LogFormat)

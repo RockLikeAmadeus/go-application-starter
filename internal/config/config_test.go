@@ -117,7 +117,7 @@ data_dir = "/srv/work-data"
 	}
 }
 
-func TestStorageAcceptsSQLiteAndTheErrorForAnUnknownOneNamesAllThree(t *testing.T) {
+func TestStorageAcceptsSQLite(t *testing.T) {
 	cfg, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_STORAGE": "sqlite"})}, "")
 	if err != nil {
 		t.Fatalf("Load with sqlite: %v", err)
@@ -125,15 +125,14 @@ func TestStorageAcceptsSQLiteAndTheErrorForAnUnknownOneNamesAllThree(t *testing.
 	if cfg.Storage != config.StorageSQLite {
 		t.Errorf("Storage = %q, want %q", cfg.Storage, config.StorageSQLite)
 	}
+}
 
-	_, err = config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_STORAGE": "oracle"})}, "")
-	if err == nil {
-		t.Fatal("Load with an unknown storage succeeded")
-	}
-	for _, name := range []string{"memory", "jsonfile", "sqlite"} {
-		if !strings.Contains(err.Error(), name) {
-			t.Errorf("error %q doesn't name %q", err, name)
-		}
+func TestAnUnknownStorageErrorReadsAsASentence(t *testing.T) {
+	_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_STORAGE": "disk"})}, "")
+
+	want := `The storage setting "disk" is not recognized. Please use "memory", "jsonfile", or "sqlite".`
+	if err == nil || err.Error() != want {
+		t.Errorf("error = %v, want %q", err, want)
 	}
 }
 
