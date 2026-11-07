@@ -64,18 +64,25 @@ func TestAdminSetPlanReportsThatBillingRefused(t *testing.T) {
 	}
 }
 
-func TestAdminSetPlanMovesTheWorkspaceAndSaysWhichPlanItIsOn(t *testing.T) {
+func TestAdminSetPlanMovesTheWorkspace(t *testing.T) {
 	billing := &recordingBilling{}
-	var out bytes.Buffer
 
-	if err := runAdmin(t, usingBilling(billing), &out, "set-plan", "ws-a", "pro"); err != nil {
+	if err := runAdmin(t, usingBilling(billing), &bytes.Buffer{}, "set-plan", "ws-a", "pro"); err != nil {
 		t.Fatalf("admin set-plan: %v", err)
 	}
 	if billing.workspace != "ws-a" || billing.plan != "pro" {
 		t.Errorf("ChangePlan(%q, %q), want (\"ws-a\", \"pro\")", billing.workspace, billing.plan)
 	}
-	if want := "ws-a is now on the pro plan"; !strings.Contains(out.String(), want) {
-		t.Errorf("output = %q, want it to contain %q", out.String(), want)
+}
+
+func TestAdminSetPlanConfirmsTheMoveInAFullSentence(t *testing.T) {
+	var out bytes.Buffer
+
+	if err := runAdmin(t, usingBilling(&recordingBilling{}), &out, "set-plan", "ws-a", "pro"); err != nil {
+		t.Fatalf("admin set-plan: %v", err)
+	}
+	if want := "Workspace ws-a is now on the pro plan.\n"; out.String() != want {
+		t.Errorf("output = %q, want %q", out.String(), want)
 	}
 }
 

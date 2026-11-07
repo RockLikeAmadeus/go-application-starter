@@ -32,7 +32,7 @@ func newAdminCmd(loadConfig func() (config.Config, error), newBilling BillingFac
 			if err := billing.ChangePlan(cmd.Context(), domain.WorkspaceID(workspace), plan); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%s is now on the %s plan\n", workspace, plan)
+			fmt.Fprintf(cmd.OutOrStdout(), "Workspace %s is now on the %s plan.\n", workspace, plan)
 			return nil
 		},
 	})

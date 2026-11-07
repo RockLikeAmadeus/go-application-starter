@@ -258,7 +258,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAdminHelpSaysWhoItsCommandsAreFor` failed with `Commands for whoever runs the product`.
   - Green: the `admin` command's `Short` uses the agreed text.
   - Refactor: nothing worth changing; the text sits in one place.
-- [ ] 12c. The `set-plan` output.
+- [x] 12c. The `set-plan` output.
+  - Red: `TestAdminSetPlanConfirmsTheMoveInAFullSentence` failed with `ws-a is now on the pro plan\n`.
+  - Green: `set-plan` prints the agreed sentence.
+  - Refactor: the old test now checks only the move, as `TestAdminSetPlanMovesTheWorkspace`; the new test owns the output. `docs/billing.md` waits for task 14.
 - [ ] 12d. The `item delete` output.
 - [ ] 13. The `Warning:` and `Error:` prefixes.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
