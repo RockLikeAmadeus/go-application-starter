@@ -141,7 +141,9 @@ func NewEntitlementsService(cfg config.Config) (ports.EntitlementsService, error
 
 // ErrLocalPlanIsFixed is the refusal to change a plan in the local edition,
 // whose plan is LocalPlan.
-var ErrLocalPlanIsFixed = errors.New("the local edition's plan is set when the app is built")
+//
+//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
+var ErrLocalPlanIsFixed = errors.New("The plan for the local edition is set when the application is built and cannot be changed.")
 
 // ErrNoPlanChangesOverAServer is the refusal to change a plan with --server.
 var ErrNoPlanChangesOverAServer = errors.New("a plan can't be changed over a server yet")

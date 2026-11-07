@@ -17,6 +17,7 @@ Agreed with the user:
 Decided in planning:
 - **The plan name in limit errors crosses the API.** `httpclient` rebuilds `LimitError` from the problem response, so `plan` goes in `api/openapi.yaml` as well as on the error.
 - **`httpclient` strips the field name to recover a validation message.** The new pattern starts with "The {field}", so that has to change too.
+- **A sentence in `errors.New` or `fmt.Errorf` needs a `nolint`.** staticcheck's ST1005 refuses capitals and full stops there, so such an error carries `//nolint:staticcheck // ST1005: users read it as written, as a full sentence.` Types with an `Error` method don't trip it.
 
 ## Agreed wording
 
@@ -160,7 +161,13 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestLimitError_Message/read_only` expects the agreed text; failed with the old "items are read only while over the limit of 3".
   - Green: `LimitError.Error` uses the agreed text, with the plan.
   - Refactor: nothing changed. The message is one line, the read-only check's failure text in `item_service_test.go` is a developer note, and `SPEC.md`'s paraphrase of it is unaffected.
-- [ ] 7. The local plan, over a server, internal and not found errors.
+- [x] 7. The local plan error.
+  - Red: `TestNewBilling_LocalEditionRefusalWording` expects the agreed text; failed with the old "the local edition's plan is set when the app is built".
+  - Green: `ErrLocalPlanIsFixed` uses the agreed text; the terminal journey's expected text too.
+  - Refactor: nothing changed. The wording test stays apart from `TestNewBilling_RefusesInTheLocalEditionWithoutOpeningStorage`, which is about opening no storage. The Gherkin's "the app" stays, as users don't read it. `SPEC.md` and the docs paraphrase the old text, for task 14.
+- [ ] 7b. The over a server error.
+- [ ] 7c. The internal error.
+- [ ] 7d. The not found error.
 - [ ] 8. The validation pattern, with `httpclient` recovering the message.
 - [ ] 9. The settings errors.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.
@@ -180,3 +187,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 5c split: one plan, several plans, and no plan each need their own test, so they are tasks 5c, 5cb, and 5cc.
 - Task 5d split: several plans needs a change, and one plan needs its own test to pin it, so they are tasks 5d and 5db. The no-plan form is already pinned.
 - Task 6 split: the API, `httpclient`, the two checks, and the two messages each need their own test, so they are tasks 6 to 6f. The messages go last, so no step shows a blank plan name.
+- Task 7 split: the local plan, over a server, internal, and not found errors each need their own test, so they are tasks 7 to 7d.

@@ -160,6 +160,16 @@ func TestNewBilling_RefusesInTheLocalEditionWithoutOpeningStorage(t *testing.T) 
 	}
 }
 
+// The refusal is shown to whoever runs the command, as it stands.
+func TestNewBilling_LocalEditionRefusalWording(t *testing.T) {
+	_, err := bootstrap.NewBilling(config.Config{Storage: config.StorageMemory})
+
+	want := "The plan for the local edition is set when the application is built and cannot be changed."
+	if err == nil || err.Error() != want {
+		t.Errorf("err = %v, want %q", err, want)
+	}
+}
+
 // The admin command works beside the hosted edition's storage and no endpoint
 // changes plans, so asking for billing over a server is refused.
 func TestNewBilling_RefusesOverAServer(t *testing.T) {

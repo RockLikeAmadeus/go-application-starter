@@ -19,4 +19,4 @@ Feature: The command line in a terminal
 
   Scenario: The command line can't change the local edition's plan
     When I ask the command line to move the workspace "local" to the "pro" plan
-    Then it fails, saying "set when the app is built"
+    Then it fails, saying "set when the application is built"
