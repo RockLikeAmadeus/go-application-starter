@@ -25,7 +25,7 @@ Each copy uses one edition, and nothing syncs between them. Outside `internal/bo
 4. `/refactor` tidies the code on green, with no behaviour change.
 5. Repeat 2–4 until `task accept` passes. Then remove the `@wip` tags.
 
-`/iterate [behaviour]` runs one whole red → green → refactor cycle for the next open task (or the one given), stopping only to ask me something, and then once at the end. When the cycle goes cleanly, it commits and pushes it.
+`/iterate [behaviour]` runs one whole red → green → refactor cycle for the next open task (or the one given), stopping only to ask me something, and then once at the end. When the cycle goes cleanly, it commits and pushes it. `/iterate-all [feature]` runs an `/iterate` cycle for every open task of a `docs/wip/` file, each in a fresh subagent, one commit per task, stopping only when the tasks are done or a cycle can't finish cleanly. Questions pause it, and it carries on with my answer.
 
 `TODO.md` is the backlog. A feature's task list lives in `docs/wip/<feature-slug>.md`; a TODO item needing more than one `/feature` has a plan in `docs/plans/<item-slug>.md`. Both are tracked and temporary. **When starting or resuming work, run `task wip:next` first, then read the parts of the plan the task needs.** How to read and update them is in `.claude/rules/work-tracking.md`.
 
@@ -41,7 +41,7 @@ The sample `Item` feature is removed by most projects, so work spent on it is mo
 
 Never skip a step or merge steps unless I ask. Never write production code without a failing test that demands it.
 
-Never stage, commit, push or pull unless I explicitly ask. That includes `git add`, `git mv` and `git rm`, which stage changes. Running `/iterate` is such a request, for its own cycle only (see `.claude/commands/iterate.md`, whose `allowed-tools` lets it run `git add`, `git commit` and `git push` without a prompt). `/red`, `/green`, `/refactor` and `/feature` leave everything unstaged. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
+Never stage, commit, push or pull unless I explicitly ask. That includes `git add`, `git mv` and `git rm`, which stage changes. Running `/iterate` is such a request, for its own cycle only (see `.claude/commands/iterate.md`, whose `allowed-tools` lets it run `git add`, `git commit` and `git push` without a prompt). Running `/iterate-all` is the same request for each of its cycles. `/red`, `/green`, `/refactor` and `/feature` leave everything unstaged. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
 
 ## Commands
 
@@ -57,7 +57,7 @@ Never stage, commit, push or pull unless I explicitly ask. That includes `git ad
 | Regenerate API code | `task gen` (after editing `api/openapi.yaml`) |
 | Everything CI runs | `task check` |
 | Rename the project | `task rename -- --name "New Name" [--module …] [--dry-run]` (see `docs/rename.md`) |
-| A cycle's view of the feature in progress | `task wip:next` |
+| A cycle's view of the feature in progress | `task wip:next` · one feature: `task wip:next -- docs/wip/<slug>.md` |
 | Run locally | `task dev` (API on :8080, restarted by Air on Go changes + Vite on :5173 with HMR, opened in your browser) · `task run:cli -- --help` · `task run:tui` · `task run:desktop` |
 | Build | `task build` (`bin/server` with the SPA embedded, `bin/starter`) |
 

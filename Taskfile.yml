@@ -309,11 +309,12 @@ tasks:
       - go test ./test/acceptance/ -count=1 {{.CLI_ARGS}}
 
   wip:next:
-    desc: "What a cycle needs from docs/wip/: the links, decisions and open tasks, without the finished tasks or the plan-change log"
+    desc: "What a cycle needs from docs/wip/: the links, decisions and open tasks, without the finished tasks or the plan-change log (task wip:next -- docs/wip/<slug>.md for one feature)"
     silent: true
     cmds:
       - |
-        for file in docs/wip/*.md; do
+        files="{{.CLI_ARGS}}"
+        for file in ${files:-docs/wip/*.md}; do
           [ -f "$file" ] || { echo "No feature in progress."; continue; }
           echo "== $file"
           awk '
