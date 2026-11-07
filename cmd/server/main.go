@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -19,14 +20,23 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "server:", err)
-		os.Exit(1)
+	if status := runAndReport(config.Env{Getenv: os.Getenv}, os.Stderr); status != 0 {
+		os.Exit(status)
 	}
 }
 
-func run() error {
-	cfg, err := loadConfig(config.Env{Getenv: os.Getenv})
+// runAndReport runs the server until it stops and returns the exit status. An
+// error that stopped it goes on errOut (stderr).
+func runAndReport(env config.Env, errOut io.Writer) int {
+	if err := run(env); err != nil {
+		fmt.Fprintln(errOut, "Error:", err)
+		return 1
+	}
+	return 0
+}
+
+func run(env config.Env) error {
+	cfg, err := loadConfig(env)
 	if err != nil {
 		return err
 	}

@@ -274,7 +274,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestRunPrintsAFailedCommandsErrorOnStderr` failed with exit status 0 and an empty stderr, against a stub `cli.Run`.
   - Green: `cli.Run` runs the commands, prints `Error: {text}` on stderr and returns the exit status; `cmd/starter` calls it.
   - Refactor: nothing worth changing; the prefix sits in one place, and the `Warning:` and `Error:` lines share too little to extract.
-- [ ] 13c. The `Error:` prefix in the server.
+- [x] 13c. The `Error:` prefix in the server.
+  - Red: `TestAServerThatCannotStartPrintsItsErrorOnStderr` failed with exit status 0 and an empty stderr, against a stub `runAndReport`.
+  - Green: `runAndReport` runs the server, prints `Error: {text}` on stderr and returns the exit status; `main` calls it, and `run` takes the environment.
+  - Refactor: nothing worth changing; the prefix sits in one place, and `runAndReport` shares too little with `cli.Run` to extract.
 - [ ] 13d. The `Error:` prefix in the desktop app.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
 
