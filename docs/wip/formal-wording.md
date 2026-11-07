@@ -144,7 +144,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestALimitErrorComesBackAsALimitError` sends a plan; failed as the rebuilt error had none.
   - Green: `toError` copies `plan` from the problem.
   - Refactor: the test's failure message now prints the error's fields, as `Error()` leaves out the plan.
-- [ ] 6c. `CheckCreate`'s refusal names the plan.
+- [x] 6c. `CheckCreate`'s refusal names the plan.
+  - Red: `TestEntitlements_CheckCreate` expects `Plan: "free"`; failed as the refusal had no plan.
+  - Green: `CheckCreate` sets `Plan`. The "limit is reached" step compared the whole error, so its scenario now names the plan.
+  - Refactor: nothing changed. Sharing the `LimitError` construction waits for 6d, if it's worth it then.
 - [ ] 6d. `CheckChange`'s refusal names the plan.
 - [ ] 6e. The limit reached message.
 - [ ] 6f. The read-only message.

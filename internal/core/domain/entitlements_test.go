@@ -36,7 +36,7 @@ func assertLimitError(t *testing.T, call string, err error, want *domain.LimitEr
 }
 
 func TestEntitlements_CheckCreate(t *testing.T) {
-	reached := &domain.LimitError{Limit: "items", Max: 3}
+	reached := &domain.LimitError{Limit: "items", Max: 3, Plan: "free"}
 	cases := map[string]struct {
 		entitlements domain.Entitlements
 		count        int

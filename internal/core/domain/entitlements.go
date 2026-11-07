@@ -39,7 +39,7 @@ func (e Entitlements) CheckCreate(limitName string, count int) error {
 	if !ok || count < limit.Max {
 		return nil
 	}
-	return &LimitError{Limit: limitName, Max: limit.Max}
+	return &LimitError{Limit: limitName, Max: limit.Max, Plan: e.Plan}
 }
 
 // CheckChange says whether a workspace that has count of the limited thing may

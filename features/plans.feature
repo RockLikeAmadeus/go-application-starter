@@ -33,7 +33,7 @@ Feature: Plans and limits
     And an item named "Second"
     And an item named "Third"
     When I try to create an item named "Fourth"
-    Then I am told the limit of 3 items is reached
+    Then I am told the limit of 3 items on the "free" plan is reached
     And the items are:
       | First  |
       | Second |
