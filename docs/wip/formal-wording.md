@@ -250,7 +250,13 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAnyOtherServerErrorReadsAsASentence` failed with `server error (500): An unexpected error occurred on the server. Please try again later.`
   - Green: `toError`'s default case uses the agreed sentence.
   - Refactor: nothing worth changing. `toError`'s `unexpected HTTP status` for a response with no problem document is left, as its wording isn't agreed.
-- [ ] 12. The `info` and `admin` help, and the `set-plan` and `item delete` output.
+- [x] 12. The `info` help.
+  - Red: `TestInfoHelpSaysWhatItShows` failed with `Show where the data is, and the plan`.
+  - Green: the `info` command's `Short` uses the agreed text.
+  - Refactor: nothing worth changing; the text sits in one place.
+- [ ] 12b. The `admin` help.
+- [ ] 12c. The `set-plan` output.
+- [ ] 12d. The `item delete` output.
 - [ ] 13. The `Warning:` and `Error:` prefixes.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
 
@@ -271,3 +277,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 8f split: the plans file's four fields each need their own test, so they are tasks 8f to 8fd. Their wording was agreed on 2026-11-06, and the location prefix (`plans file: plan "free", limit "items":`) stays as it is.
 - Task 9 split: the unknown setting, unreadable settings, storage, and log format errors each need their own test, so they are tasks 9 to 9d.
 - Task 10 split: the error itself and the CLI and TUI's `--server` ending each need their own test, so they are tasks 10 and 10b.
+- Task 12 split: the `info` help, the `admin` help, the `set-plan` output, and the `item delete` output each need their own test, so they are tasks 12 to 12d.

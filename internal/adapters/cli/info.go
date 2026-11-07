@@ -16,7 +16,7 @@ import (
 func newInfoCmd(open appOpener) *cobra.Command {
 	return &cobra.Command{
 		Use:   "info",
-		Short: "Show where the data is, and the plan",
+		Short: "Show the data location and the current plan",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			app, cfg, err := open()

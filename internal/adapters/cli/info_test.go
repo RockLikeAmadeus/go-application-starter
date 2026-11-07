@@ -47,6 +47,16 @@ func TestInfoNamesTheDataFolder(t *testing.T) {
 	}
 }
 
+func TestInfoHelpSaysWhatItShows(t *testing.T) {
+	out, err := runCLI(t, "info", "--help")
+	if err != nil {
+		t.Fatalf("info --help: %v", err)
+	}
+	if want := "Show the data location and the current plan"; !strings.Contains(out, want) {
+		t.Errorf("info --help doesn't say %q:\n%s", want, out)
+	}
+}
+
 func TestInfoSaysTheDataIsInUseWhileAnotherProgramHasItOpen(t *testing.T) {
 	dir := t.TempDir()
 	other, err := jsonfile.Open(dir)
