@@ -225,7 +225,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAnUnknownSettingErrorReadsAsASentence` failed with `settings file {path}: unknown setting "colour"`.
   - Green: `readSettingsFile` uses the agreed sentence, with a `nolint` for ST1005.
   - Refactor: removed `TestASettingTheAppDoesntKnowFailsNamingTheFileAndSetting`, which the new exact test covers.
-- [ ] 9b. The unreadable settings error.
+- [x] 9b. The unreadable settings error.
+  - Red: `TestAnUnreadableSettingsFileErrorReadsAsASentence` failed with `read the settings file {path}: open ...`.
+  - Green: `readSettingsFile` uses the agreed sentence, with a `nolint` for ST1005.
+  - Refactor: nothing worth changing; `TestASettingsFileThatIsntTOMLFailsNamingTheFile` stays, as it covers bad TOML rather than a missing file.
 - [ ] 9c. The storage setting error.
 - [ ] 9d. The log format setting error.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.

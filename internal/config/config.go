@@ -159,7 +159,8 @@ func readSettingsFile(path string) (*koanf.Koanf, error) {
 		return fileSettings, nil
 	}
 	if err := fileSettings.Load(file.Provider(path), toml.Parser()); err != nil {
-		return nil, fmt.Errorf("read the settings file %s: %w", path, err)
+		//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
+		return nil, fmt.Errorf("The settings file %s could not be read: %w", path, err)
 	}
 	for _, key := range fileSettings.Keys() {
 		if _, ok := envVars[key]; !ok {

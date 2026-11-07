@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -64,6 +65,21 @@ func TestAnUnknownSettingErrorReadsAsASentence(t *testing.T) {
 
 	want := "The settings file " + file + ` contains an unknown setting: "colour".`
 	if err == nil || err.Error() != want {
+		t.Errorf("error = %v, want %q", err, want)
+	}
+}
+
+func TestAnUnreadableSettingsFileErrorReadsAsASentence(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "missing.toml")
+
+	_, err := config.Load(config.Env{Getenv: envOf(nil)}, file)
+
+	cause := errors.Unwrap(err)
+	if cause == nil {
+		t.Fatalf("error = %v, want one wrapping why the file could not be read", err)
+	}
+	want := "The settings file " + file + " could not be read: " + cause.Error()
+	if err.Error() != want {
 		t.Errorf("error = %v, want %q", err, want)
 	}
 }
