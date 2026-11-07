@@ -23,7 +23,7 @@ Feature: Items in the browser
   Scenario: See validation errors
     Given I am on the items page
     When I add an item named ""
-    Then I see the error "name must not be empty"
+    Then I see the error "The name cannot be empty."
 
   Scenario: Export the items
     Given I am on the items page

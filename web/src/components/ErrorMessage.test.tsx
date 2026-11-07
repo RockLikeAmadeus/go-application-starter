@@ -4,8 +4,8 @@ import { ErrorMessage } from "./ErrorMessage";
 
 describe("ErrorMessage", () => {
   it("shows the error's message as an alert", () => {
-    render(<ErrorMessage error={new Error("name must not be empty")} />);
+    render(<ErrorMessage error={new Error("The name cannot be empty.")} />);
 
-    expect(screen.getByRole("alert")).toHaveTextContent("name must not be empty");
+    expect(screen.getByRole("alert")).toHaveTextContent("The name cannot be empty.");
   });
 });

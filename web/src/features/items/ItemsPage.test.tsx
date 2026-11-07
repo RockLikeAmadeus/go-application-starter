@@ -40,7 +40,7 @@ function fakeApi(initial: Item[] = []) {
       const { name } = (await input.json()) as { name: string };
       if (!name.trim()) {
         return json(
-          { title: "Unprocessable Entity", status: 422, detail: "name must not be empty" },
+          { title: "Unprocessable Entity", status: 422, detail: "The name cannot be empty." },
           422,
         );
       }
@@ -103,7 +103,7 @@ describe("ItemsPage", () => {
     await screen.findByText("No items yet.");
     await user.click(screen.getByRole("button", { name: "Add item" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("name must not be empty");
+    expect(await screen.findByRole("alert")).toHaveTextContent("The name cannot be empty.");
   });
 
   it("stays loading until the plan's features arrive, so Export is in its final state on first paint", async () => {

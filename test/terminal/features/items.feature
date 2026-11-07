@@ -8,7 +8,7 @@ Feature: Items in a terminal
 
   Scenario: The command line reports a mistake
     When I add an item named "   " with the command line
-    Then it fails, saying "name must not be empty"
+    Then it fails, saying "The name cannot be empty."
 
   Scenario: Add an item in the terminal app
     Given I open the terminal app

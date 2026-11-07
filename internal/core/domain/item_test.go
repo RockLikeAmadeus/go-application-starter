@@ -52,6 +52,16 @@ func TestNewItem_RejectsInvalidNames(t *testing.T) {
 	}
 }
 
+func TestNewItem_EmptyNameErrorReadsAsASentence(t *testing.T) {
+	_, err := domain.NewItem(ws, "id-1", "   ", now)
+	if err == nil {
+		t.Fatal("err = nil, want a validation error")
+	}
+	if want := "The name cannot be empty."; err.Error() != want {
+		t.Errorf("err = %q, want %q", err, want)
+	}
+}
+
 func TestItem_Rename(t *testing.T) {
 	item, _ := domain.NewItem(ws, "id-1", "Old", now)
 	later := now.Add(time.Hour)

@@ -189,7 +189,10 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestAValidationErrorComesBackAsAValidationError` failed with the leading "name" stripped from the `Message`.
   - Green: `toError` uses the problem's `detail` as the `Message`.
   - Refactor: the error tests share an `errorOverHTTP` helper.
-- [ ] 8c. The empty name sentence.
+- [x] 8c. The empty name sentence.
+  - Red: `TestNewItem_EmptyNameErrorReadsAsASentence` failed with "name must not be empty".
+  - Green: `normalizeName` uses the agreed sentence; the TUI, web, and journey tests pin it too. `NewFeature`'s blank name stays for 8f.
+  - Refactor: nothing worth changing; `normalizeName`'s too long message is 8d.
 - [ ] 8d. The too long name sentence.
 - [ ] 8e. The unknown plan sentence.
 - [ ] 8f. The plans file fields (`max`, `whenOver`, `whenOff`, and a feature's `name`).

@@ -126,7 +126,7 @@ func TestValidationErrorIsShown(t *testing.T) {
 	m = send(t, m, key("a"))
 	m = send(t, m, key("enter"))
 
-	if !strings.Contains(view(m), "name must not be empty") {
+	if !strings.Contains(view(m), "The name cannot be empty.") {
 		t.Errorf("view missing validation error:\n%s", view(m))
 	}
 }
