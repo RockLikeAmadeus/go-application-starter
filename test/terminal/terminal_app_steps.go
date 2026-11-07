@@ -36,10 +36,13 @@ func (j *journey) myDataIsKeptInSQLiteInAFolderSyncedByDropbox() error {
 	return nil
 }
 
-// itWarnsMyDataFolderLooksSyncedBy waits for the TUI's own warning line
-// ("Warning: …"), not the "warning: …" the command line prints on stderr
-// before the TUI's screen opens.
+// itWarnsMyDataFolderLooksSyncedBy waits for the TUI's screen first, so that
+// the warning it then finds is the TUI's own line, not the same text the
+// command line prints on stderr before that screen opens.
 func (j *journey) itWarnsMyDataFolderLooksSyncedBy(service string) error {
+	if err := j.term.WaitFor("q quit", timeout); err != nil {
+		return err
+	}
 	return j.term.WaitFor("Warning: Your data folder appears to be synced by "+service, timeout)
 }
 

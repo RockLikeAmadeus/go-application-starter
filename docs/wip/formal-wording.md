@@ -266,7 +266,13 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestDeleteConfirmsInAFullSentence` failed with `deleted {id}\n`.
   - Green: `item delete` prints the agreed sentence.
   - Refactor: nothing worth changing; the text sits in one place.
-- [ ] 13. The `Warning:` and `Error:` prefixes.
+- [x] 13. The CLI's `Warning:` prefix.
+  - Red: the `one` case of `TestCommandsPrintTheAppsWarningsOnStderr` failed with `warning: a warning\n`.
+  - Green: `printWarnings` uses the agreed prefix; the `two` case takes it too, and the terminal journey now waits for the TUI's screen first, as the CLI's line reads the same.
+  - Refactor: nothing worth changing; the prefix sits in one place. `docs/data-locations.md` waits for task 14.
+- [ ] 13b. The `Error:` prefix in `starter`.
+- [ ] 13c. The `Error:` prefix in the server.
+- [ ] 13d. The `Error:` prefix in the desktop app.
 - [ ] 14. Update the docs that quote old text, run `task test:init` and `task check`, and delete this file.
 
 ## Changes to the plan
@@ -286,4 +292,5 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 8f split: the plans file's four fields each need their own test, so they are tasks 8f to 8fd. Their wording was agreed on 2026-11-06, and the location prefix (`plans file: plan "free", limit "items":`) stays as it is.
 - Task 9 split: the unknown setting, unreadable settings, storage, and log format errors each need their own test, so they are tasks 9 to 9d.
 - Task 10 split: the error itself and the CLI and TUI's `--server` ending each need their own test, so they are tasks 10 and 10b.
+- Task 13 split: the CLI's `Warning:` prefix and the `Error:` prefix in `starter`, the server, and the desktop app each need their own test, so they are tasks 13 to 13d.
 - Task 12 split: the `info` help, the `admin` help, the `set-plan` output, and the `item delete` output each need their own test, so they are tasks 12 to 12d.

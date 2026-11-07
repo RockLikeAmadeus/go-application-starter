@@ -140,7 +140,7 @@ func keepsDataInAFolder(cfg config.Config) bool {
 // (stderr), so a command's output, which scripts read, stays as it is.
 func printWarnings(errOut io.Writer, warnings []string) {
 	for _, w := range warnings {
-		fmt.Fprintln(errOut, "warning:", w)
+		fmt.Fprintln(errOut, "Warning:", w)
 	}
 }
 

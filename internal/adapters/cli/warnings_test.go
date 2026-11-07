@@ -20,7 +20,8 @@ func TestCommandsPrintTheAppsWarningsOnStderr(t *testing.T) {
 		want     string
 	}{
 		{"none", nil, ""},
-		{"two", []string{"first warning", "second warning"}, "warning: first warning\nwarning: second warning\n"},
+		{"one", []string{"a warning"}, "Warning: a warning\n"},
+		{"two", []string{"first warning", "second warning"}, "Warning: first warning\nWarning: second warning\n"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
