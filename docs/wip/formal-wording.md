@@ -221,7 +221,13 @@ Each is one `/red` → `/green` → `/refactor` cycle.
   - Red: `TestNewFeature_EmptyNameErrorReadsAsASentence` failed with "name must not be empty".
   - Green: `NewFeature` uses the agreed sentence.
   - Refactor: nothing worth changing; the test matches its `whenOff` neighbour, and `plans_test.go` still pins the location prefix.
-- [ ] 9. The settings errors.
+- [x] 9. The unknown setting error.
+  - Red: `TestAnUnknownSettingErrorReadsAsASentence` failed with `settings file {path}: unknown setting "colour"`.
+  - Green: `readSettingsFile` uses the agreed sentence, with a `nolint` for ST1005.
+  - Refactor: removed `TestASettingTheAppDoesntKnowFailsNamingTheFileAndSetting`, which the new exact test covers.
+- [ ] 9b. The unreadable settings error.
+- [ ] 9c. The storage setting error.
+- [ ] 9d. The log format setting error.
 - [ ] 10. The data folder locked error, with the `--server` ending for the CLI and TUI only.
 - [ ] 11. The other server error.
 - [ ] 12. The `info` and `admin` help, and the `set-plan` and `item delete` output.
@@ -243,3 +249,4 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 - Task 7c split: an unexpected error and a panic build the internal error separately, and each needs its own test, so they are tasks 7c and 7cb.
 - Task 8 split: the pattern, `httpclient`, the three agreed sentences, and the plans file's fields each need their own test, so they are tasks 8 to 8f. "The specified plan does not exist." can't be built from "The {field} {message}." with `Field` still "plan", so `Message` holds the whole sentence.
 - Task 8f split: the plans file's four fields each need their own test, so they are tasks 8f to 8fd. Their wording was agreed on 2026-11-06, and the location prefix (`plans file: plan "free", limit "items":`) stays as it is.
+- Task 9 split: the unknown setting, unreadable settings, storage, and log format errors each need their own test, so they are tasks 9 to 9d.

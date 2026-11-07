@@ -57,12 +57,14 @@ func TestTheEnvironmentOverridesTheSettingsFile(t *testing.T) {
 	}
 }
 
-func TestASettingTheAppDoesntKnowFailsNamingTheFileAndSetting(t *testing.T) {
+func TestAnUnknownSettingErrorReadsAsASentence(t *testing.T) {
 	file := writeSettings(t, `colour = "blue"`)
 
 	_, err := config.Load(config.Env{Getenv: envOf(nil)}, file)
-	if err == nil || !strings.Contains(err.Error(), file) || !strings.Contains(err.Error(), "colour") {
-		t.Errorf("Load error = %v, want one naming %s and %q", err, file, "colour")
+
+	want := "The settings file " + file + ` contains an unknown setting: "colour".`
+	if err == nil || err.Error() != want {
+		t.Errorf("error = %v, want %q", err, want)
 	}
 }
 

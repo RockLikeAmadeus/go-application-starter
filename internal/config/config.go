@@ -163,7 +163,8 @@ func readSettingsFile(path string) (*koanf.Koanf, error) {
 	}
 	for _, key := range fileSettings.Keys() {
 		if _, ok := envVars[key]; !ok {
-			return nil, fmt.Errorf("settings file %s: unknown setting %q", path, key)
+			//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
+			return nil, fmt.Errorf("The settings file %s contains an unknown setting: %q.", path, key)
 		}
 	}
 	return fileSettings, nil
