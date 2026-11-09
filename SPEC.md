@@ -287,13 +287,17 @@ Users of the local edition can keep their settings in a settings file, so they d
 - A settings file the app can't understand (a mistake in it, or a setting it doesn't know) stops the app at start, saying which file and which setting. The app never starts on settings it ignored.
 - A named settings file that doesn't exist is a mistake too. The default one may be missing.
 - A server reads a settings file only when `STARTER_CONFIG_FILE` names one, never the user's settings folder.
+- When the desktop app, the CLI or the TUI starts and the default settings file is missing, it creates one, so the user has a file to edit. The file sets the settings these programs use (the storage, the data folder and whether to ignore a synced folder) to the values they would have without it. The data folder is written as this computer's full path. The settings that have no default (the server to connect to and the plans file) are in it as comments. Creating it changes nothing about how the app runs.
+- The app never changes a settings file that's already there. It creates none when `STARTER_CONFIG_FILE` or `--config` names one, and the server and the mobile app never create one.
+- If the settings file can't be created (for example, the folder can't be written to), the app starts on its built-in defaults as before, and tries again next time.
 
 **Examples**
 - The settings file says the data folder is `~/work-data` → the desktop app and `starter info` both use `~/work-data`.
 - The settings file says `~/work-data`, and the app is started with `STARTER_DATA_DIR=/tmp/scratch` → it uses `/tmp/scratch`, and `starter info` says that came from `STARTER_DATA_DIR`.
 - The settings file has `colour = "blue"` → the app doesn't start, and says `colour` isn't a setting it knows.
+- A user on Linux with no settings file opens the desktop app → `~/.config/starter/config.toml` now exists, with `storage = "jsonfile"`, `data_dir = "/home/<user>/.config/starter"` and `ignore_synced_folder = false`, and the app runs as it did before.
 
-**Specification:** [`features/settings-file.feature`](features/settings-file.feature). These scenarios run only on the desktop driver, on a temporary settings folder. Every setting, its environment variable and its option are listed in [docs/configuration.md](docs/configuration.md).
+**Specification:** [`features/settings-file.feature`](features/settings-file.feature) and [`features/default-settings-file.feature`](features/default-settings-file.feature). These scenarios run on the desktop driver, on a temporary settings folder, apart from one on the mobile driver showing that the mobile app creates no settings file. Every setting, its environment variable and its option are listed in [docs/configuration.md](docs/configuration.md).
 
 ### 4.13 Use the command line and the terminal app
 

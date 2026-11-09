@@ -123,11 +123,13 @@ func chosenByOption(cfg config.Config, key, flag string) {
 }
 
 // settingsFileFor returns the settings file a command reads: the one
-// --config names, else the local one (config.LocalConfigFile).
+// --config names, else the local one (config.LocalConfigFile), which it
+// first creates when it's missing (config.CreateDefaultSettingsFile).
 func settingsFileFor(configFile string, env config.Env) (string, error) {
 	if configFile != "" {
 		return configFile, nil
 	}
+	config.CreateDefaultSettingsFile(env)
 	return config.LocalConfigFile(env)
 }
 

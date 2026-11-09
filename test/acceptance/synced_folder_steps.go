@@ -61,7 +61,7 @@ func (w *world) theDesktopAppKeepsItsDataInSQLiteInASyncedFolder(service string)
 	if w.local == nil {
 		return errNoLocalComputer
 	}
-	if err := w.local.addSetting("storage", string(sqliteStorage)); err != nil {
+	if err := w.local.setSetting("storage", string(sqliteStorage)); err != nil {
 		return err
 	}
 	return w.theDesktopAppKeepsItsDataAsPlainTextInASyncedFolder(service)
@@ -78,7 +78,7 @@ func (w *world) theDesktopAppKeepsItsDataAsPlainTextInASyncedFolder(service stri
 	if err != nil {
 		return err
 	}
-	if err := w.local.addSetting("data_dir", dataDir); err != nil {
+	if err := w.local.setSetting("data_dir", dataDir); err != nil {
 		return err
 	}
 	return w.reopen()
@@ -88,7 +88,7 @@ func (w *world) iTurnOffTheSyncedFolderWarning() error {
 	if w.local == nil {
 		return errNoLocalComputer
 	}
-	return w.local.addSetting("ignore_synced_folder", "true")
+	return w.local.setSetting("ignore_synced_folder", "true")
 }
 
 // theServerKeepsItsDataInSQLiteInASyncedFolder starts the server again on

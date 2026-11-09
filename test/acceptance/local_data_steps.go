@@ -76,7 +76,7 @@ func (w *world) itNamesTheDataFolder(name string) error {
 }
 
 // runCommandLine runs the CLI, as cmd/starter wires it, on the desktop app's
-// computer. Its output, what it prints apart from that, and its error are
+// computer, with the options the scenario gives every command. Its output, what it prints apart from that, and its error are
 // kept for the steps that follow.
 func (w *world) runCommandLine(ctx context.Context, args ...string) error {
 	if w.local == nil {
@@ -85,7 +85,7 @@ func (w *world) runCommandLine(ctx context.Context, args ...string) error {
 	var out, errOut bytes.Buffer
 	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, w.local.configEnv(), &out)
 	cmd.SetErr(&errOut)
-	cmd.SetArgs(args)
+	cmd.SetArgs(append(append([]string{}, w.commandLineOptions...), args...))
 	w.lastErr = cmd.ExecuteContext(ctx)
 	w.cliOut, w.cliErrOut = out.String(), errOut.String()
 	return nil
