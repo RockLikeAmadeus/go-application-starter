@@ -44,10 +44,13 @@ Found while planning:
   - Green: `CreateDefaultSettingsFile` returns nil before touching any file when `STARTER_CONFIG_FILE` is set.
   - Refactor: the doc comment says so; left the two `STARTER_CONFIG_FILE` reads unshared, as a helper for one `Getenv` adds nothing.
 - [x] 3d. It returns no error when it can't write (a read-only or blocked app's folder).
-  - Red: `TestTheDefaultSettingsFileReturnsNoErrorWhenItCantWrite` (`localdata_test.go`) failed: making the app's folder, blocked by a file, returned `not a directory`.
+  - Red: `TestTheDefaultSettingsFileReturnsNoErrorWhenItCantWrite` (now `…CarriesOnWhenItCantWrite`) (`localdata_test.go`) failed: making the app's folder, blocked by a file, returned `not a directory`.
   - Green: `CreateDefaultSettingsFile` returns nil when it can't make the app's folder or write the file (an existing file's `ErrExist` included).
   - Refactor: the doc comment says it carries on silently; kept the `error` return, which 3e decides on.
-- [ ] 3e. It returns no error when there's no settings folder (`UserConfigDir` fails).
+- [x] 3e. It returns no error when there's no settings folder (`UserConfigDir` fails).
+  - Red: `TestTheDefaultSettingsFileReturnsNoErrorWithoutASettingsFolder` (now `…CarriesOnWithoutASettingsFolder`, `localdata_test.go`) failed: it returned `UserConfigDir`'s error.
+  - Green: `CreateDefaultSettingsFile` returns nil when it can't find the settings folder.
+  - Refactor: it could no longer fail, so it returns nothing; the 3d and 3e tests are renamed `…CarriesOn…` and assert, instead, that the file in the app's folder's place is left as it was (3d) and nothing is created in the working directory (3e); the doc comment covers a missing settings folder.
 - [ ] 4. Acceptance helper: `addSetting` sets a key in an existing `config.toml` instead of appending a second one. `settings-file.feature` still passes.
 - [ ] 5. `desktop.Open` creates the default settings file before reading the settings. Define the desktop steps "my settings file sets … to …" and "my settings file doesn't set …"; turns the first two scenario outlines green.
 - [ ] 6. `mobile.Open` creates no settings file. Define "the mobile app has created no settings file"; turns the `@mobile` scenario green.

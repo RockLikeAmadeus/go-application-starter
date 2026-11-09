@@ -56,23 +56,22 @@ func LocalConfigFile(env Env) (string, error) {
 // data folder (the app's folder in the user's settings folder), to the
 // default settings file, making the app's folder. It never overwrites a
 // settings file that's already there, and does nothing when
-// STARTER_CONFIG_FILE names another one. When it can't make the folder or
-// write the file, it gives no error: the program carries on with the
-// built-in settings, and the next run tries again.
-func CreateDefaultSettingsFile(env Env) error {
+// STARTER_CONFIG_FILE names another one. When it can't find the settings
+// folder, make the app's folder or write the file, it carries on silently:
+// the program runs on the built-in settings, and the next run tries again.
+func CreateDefaultSettingsFile(env Env) {
 	if env.Getenv("STARTER_CONFIG_FILE") != "" {
-		return nil
+		return
 	}
 	file, err := defaultSettingsFile(env)
 	if err != nil {
-		return err
+		return
 	}
 	appDir := filepath.Dir(file)
 	if err := os.MkdirAll(appDir, 0o755); err != nil {
-		return nil
+		return
 	}
 	_ = writeNewFile(file, DefaultSettingsFileText(appDir))
-	return nil
 }
 
 // writeNewFile writes text to file only if there is no file there yet, so it
