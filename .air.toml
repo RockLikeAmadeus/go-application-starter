@@ -14,5 +14,10 @@ tmp_dir = "tmp"
   kill_delay = "2s"
   delay = 200
 
+  # Windows only runs programs whose names end in .exe.
+  [build.windows]
+    cmd = "go build -o ./tmp/server.exe ./cmd/server"
+    entrypoint = ["./tmp/server.exe"]
+
 [misc]
   clean_on_exit = true
