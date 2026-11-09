@@ -22,8 +22,9 @@ type App struct {
 	core *bootstrap.App
 }
 
-// Open loads the configuration from the local settings file and the
-// environment (config.Load), with SQLite storage when the settings choose it
+// Open creates the default settings file when there is none
+// (config.CreateDefaultSettingsFile), loads the configuration from the local
+// settings file and the environment (config.Load), with SQLite storage when the settings choose it
 // and jsonfile otherwise (never memory: the desktop app keeps its data),
 // opens the desktop app's data folder (config.LocalDataDir:
 // STARTER_DATA_DIR, else data_dir in the settings file, else the user's
@@ -33,6 +34,7 @@ type App struct {
 // webAssets is the built web app (web.Assets() in production).
 func Open(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS) (*App, error) {
 	env := config.Env{Getenv: getenv, UserConfigDir: userConfigDir}
+	config.CreateDefaultSettingsFile(env)
 	settingsFile, err := config.LocalConfigFile(env)
 	if err != nil {
 		return nil, err

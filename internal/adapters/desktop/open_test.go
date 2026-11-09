@@ -15,6 +15,7 @@ import (
 	"testing/fstest"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/desktop"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
 // The desktop app's data is on this device, so the web app must not wait for
@@ -114,6 +115,26 @@ func TestOpenCreatesTheDataFolderUnderTheGivenSettingsFolder(t *testing.T) {
 
 	if _, err := os.Stat(filepath.Join(settings, "starter")); err != nil {
 		t.Errorf("data folder not created under the settings folder: %v", err)
+	}
+}
+
+// With no settings file, Open creates one holding the settings it uses, so
+// the user has a file to edit.
+func TestOpenCreatesTheDefaultSettingsFile(t *testing.T) {
+	settings := t.TempDir()
+
+	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
+
+	got, err := os.ReadFile(filepath.Join(settings, "starter", "config.toml"))
+	if err != nil {
+		t.Fatalf("no settings file created: %v", err)
+	}
+	if want := config.DefaultSettingsFileText(filepath.Join(settings, "starter")); string(got) != want {
+		t.Errorf("settings file =\n%s\nwant\n%s", got, want)
 	}
 }
 

@@ -55,7 +55,10 @@ Found while planning:
   - Red: `TestAddSettingSetsAKeyTheSettingsFileAlreadyHas` (now `TestSetSettingReplacesAKey…`, `test/acceptance/settings_file_steps_test.go`) failed: `Load` refused the file, as `data_dir` was defined twice.
   - Green: `addSetting` reads the file and replaces the key's line when it has one, else appends it.
   - Refactor: renamed `addSetting` to `setSetting`, since it now sets a key in place; left the regexp built per call, as a test helper's few calls don't need it shared.
-- [ ] 5. `desktop.Open` creates the default settings file before reading the settings. Define the desktop steps "my settings file sets … to …" and "my settings file doesn't set …"; turns the first two scenario outlines green.
+- [x] 5. `desktop.Open` creates the default settings file before reading the settings. Define the desktop steps "my settings file sets … to …" and "my settings file doesn't set …"; turns the first two scenario outlines green.
+  - Red: `TestOpenCreatesTheDefaultSettingsFile` (`internal/adapters/desktop/open_test.go`) failed: no `config.toml` in the settings folder.
+  - Green: `desktop.Open` calls `config.CreateDefaultSettingsFile` first; steps in `test/acceptance/default_settings_file_steps.go`. Both outlines and "changes nothing" pass.
+  - Refactor: `Open`'s doc comment now says it creates the file; nothing else worth changing.
 - [ ] 6. `mobile.Open` creates no settings file. Define "the mobile app has created no settings file"; turns the `@mobile` scenario green.
 - [ ] 7. The CLI and TUI create the default settings file when `--config` names none. Define "I delete my settings file"; turns "The command line creates the settings file when there is none" green.
 - [ ] 8. Define "I replace my settings file with one choosing the data folder …" and "my settings file is as I left it"; turns "A settings file that's already there is kept as it is" green.
