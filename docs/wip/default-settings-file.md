@@ -23,7 +23,10 @@ Found while planning:
 
 ## Tasks
 
-- [ ] 1. `config` gives the default settings file's text for a data folder: `storage`, `data_dir` and `ignore_synced_folder` set, and it parses back with `Load` to the same values. No comments yet.
+- [x] 1. `config` gives the default settings file's text for a data folder: `storage`, `data_dir` and `ignore_synced_folder` set, and it parses back with `Load` to the same values. No comments yet.
+  - Red: `TestTheDefaultSettingsFileSetsTheStorageDataFolderAndSyncedFolderSettings` (`defaultsettings_test.go`) failed: all three settings came back "built in" from the stub's empty text.
+  - Green: `config.DefaultSettingsFileText(dataDir)` returns the three lines, quoting `data_dir` with `%q` (so a Windows path's backslashes are escaped).
+  - Refactor: `storage` comes from `StorageJSONFile`; left `Load`'s fallbacks unshared with the text, as two literals don't justify a table yet.
 - [ ] 2. The text has `server_url` and `plans_file` commented out, and the comments, with wording agreed with the user first. It still parses, and leaves out `port` and `log_format`.
 - [ ] 3. `config` creates the default settings file when it's missing: it writes the text from task 1 to `LocalConfigFile`'s default path (making the app's folder), never overwrites an existing file, does nothing when `STARTER_CONFIG_FILE` is set, and returns no error when it can't write.
 - [ ] 4. Acceptance helper: `addSetting` sets a key in an existing `config.toml` instead of appending a second one. `settings-file.feature` still passes.
