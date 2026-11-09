@@ -19,6 +19,9 @@ type world struct {
 	// last printed apart from that (its warnings).
 	cliOut    string
 	cliErrOut string
+	// settingsFileLeft is the text the user last wrote to their settings
+	// file.
+	settingsFileLeft string
 	// sample:start
 	// exportedCSV is the items' CSV that the last export gave.
 	exportedCSV []byte

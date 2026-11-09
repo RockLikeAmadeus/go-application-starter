@@ -22,6 +22,39 @@ func (w *world) registerDefaultSettingsFileSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^my settings file doesn't set "([^"]*)"$`, w.mySettingsFileDoesNotSet)
 	sc.Step(`^the mobile app has created no settings file$`, w.theMobileAppHasCreatedNoSettingsFile)
 	sc.Step(`^I delete my settings file$`, w.iDeleteMySettingsFile)
+	sc.Step(`^I replace my settings file with one choosing the data folder "([^"]*)"$`, w.iReplaceMySettingsFileWithOneChoosingTheDataFolder)
+	sc.Step(`^my settings file is as I left it$`, w.mySettingsFileIsAsILeftIt)
+}
+
+// iReplaceMySettingsFileWithOneChoosingTheDataFolder writes a settings file
+// of the user's own in place of the one the desktop app created, and keeps
+// its text for "my settings file is as I left it".
+func (w *world) iReplaceMySettingsFileWithOneChoosingTheDataFolder(name string) error {
+	if w.local == nil {
+		return errNoLocalComputer
+	}
+	text := fmt.Sprintf("data_dir = %q\n", filepath.Join(w.local.dir, name))
+	if err := os.WriteFile(w.local.settingsFile(), []byte(text), 0o644); err != nil {
+		return fmt.Errorf("replace the settings file: %w", err)
+	}
+	w.settingsFileLeft = text
+	return nil
+}
+
+// mySettingsFileIsAsILeftIt checks the settings file still has exactly the
+// text the user last wrote to it.
+func (w *world) mySettingsFileIsAsILeftIt() error {
+	if w.local == nil {
+		return errNoLocalComputer
+	}
+	text, err := os.ReadFile(w.local.settingsFile())
+	if err != nil {
+		return fmt.Errorf("read the settings file: %w", err)
+	}
+	if string(text) != w.settingsFileLeft {
+		return fmt.Errorf("the settings file is now:\n%s\nwant it as I left it:\n%s", text, w.settingsFileLeft)
+	}
+	return nil
 }
 
 // iDeleteMySettingsFile removes the settings file from this computer's
