@@ -31,7 +31,13 @@ Found while planning:
   - Red: `TestTheDefaultSettingsFileDescribesEachSettingAndLeavesOutTheRest` (`defaultsettings_test.go`, pinning the wording agreed 2026-11-09) failed: the text had only the three settings, with no comments.
   - Green: `DefaultSettingsFileText` returns the agreed text, the header and each setting's note, with `server_url` and `plans_file` commented out.
   - Refactor: nothing worth changing; the test pins the whole text on purpose, and task 1's test still covers parsing and a Windows path's escaping.
-- [ ] 3. `config` creates the default settings file when it's missing: it writes the text from task 1 to `LocalConfigFile`'s default path (making the app's folder), never overwrites an existing file, does nothing when `STARTER_CONFIG_FILE` is set, and returns no error when it can't write.
+- [x] 3. `config` creates the default settings file when it's missing: it writes the text from task 1, for the default data folder, to `LocalConfigFile`'s default path, making the app's folder.
+  - Red: `TestTheDefaultSettingsFileIsCreatedWhenMissing` (`localdata_test.go`) failed: no `starter/config.toml` after the stub `CreateDefaultSettingsFile`.
+  - Green: `CreateDefaultSettingsFile(env)` makes the app's folder and writes `DefaultSettingsFileText` for it to `config.toml` (plain `os.WriteFile` for now; 3b makes it `O_EXCL`).
+  - Refactor: `LocalConfigFile` and `CreateDefaultSettingsFile` share `defaultSettingsFile(env)`; kept the `error` return, which 3d decides on.
+- [ ] 3b. It never overwrites an existing settings file.
+- [ ] 3c. It does nothing when `STARTER_CONFIG_FILE` is set.
+- [ ] 3d. It returns no error when it can't write.
 - [ ] 4. Acceptance helper: `addSetting` sets a key in an existing `config.toml` instead of appending a second one. `settings-file.feature` still passes.
 - [ ] 5. `desktop.Open` creates the default settings file before reading the settings. Define the desktop steps "my settings file sets … to …" and "my settings file doesn't set …"; turns the first two scenario outlines green.
 - [ ] 6. `mobile.Open` creates no settings file. Define "the mobile app has created no settings file"; turns the `@mobile` scenario green.
@@ -42,3 +48,5 @@ Found while planning:
 - [ ] 11. Run `task test:init`, `task check` and `task accept`, remove `@wip`, and delete this file.
 
 ## Changes to the plan
+
+- 2026-11-09: split task 3 into 3, 3b, 3c and 3d, one behaviour and one test each.

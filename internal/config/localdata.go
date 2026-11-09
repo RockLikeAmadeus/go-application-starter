@@ -42,13 +42,37 @@ func LocalConfigFile(env Env) (string, error) {
 	if file := env.Getenv("STARTER_CONFIG_FILE"); file != "" {
 		return file, nil
 	}
-	configDir, err := env.UserConfigDir()
+	file, err := defaultSettingsFile(env)
 	if err != nil {
 		return "", err
 	}
-	file := filepath.Join(configDir, appFolder, "config.toml")
 	if _, err := os.Stat(file); errors.Is(err, fs.ErrNotExist) {
 		return "", nil
 	}
 	return file, nil
+}
+
+// CreateDefaultSettingsFile writes DefaultSettingsFileText, for the default
+// data folder (the app's folder in the user's settings folder), to the
+// default settings file, making the app's folder.
+func CreateDefaultSettingsFile(env Env) error {
+	file, err := defaultSettingsFile(env)
+	if err != nil {
+		return err
+	}
+	appDir := filepath.Dir(file)
+	if err := os.MkdirAll(appDir, 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(file, []byte(DefaultSettingsFileText(appDir)), 0o600)
+}
+
+// defaultSettingsFile is config.toml in the app's folder in the user's
+// settings folder.
+func defaultSettingsFile(env Env) (string, error) {
+	configDir, err := env.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(configDir, appFolder, "config.toml"), nil
 }
