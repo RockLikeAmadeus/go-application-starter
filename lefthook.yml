@@ -4,7 +4,7 @@ pre-commit:
   commands:
     go-fmt:
       glob: "*.go"
-      run: gofmt -l {staged_files} | (! grep .) || (echo "run: task fmt" && exit 1)
+      run: 'gofmt -l {staged_files} | (! grep .) || (echo "run: task fmt" && exit 1)'
     web-format:
       root: web/
       glob: "*.{ts,tsx,js,json,css,md}"

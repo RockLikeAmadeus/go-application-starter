@@ -36,7 +36,7 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
 | pnpm | 10 | `npm i -g pnpm@10` |
 | Task | 3 | `go install github.com/go-task/task/v3/cmd/task@latest` |
 | golangci-lint | 2 | https://golangci-lint.run/welcome/install/ |
-| lefthook (optional) | | `go install github.com/evilmartians/lefthook@latest` |
+| lefthook (optional) | 2 | `go install github.com/evilmartians/lefthook/v2@v2.2.2` |
 | Docker (optional) | | for `task docker:*` |
 | Desktop build deps (optional) | | only for the desktop app (`task run:desktop`, `task build:desktop`). Linux (Ubuntu/Debian): `sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev`. macOS: `xcode-select --install`. Windows: nothing extra (Wails uses no cgo there, and the WebView2 runtime ships with Windows 10 and 11; the setup program installs it if missing). Tried on Windows on 2026-11-02 |
 | Linux packaging tools (optional) | | only for the desktop app's Linux packages (`task package:desktop:linux`, `task test:package`), on top of the desktop build deps. `sudo apt install desktop-file-utils rpm libfuse2t64`: `desktop-file-validate` checks the desktop file, `rpm` reads the `.rpm` (its checks are skipped without it), and FUSE 2 runs an AppImage (on Ubuntu before 24.04, `libfuse2`). The first AppImage build downloads `linuxdeploy` from GitHub. Build the AppImage where WebKitGTK 4.1 isn't installed (`sudo apt remove libwebkit2gtk-4.1-dev` if nothing else needs it), or it bundles that too, about 90 MB the app never uses |
