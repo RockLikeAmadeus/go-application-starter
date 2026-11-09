@@ -191,7 +191,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestApp_CloseRemovesTheMark` failed: this computer still had a mark after `Close`.
   - Green: `markFolder` keeps the mark with `KeepMark` on a one-minute ticker and returns its stop; jsonfile's `a.close` stops it, then closes the store.
   - Refactor: dropped the overwritten `a.close = store.Close`; `markFolder`'s early returns share `noMark`, and its doc comment covers renewing and stopping. The init suite ran on a copy.
-- [ ] 14e. Define the mark steps; turns the last 4 scenarios green.
+- [x] 14e. Define the mark steps; turns the last 4 scenarios green.
+  - Red: the 4 scenarios failed on their undefined steps. No unit test and no green: the behaviour was built in 14 to 14d.
+  - The steps read every recent mark with `OtherDevices` and no device to leave out. Without `App.Close` stopping the mark, the closing scenarios fail with `["<this computer>"], want none`.
+  - Refactor: `slices.Contains` replaces the loop in the "this device" step. The init suite wasn't run: only template steps changed.
 
 Finish:
 - [ ] 15. Docs: ADR 3 (layout, version 2, what "one file per domain type" became, a rough record count from task 8d), ADR 5 (plain text is never used in the hosted edition, and any other detail that changed), `docs/data-locations.md` (including `workspace_plans.json` and the iCloud limit), `docs/configuration.md` (`ignore_synced_folder` also stops the mark), `.claude/rules/storage.md`, the `jsonfile` package comment.

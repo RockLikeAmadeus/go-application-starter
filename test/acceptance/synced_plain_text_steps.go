@@ -1,8 +1,10 @@
 package acceptance
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/cucumber/godog"
@@ -20,6 +22,8 @@ func (w *world) registerSyncedPlainTextSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^the device "([^"]*)" marked the data folder as in use (\d+) (minute|hour)s? ago$`, w.theDeviceMarkedTheDataFolder)
 	sc.Step(`^the desktop app warns that the data folder looks in use on "([^"]*)"$`, w.theDesktopAppWarnsTheFolderLooksInUseOn)
 	sc.Step(`^the command line warns that the data folder looks in use on "([^"]*)"$`, w.theCommandLineWarnsTheFolderLooksInUseOn)
+	sc.Step(`^the data folder is marked as in use on this device$`, w.theDataFolderIsMarkedAsInUseOnThisDevice)
+	sc.Step(`^the data folder isn't marked as in use$`, w.theDataFolderIsntMarkedAsInUse)
 }
 
 // conflictCopyFile is a conflict copy's path, relative to the data folder. It
@@ -82,6 +86,42 @@ func (w *world) theDesktopAppWarnsTheFolderLooksInUseOn(device string) error {
 
 func (w *world) theCommandLineWarnsTheFolderLooksInUseOn(device string) error {
 	return w.commandLineWarnsSaying(looksInUseOn(device))
+}
+
+// devicesWithAMark returns every device with a recent mark in the desktop
+// app's data folder, this one included.
+func (w *world) devicesWithAMark() ([]string, error) {
+	dataDir, err := w.desktopAppsDataFolder()
+	if err != nil {
+		return nil, err
+	}
+	return syncedfolder.OtherDevices(dataDir, "", time.Now()), nil
+}
+
+func (w *world) theDataFolderIsMarkedAsInUseOnThisDevice() error {
+	thisDevice, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+	devices, err := w.devicesWithAMark()
+	if err != nil {
+		return err
+	}
+	if slices.Contains(devices, thisDevice) {
+		return nil
+	}
+	return fmt.Errorf("devices with a mark: %q, want %q among them", devices, thisDevice)
+}
+
+func (w *world) theDataFolderIsntMarkedAsInUse() error {
+	devices, err := w.devicesWithAMark()
+	if err != nil {
+		return err
+	}
+	if len(devices) > 0 {
+		return fmt.Errorf("devices with a mark: %q, want none", devices)
+	}
+	return nil
 }
 
 // conflictCopyPath is where a conflict copy is in the desktop app's data
