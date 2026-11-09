@@ -324,7 +324,7 @@ Users who live in a terminal can do their work with the command line, one comman
 
 ### 4.14 Keep data in SQLite
 
-Data can be kept in a SQLite database instead of as plain text, so that several programs can use it at the same time: the desktop app and the command line on one computer, or several copies of a server on one disk. Plain text stays the default. This is step 6 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md); the hosted edition's database (Postgres) comes in step 7.
+Data can be kept in a SQLite database instead of as plain text, so that several programs can use it at the same time: the desktop app and the command line on one computer, or several copies of a server on one disk. Plain text stays the default. This is step 6 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md); the hosted edition's database, Postgres, is §4.17.
 
 **Rules**
 - The storage setting (§4.12) chooses how data is kept: `jsonfile` (plain text, the default), `sqlite` or `memory`. The server, the command line, the terminal app and the desktop app all honour it. The mobile app keeps plain text for now.
@@ -397,11 +397,34 @@ A user can keep plain-text data in a folder that a file-sync service (Dropbox, i
 
 **Specification:** [`features/synced-plain-text.feature`](features/synced-plain-text.feature), on the desktop driver. The layout of the files, what counts as a conflict copy for each sync service, and renewing the mark are checked by unit tests.
 
+### 4.17 Keep data in Postgres
+
+A server can keep its data in a Postgres database, so that several copies of it, on different machines, can share the data. This is the hosted edition's storage, step 7 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). Sign-in comes in step 8. Until then, a server on Postgres is a self-hosted local edition with one workspace, as on any other storage.
+
+**Rules**
+- The storage setting (§4.12) can be `postgres`. A new setting, `database_url`, says which database to use. Postgres without a `database_url` is refused when the program starts.
+- The server, the command line and the terminal app honour it, so an operator can run commands such as `starter admin set-plan` on a hosted server's data. The desktop and mobile apps refuse it, because they keep local data. They reach hosted data through a server instead (remote mode, planned).
+- Several servers, on one machine or many, can use the same database at once, and each sees what the others saved.
+- Postgres and SQLite keep the same data in the same layout, defined once for both. Opening the database brings its layout up to date with the app. A database saved by a newer version of the app is refused rather than changed, as with SQLite (§4.14).
+- A server on Postgres is ready while it can reach its database, and is not ready while it can't (§4.10). It recovers by itself once the database is back.
+- Each workspace's data stays separate, as with every kind of storage (§4.8).
+
+**Examples**
+- A server with `storage = "postgres"` and a `database_url` → it is ready, and keeps its items in that database.
+<!-- sample:start -->
+- Two servers share one database, and a user adds "Widget" through one of them → the other lists "Widget" too.
+<!-- sample:end -->
+- The database stops → the server says it isn't ready, because its data is unavailable.
+- `storage = "postgres"` with no `database_url` → the server doesn't start, and says the setting is missing.
+- The desktop app's settings file says `storage = "postgres"` → it doesn't open the data, and says that it keeps local data only.
+
+**Specification:** [`features/postgres-storage.feature`](features/postgres-storage.feature), on the server driver. Every other feature's business scenarios also run on Postgres storage. Refusing a newer layout, a missing `database_url` and the desktop app refusing Postgres are checked by unit tests. These tests need a Postgres database (`task db:up`). Without one they are skipped locally, and CI always runs them.
+
 ## 5. Non-functional requirements
 
 | Area | Requirement |
 |---|---|
-| Availability | _e.g. best effort; single instance while on plain-text storage, several on one disk with SQLite_ |
+| Availability | _e.g. best effort; single instance while on plain-text storage, several on one disk with SQLite, several on many machines with Postgres_ |
 | Data | _e.g. data survives restarts; backups via volume snapshots_ |
 | Security | _e.g. no sign-in yet; see "Out of scope". Planned: sign-in for the hosted edition. A self-hosted server for one user (local edition) keeps running without sign-in_ |
 | Accessibility | Web UI is keyboard navigable, and controls have accessible names (also used by tests) |
@@ -410,4 +433,3 @@ A user can keep plain-text data in a folder that a file-sync service (Dropbox, i
 ## 6. Out of scope (for now)
 
 - Authentication and authorization (planned: hosted edition, [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md))
-- Multi-machine deployments (plain text allows one instance, SQLite several on one disk; see ADR 0003). Planned for the hosted edition, with the Postgres adapter ([`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md), step 7)

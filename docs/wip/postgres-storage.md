@@ -1,0 +1,62 @@
+# Keep data in Postgres
+
+Step 7 of [the editions plan](../plans/editions-and-accounts.md).
+
+- Spec: [SPEC.md §4.17](../../SPEC.md#417-keep-data-in-postgres)
+- Scenarios: [`features/postgres-storage.feature`](../../features/postgres-storage.feature) (`@server @postgres`, 4 scenarios, each tagged `@wip`; the last is sample)
+- Decisions: [ADR 7](../adr/0007-sqlite-storage.md) (to update), a new ADR 8 for Postgres (task 13), [ADR 5](../adr/0005-hosted-and-local-editions.md)
+
+## Decisions
+
+Agreed with the user:
+- **One source for the SQL, shared by both engines.** One package, `internal/adapters/storage/sqlstore`, holds the goose migrations and the `…Repository` implementations, in SQL that SQLite and Postgres both run. `sqlite` and `postgres` keep only what really differs: opening the database, goose's dialect, and readiness. A new entity is written once (`docs/workspaces.md` changes to match).
+  - Portable SQL: `INSERT … ON CONFLICT (…) DO UPDATE SET …` instead of `INSERT OR REPLACE`; times stay fixed-width UTC `TEXT`; IDs come from `ports.IDGenerator`, so there's no auto-increment; one placeholder style, `$1` (task 2 checks modernc binds it; if not, a small rebind helper in `sqlstore`, never two copies of a query).
+  - Migrations stay within what SQLite can do: rebuild a table rather than `ALTER COLUMN`. If that ever bites, a goose Go migration can branch on the dialect for that one change.
+- **Test database: a URL plus compose.** Tests read `STARTER_TEST_DATABASE_URL`. `task db:up` starts Postgres from a `postgres` service in `docker-compose.yml`, and CI uses a Postgres service container. With the URL unset, Postgres tests skip with a message (`t.Skip`, and the acceptance drivers leave them out with a note). With it set but unreachable, they fail. CI always sets it.
+- **Who honours `storage = "postgres"`:** the server, the CLI and the TUI (all through `bootstrap.NewEmbedded`), so an operator can run `starter admin set-plan` on the hosted data. `desktop.Open` refuses it: the desktop and mobile apps reach hosted data through a server (remote mode, step 10), never the database.
+- **The connection is a new setting, `database_url`** (`STARTER_DATABASE_URL`), server-oriented. Postgres without it fails at start.
+
+Decided in planning:
+- **Driver: `github.com/jackc/pgx/v5/stdlib`** through `database/sql`, so `sqlstore` takes a `*sql.DB`. It's pure Go, so `CGO_ENABLED=0` still builds.
+- **Per-test isolation:** a test helper (`postgres/postgrestest`) creates a fresh database with a random name from the test URL, and drops it on cleanup. Each contract run and each acceptance scenario gets its own.
+- **Unreachable database in the scenarios:** the helper can block connections to a scenario's database (`ALTER DATABASE … ALLOW_CONNECTIONS false` plus `pg_terminate_backend`) and allow them again, so readiness can fail and recover without stopping the shared container.
+- **Readiness:** `postgres.Store.Ready` pings with the request's context. A pool reconnects by itself, so recovery needs no code beyond the ping.
+- **No connection-count tuning** (`SetMaxOpenConns`) beyond pgx's defaults for now. SQLite keeps its single connection.
+- **The acceptance `postgres` driver** runs what the `sqlite` driver runs (`~@desktop && ~@mobile && ~@server`). The server driver adds `~@postgres` when the URL is unset.
+- **Sample boundary:** the Item repository and `00002_items.sql` are sample code in `sqlstore`. The migration runner, the baseline and the plan repository are template code. Run `task test:init` in tasks 1–3 and 10–11.
+- **Template-user step:** a hosted deployment needs a Postgres database and `STARTER_DATABASE_URL` as a secret (Fly Postgres or any other). It goes under the TODO.md item for the starter TODO list in task 7.
+
+Prerequisite: Docker, usable without `sudo`, from task 4 on. It's installed here, but this user can't reach `/var/run/docker.sock` yet. Task 4 records it in README Prerequisites.
+
+## Tasks
+
+Each is one `/red` → `/green` → `/refactor` cycle.
+
+The shared SQL layer (on SQLite, so it runs without Postgres):
+- [ ] 1. `sqlstore.Migrate(ctx, db, dialect)` applies the shared migrations (moved from `sqlite/migrations/` to `sqlstore/migrations/`) and refuses a database whose version is newer than the newest one. `sqlite.Open` calls it. The migration tests move from `sqlite/store_test.go`.
+- [ ] 2. The Item repository moves to `sqlstore.NewItemRepository(db)` in portable SQL (`ON CONFLICT` upsert, `$n` placeholders), passing the Item contract and `RunWorkspaceIsolation` on SQLite. `sqlite.NewItemRepository` goes, and its callers use the new one. Sample: `task test:init`.
+- [ ] 3. The workspace plan repository moves to `sqlstore.NewWorkspacePlanRepository(db)` in the same way, passing its contract suite on SQLite.
+
+The Postgres adapter:
+- [ ] 4. `postgres.Open(ctx, url)` connects through pgx and brings the schema up to date with `sqlstore.Migrate`, and `postgrestest.NewDatabase(t)` gives each test a fresh database (skipping without `STARTER_TEST_DATABASE_URL`). Add the compose `postgres` service, `task db:up` and `task db:down`, and Docker in README Prerequisites (`task setup`, Gotchas).
+- [ ] 5. `postgres.Open` refuses a database saved by a newer version of the app, and changes nothing.
+- [ ] 6. The `sqlstore` Item and workspace plan repositories pass their contract suites, isolation included, on Postgres.
+- [ ] 7. `postgres.Store.Ready` is nil while the database is reachable, errors while connections are blocked, and is nil again once they're allowed.
+
+Settings and wiring:
+- [ ] 8. `config.StoragePostgres` and the `database_url` setting (`STARTER_DATABASE_URL`): in `envVars`, `Load`, `Config.Settings`, the `serverOnly` list, and `docs/configuration.md`. The unrecognized-storage error lists `postgres` (user-facing: agree the wording first). Add the template-user step to TODO.md.
+- [ ] 9. `bootstrap.NewEmbedded` on `postgres` opens `postgres.Open(cfg.DatabaseURL)` with the `sqlstore` repositories, readiness and `Close`, and refuses `postgres` with no `database_url` (user-facing: agree the wording first).
+- [ ] 10. `desktop.Open` refuses `storage = "postgres"` (user-facing: agree the wording first).
+
+Acceptance and CI:
+- [ ] 11. A `postgres` acceptance driver runs every business scenario on Postgres, with a fresh database per scenario, and is left out with a note when the URL is unset. The server driver leaves out `@postgres` then, too. Steps for the three readiness scenarios turn them green.
+- [ ] 12. Steps for "Servers sharing a Postgres database see each other's items": a second test server on the same database, items driven over each server's HTTP. Sample: `task test:init`.
+- [ ] 13. CI: a Postgres service container in the Go job, setting `STARTER_TEST_DATABASE_URL` for the unit and acceptance tests.
+
+- [ ] 14. Docs and finish:
+  - Write a new ADR 8 (Postgres, the shared `sqlstore`, the test database), and update ADR 7 (migrations now in `sqlstore`) and ADR 5 if it names the hosted storage.
+  - Update `.claude/rules/storage.md`, `.claude/rules/testing.md` (the `postgres` driver, `@postgres`), `docs/workspaces.md` (the `sqlstore` step instead of the sqlite one), the CLAUDE.md architecture block and Commands table (`task db:up`), and README.
+  - Check `task check`, `task test:init`, and `task accept` with a database.
+  - Remove the `@wip` tags, delete this file, and mark step 7 done in the plan, with a summary and links. Log the shared-SQL decision under "Plan changes".
+
+## Changes to the plan

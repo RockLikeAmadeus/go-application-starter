@@ -89,8 +89,10 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
 - The warning when SQLite's folder looks synced is deferred to a follow-up, now in TODO.md.
   - Done 2026-11-04 as that follow-up: every front end warns, naming the service, when SQLite's data folder looks synced by its path or marker files (`internal/adapters/syncedfolder`); `ignore_synced_folder` turns it off. [`features/synced-folder.feature`](../../features/synced-folder.feature).
 
-### 7. Postgres adapter — not started
+### 7. Postgres adapter — in progress
+SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-storage.feature) · [`docs/wip/postgres-storage.md`](../wip/postgres-storage.md).
 - For the hosted edition. It shares the schema with SQLite where possible, and is tested against a Postgres container in CI.
+- Agreed 2026-11-09: one source for both engines. The migrations and repositories move into a shared `sqlstore` package in portable SQL, and `sqlite` and `postgres` keep only opening, goose's dialect and readiness.
 
 ### 8. Authentication — not started
 - This is the existing "Authentication behind a port" TODO item.
