@@ -31,6 +31,12 @@ func Open(ctx context.Context, databaseURL string) (*Store, error) {
 	return &Store{db: db}, nil
 }
 
+// DB is the store's database, for the shared sqlstore repositories. It stays
+// the store's: close the store, not the database.
+func (s *Store) DB() *sql.DB {
+	return s.db
+}
+
 // Close closes the database.
 func (s *Store) Close() error {
 	return s.db.Close()

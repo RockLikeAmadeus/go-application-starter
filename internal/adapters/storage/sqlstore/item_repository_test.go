@@ -6,6 +6,8 @@ import (
 
 	"github.com/pressly/goose/v3"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlstore"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/storagetest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -15,6 +17,17 @@ import (
 func TestItemRepositoryContractOnSQLite(t *testing.T) {
 	storagetest.RunItemRepositoryContract(t, func(t *testing.T) ports.ItemRepository {
 		return newItemRepositoryOnSQLite(t)
+	})
+}
+
+func TestItemRepositoryContractOnPostgres(t *testing.T) {
+	storagetest.RunItemRepositoryContract(t, func(t *testing.T) ports.ItemRepository {
+		store, err := postgres.Open(t.Context(), postgrestest.NewDatabase(t))
+		if err != nil {
+			t.Fatalf("Open: %v", err)
+		}
+		t.Cleanup(func() { store.Close() })
+		return sqlstore.NewItemRepository(store.DB())
 	})
 }
 

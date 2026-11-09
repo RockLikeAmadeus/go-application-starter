@@ -56,7 +56,11 @@ The Postgres adapter:
   - Red: no red: `TestOpenRefusesADatabaseSavedByANewerVersionOfTheApp` passed at once, as `sqlstore.Migrate` already refuses (task 1). Kept as a guard; it fails with the refusal taken out.
   - Green: skipped, no production code demanded.
   - Refactor: the tests' direct connection moved to an `openDirectly` helper.
-- [ ] 6. The `sqlstore` Item and workspace plan repositories pass their contract suites, isolation included, on Postgres.
+- [x] 6. The `sqlstore` Item repository passes its contract suite, isolation included, on Postgres.
+  - Red: `TestItemRepositoryContractOnPostgres` (sqlstore) panicked on the first `Save`: nil `*sql.DB` from the stub `Store.DB`.
+  - Green: `postgres.Store.DB()` returns the store's database; the SQL was already portable.
+  - Refactor: nothing worth changing; any shared Postgres set-up waits for 6b, which is the first repeat.
+- [ ] 6b. The `sqlstore` workspace plan repository passes its contract suite on Postgres.
 - [ ] 7. `postgres.Store.Ready` is nil while the database is reachable, errors while connections are blocked, and is nil again once they're allowed.
 - [ ] 7a. On Postgres, `sqlstore.Migrate` takes goose's session lock, so servers starting at once on one unmigrated database don't race: several concurrent `postgres.Open` calls on a fresh database all succeed. SQLite stays as it is.
 
@@ -77,4 +81,5 @@ Acceptance and CI:
   - Remove the `@wip` tags, delete this file, and mark step 7 done in the plan, with a summary and links. Log the shared-SQL decision under "Plan changes".
 
 ## Changes to the plan
+- 2026-11-09: split task 6 into 6 (Item) and 6b (workspace plan), one contract test each.
 - 2026-11-09: added task 7a, agreed with the user. The task 4 cycle found that `sqlstore.Migrate` takes no lock, so servers starting together on an unmigrated database could race, and §4.17 promises several servers can share one.
