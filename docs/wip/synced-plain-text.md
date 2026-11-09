@@ -183,7 +183,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestApp_LeavesNoMarkInAFolderThatDoesNotLookSynced` failed: this computer had a mark in a folder with no sync service.
   - Green: `markFolder` returns before marking unless `syncedfolder.Detect` finds a service.
   - Refactor: only `markFolder`'s doc comment, which now says it marks only a folder that looks synced. The `.dropbox` setup is left until 14c shows whether a helper fits.
-- [ ] 14c. `ignore_synced_folder` means no mark.
+- [x] 14c. `ignore_synced_folder` means no mark.
+  - Red: `TestApp_LeavesNoMarkWhenTheSyncedFolderIsIgnored` failed: this computer had a mark with the setting on.
+  - Green: `markFolder` returns before marking when `ShouldIgnoreSyncedFolder` is set.
+  - Refactor: `dropboxDataDir` holds the `.dropbox` setup that three tests copied. `markFolder`'s doc comment now names the setting.
 - [ ] 14d. The mark is renewed every minute, and `App.Close` stops it before the store closes.
 - [ ] 14e. Define the mark steps; turns the last 4 scenarios green.
 

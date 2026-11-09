@@ -229,9 +229,13 @@ func otherDeviceWarning(cfg config.Config) (string, bool) {
 }
 
 // markFolder leaves this device's mark in the data folder, but only when the
-// folder looks synced, so an unsynced folder gets no background writes. If this
-// computer's name can't be read, it leaves none.
+// folder looks synced and the setting doesn't say to ignore that, so an unsynced
+// folder gets no background writes. If this computer's name can't be read, it
+// leaves none.
 func markFolder(cfg config.Config) {
+	if cfg.ShouldIgnoreSyncedFolder {
+		return
+	}
 	if _, ok := syncedfolder.Detect(cfg.DataDir); !ok {
 		return
 	}

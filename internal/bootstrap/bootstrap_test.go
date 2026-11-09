@@ -321,11 +321,7 @@ func TestApp_WarnsWhenSQLiteDataLooksSynced(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := t.TempDir()
-			if err := os.WriteFile(filepath.Join(root, ".dropbox"), nil, 0o600); err != nil {
-				t.Fatal(err)
-			}
-			a, err := bootstrap.New(tc.cfg(filepath.Join(root, "data")))
+			a, err := bootstrap.New(tc.cfg(dropboxDataDir(t)))
 			if err != nil {
 				t.Fatalf("New: %v", err)
 			}
@@ -440,6 +436,17 @@ func TestApp_ThisDevicesOwnMarkGivesNoWarning(t *testing.T) {
 	}
 }
 
+// dropboxDataDir returns a data folder inside a folder that Dropbox appears to
+// keep in sync.
+func dropboxDataDir(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".dropbox"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return filepath.Join(root, "data")
+}
+
 // warningsWithMarksFrom opens plain text in a folder with a recent mark from
 // each device, and returns the app's warnings.
 func warningsWithMarksFrom(t *testing.T, devices ...string) []string {
@@ -466,11 +473,7 @@ func TestApp_MarksAPlainTextFolderThatLooksSynced(t *testing.T) {
 	if err != nil {
 		t.Skipf("this computer's name can't be read: %v", err)
 	}
-	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, ".dropbox"), nil, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	dir := filepath.Join(root, "data")
+	dir := dropboxDataDir(t)
 
 	a, err := bootstrap.New(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
 	if err != nil {
@@ -493,6 +496,25 @@ func TestApp_LeavesNoMarkInAFolderThatDoesNotLookSynced(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "data")
 
 	a, err := bootstrap.New(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	if got := syncedfolder.OtherDevices(dir, "another-device", time.Now()); len(got) != 0 {
+		t.Errorf("devices with a mark = %q, want none", got)
+	}
+}
+
+// ignore_synced_folder says the folder isn't to be treated as synced, so a
+// folder that looks synced gets no mark either.
+func TestApp_LeavesNoMarkWhenTheSyncedFolderIsIgnored(t *testing.T) {
+	if _, err := os.Hostname(); err != nil {
+		t.Skipf("this computer's name can't be read, so no mark is left anyway: %v", err)
+	}
+	dir := dropboxDataDir(t)
+
+	a, err := bootstrap.New(config.Config{Storage: config.StorageJSONFile, DataDir: dir, ShouldIgnoreSyncedFolder: true})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
