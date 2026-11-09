@@ -67,6 +67,12 @@ func dsn(path string) string {
 	return "file:" + filepath.ToSlash(path) + "?" + q.Encode()
 }
 
+// DB is the store's database, for the shared sqlstore repositories. It stays
+// the store's: close the store, not the database.
+func (s *Store) DB() *sql.DB {
+	return s.db
+}
+
 // Close closes the database.
 func (s *Store) Close() error {
 	return s.db.Close()

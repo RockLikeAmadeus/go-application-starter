@@ -38,7 +38,10 @@ The shared SQL layer (on SQLite, so it runs without Postgres):
   - Green: migrations and `migrate`/`refuseNewer` moved from `sqlite` to `sqlstore.Migrate`; `sqlite.Open` calls it; init manifest path updated.
   - Refactor: the refuse-newer test moved from `sqlite/store_test.go` to `sqlstore` (`TestMigrateRefusesADatabaseSavedByANewerVersionOfTheApp`); sqlite keeps its WAL and migrated-on-open test.
   - `task test:init` failed on the undefined `@wip` scenarios; its "healthy" step now runs the new project's acceptance tests with `--godog.tags=~@wip` (agreed with the user).
-- [ ] 2. The Item repository moves to `sqlstore.NewItemRepository(db)` in portable SQL (`ON CONFLICT` upsert, `$n` placeholders), passing the Item contract and `RunWorkspaceIsolation` on SQLite. `sqlite.NewItemRepository` goes, and its callers use the new one. Sample: `task test:init`.
+- [x] 2. The Item repository moves to `sqlstore.NewItemRepository(db)` in portable SQL (`ON CONFLICT` upsert, `$n` placeholders), passing the Item contract and `RunWorkspaceIsolation` on SQLite. `sqlite.NewItemRepository` goes, and its callers use the new one. Sample: `task test:init`.
+  - Red: `TestItemRepositoryContractOnSQLite` (sqlstore) failed every contract and isolation check against a stub repository.
+  - Green: `sqlstore.ItemRepository` in portable SQL (`ON CONFLICT` upsert, `$n`, which modernc binds).
+  - Refactor: `sqlite.ItemRepository` removed; `sqlite.Store.DB()` added, and bootstrap and the acceptance sqlite driver use `sqlstore.NewItemRepository(store.DB())`; UTC test moved to sqlstore, the two-stores test stays in sqlite; init manifest updated.
 - [ ] 3. The workspace plan repository moves to `sqlstore.NewWorkspacePlanRepository(db)` in the same way, passing its contract suite on SQLite.
 
 The Postgres adapter:

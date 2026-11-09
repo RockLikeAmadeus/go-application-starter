@@ -22,6 +22,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlstore"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -183,7 +184,7 @@ func startSQLite() (*harness, error) {
 		return nil, err
 	}
 	// sample:start
-	h.items = h.newItemService(sqlite.NewItemRepository(store), workspace.FromContext{})
+	h.items = h.newItemService(sqlstore.NewItemRepository(store.DB()), workspace.FromContext{})
 	// sample:end
 	return h, nil
 }

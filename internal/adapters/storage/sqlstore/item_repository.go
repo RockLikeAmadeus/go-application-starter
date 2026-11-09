@@ -1,4 +1,4 @@
-package sqlite
+package sqlstore
 
 import (
 	"context"
@@ -15,25 +15,27 @@ const timeFormat = "2006-01-02T15:04:05.000000000Z"
 
 const itemColumns = `workspace_id, id, name, created_at, updated_at`
 
-// ItemRepository persists Items in the store's items table.
+// ItemRepository persists Items in the items table.
 type ItemRepository struct {
-	store *Store
+	db *sql.DB
 }
 
-func NewItemRepository(store *Store) *ItemRepository {
-	return &ItemRepository{store: store}
+func NewItemRepository(db *sql.DB) *ItemRepository {
+	return &ItemRepository{db: db}
 }
 
 func (r *ItemRepository) Save(ctx context.Context, item domain.Item) error {
-	_, err := r.store.db.ExecContext(ctx,
-		`INSERT OR REPLACE INTO items (`+itemColumns+`) VALUES (?, ?, ?, ?, ?)`,
+	_, err := r.db.ExecContext(ctx,
+		`INSERT INTO items (`+itemColumns+`) VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (workspace_id, id) DO UPDATE SET
+			name = excluded.name, created_at = excluded.created_at, updated_at = excluded.updated_at`,
 		item.WorkspaceID, item.ID, item.Name, formatTime(item.CreatedAt), formatTime(item.UpdatedAt))
 	return err
 }
 
 func (r *ItemRepository) FindByID(ctx context.Context, workspace domain.WorkspaceID, id string) (domain.Item, error) {
-	row := r.store.db.QueryRowContext(ctx,
-		`SELECT `+itemColumns+` FROM items WHERE workspace_id = ? AND id = ?`, workspace, id)
+	row := r.db.QueryRowContext(ctx,
+		`SELECT `+itemColumns+` FROM items WHERE workspace_id = $1 AND id = $2`, workspace, id)
 	item, err := scanItem(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Item{}, domain.ErrNotFound
@@ -42,8 +44,8 @@ func (r *ItemRepository) FindByID(ctx context.Context, workspace domain.Workspac
 }
 
 func (r *ItemRepository) FindAll(ctx context.Context, workspace domain.WorkspaceID) ([]domain.Item, error) {
-	rows, err := r.store.db.QueryContext(ctx,
-		`SELECT `+itemColumns+` FROM items WHERE workspace_id = ? ORDER BY created_at, id`, workspace)
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT `+itemColumns+` FROM items WHERE workspace_id = $1 ORDER BY created_at, id`, workspace)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +62,8 @@ func (r *ItemRepository) FindAll(ctx context.Context, workspace domain.Workspace
 }
 
 func (r *ItemRepository) Delete(ctx context.Context, workspace domain.WorkspaceID, id string) error {
-	res, err := r.store.db.ExecContext(ctx,
-		`DELETE FROM items WHERE workspace_id = ? AND id = ?`, workspace, id)
+	res, err := r.db.ExecContext(ctx,
+		`DELETE FROM items WHERE workspace_id = $1 AND id = $2`, workspace, id)
 	if err != nil {
 		return err
 	}
