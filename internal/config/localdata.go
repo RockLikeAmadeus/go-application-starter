@@ -55,8 +55,12 @@ func LocalConfigFile(env Env) (string, error) {
 // CreateDefaultSettingsFile writes DefaultSettingsFileText, for the default
 // data folder (the app's folder in the user's settings folder), to the
 // default settings file, making the app's folder. It never overwrites a
-// settings file that's already there.
+// settings file that's already there, and does nothing when
+// STARTER_CONFIG_FILE names another one.
 func CreateDefaultSettingsFile(env Env) error {
+	if env.Getenv("STARTER_CONFIG_FILE") != "" {
+		return nil
+	}
 	file, err := defaultSettingsFile(env)
 	if err != nil {
 		return err

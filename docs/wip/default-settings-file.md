@@ -39,7 +39,10 @@ Found while planning:
   - Red: `TestTheDefaultSettingsFileIsNeverOverwritten` (`localdata_test.go`) failed: an existing `config.toml` was replaced by the default text.
   - Green: `CreateDefaultSettingsFile` opens the file with `O_CREATE|O_EXCL`, so an existing one is left alone (and its `ErrExist` returned, for 3d to decide).
   - Refactor: moved the exclusive open, write and close into `writeNewFile(file, text)`; the doc comment says it never overwrites.
-- [ ] 3c. It does nothing when `STARTER_CONFIG_FILE` is set.
+- [x] 3c. It does nothing when `STARTER_CONFIG_FILE` is set.
+  - Red: `TestNoDefaultSettingsFileIsCreatedWhenStarterConfigFileNamesOne` (`localdata_test.go`) failed: `starter/config.toml` was created though `STARTER_CONFIG_FILE` named another file.
+  - Green: `CreateDefaultSettingsFile` returns nil before touching any file when `STARTER_CONFIG_FILE` is set.
+  - Refactor: the doc comment says so; left the two `STARTER_CONFIG_FILE` reads unshared, as a helper for one `Getenv` adds nothing.
 - [ ] 3d. It returns no error when it can't write.
 - [ ] 4. Acceptance helper: `addSetting` sets a key in an existing `config.toml` instead of appending a second one. `settings-file.feature` still passes.
 - [ ] 5. `desktop.Open` creates the default settings file before reading the settings. Define the desktop steps "my settings file sets … to …" and "my settings file doesn't set …"; turns the first two scenario outlines green.
@@ -47,9 +50,11 @@ Found while planning:
 - [ ] 7. The CLI and TUI create the default settings file when `--config` names none. Define "I delete my settings file"; turns "The command line creates the settings file when there is none" green.
 - [ ] 8. Define "I replace my settings file with one choosing the data folder …" and "my settings file is as I left it"; turns "A settings file that's already there is kept as it is" green.
 - [ ] 9. Define "I name a settings file of my own in the environment / with a command option" and "I have no settings file in my settings folder"; turns the last outline green.
-- [ ] 10. Docs: `docs/configuration.md` ("Which file is read", the example file matching the generated text), `.claude/rules/configuration.md`, README if it describes first run.
+- [ ] 10. Docs: `docs/configuration.md` ("Which file is read", the example file matching the generated text), `.claude/rules/configuration.md` (including a rule for adding a setting: it goes into `config.DefaultSettingsFileText` with a note above it, commented out when it has no useful default; the note's wording is agreed with the user first; and the example file in `docs/configuration.md` changes to match), README if it describes first run.
+- [ ] 10b. A guard test: every setting `config` knows about appears in `DefaultSettingsFileText`, set or commented out, so adding a setting without updating the text fails `task test`.
 - [ ] 11. Run `task test:init`, `task check` and `task accept`, remove `@wip`, and delete this file.
 
 ## Changes to the plan
 
 - 2026-11-09: split task 3 into 3, 3b, 3c and 3d, one behaviour and one test each.
+- 2026-11-09: at the user's request, task 10 also adds a rule to `.claude/rules/configuration.md` for keeping the default settings file in step with new settings, and task 10b adds a guard test that enforces it.

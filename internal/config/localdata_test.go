@@ -147,3 +147,20 @@ func TestTheDefaultSettingsFileIsNeverOverwritten(t *testing.T) {
 		t.Errorf("settings file =\n%s\nwant it left as\n%s", got, mine)
 	}
 }
+
+func TestNoDefaultSettingsFileIsCreatedWhenStarterConfigFileNamesOne(t *testing.T) {
+	settings := t.TempDir()
+	named := filepath.Join(t.TempDir(), "settings.toml")
+	env := config.Env{
+		Getenv:        envOf(map[string]string{"STARTER_CONFIG_FILE": named}),
+		UserConfigDir: configDirAt(settings),
+	}
+
+	_ = config.CreateDefaultSettingsFile(env)
+
+	for _, file := range []string{filepath.Join(settings, "starter", "config.toml"), named} {
+		if _, err := os.Stat(file); !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("%s was created (Stat: %v), want nothing created", file, err)
+		}
+	}
+}
