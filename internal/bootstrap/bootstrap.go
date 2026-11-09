@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/plans"
@@ -80,7 +81,6 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		if err != nil {
 			return nil, err
 		}
-		a.close = store.Close
 		a.ready = store.Ready
 		if warning, ok := conflictCopyWarning(store); ok {
 			a.Warnings = append(a.Warnings, warning)
@@ -88,7 +88,11 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		if warning, ok := otherDeviceWarning(cfg); ok {
 			a.Warnings = append(a.Warnings, warning)
 		}
-		markFolder(cfg)
+		stopMarking := markFolder(cfg)
+		a.close = func() error {
+			stopMarking()
+			return store.Close()
+		}
 		// sample:start
 		itemRepo = jsonfile.NewItemRepository(store)
 		// sample:end
@@ -228,22 +232,30 @@ func otherDeviceWarning(cfg config.Config) (string, bool) {
 		"changes: please close the application on your other devices before continuing.", true
 }
 
-// markFolder leaves this device's mark in the data folder, but only when the
-// folder looks synced and the setting doesn't say to ignore that, so an unsynced
-// folder gets no background writes. If this computer's name can't be read, it
-// leaves none.
-func markFolder(cfg config.Config) {
+// markFolder leaves this device's mark in the data folder and renews it every
+// minute, until stop ends the renewing and removes the mark. It marks only a
+// folder that looks synced, when the setting doesn't say to ignore that, so an
+// unsynced folder gets no background writes. If this computer's name can't be
+// read, it leaves none. With no mark, stop does nothing.
+func markFolder(cfg config.Config) (stop func()) {
+	noMark := func() {}
 	if cfg.ShouldIgnoreSyncedFolder {
-		return
+		return noMark
 	}
 	if _, ok := syncedfolder.Detect(cfg.DataDir); !ok {
-		return
+		return noMark
 	}
 	device, err := os.Hostname()
 	if err != nil {
-		return
+		return noMark
 	}
 	_ = syncedfolder.WriteMark(cfg.DataDir, device, system.Clock{}.Now())
+	ticker := time.NewTicker(time.Minute)
+	stopKeeping := syncedfolder.KeepMark(cfg.DataDir, device, ticker.C)
+	return func() {
+		ticker.Stop()
+		stopKeeping()
+	}
 }
 
 // deviceList names two or more devices: "a and b", or "a, b, and c".

@@ -187,7 +187,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestApp_LeavesNoMarkWhenTheSyncedFolderIsIgnored` failed: this computer had a mark with the setting on.
   - Green: `markFolder` returns before marking when `ShouldIgnoreSyncedFolder` is set.
   - Refactor: `dropboxDataDir` holds the `.dropbox` setup that three tests copied. `markFolder`'s doc comment now names the setting.
-- [ ] 14d. The mark is renewed every minute, and `App.Close` stops it before the store closes.
+- [x] 14d. The mark is renewed every minute, and `App.Close` stops it before the store closes.
+  - Red: `TestApp_CloseRemovesTheMark` failed: this computer still had a mark after `Close`.
+  - Green: `markFolder` keeps the mark with `KeepMark` on a one-minute ticker and returns its stop; jsonfile's `a.close` stops it, then closes the store.
+  - Refactor: dropped the overwritten `a.close = store.Close`; `markFolder`'s early returns share `noMark`, and its doc comment covers renewing and stopping. The init suite ran on a copy.
 - [ ] 14e. Define the mark steps; turns the last 4 scenarios green.
 
 Finish:
