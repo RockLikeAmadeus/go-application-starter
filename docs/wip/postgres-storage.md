@@ -60,7 +60,10 @@ The Postgres adapter:
   - Red: `TestItemRepositoryContractOnPostgres` (sqlstore) panicked on the first `Save`: nil `*sql.DB` from the stub `Store.DB`.
   - Green: `postgres.Store.DB()` returns the store's database; the SQL was already portable.
   - Refactor: nothing worth changing; any shared Postgres set-up waits for 6b, which is the first repeat.
-- [ ] 6b. The `sqlstore` workspace plan repository passes its contract suite on Postgres.
+- [x] 6b. The `sqlstore` workspace plan repository passes its contract suite on Postgres.
+  - Red: no red: `TestWorkspacePlanRepositoryContractOnPostgres` passed at once, as task 6 added `Store.DB` and the SQL is portable. Kept as a guard; it fails with the upsert broken.
+  - Green: skipped, no production code demanded.
+  - Refactor: the repeated Postgres set-up moved to an `openPostgres` helper in `migrate_test.go`, which is template code, so the plan test doesn't depend on the sample Item test.
 - [ ] 7. `postgres.Store.Ready` is nil while the database is reachable, errors while connections are blocked, and is nil again once they're allowed.
 - [ ] 7a. On Postgres, `sqlstore.Migrate` takes goose's session lock, so servers starting at once on one unmigrated database don't race: several concurrent `postgres.Open` calls on a fresh database all succeed. SQLite stays as it is.
 

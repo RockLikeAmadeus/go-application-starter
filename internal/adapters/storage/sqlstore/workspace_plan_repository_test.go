@@ -19,3 +19,9 @@ func TestWorkspacePlanRepositoryContractOnSQLite(t *testing.T) {
 		return sqlstore.NewWorkspacePlanRepository(db)
 	})
 }
+
+func TestWorkspacePlanRepositoryContractOnPostgres(t *testing.T) {
+	storagetest.RunWorkspacePlanRepositoryContract(t, func(t *testing.T) ports.WorkspacePlanRepository {
+		return sqlstore.NewWorkspacePlanRepository(openPostgres(t))
+	})
+}

@@ -9,6 +9,8 @@ import (
 	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlstore"
 )
 
@@ -21,6 +23,18 @@ func openSQLite(t *testing.T) *sql.DB {
 	}
 	t.Cleanup(func() { db.Close() })
 	return db
+}
+
+// openPostgres opens a fresh, migrated Postgres database, closed when the test
+// ends. It skips the test when no test database is configured.
+func openPostgres(t *testing.T) *sql.DB {
+	t.Helper()
+	store, err := postgres.Open(t.Context(), postgrestest.NewDatabase(t))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { store.Close() })
+	return store.DB()
 }
 
 func TestMigrateAppliesTheSharedMigrations(t *testing.T) {
