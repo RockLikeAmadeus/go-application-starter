@@ -76,7 +76,9 @@ Found while planning:
 - [x] 10. Docs: `docs/configuration.md` ("Which file is read", the example file matching the generated text), `.claude/rules/configuration.md` (including a rule for adding a setting: it goes into `config.DefaultSettingsFileText` with a note above it, commented out when it has no useful default; the note's wording is agreed with the user first; and the example file in `docs/configuration.md` changes to match), README if it describes first run.
   - No red or green: docs only, no behaviour to specify. `docs/configuration.md` shows the created file (checked against `DefaultSettingsFileText`), when it's created, and the functions; the rule and README say so too.
   - Refactor: nothing to change in code.
-- [ ] 10b. A guard test: every setting `config` knows about appears in `DefaultSettingsFileText`, set or commented out, so adding a setting without updating the text fails `task test`.
+- [x] 10b. A guard test: every setting `config` knows about appears in `DefaultSettingsFileText`, set or commented out, so adding a setting without updating the text fails `task test`.
+  - No red: `TestTheDefaultSettingsFileHasEverySettingTheDesktopAppAndTheCommandLineRead` (`defaultsettings_test.go`) passed straight away, as task 2 covered every setting; kept as a guard (it fails when the `plans_file` line is removed). Server-only `port` and `log_format` are listed in the test as exceptions. No green.
+  - Refactor: nothing worth changing; left the earlier test's own list of unset keys, which pins a different behaviour.
 - [ ] 11. Run `task test:init`, `task check` and `task accept`, remove `@wip`, and delete this file.
 
 ## Changes to the plan

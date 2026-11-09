@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -70,6 +71,27 @@ ignore_synced_folder = false
 			if setting.Source != "built in" {
 				t.Errorf("%s comes from %q, want it built in", setting.Key, setting.Source)
 			}
+		}
+	}
+}
+
+func TestTheDefaultSettingsFileHasEverySettingTheDesktopAppAndTheCommandLineRead(t *testing.T) {
+	text := config.DefaultSettingsFileText("/home/ann/.config/starter")
+	// Only the server reads these, and it never reads the default settings
+	// file.
+	serverOnly := map[string]bool{"port": true, "log_format": true}
+
+	cfg, err := config.Load(config.Env{Getenv: envOf(nil)}, "")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	for _, setting := range cfg.Settings() {
+		if serverOnly[setting.Key] {
+			continue
+		}
+		setOrCommentedOut := regexp.MustCompile(`(?m)^(# )?` + regexp.QuoteMeta(setting.Key) + ` = `)
+		if !setOrCommentedOut.MatchString(text) {
+			t.Errorf("DefaultSettingsFileText() has no line for %s, set or commented out", setting.Key)
 		}
 	}
 }
