@@ -106,14 +106,14 @@ tasks:
     desc: Build the web UI and Go binaries (server embeds the UI) into ./bin
     deps: [web:build]
     cmds:
-      - go build -tags embedweb -ldflags "{{.LDFLAGS}}" -o {{.BIN}}/server ./cmd/server
-      - go build -ldflags "{{.LDFLAGS}}" -o {{.BIN}}/starter ./cmd/starter
+      - go build -tags embedweb -ldflags "{{.LDFLAGS}}" -o {{.BIN}}/server{{exeExt}} ./cmd/server
+      - go build -ldflags "{{.LDFLAGS}}" -o {{.BIN}}/starter{{exeExt}} ./cmd/starter
 
   build:desktop:
     desc: Build the desktop app, with the web UI built in, into ./bin (needs the desktop build deps, see README)
     deps: [web:build]
     cmds:
-      - go build -tags desktop,embedweb -ldflags "-s -w" -o {{.BIN}}/starter-desktop ./cmd/desktop
+      - go build -tags desktop,embedweb -ldflags "-s -w" -o {{.BIN}}/starter-desktop{{exeExt}} ./cmd/desktop
 
   build:desktop:windows:
     desc: Cross-compile the desktop app for Windows, with the web UI built in, into ./bin
