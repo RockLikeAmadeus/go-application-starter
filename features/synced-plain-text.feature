@@ -1,4 +1,4 @@
-@desktop @wip
+@desktop
 Feature: Keep plain-text data in a synced folder
   As a user who keeps plain-text data in a folder a file-sync service syncs
   I want to be told about clashes and about other devices using my data

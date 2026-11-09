@@ -73,11 +73,12 @@ SPEC.md §4.15 · [`features/plan-changes.feature`](../../features/plan-changes.
 - The local edition's plan stays fixed, so `bootstrap.NewBilling` refuses every copy until step 8 wires the stored plans. Only the acceptance harness changes plans for now. All template code; the sample use is the item scenarios that move plans. `task test:init` passes.
 - `docs/billing.md`, the template users' guide described above.
 
-### 5. Sync-safe plain text — in progress
-SPEC.md §4.16 · [`features/synced-plain-text.feature`](../../features/synced-plain-text.feature) · [`docs/wip/synced-plain-text.md`](../wip/synced-plain-text.md).
-- jsonfile v2: one file per record. No migration from the v1 `items.json` (the template has no users).
-- Detect conflict copies. Warn about a heartbeat lock file from another device.
-- Update ADR 3.
+### 5. Sync-safe plain text — done
+SPEC.md §4.16 · [`features/synced-plain-text.feature`](../../features/synced-plain-text.feature) · [ADR 3](../adr/0003-plain-text-storage.md) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Synced data folders".
+- Done 2026-11-08: jsonfile v2 keeps each record in `<table>/<key>.json` (`{"version": 2, "key": …, "record": …}`), with no migration from the v1 `items.json`. A one-record lookup reads only that record's file.
+- A file whose key doesn't match its name is a conflict copy, whatever the sync service called it: reading skips it, and `jsonfile.Store.ConflictCopies` lists them for a warning in `App.Warnings`, whether or not the folder looks synced.
+- The heartbeat lock file became one mark per device, `.devices/<device>.json` (`internal/adapters/syncedfolder`), written only when the folder looks synced and `ignore_synced_folder` is off, renewed every minute and removed on closing. Another device's mark under five minutes old is a warning naming it.
+- All template code; the sample has two thin scenarios. ADR 3, ADR 5, `docs/data-locations.md`, `docs/configuration.md` and `.claude/rules/storage.md` are updated. `task test:init` passes.
 
 ### 6. SQLite adapter and migrations — done
 SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-storage.feature) · [ADR 7](../adr/0007-sqlite-storage.md) · `internal/adapters/storage/sqlite`.
@@ -142,3 +143,4 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
 - 2026-11-05: step 4 started. Decided: the local edition's plan stays fixed (`starter admin set-plan` refuses there, so until step 8 only the tests change plans); ChangePlan is reached only by the admin command, with no API until sign-in; each workspace's plan is stored by the storage adapters (`ports.WorkspacePlanRepository`).
 - 2026-11-06: step 4 finished. Its stored-plan wiring moved to step 8 here, since the task list that held it is gone. `task test:init` found a template step depending on the sample's `in` helper (from task 12c, which didn't run it), so `in` moved to `steps.go`.
 - 2026-11-06: step 5 started. The "lock file" became one mark per device (`.devices/<device>.json`), since two devices rewriting one file would make a conflict copy in exactly the case we warn about. A device writes its mark only when the folder looks synced, and both warnings are checked when the data is opened.
+- 2026-11-08: step 5 finished. Its task list split most tasks into one test each, added direct one-record reads with benchmarks (a question about the cost of opening many files), and moved the plans' records to one file per workspace. The by-hand check with two machines (Verification) is still to do.
