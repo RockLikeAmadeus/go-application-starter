@@ -52,9 +52,13 @@ The Postgres adapter:
   - Red: `TestOpenBringsTheSchemaUpToDate` failed: `relation "goose_db_version" does not exist`.
   - Green: `postgres.Open` opens through pgx and runs `sqlstore.Migrate`.
   - Refactor: nothing worth changing. `task setup` is unchanged, since it can't install Docker and Postgres tests skip without it; CLAUDE.md has no Gotchas section now.
-- [ ] 5. `postgres.Open` refuses a database saved by a newer version of the app, and changes nothing.
+- [x] 5. `postgres.Open` refuses a database saved by a newer version of the app, and changes nothing.
+  - Red: no red: `TestOpenRefusesADatabaseSavedByANewerVersionOfTheApp` passed at once, as `sqlstore.Migrate` already refuses (task 1). Kept as a guard; it fails with the refusal taken out.
+  - Green: skipped, no production code demanded.
+  - Refactor: the tests' direct connection moved to an `openDirectly` helper.
 - [ ] 6. The `sqlstore` Item and workspace plan repositories pass their contract suites, isolation included, on Postgres.
 - [ ] 7. `postgres.Store.Ready` is nil while the database is reachable, errors while connections are blocked, and is nil again once they're allowed.
+- [ ] 7a. On Postgres, `sqlstore.Migrate` takes goose's session lock, so servers starting at once on one unmigrated database don't race: several concurrent `postgres.Open` calls on a fresh database all succeed. SQLite stays as it is.
 
 Settings and wiring:
 - [ ] 8. `config.StoragePostgres` and the `database_url` setting (`STARTER_DATABASE_URL`): in `envVars`, `Load`, `Config.Settings`, the `serverOnly` list, and `docs/configuration.md`. The unrecognized-storage error lists `postgres` (user-facing: agree the wording first). Add the template-user step to TODO.md.
@@ -73,3 +77,4 @@ Acceptance and CI:
   - Remove the `@wip` tags, delete this file, and mark step 7 done in the plan, with a summary and links. Log the shared-SQL decision under "Plan changes".
 
 ## Changes to the plan
+- 2026-11-09: added task 7a, agreed with the user. The task 4 cycle found that `sqlstore.Migrate` takes no lock, so servers starting together on an unmigrated database could race, and §4.17 promises several servers can share one.
