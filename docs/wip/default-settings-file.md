@@ -43,7 +43,11 @@ Found while planning:
   - Red: `TestNoDefaultSettingsFileIsCreatedWhenStarterConfigFileNamesOne` (`localdata_test.go`) failed: `starter/config.toml` was created though `STARTER_CONFIG_FILE` named another file.
   - Green: `CreateDefaultSettingsFile` returns nil before touching any file when `STARTER_CONFIG_FILE` is set.
   - Refactor: the doc comment says so; left the two `STARTER_CONFIG_FILE` reads unshared, as a helper for one `Getenv` adds nothing.
-- [ ] 3d. It returns no error when it can't write.
+- [x] 3d. It returns no error when it can't write (a read-only or blocked app's folder).
+  - Red: `TestTheDefaultSettingsFileReturnsNoErrorWhenItCantWrite` (`localdata_test.go`) failed: making the app's folder, blocked by a file, returned `not a directory`.
+  - Green: `CreateDefaultSettingsFile` returns nil when it can't make the app's folder or write the file (an existing file's `ErrExist` included).
+  - Refactor: the doc comment says it carries on silently; kept the `error` return, which 3e decides on.
+- [ ] 3e. It returns no error when there's no settings folder (`UserConfigDir` fails).
 - [ ] 4. Acceptance helper: `addSetting` sets a key in an existing `config.toml` instead of appending a second one. `settings-file.feature` still passes.
 - [ ] 5. `desktop.Open` creates the default settings file before reading the settings. Define the desktop steps "my settings file sets … to …" and "my settings file doesn't set …"; turns the first two scenario outlines green.
 - [ ] 6. `mobile.Open` creates no settings file. Define "the mobile app has created no settings file"; turns the `@mobile` scenario green.
@@ -57,4 +61,5 @@ Found while planning:
 ## Changes to the plan
 
 - 2026-11-09: split task 3 into 3, 3b, 3c and 3d, one behaviour and one test each.
+- 2026-11-09: split 3d: 3e covers no settings folder, a separate failure needing its own test.
 - 2026-11-09: at the user's request, task 10 also adds a rule to `.claude/rules/configuration.md` for keeping the default settings file in step with new settings, and task 10b adds a guard test that enforces it.

@@ -164,3 +164,16 @@ func TestNoDefaultSettingsFileIsCreatedWhenStarterConfigFileNamesOne(t *testing.
 		}
 	}
 }
+
+func TestTheDefaultSettingsFileReturnsNoErrorWhenItCantWrite(t *testing.T) {
+	settings := t.TempDir()
+	// A file where the app's folder should be, so nothing can be written there.
+	if err := os.WriteFile(filepath.Join(settings, "starter"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := config.Env{Getenv: envOf(nil), UserConfigDir: configDirAt(settings)}
+
+	if err := config.CreateDefaultSettingsFile(env); err != nil {
+		t.Errorf("CreateDefaultSettingsFile: %v, want no error", err)
+	}
+}
