@@ -27,23 +27,45 @@ The default data folder depends on the front end. The server uses `./data`, rela
 
 It's [TOML](https://toml.io): one `key = value` per line, strings in quotes, `#` for comments.
 
+When the desktop app, the CLI or the TUI starts and its default settings file (below) is missing, it creates one, with the values it would use without the file. On Linux, for a user called `you`, it looks like this:
+
 ```toml
-# ~/.config/starter/config.toml
+# The settings for this application. The application created this file with the
+# values it uses when no settings file exists.
 
-# Keep the data in a synced folder (one device at a time: see docs/data-locations.md).
-data_dir = "/home/you/Sync/starter"
+# How the application keeps its data: "jsonfile" (plain-text storage, which
+# one program on this computer can use at a time), "sqlite" (a database,
+# which several programs can use at once), or "memory" (kept only until the
+# program ends).
+storage = "jsonfile"
 
-# Keep it in SQLite, so the CLI works while the desktop app is open.
-# (Not in a synced folder: a sync service can damage the database.)
-# storage = "sqlite"
+# The folder in which the application keeps its data. The desktop
+# application, the command line, and the terminal application share it.
+data_dir = "/home/you/.config/starter"
 
-# Try out a plan's limits.
-# plans_file = "/home/you/plans.jsonc"
+# Set this to true if the data folder appears to be synced by a file sync
+# service but is excluded from sync. The application then does not warn that
+# SQLite data in the folder may be damaged, and plain-text storage does not
+# mark the folder as in use on this computer.
+ignore_synced_folder = false
 
-# This folder looks synced but is excluded from sync: don't warn that it looks
-# synced, or mark it as in use on this device.
-# ignore_synced_folder = true
+# To make the command line and the terminal application use a server instead
+# of the data on this computer, please remove the "#" below and give the
+# server's address.
+# server_url = "https://example.com"
+
+# To use a plans file of your own instead of the one built into the
+# application, please remove the "#" below and give the file's full path.
+# plans_file = "/path/to/plans.jsonc"
 ```
+
+`port` and `log_format` are left out: only the server reads them, and it never reads this file. Edit the file to change a setting: for example, `data_dir = "/home/you/Sync/starter"` keeps the data in a synced folder (one device at a time: see [docs/data-locations.md](data-locations.md)), and `storage = "sqlite"` lets the CLI work while the desktop app is open (but not in a synced folder, where a sync service can damage the database).
+
+**When the file is created:**
+- only when the default file is missing. A file that's already there is never changed, even if it's empty or sets nothing, and two programs starting at once can't both write it (it's opened with `O_EXCL`);
+- never when `STARTER_CONFIG_FILE` or `--config` names another file;
+- never by the server or the Android app;
+- if it can't be written (a read-only folder, or no settings folder), the program carries on silently on the built-in settings, and tries again the next time it starts. Delete the file to get a fresh one.
 
 **Which file is read:**
 - **The CLI, TUI and desktop app** read `config.toml` in the app's folder in the user's settings folder, beside the default data folder:
@@ -58,7 +80,7 @@ data_dir = "/home/you/Sync/starter"
 **Mistakes stop the app.** The app checks the file when it starts, and refuses to start on settings it would ignore:
 - a setting it doesn't know (a typo such as `datadir`) names the file and the setting;
 - a file that isn't valid TOML names the file;
-- a file that `STARTER_CONFIG_FILE` or `--config` names, but that doesn't exist, is a mistake too. The default file may be missing: then there is no settings file.
+- a file that `STARTER_CONFIG_FILE` or `--config` names, but that doesn't exist, is a mistake too. The default file may be missing: then the program creates it (above), or, if it can't, runs with no settings file.
 
 ## Where did a setting come from?
 
@@ -67,13 +89,13 @@ data_dir = "/home/you/Sync/starter"
 ```console
 $ STARTER_LOG_FORMAT=json starter info
 Settings file: /home/you/.config/starter/config.toml
-  storage = "jsonfile"  # built in
+  storage = "jsonfile"  # settings file
   data_dir = "/home/you/Sync/starter"  # settings file
   port = 8080  # built in
   server_url = ""  # built in
   log_format = "json"  # environment (STARTER_LOG_FORMAT)
   plans_file = ""  # built in
-  ignore_synced_folder = false  # built in
+  ignore_synced_folder = false  # settings file
 Data folder: /home/you/Sync/starter
 Plan: local
 ```
@@ -83,8 +105,10 @@ The sources are `built in`, `settings file`, `environment (STARTER_…)` and `op
 ## In code
 
 `internal/config` does all of this, and reads nothing from the process itself: `config.Env` gives it the environment and the user's settings folder (`os.Getenv` and `os.UserConfigDir` in `cmd/*`, fakes in tests).
+- `config.CreateDefaultSettingsFile(env)` creates the default settings file when it's missing, as above. `desktop.Open` and the CLI's `settingsFileFor` (used by the TUI too) call it; `desktop.OpenWithoutDefaultSettingsFile`, which `mobile.Open` calls, doesn't.
+- `config.DefaultSettingsFileText(dataDir)` is that file's text.
 - `config.LocalConfigFile(env)` finds the local front ends' settings file (`""` for none).
 - `config.Load(env, settingsFile)` reads the file and the environment, records each setting's source in `Config.Sources`, and validates the result.
 - `config.LocalDataDir(env, settingsFile)` picks the local front ends' data folder.
 
-To add a setting: add a field to `config.Config`, its key and environment variable to `envVars` in `internal/config/config.go`, its lookup in `Load` and its line in `Config.Settings`, then add it to the table above.
+To add a setting: add a field to `config.Config`, its key and environment variable to `envVars` in `internal/config/config.go`, its lookup in `Load` and its line in `Config.Settings`, then add it to the table above. If the desktop app, the CLI or the TUI reads it, add it to `config.DefaultSettingsFileText` too, with a note above it: set to its default, or commented out when it has no useful default. The note is user-facing text, so agree its wording first. Then change the example file above to match.

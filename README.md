@@ -74,7 +74,7 @@ task docker:up                   # production image locally on :8080
 task rename -- --name "New Name" # rebrand the project; --dry-run previews it (see docs/rename.md)
 ```
 
-Settings come from an optional TOML settings file, overridden by environment variables (see `.env.example`), overridden in turn by command-line options. The CLI, TUI and desktop app share `~/.config/starter/config.toml` (on Linux); the server reads a file only when `STARTER_CONFIG_FILE` names one. `starter info` shows where each setting came from. Every setting, and the rules, are in [docs/configuration.md](docs/configuration.md) ([ADR 6](docs/adr/0006-layered-configuration.md)). Where each front end keeps its data, on each OS, is in [docs/data-locations.md](docs/data-locations.md).
+Settings come from an optional TOML settings file, overridden by environment variables (see `.env.example`), overridden in turn by command-line options. The CLI, TUI and desktop app share `~/.config/starter/config.toml` (on Linux), which they create, with the defaults, when it's missing; the server reads a file only when `STARTER_CONFIG_FILE` names one. `starter info` shows where each setting came from. Every setting, and the rules, are in [docs/configuration.md](docs/configuration.md) ([ADR 6](docs/adr/0006-layered-configuration.md)). Where each front end keeps its data, on each OS, is in [docs/data-locations.md](docs/data-locations.md).
 
 ## Development workflow (with Claude Code)
 
