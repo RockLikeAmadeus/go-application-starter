@@ -21,6 +21,19 @@ func (w *world) registerDefaultSettingsFileSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^my settings file sets "([^"]*)" to (.+)$`, w.mySettingsFileSets)
 	sc.Step(`^my settings file doesn't set "([^"]*)"$`, w.mySettingsFileDoesNotSet)
 	sc.Step(`^the mobile app has created no settings file$`, w.theMobileAppHasCreatedNoSettingsFile)
+	sc.Step(`^I delete my settings file$`, w.iDeleteMySettingsFile)
+}
+
+// iDeleteMySettingsFile removes the settings file from this computer's
+// settings folder.
+func (w *world) iDeleteMySettingsFile() error {
+	if w.local == nil {
+		return errNoLocalComputer
+	}
+	if err := os.Remove(w.local.settingsFile()); err != nil {
+		return fmt.Errorf("delete the settings file: %w", err)
+	}
+	return nil
 }
 
 // theMobileAppHasCreatedNoSettingsFile checks there's no settings file where

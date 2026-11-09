@@ -63,7 +63,10 @@ Found while planning:
   - Red: `TestOpenCreatesNoSettingsFile` (mobile) failed: Open left `starter/config.toml` in the storage folder.
   - Green: `desktop.Open` = `config.CreateDefaultSettingsFile` + new `desktop.OpenWithoutDefaultSettingsFile`, which `mobile.Open` calls; step defined via new `harness.phoneStorage`. `@mobile` scenario passes.
   - Refactor: `mobile.Open`'s doc comment now says it creates no settings file. Left `desktop.Open` building `config.Env` twice: both functions take the same arguments, and it's one line.
-- [ ] 7. The CLI and TUI create the default settings file when `--config` names none. Define "I delete my settings file"; turns "The command line creates the settings file when there is none" green.
+- [x] 7. The CLI and TUI create the default settings file when `--config` names none. Define "I delete my settings file"; turns "The command line creates the settings file when there is none" green.
+  - Red: `TestCommandsCreateTheDefaultSettingsFileWhenThereIsNone` (`internal/adapters/cli/info_test.go`) failed: no `starter/config.toml` after `info`.
+  - Green: `cli`'s `settingsFileFor` calls `config.CreateDefaultSettingsFile` when `--config` names no file; `TestInfoNamesTheSettingsFile`'s "none" case now runs on a read-only settings folder; step "I delete my settings file" defined. The scenario passes.
+  - Refactor: `settingsFileFor`'s doc comment now says it creates the file; nothing else worth changing (the TUI goes through the same function).
 - [ ] 8. Define "I replace my settings file with one choosing the data folder …" and "my settings file is as I left it"; turns "A settings file that's already there is kept as it is" green.
 - [ ] 9. Define "I name a settings file of my own in the environment / with a command option" and "I have no settings file in my settings folder"; turns the last outline green.
 - [ ] 10. Docs: `docs/configuration.md` ("Which file is read", the example file matching the generated text), `.claude/rules/configuration.md` (including a rule for adding a setting: it goes into `config.DefaultSettingsFileText` with a note above it, commented out when it has no useful default; the note's wording is agreed with the user first; and the example file in `docs/configuration.md` changes to match), README if it describes first run.
