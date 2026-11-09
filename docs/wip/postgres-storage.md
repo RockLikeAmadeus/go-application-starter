@@ -48,7 +48,10 @@ The shared SQL layer (on SQLite, so it runs without Postgres):
   - Refactor: `sqlite.WorkspacePlanRepository` and its contract test removed; the acceptance sqlite driver uses `sqlstore.NewWorkspacePlanRepository(store.DB())`; the reopen test stays in sqlite on the shared repository.
 
 The Postgres adapter:
-- [ ] 4. `postgres.Open(ctx, url)` connects through pgx and brings the schema up to date with `sqlstore.Migrate`, and `postgrestest.NewDatabase(t)` gives each test a fresh database (skipping without `STARTER_TEST_DATABASE_URL`). Add the compose `postgres` service, `task db:up` and `task db:down`, and Docker in README Prerequisites (`task setup`, Gotchas).
+- [x] 4. `postgres.Open(ctx, url)` connects through pgx and brings the schema up to date with `sqlstore.Migrate`, and `postgrestest.NewDatabase(t)` gives each test a fresh database (skipping without `STARTER_TEST_DATABASE_URL`). Add the compose `postgres` service, `task db:up` and `task db:down`, and Docker in README Prerequisites (`task setup`, Gotchas).
+  - Red: `TestOpenBringsTheSchemaUpToDate` failed: `relation "goose_db_version" does not exist`.
+  - Green: `postgres.Open` opens through pgx and runs `sqlstore.Migrate`.
+  - Refactor: nothing worth changing. `task setup` is unchanged, since it can't install Docker and Postgres tests skip without it; CLAUDE.md has no Gotchas section now.
 - [ ] 5. `postgres.Open` refuses a database saved by a newer version of the app, and changes nothing.
 - [ ] 6. The `sqlstore` Item and workspace plan repositories pass their contract suites, isolation included, on Postgres.
 - [ ] 7. `postgres.Store.Ready` is nil while the database is reachable, errors while connections are blocked, and is nil again once they're allowed.

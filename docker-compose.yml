@@ -12,5 +12,24 @@ services:
       disable: true
     restart: unless-stopped
 
+  # The database Postgres tests run against: `task db:up`, then set
+  # STARTER_TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+  # The profile keeps it out of `task docker:up`. Its data is in memory, gone
+  # with the container.
+  postgres:
+    image: postgres:17-alpine
+    profiles: ["db"]
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
 volumes:
   app-data:

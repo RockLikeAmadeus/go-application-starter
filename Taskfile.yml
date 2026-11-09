@@ -375,6 +375,16 @@ tasks:
     cmds:
       - docker compose up --build
 
+  db:up:
+    desc: Start the Postgres that tests use, on localhost:5432 (see STARTER_TEST_DATABASE_URL in README)
+    cmds:
+      - docker compose up --detach --wait postgres
+
+  db:down:
+    desc: Stop the Postgres that tests use and discard its data
+    cmds:
+      - docker compose rm --stop --force postgres
+
   clean:
     cmds:
       - rm -rf {{.BIN}} web/dist web/.features-gen web/playwright-report web/test-results
