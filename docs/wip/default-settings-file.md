@@ -35,7 +35,10 @@ Found while planning:
   - Red: `TestTheDefaultSettingsFileIsCreatedWhenMissing` (`localdata_test.go`) failed: no `starter/config.toml` after the stub `CreateDefaultSettingsFile`.
   - Green: `CreateDefaultSettingsFile(env)` makes the app's folder and writes `DefaultSettingsFileText` for it to `config.toml` (plain `os.WriteFile` for now; 3b makes it `O_EXCL`).
   - Refactor: `LocalConfigFile` and `CreateDefaultSettingsFile` share `defaultSettingsFile(env)`; kept the `error` return, which 3d decides on.
-- [ ] 3b. It never overwrites an existing settings file.
+- [x] 3b. It never overwrites an existing settings file.
+  - Red: `TestTheDefaultSettingsFileIsNeverOverwritten` (`localdata_test.go`) failed: an existing `config.toml` was replaced by the default text.
+  - Green: `CreateDefaultSettingsFile` opens the file with `O_CREATE|O_EXCL`, so an existing one is left alone (and its `ErrExist` returned, for 3d to decide).
+  - Refactor: moved the exclusive open, write and close into `writeNewFile(file, text)`; the doc comment says it never overwrites.
 - [ ] 3c. It does nothing when `STARTER_CONFIG_FILE` is set.
 - [ ] 3d. It returns no error when it can't write.
 - [ ] 4. Acceptance helper: `addSetting` sets a key in an existing `config.toml` instead of appending a second one. `settings-file.feature` still passes.

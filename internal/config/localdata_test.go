@@ -124,3 +124,26 @@ func TestTheDefaultSettingsFileIsCreatedWhenMissing(t *testing.T) {
 		t.Errorf("settings file =\n%s\nwant\n%s", got, want)
 	}
 }
+
+func TestTheDefaultSettingsFileIsNeverOverwritten(t *testing.T) {
+	settings := t.TempDir()
+	file := filepath.Join(settings, "starter", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const mine = "storage = \"memory\"\n"
+	if err := os.WriteFile(file, []byte(mine), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := config.Env{Getenv: envOf(nil), UserConfigDir: configDirAt(settings)}
+
+	_ = config.CreateDefaultSettingsFile(env)
+
+	got, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatalf("read the settings file: %v", err)
+	}
+	if string(got) != mine {
+		t.Errorf("settings file =\n%s\nwant it left as\n%s", got, mine)
+	}
+}

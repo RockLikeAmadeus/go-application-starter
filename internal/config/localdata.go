@@ -54,7 +54,8 @@ func LocalConfigFile(env Env) (string, error) {
 
 // CreateDefaultSettingsFile writes DefaultSettingsFileText, for the default
 // data folder (the app's folder in the user's settings folder), to the
-// default settings file, making the app's folder.
+// default settings file, making the app's folder. It never overwrites a
+// settings file that's already there.
 func CreateDefaultSettingsFile(env Env) error {
 	file, err := defaultSettingsFile(env)
 	if err != nil {
@@ -64,7 +65,21 @@ func CreateDefaultSettingsFile(env Env) error {
 	if err := os.MkdirAll(appDir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(file, []byte(DefaultSettingsFileText(appDir)), 0o600)
+	return writeNewFile(file, DefaultSettingsFileText(appDir))
+}
+
+// writeNewFile writes text to file only if there is no file there yet, so it
+// never overwrites one, even another program's written at the same moment.
+func writeNewFile(file, text string) error {
+	f, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.WriteString(text); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 // defaultSettingsFile is config.toml in the app's folder in the user's
