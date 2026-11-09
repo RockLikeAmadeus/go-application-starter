@@ -70,7 +70,9 @@ Found while planning:
 - [x] 8. Define "I replace my settings file with one choosing the data folder …" and "my settings file is as I left it"; turns "A settings file that's already there is kept as it is" green.
   - No red: with the two steps defined (`default_settings_file_steps.go`), the scenario passed straight away, as 3b already never overwrites; kept as a guard (it fails when the exclusive open is swapped for `O_TRUNC`). No green.
   - Refactor: nothing worth changing; the new steps follow the file's others.
-- [ ] 9. Define "I name a settings file of my own in the environment / with a command option" and "I have no settings file in my settings folder"; turns the last outline green.
+- [x] 9. Define "I name a settings file of my own in the environment / with a command option" and "I have no settings file in my settings folder"; turns the last outline green.
+  - No red: with the three steps defined (`default_settings_file_steps.go`; `--config` through a new `world.commandLineOptions`), both examples passed straight away, as 3c and task 7 already create nothing when a file is named; kept as guards (each fails when its step stops naming the file). No green.
+  - Refactor: nothing worth changing; the new steps follow the file's others.
 - [ ] 10. Docs: `docs/configuration.md` ("Which file is read", the example file matching the generated text), `.claude/rules/configuration.md` (including a rule for adding a setting: it goes into `config.DefaultSettingsFileText` with a note above it, commented out when it has no useful default; the note's wording is agreed with the user first; and the example file in `docs/configuration.md` changes to match), README if it describes first run.
 - [ ] 10b. A guard test: every setting `config` knows about appears in `DefaultSettingsFileText`, set or commented out, so adding a setting without updating the text fails `task test`.
 - [ ] 11. Run `task test:init`, `task check` and `task accept`, remove `@wip`, and delete this file.

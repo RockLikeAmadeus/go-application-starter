@@ -22,6 +22,9 @@ type world struct {
 	// settingsFileLeft is the text the user last wrote to their settings
 	// file.
 	settingsFileLeft string
+	// commandLineOptions are given to every command the command line runs,
+	// before the command's own arguments.
+	commandLineOptions []string
 	// sample:start
 	// exportedCSV is the items' CSV that the last export gave.
 	exportedCSV []byte
