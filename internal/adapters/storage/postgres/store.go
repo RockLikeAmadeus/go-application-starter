@@ -37,6 +37,11 @@ func (s *Store) DB() *sql.DB {
 	return s.db
 }
 
+// Ready reports whether the database can be reached.
+func (s *Store) Ready(ctx context.Context) error {
+	return s.db.PingContext(ctx)
+}
+
 // Close closes the database.
 func (s *Store) Close() error {
 	return s.db.Close()

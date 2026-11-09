@@ -64,7 +64,10 @@ The Postgres adapter:
   - Red: no red: `TestWorkspacePlanRepositoryContractOnPostgres` passed at once, as task 6 added `Store.DB` and the SQL is portable. Kept as a guard; it fails with the upsert broken.
   - Green: skipped, no production code demanded.
   - Refactor: the repeated Postgres set-up moved to an `openPostgres` helper in `migrate_test.go`, which is template code, so the plan test doesn't depend on the sample Item test.
-- [ ] 7. `postgres.Store.Ready` is nil while the database is reachable, errors while connections are blocked, and is nil again once they're allowed.
+- [x] 7. `postgres.Store.Ready` is nil while the database is reachable, errors while connections are blocked, and is nil again once they're allowed.
+  - Red: `TestStoreIsReadyOnlyWhileItsDatabaseCanBeReached` failed with "Ready error = nil while connections are blocked".
+  - Green: `Ready` pings with the caller's context; `postgrestest` gained `BlockConnections` and `AllowConnections`.
+  - Refactor: `NewDatabase` and `openServerOf` share `openServer`; production `Ready` is one line, so nothing else was worth changing.
 - [ ] 7a. On Postgres, `sqlstore.Migrate` takes goose's session lock, so servers starting at once on one unmigrated database don't race: several concurrent `postgres.Open` calls on a fresh database all succeed. SQLite stays as it is.
 
 Settings and wiring:

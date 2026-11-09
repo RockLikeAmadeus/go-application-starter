@@ -53,6 +53,29 @@ func TestOpenRefusesADatabaseSavedByANewerVersionOfTheApp(t *testing.T) {
 	}
 }
 
+func TestStoreIsReadyOnlyWhileItsDatabaseCanBeReached(t *testing.T) {
+	databaseURL := postgrestest.NewDatabase(t)
+	store, err := postgres.Open(t.Context(), databaseURL)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer store.Close()
+
+	if err := store.Ready(t.Context()); err != nil {
+		t.Fatalf("Ready error = %v while the database can be reached, want nil", err)
+	}
+
+	postgrestest.BlockConnections(t, databaseURL)
+	if err := store.Ready(t.Context()); err == nil {
+		t.Error("Ready error = nil while connections are blocked, want an error")
+	}
+
+	postgrestest.AllowConnections(t, databaseURL)
+	if err := store.Ready(t.Context()); err != nil {
+		t.Errorf("Ready error = %v once connections are allowed again, want nil", err)
+	}
+}
+
 // openDirectly opens the database the way another program would, closed when
 // the test ends.
 func openDirectly(t *testing.T, databaseURL string) *sql.DB {

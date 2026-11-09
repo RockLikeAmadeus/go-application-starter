@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver
@@ -26,10 +27,7 @@ func NewDatabase(t testing.TB) string {
 	if serverURL == "" {
 		t.Skipf("%s is not set: skipping this Postgres test (task db:up starts a server)", serverURLVariable)
 	}
-	server, err := sql.Open("pgx", serverURL)
-	if err != nil {
-		t.Fatalf("open the test server: %v", err)
-	}
+	server := openServer(t, serverURL)
 	name := randomName(t)
 	if _, err := server.ExecContext(t.Context(), "CREATE DATABASE "+name); err != nil {
 		server.Close()
@@ -44,6 +42,54 @@ func NewDatabase(t testing.TB) string {
 		}
 	})
 	return databaseURL(t, serverURL, name)
+}
+
+// BlockConnections makes the database at databaseURL, from NewDatabase,
+// unreachable without stopping the server: it refuses new connections and ends
+// the ones already open.
+func BlockConnections(t testing.TB, databaseURL string) {
+	t.Helper()
+	server, name := openServerOf(t, databaseURL)
+	defer server.Close()
+	if _, err := server.ExecContext(t.Context(), "ALTER DATABASE "+name+" ALLOW_CONNECTIONS false"); err != nil {
+		t.Fatalf("block connections: %v", err)
+	}
+	// The timeout makes each call wait until the connection has really ended.
+	const endConnections = "SELECT pg_terminate_backend(pid, 5000) FROM pg_stat_activity WHERE datname = $1"
+	if _, err := server.ExecContext(t.Context(), endConnections, name); err != nil {
+		t.Fatalf("end open connections: %v", err)
+	}
+}
+
+// AllowConnections undoes BlockConnections.
+func AllowConnections(t testing.TB, databaseURL string) {
+	t.Helper()
+	server, name := openServerOf(t, databaseURL)
+	defer server.Close()
+	if _, err := server.ExecContext(t.Context(), "ALTER DATABASE "+name+" ALLOW_CONNECTIONS true"); err != nil {
+		t.Fatalf("allow connections: %v", err)
+	}
+}
+
+// openServerOf connects to the test server, and returns the connection with
+// the name of the database that databaseURL points at.
+func openServerOf(t testing.TB, databaseURL string) (*sql.DB, string) {
+	t.Helper()
+	parsed, err := url.Parse(databaseURL)
+	if err != nil {
+		t.Fatalf("database URL: %v", err)
+	}
+	return openServer(t, os.Getenv(serverURLVariable)), strings.TrimPrefix(parsed.Path, "/")
+}
+
+// openServer connects to the test server at serverURL.
+func openServer(t testing.TB, serverURL string) *sql.DB {
+	t.Helper()
+	server, err := sql.Open("pgx", serverURL)
+	if err != nil {
+		t.Fatalf("open the test server: %v", err)
+	}
+	return server
 }
 
 // randomName is a database name no other test run is using. It needs no
