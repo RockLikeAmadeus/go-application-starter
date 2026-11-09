@@ -51,7 +51,10 @@ Found while planning:
   - Red: `TestTheDefaultSettingsFileReturnsNoErrorWithoutASettingsFolder` (now `…CarriesOnWithoutASettingsFolder`, `localdata_test.go`) failed: it returned `UserConfigDir`'s error.
   - Green: `CreateDefaultSettingsFile` returns nil when it can't find the settings folder.
   - Refactor: it could no longer fail, so it returns nothing; the 3d and 3e tests are renamed `…CarriesOn…` and assert, instead, that the file in the app's folder's place is left as it was (3d) and nothing is created in the working directory (3e); the doc comment covers a missing settings folder.
-- [ ] 4. Acceptance helper: `addSetting` sets a key in an existing `config.toml` instead of appending a second one. `settings-file.feature` still passes.
+- [x] 4. Acceptance helper: `addSetting` sets a key in an existing `config.toml` instead of appending a second one. `settings-file.feature` still passes.
+  - Red: `TestAddSettingSetsAKeyTheSettingsFileAlreadyHas` (now `TestSetSettingReplacesAKey…`, `test/acceptance/settings_file_steps_test.go`) failed: `Load` refused the file, as `data_dir` was defined twice.
+  - Green: `addSetting` reads the file and replaces the key's line when it has one, else appends it.
+  - Refactor: renamed `addSetting` to `setSetting`, since it now sets a key in place; left the regexp built per call, as a test helper's few calls don't need it shared.
 - [ ] 5. `desktop.Open` creates the default settings file before reading the settings. Define the desktop steps "my settings file sets … to …" and "my settings file doesn't set …"; turns the first two scenario outlines green.
 - [ ] 6. `mobile.Open` creates no settings file. Define "the mobile app has created no settings file"; turns the `@mobile` scenario green.
 - [ ] 7. The CLI and TUI create the default settings file when `--config` names none. Define "I delete my settings file"; turns "The command line creates the settings file when there is none" green.
