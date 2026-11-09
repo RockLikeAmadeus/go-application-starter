@@ -27,7 +27,10 @@ Found while planning:
   - Red: `TestTheDefaultSettingsFileSetsTheStorageDataFolderAndSyncedFolderSettings` (`defaultsettings_test.go`) failed: all three settings came back "built in" from the stub's empty text.
   - Green: `config.DefaultSettingsFileText(dataDir)` returns the three lines, quoting `data_dir` with `%q` (so a Windows path's backslashes are escaped).
   - Refactor: `storage` comes from `StorageJSONFile`; left `Load`'s fallbacks unshared with the text, as two literals don't justify a table yet.
-- [ ] 2. The text has `server_url` and `plans_file` commented out, and the comments, with wording agreed with the user first. It still parses, and leaves out `port` and `log_format`.
+- [x] 2. The text has `server_url` and `plans_file` commented out, and the comments, with wording agreed with the user first. It still parses, and leaves out `port` and `log_format`.
+  - Red: `TestTheDefaultSettingsFileDescribesEachSettingAndLeavesOutTheRest` (`defaultsettings_test.go`, pinning the wording agreed 2026-11-09) failed: the text had only the three settings, with no comments.
+  - Green: `DefaultSettingsFileText` returns the agreed text, the header and each setting's note, with `server_url` and `plans_file` commented out.
+  - Refactor: nothing worth changing; the test pins the whole text on purpose, and task 1's test still covers parsing and a Windows path's escaping.
 - [ ] 3. `config` creates the default settings file when it's missing: it writes the text from task 1 to `LocalConfigFile`'s default path (making the app's folder), never overwrites an existing file, does nothing when `STARTER_CONFIG_FILE` is set, and returns no error when it can't write.
 - [ ] 4. Acceptance helper: `addSetting` sets a key in an existing `config.toml` instead of appending a second one. `settings-file.feature` still passes.
 - [ ] 5. `desktop.Open` creates the default settings file before reading the settings. Define the desktop steps "my settings file sets … to …" and "my settings file doesn't set …"; turns the first two scenario outlines green.
