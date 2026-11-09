@@ -59,7 +59,10 @@ Found while planning:
   - Red: `TestOpenCreatesTheDefaultSettingsFile` (`internal/adapters/desktop/open_test.go`) failed: no `config.toml` in the settings folder.
   - Green: `desktop.Open` calls `config.CreateDefaultSettingsFile` first; steps in `test/acceptance/default_settings_file_steps.go`. Both outlines and "changes nothing" pass.
   - Refactor: `Open`'s doc comment now says it creates the file; nothing else worth changing.
-- [ ] 6. `mobile.Open` creates no settings file. Define "the mobile app has created no settings file"; turns the `@mobile` scenario green.
+- [x] 6. `mobile.Open` creates no settings file. Define "the mobile app has created no settings file"; turns the `@mobile` scenario green.
+  - Red: `TestOpenCreatesNoSettingsFile` (mobile) failed: Open left `starter/config.toml` in the storage folder.
+  - Green: `desktop.Open` = `config.CreateDefaultSettingsFile` + new `desktop.OpenWithoutDefaultSettingsFile`, which `mobile.Open` calls; step defined via new `harness.phoneStorage`. `@mobile` scenario passes.
+  - Refactor: `mobile.Open`'s doc comment now says it creates no settings file. Left `desktop.Open` building `config.Env` twice: both functions take the same arguments, and it's one line.
 - [ ] 7. The CLI and TUI create the default settings file when `--config` names none. Define "I delete my settings file"; turns "The command line creates the settings file when there is none" green.
 - [ ] 8. Define "I replace my settings file with one choosing the data folder …" and "my settings file is as I left it"; turns "A settings file that's already there is kept as it is" green.
 - [ ] 9. Define "I name a settings file of my own in the environment / with a command option" and "I have no settings file in my settings folder"; turns the last outline green.

@@ -19,7 +19,9 @@ type App struct {
 }
 
 // Open opens the mobile app's data folder and wires the core behind the
-// server's HTTP handler, as desktop.Open does. The folder is
+// server's HTTP handler, as desktop.Open does, but creates no settings file
+// (desktop.OpenWithoutDefaultSettingsFile): the user can't reach the app's
+// private storage to edit one. The folder is
 // <storagePath>/starter unless STARTER_DATA_DIR is set. storagePath is the
 // app's private storage (application.Android.StoragePath() in production),
 // getenv reads the environment (os.Getenv in production) and webAssets is the
@@ -27,7 +29,7 @@ type App struct {
 // answers 404: the web app's files are built in, so it needs no service
 // worker.
 func Open(getenv func(string) string, storagePath string, webAssets fs.FS) (*App, error) {
-	desktopApp, err := desktop.Open(getenv, func() (string, error) { return storagePath, nil }, webAssets)
+	desktopApp, err := desktop.OpenWithoutDefaultSettingsFile(getenv, func() (string, error) { return storagePath, nil }, webAssets)
 	if err != nil {
 		return nil, err
 	}

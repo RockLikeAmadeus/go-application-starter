@@ -56,6 +56,9 @@ type harness struct {
 	// local is the computer the desktop app runs on, where the command line
 	// runs beside it. Only the desktop driver sets it.
 	local *localComputer
+	// phoneStorage is the mobile app's private storage on the phone. Only
+	// the mobile driver sets it.
+	phoneStorage string
 	// server is the running server, as cmd/server wires it. Only the server
 	// driver sets it.
 	server *testServer
@@ -392,6 +395,7 @@ func startMobile() (*harness, error) {
 	app := &mobileApp{storagePath: dir}
 
 	h := newHarness()
+	h.phoneStorage = dir
 	h.cleanup = func() {
 		app.close()
 		os.RemoveAll(dir)

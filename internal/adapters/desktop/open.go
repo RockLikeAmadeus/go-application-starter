@@ -33,8 +33,14 @@ type App struct {
 // finds the user's settings folder (os.UserConfigDir on the desktop).
 // webAssets is the built web app (web.Assets() in production).
 func Open(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS) (*App, error) {
+	config.CreateDefaultSettingsFile(config.Env{Getenv: getenv, UserConfigDir: userConfigDir})
+	return OpenWithoutDefaultSettingsFile(getenv, userConfigDir, webAssets)
+}
+
+// OpenWithoutDefaultSettingsFile opens the app as Open does, but creates no
+// settings file when there is none.
+func OpenWithoutDefaultSettingsFile(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS) (*App, error) {
 	env := config.Env{Getenv: getenv, UserConfigDir: userConfigDir}
-	config.CreateDefaultSettingsFile(env)
 	settingsFile, err := config.LocalConfigFile(env)
 	if err != nil {
 		return nil, err

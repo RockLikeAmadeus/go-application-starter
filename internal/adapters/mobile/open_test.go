@@ -2,7 +2,11 @@ package mobile_test
 
 import (
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/mobile"
@@ -31,5 +35,22 @@ func TestOpenAnswersTheAPIOverTheBridgeOnly(t *testing.T) {
 
 	if reply := mobile.Serve(app.Handler, http.MethodGet, "/api/v1/connection", ""); reply.Status != http.StatusNotFound {
 		t.Errorf("connection on the asset path: status %d, want 404", reply.Status)
+	}
+}
+
+// The phone has no settings folder the user can reach, so a settings file
+// there would be one nobody can edit: Open creates none.
+func TestOpenCreatesNoSettingsFile(t *testing.T) {
+	storage := t.TempDir()
+
+	app, err := mobile.Open(func(string) string { return "" }, storage, nil)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
+
+	settingsFile := filepath.Join(storage, "starter", "config.toml")
+	if _, err := os.Stat(settingsFile); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("Open left a settings file at %s (stat: %v), want none", settingsFile, err)
 	}
 }

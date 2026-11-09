@@ -1,13 +1,17 @@
 package acceptance
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
 
 	"github.com/cucumber/godog"
 	"github.com/knadh/koanf/parsers/toml/v2"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
 // registerDefaultSettingsFileSteps binds the steps of
@@ -16,6 +20,30 @@ import (
 func (w *world) registerDefaultSettingsFileSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^my settings file sets "([^"]*)" to (.+)$`, w.mySettingsFileSets)
 	sc.Step(`^my settings file doesn't set "([^"]*)"$`, w.mySettingsFileDoesNotSet)
+	sc.Step(`^the mobile app has created no settings file$`, w.theMobileAppHasCreatedNoSettingsFile)
+}
+
+// theMobileAppHasCreatedNoSettingsFile checks there's no settings file where
+// the mobile app would look for one: the app's folder in its storage.
+func (w *world) theMobileAppHasCreatedNoSettingsFile() error {
+	if w.phoneStorage == "" {
+		return errors.New("only the mobile driver runs the mobile app: tag the scenario @mobile")
+	}
+	settingsFile, err := config.LocalConfigFile(config.Env{
+		Getenv:        func(string) string { return "" },
+		UserConfigDir: func() (string, error) { return w.phoneStorage, nil },
+	})
+	if err != nil {
+		return err
+	}
+	_, err = os.Stat(settingsFile)
+	if err == nil {
+		return fmt.Errorf("the mobile app left a settings file at %s, want none", settingsFile)
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("look for a settings file: %w", err)
+	}
+	return nil
 }
 
 // mySettingsFileSets checks the settings file sets key to value: a quoted
