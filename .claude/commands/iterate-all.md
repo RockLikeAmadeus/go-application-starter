@@ -47,12 +47,12 @@ If something is wrong, send it to the same subagent with SendMessage, to fix it,
 
 For each promise, check that the last task covers it, or that it points to another feature's task. If any don't, ask me with AskUserQuestion whether to add tasks for them, and add the tasks I agree to as unticked tasks before the last one. Then carry on with the loop, which now does those tasks first.
 
-**When a cycle is cut off.** A subagent can end without a report, or with one that doesn't start with `DONE`, `QUESTION` or `BLOCKED`. This happens when it reaches a usage limit, an API error or a time limit. Its work may be half done, so:
+**When a cycle is cut off.** A subagent can end without a report, or with one that doesn't start with `DONE`, `QUESTION` or `BLOCKED`. This happens when it hits an API error, runs out of context or reaches a usage limit. Its work may be half done, so:
 1. Don't commit, stage or discard anything, don't start a new subagent, and don't wait or schedule a retry yourself.
 2. Run `git status --short`. Then STOP and tell me the task, the subagent's ID, what it said last, and which paths it left changed.
 3. When I say to carry on, resume the same subagent with SendMessage. Tell it that it was interrupted, to check the tree and the task's notes, and to carry on from where it stopped. If it can't be resumed, start a new subagent with the usual prompt and this added: "A cycle for this task was interrupted and left these changes: <paths>. They are part of this cycle: check them against the task, and keep or finish them. Report `BLOCKED` if you can't tell how far it got." Either way, the cycle goes through the review before it's committed.
 
-If you are cut off yourself, I'll start you again. Then the file, `git log` and `git status --short` show where the loop is. If there are changes and no subagent you can resume, follow step 3 as for a subagent that can't be resumed.
+A usage limit applies to the whole account, so it stops you as well as the subagent. You can't run steps 1 and 2 when it happens: everything just stops until it resets. The steps start with the next message I send you after that. Before anything else, read the `docs/wip/` file, `git log` and `git status --short` to see where the loop is. If they show uncommitted changes, do step 2, and then step 3 if my message says to carry on. The same applies if you are cut off for any other reason.
 
 Prompt for each subagent, with `<file>` filled in:
 
