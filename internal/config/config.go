@@ -134,7 +134,6 @@ func (c Config) Validate() error {
 		return UnrecognizedStorageError(c.Storage)
 	}
 	if c.LogFormat != "json" && c.LogFormat != "text" {
-		//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
 		return fmt.Errorf("The log format setting %q is not recognized. Please use \"text\" or \"json\".", c.LogFormat)
 	}
 	return nil
@@ -143,7 +142,6 @@ func (c Config) Validate() error {
 // UnrecognizedStorageError is the error for a storage setting this program
 // doesn't have.
 func UnrecognizedStorageError(storage StorageBackend) error {
-	//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
 	return fmt.Errorf("The storage setting %q is not recognized. Please use %q, %q, or %q.", storage, StorageMemory, StorageJSONFile, StorageSQLite)
 }
 
@@ -167,12 +165,10 @@ func readSettingsFile(path string) (*koanf.Koanf, error) {
 		return fileSettings, nil
 	}
 	if err := fileSettings.Load(file.Provider(path), toml.Parser()); err != nil {
-		//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
 		return nil, fmt.Errorf("The settings file %s could not be read: %w", path, err)
 	}
 	for _, key := range fileSettings.Keys() {
 		if _, ok := envVars[key]; !ok {
-			//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
 			return nil, fmt.Errorf("The settings file %s contains an unknown setting: %q.", path, key)
 		}
 	}

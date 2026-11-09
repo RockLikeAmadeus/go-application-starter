@@ -45,6 +45,19 @@ linters:
               desc: domain must not depend on ports
             - pkg: github.com/RockLikeAmadeus/go-application-starter/internal/core/app
               desc: domain must not depend on use cases
+    staticcheck:
+      # golangci-lint's default checks, plus -ST1005: error strings users read
+      # are whole sentences, capitalised and ending in a full stop
+      # (.claude/rules/user-facing-text.md).
+      checks:
+        - all
+        - -ST1000
+        - -ST1003
+        - -ST1005
+        - -ST1016
+        - -ST1020
+        - -ST1021
+        - -ST1022
     revive:
       rules:
         - name: exported

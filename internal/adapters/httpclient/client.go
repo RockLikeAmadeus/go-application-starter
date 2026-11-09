@@ -27,7 +27,6 @@ func newAPI(baseURL string, opts ...apiclient.ClientOption) (*apiclient.ClientWi
 // transport.
 func toError(status int, p *apiclient.Problem) error {
 	if p == nil {
-		//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
 		return fmt.Errorf("The server returned an unexpected response (%d).", status)
 	}
 	problemType, detail, field := deref(p.Type), deref(p.Detail), deref(p.Field)
@@ -41,7 +40,6 @@ func toError(status int, p *apiclient.Problem) error {
 	case "feature":
 		return &domain.FeatureError{Feature: deref(p.Feature), Name: deref(p.Name), AvailableOn: fromAvailableOn(deref(p.AvailableOn))}
 	default:
-		//nolint:staticcheck // ST1005: users read it as written, as a full sentence.
 		return fmt.Errorf("The server returned an error (%d): %s", status, detail)
 	}
 }

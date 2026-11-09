@@ -85,7 +85,7 @@ Settings come from an optional TOML settings file, overridden by environment var
 | Green | `/green` | the minimum code to pass, then stop |
 | Refactor | `/refactor` | cleaner code, all tests still green |
 | One cycle | `/iterate [behaviour]` | red, green and refactor for the next open task, stopping only for questions; then commits and pushes it, if all went cleanly |
-| Every open task | `/iterate-all [feature]` | `/iterate` in a loop through a feature's open tasks, each in a fresh subagent with one commit, pausing only for questions; stops when the tasks are done or a cycle can't finish cleanly |
+| Every open task | `/iterate-all [feature]` | `/iterate` in a loop through a feature's open tasks, each in a fresh subagent with one commit after a short review, pausing only for questions; stops when the tasks are done or a cycle can't finish cleanly |
 
 Repeat red → green → refactor until `task accept` is green, then drop the `@wip` tag. See `CLAUDE.md` for the architecture rules Claude follows, `.claude/rules/` for its topic-specific rules (loaded when it works on matching files), and `.claude/settings.json` for permissions and the auto-format hook.
 
