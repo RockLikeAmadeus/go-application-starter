@@ -73,12 +73,13 @@ SPEC.md §4.15 · [`features/plan-changes.feature`](../../features/plan-changes.
 - The local edition's plan stays fixed, so `bootstrap.NewBilling` refuses every copy until step 8 wires the stored plans. Only the acceptance harness changes plans for now. All template code; the sample use is the item scenarios that move plans. `task test:init` passes.
 - `docs/billing.md`, the template users' guide described above.
 
-### 5. Sync-safe plain text — done
+### 5. Sync-safe plain text — in progress
 SPEC.md §4.16 · [`features/synced-plain-text.feature`](../../features/synced-plain-text.feature) · [ADR 3](../adr/0003-plain-text-storage.md) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Synced data folders".
 - Done 2026-11-08: jsonfile v2 keeps each record in `<table>/<key>.json` (`{"version": 2, "key": …, "record": …}`), with no migration from the v1 `items.json`. A one-record lookup reads only that record's file.
 - A file whose key doesn't match its name is a conflict copy, whatever the sync service called it: reading skips it, and `jsonfile.Store.ConflictCopies` lists them for a warning in `App.Warnings`, whether or not the folder looks synced.
 - The heartbeat lock file became one mark per device, `.devices/<device>.json` (`internal/adapters/syncedfolder`), written only when the folder looks synced and `ignore_synced_folder` is off, renewed every minute and removed on closing. Another device's mark under five minutes old is a warning naming it.
 - All template code; the sample has two thin scenarios. ADR 3, ADR 5, `docs/data-locations.md`, `docs/configuration.md` and `.claude/rules/storage.md` are updated. `task test:init` passes.
+- Still to do: the by-hand check with two machines, in the checklist under [Verification after every step](#verification-after-every-step).
 
 ### 6. SQLite adapter and migrations — done
 SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-storage.feature) · [ADR 7](../adr/0007-sqlite-storage.md) · `internal/adapters/storage/sqlite`.
@@ -115,6 +116,11 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
 - `task check`, plus `task accept` with the step's `@wip` scenarios passing on every relevant driver.
 - From step 1: every storage adapter passes the isolation contract.
 - Step 5: a by-hand check with the data folder in a Syncthing or Dropbox folder on two machines, opened one at a time, plus a forced conflict copy that shows the warning.
+  1. Put the `jsonfile` data folder in a Syncthing or Dropbox folder on machine A, and open the app. `.devices/<A's computer name>.json` appears, renewed every minute and removed on closing.
+  2. With A still open, open the same folder on machine B. B warns, naming A, while A's mark is less than five minutes old.
+  3. Close A, let the folder sync, and reopen it on B. There's no warning, as closing removed A's mark.
+  4. Force a conflict copy: edit the same item on both machines while they're offline, then let them sync. Every front end warns, naming the file (such as `items/<id> (conflicted copy).json`), and the copy isn't read as data.
+  5. Set `ignore_synced_folder = true`. The device mark and its warning stop, but the conflict copy warning stays.
 - From step 8: `task e2e` for the login journey.
 
 ## Plan changes
