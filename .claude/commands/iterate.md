@@ -1,7 +1,7 @@
 ---
 description: TDD loop — one red → green → refactor cycle for the next task, without stopping between steps, then commit and push it
 argument-hint: "[optional: behaviour to specify; default: the next open task in docs/wip/]"
-allowed-tools: Bash(git add:*), Bash(git commit:*), Bash(git push:*)
+allowed-tools: Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh pr view:*), Bash(gh pr create:*)
 ---
 
 One full **red → green → refactor** cycle, for:
@@ -36,7 +36,7 @@ Anything with a conventional answer, or that the code, CLAUDE.md or the `docs/wi
 
 **Keep the `docs/wip/` notes short**, as `red.md`, `green.md` and `refactor.md` say: one line per step. This cycle's commit message holds the detail.
 
-**Commit and push.** Running `/iterate` is my explicit request to commit its cycle, so when the cycle went cleanly, stage everything (`git add -A`), commit, and push to the current branch's upstream. Run them as three separate, plain commands (`git add -A`; `git commit -F <message file in the scratchpad>`; `git push`), not chained with `&&` or piped, so they match the `allowed-tools` above and don't prompt. "Cleanly" means:
+**Commit and push.** Running `/iterate` is my explicit request to commit its cycle, so when the cycle went cleanly, stage everything (`git add -A`), commit, and push to the current branch's upstream. Run them as three separate, plain commands (`git add -A`; `git commit -F <message file in the scratchpad>`; `git push`, or `git push -u origin HEAD` when the branch has no upstream yet, as on a feature's first cycle), not chained with `&&` or piped, so they match the `allowed-tools` above and don't prompt. "Cleanly" means:
 - the cycle ran to the end: red failed for the right reason (or the test passed straight away and was kept as a guard, as above), then green, then refactor;
 - the finishing checks above are all green;
 - nothing is left open for me: any question I answered during the cycle is settled.
@@ -49,10 +49,12 @@ Don't commit, and say why, when:
 
 Never pull, force-push or rewrite history. If the push is refused (for example, the remote has moved on), leave the commit in place and tell me.
 
+**Open the pull request after the last task.** When this cycle's commit was pushed and the `docs/wip/` file has no open task left (`grep -c '^- \[ \]'` gives 0), open the feature's pull request, as `.claude/rules/work-tracking.md` says under "Pull requests". Running `/iterate` on the last task is my request to open it. Don't open one from `main`, or when the branch already has one (`gh pr view --json url` finds it): report that one's link instead.
+
 Then STOP after this one cycle, and show me, in this order:
 - the test, and the failure it showed before green (or why it passed straight away);
 - the production change, in 1–3 lines;
 - what the refactor changed, or why nothing was worth changing;
 - the checks: the finishing checks' results and the `@wip` scenarios' progress;
 - the commit and push: its hash and its full message, after the checks and before the next task (not only in an opening line), or why there wasn't one;
-- the next open task, as the suggested next `/iterate` (or `/red`).
+- the next open task, as the suggested next `/iterate` (or `/red`); or, after the last task, the pull request's link, or why there wasn't one.

@@ -19,13 +19,13 @@ Each copy uses one edition, and nothing syncs between them. Outside `internal/bo
 
 ## Workflow: BDD outside, TDD inside
 
-1. `/feature <desc>` updates SPEC.md, writes `@wip` Gherkin in `features/`, and shows it failing. No production code.
+1. `/feature <desc>` checks that we're on an up-to-date, clean `main`, creates the branch `feature/<feature-slug>`, updates SPEC.md, writes `@wip` Gherkin in `features/`, shows it failing, and commits and pushes the spec, scenarios and task list. No production code. The task list ends with a docs-and-finish task that removes the `@wip` tags, deletes the `docs/wip/` file and updates the plan.
 2. `/red <behaviour>` writes one failing unit test.
 3. `/green` writes the minimum code to pass it.
 4. `/refactor` tidies the code on green, with no behaviour change.
-5. Repeat 2–4 until `task accept` passes. Then remove the `@wip` tags.
+5. Repeat 2–4 until `task accept` passes. The last task removes the `@wip` tags.
 
-`/iterate [behaviour]` runs one whole red → green → refactor cycle for the next open task (or the one given), stopping only to ask me something, and then once at the end. When the cycle goes cleanly, it commits and pushes it. `/iterate-all [feature]` runs an `/iterate` cycle for every open task of a `docs/wip/` file, each in a fresh subagent, one commit per task, stopping only when the tasks are done or a cycle can't finish cleanly. Questions pause it, and it carries on with my answer.
+`/iterate [behaviour]` runs one whole red → green → refactor cycle for the next open task (or the one given), stopping only to ask me something, and then once at the end. When the cycle goes cleanly, it commits and pushes it, and after the feature's last task it opens the branch's pull request and gives me its link. `/iterate-all [feature]` runs an `/iterate` cycle for every open task of a `docs/wip/` file, each in a fresh subagent, one commit per task, stopping only when the tasks are done or a cycle can't finish cleanly. When the tasks are done, it opens the pull request. Questions pause it, and it carries on with my answer.
 
 `TODO.md` is the backlog. A feature's task list lives in `docs/wip/<feature-slug>.md`; a TODO item needing more than one `/feature` has a plan in `docs/plans/<item-slug>.md`. Both are tracked and temporary. **When starting or resuming work, run `task wip:next` first, then read the parts of the plan the task needs.** How to read and update them is in `.claude/rules/work-tracking.md`.
 
@@ -41,7 +41,7 @@ The sample `Item` feature is removed by most projects, so work spent on it is mo
 
 Never skip a step or merge steps unless I ask. Never write production code without a failing test that demands it.
 
-Never stage, commit, push or pull unless I explicitly ask. That includes `git add`, `git mv` and `git rm`, which stage changes. Running `/iterate` is such a request, for its own cycle only (see `.claude/commands/iterate.md`, whose `allowed-tools` lets it run `git add`, `git commit` and `git push` without a prompt). Running `/iterate-all` is the same request for each of its cycles. `/red`, `/green`, `/refactor` and `/feature` leave everything unstaged. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
+Never stage, commit, push or pull unless I explicitly ask. That includes `git add`, `git mv` and `git rm`, which stage changes. Running `/iterate` is such a request, for its own cycle only (see `.claude/commands/iterate.md`, whose `allowed-tools` lets it run `git add`, `git commit` and `git push` without a prompt). Running `/iterate-all` is the same request for each of its cycles. Both open the feature's pull request after its last task (`.claude/rules/work-tracking.md`), and `/feature` creates the feature's branch; nothing else opens a pull request or changes branch unless I ask. Running `/feature` is the same request for its own spec, scenarios and task list. `/red`, `/green` and `/refactor` leave everything unstaged. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
 
 ## Commands
 

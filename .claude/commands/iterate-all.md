@@ -1,7 +1,7 @@
 ---
 description: TDD loop — run an /iterate cycle in a fresh subagent for every open task of the feature in progress, one commit per task, until none are left
 argument-hint: "[optional: feature slug or docs/wip/ file; default: the most recently committed one with open tasks]"
-allowed-tools: Agent, Bash(git add:*), Bash(git commit:*), Bash(git push:*)
+allowed-tools: Agent, Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh pr view:*), Bash(gh pr create:*)
 ---
 
 Run an `/iterate` cycle for each open task of one `docs/wip/` file, without stopping between cycles. I use this when I've reviewed the plan and don't expect to change it along the way.
@@ -30,7 +30,7 @@ Say which file you picked before the first cycle, and stay on it. If it has no o
    - `DONE`: go on to step 4.
    - Anything else, or no report at all: see "When a cycle is cut off" below.
 4. Review the cycle, as below.
-5. Check with `grep` that the task is ticked. Write the message to a file in the scratchpad, ending it with the attribution lines this session gives for commits. Then commit and push as `/iterate` says: `git add -A`; `git commit -F <file>`; `git push`, as three separate, plain commands.
+5. Check with `grep` that the task is ticked. Write the message to a file in the scratchpad, ending it with the attribution lines this session gives for commits. Then commit and push as `/iterate` says: `git add -A`; `git commit -F <file>`; `git push` (`git push -u origin HEAD` when the branch has no upstream yet), as three separate, plain commands.
 6. Print one line: the task, the commit's short hash, and how far the `@wip` scenarios got. Go straight on to the next task. Don't end your turn between cycles.
 
 **Review each cycle before committing it.** A `DONE` report can be wrong, so check four things. Don't read the whole diff: search it, and read only the hunks the searches point at. Search the changes to tracked files with `git diff -U0 HEAD`, and new files by passing `git ls-files -o --exclude-standard` to `grep`.
@@ -72,11 +72,12 @@ The `docs/wip/` file and the git history hold the loop's state, not this convers
 - a subagent reports `BLOCKED` or is cut off, a check after `DONE` fails, or a commit or push fails. Never force-push, pull or rewrite history, and don't start another cycle on top of it;
 - I ask you to stop.
 
-**Don't go beyond the tasks.** Removing the `@wip` tags, deleting the `docs/wip/` file, and marking a step done in `docs/plans/` stay with me unless they are tasks in the file. `/iterate`'s permission to commit covers each cycle only.
+**Don't go beyond the tasks.** Removing the `@wip` tags, deleting the `docs/wip/` file, and marking a step done in `docs/plans/` stay with me unless they are tasks in the file (`/feature` makes them its last task). `/iterate`'s permission to commit covers each cycle only. The one step past the tasks is the pull request at the end, below.
 
 **Finish.** Show me, in this order:
 - why the loop stopped, and which tasks remain, if any;
 - a list of the cycles: each task, with its commit's short hash and subject;
 - every decision the subagents took without asking;
 - anything the reviews sent back, and what the sweep found;
-- the last cycle's checks and the `@wip` scenarios' progress. When no task is left, run `task accept -- --godog.tags=@wip` and report it, with the suggested next step: removing the tags if they all pass, or what is still failing.
+- the last cycle's checks and the `@wip` scenarios' progress. When no task is left, run `task accept` and report it. If the feature's scenarios still carry `@wip` (the file had no finish task, or it left them), say what is still failing or that the tags can go;
+- the pull request's link. When no task is left and every cycle was committed and pushed, open the feature's pull request, as `.claude/rules/work-tracking.md` says under "Pull requests", using that run in its description. Running `/iterate-all` is my request to open it. Don't open one from `main`, or when the branch already has one (`gh pr view --json url` finds it): give that one's link instead. If the loop stopped with tasks left, open none.

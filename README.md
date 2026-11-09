@@ -38,6 +38,7 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
 | golangci-lint | 2 | https://golangci-lint.run/welcome/install/ |
 | lefthook (optional) | 2 | `go install github.com/evilmartians/lefthook/v2@v2.2.2` |
 | Docker (optional) | | for `task docker:*` |
+| GitHub CLI (optional) | 2 | only for the Claude Code workflow, which opens a feature's pull request with `gh pr create`. https://cli.github.com, then `gh auth login` |
 | Desktop build deps (optional) | | only for the desktop app (`task run:desktop`, `task build:desktop`). Linux (Ubuntu/Debian): `sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev`. macOS: `xcode-select --install`. Windows: nothing extra (Wails uses no cgo there, and the WebView2 runtime ships with Windows 10 and 11; the setup program installs it if missing). Tried on Windows on 2026-11-02 |
 | Linux packaging tools (optional) | | only for the desktop app's Linux packages (`task package:desktop:linux`, `task test:package`), on top of the desktop build deps. `sudo apt install desktop-file-utils rpm libfuse2t64`: `desktop-file-validate` checks the desktop file, `rpm` reads the `.rpm` (its checks are skipped without it), and FUSE 2 runs an AppImage (on Ubuntu before 24.04, `libfuse2`). The first AppImage build downloads `linuxdeploy` from GitHub. Build the AppImage where WebKitGTK 4.1 isn't installed (`sudo apt remove libwebkit2gtk-4.1-dev` if nothing else needs it), or it bundles that too, about 90 MB the app never uses |
 | Windows packaging tools (optional) | | only for the desktop app's Windows setup program (`task package:desktop:windows`, `task test:package`), built on Linux. `sudo apt install nsis 7zip`: `makensis` builds the setup `.exe`, and 7-Zip checks the files inside it (that check is skipped without it). Cross-compiling the Windows program needs no desktop build deps |
@@ -80,14 +81,14 @@ Settings come from an optional TOML settings file, overridden by environment var
 
 | Step | Command | Result |
 |---|---|---|
-| Outer loop | `/feature <desc>` | SPEC.md section, `@wip` Gherkin in `features/`, shown failing, TDD task list |
+| Outer loop | `/feature <desc>` | a `feature/<slug>` branch from `main`, SPEC.md section, `@wip` Gherkin in `features/`, shown failing, TDD task list ending in a docs-and-finish task; committed and pushed |
 | Red | `/red <behaviour>` | exactly one failing unit test |
 | Green | `/green` | the minimum code to pass, then stop |
 | Refactor | `/refactor` | cleaner code, all tests still green |
-| One cycle | `/iterate [behaviour]` | red, green and refactor for the next open task, stopping only for questions; then commits and pushes it, if all went cleanly |
-| Every open task | `/iterate-all [feature]` | `/iterate` in a loop through a feature's open tasks, each in a fresh subagent with one commit after a short review, pausing only for questions; stops when the tasks are done or a cycle can't finish cleanly |
+| One cycle | `/iterate [behaviour]` | red, green and refactor for the next open task, stopping only for questions; then commits and pushes it, if all went cleanly; after the last task, opens the pull request |
+| Every open task | `/iterate-all [feature]` | `/iterate` in a loop through a feature's open tasks, each in a fresh subagent with one commit after a short review, pausing only for questions; stops when the tasks are done (opening the pull request) or a cycle can't finish cleanly |
 
-Repeat red → green → refactor until `task accept` is green, then drop the `@wip` tag. See `CLAUDE.md` for the architecture rules Claude follows, `.claude/rules/` for its topic-specific rules (loaded when it works on matching files), and `.claude/settings.json` for permissions and the auto-format hook.
+Repeat red → green → refactor until `task accept` is green. The last task drops the `@wip` tags and the `docs/wip/` file. See `CLAUDE.md` for the architecture rules Claude follows, `.claude/rules/` for its topic-specific rules (loaded when it works on matching files), and `.claude/settings.json` for permissions and the auto-format hook.
 
 ### Three layers of Gherkin
 
