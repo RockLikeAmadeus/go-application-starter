@@ -33,7 +33,11 @@ Prerequisite: Docker, usable without `sudo`, from task 4 on. It's installed here
 Each is one `/red` → `/green` → `/refactor` cycle.
 
 The shared SQL layer (on SQLite, so it runs without Postgres):
-- [ ] 1. `sqlstore.Migrate(ctx, db, dialect)` applies the shared migrations (moved from `sqlite/migrations/` to `sqlstore/migrations/`) and refuses a database whose version is newer than the newest one. `sqlite.Open` calls it. The migration tests move from `sqlite/store_test.go`.
+- [x] 1. `sqlstore.Migrate(ctx, db, dialect)` applies the shared migrations (moved from `sqlite/migrations/` to `sqlstore/migrations/`) and refuses a database whose version is newer than the newest one. `sqlite.Open` calls it. The migration tests move from `sqlite/store_test.go`.
+  - Red: `TestMigrateAppliesTheSharedMigrations` failed: no `goose_db_version` table (stub `Migrate` applied nothing).
+  - Green: migrations and `migrate`/`refuseNewer` moved from `sqlite` to `sqlstore.Migrate`; `sqlite.Open` calls it; init manifest path updated.
+  - Refactor: the refuse-newer test moved from `sqlite/store_test.go` to `sqlstore` (`TestMigrateRefusesADatabaseSavedByANewerVersionOfTheApp`); sqlite keeps its WAL and migrated-on-open test.
+  - `task test:init` failed on the undefined `@wip` scenarios; its "healthy" step now runs the new project's acceptance tests with `--godog.tags=~@wip` (agreed with the user).
 - [ ] 2. The Item repository moves to `sqlstore.NewItemRepository(db)` in portable SQL (`ON CONFLICT` upsert, `$n` placeholders), passing the Item contract and `RunWorkspaceIsolation` on SQLite. `sqlite.NewItemRepository` goes, and its callers use the new one. Sample: `task test:init`.
 - [ ] 3. The workspace plan repository moves to `sqlstore.NewWorkspacePlanRepository(db)` in the same way, passing its contract suite on SQLite.
 

@@ -37,7 +37,7 @@ func TestSampleFiles(t *testing.T) {
 // goose refuses to run with no migrations, so removing the sample must leave
 // the SQLite store at least one migration of the template's own.
 func TestSampleFilesLeaveTheTemplateASQLiteMigration(t *testing.T) {
-	dir := "internal/adapters/storage/sqlite/migrations"
+	dir := "internal/adapters/storage/sqlstore/migrations"
 	entries, err := os.ReadDir(filepath.Join(repoRoot, dir))
 	if err != nil {
 		t.Fatal(err)

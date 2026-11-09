@@ -3,26 +3,22 @@
 //
 // Write-ahead logging and a busy timeout let several programs share one
 // database, so unlike jsonfile there is no lock on the data directory.
-// Schema changes are goose migrations embedded in the binary and applied
-// by Open.
+// Open brings the schema up to date with sqlstore's shared migrations.
 package sqlite
 
 import (
 	"context"
 	"database/sql"
-	"embed"
 	"fmt"
-	"io/fs"
 	"net/url"
 	"os"
 	"path/filepath"
 
 	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
-)
 
-//go:embed migrations/*.sql
-var migrations embed.FS
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlstore"
+)
 
 // Store owns the database connection. Repositories for individual domain
 // types are created from it.
@@ -48,7 +44,7 @@ func Open(dir string) (*Store, error) {
 	// is locked"; only other programs then contend for the lock. A query
 	// must therefore finish (close its rows) before the next one starts.
 	db.SetMaxOpenConns(1)
-	if err := migrate(db); err != nil {
+	if err := sqlstore.Migrate(context.Background(), db, goose.DialectSQLite3); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -69,40 +65,6 @@ func dsn(path string) string {
 	q.Add("_pragma", "busy_timeout(5000)")
 	q.Add("_pragma", "foreign_keys(1)")
 	return "file:" + filepath.ToSlash(path) + "?" + q.Encode()
-}
-
-func migrate(db *sql.DB) error {
-	sub, err := fs.Sub(migrations, "migrations")
-	if err != nil {
-		return fmt.Errorf("embedded migrations: %w", err)
-	}
-	provider, err := goose.NewProvider(goose.DialectSQLite3, db, sub)
-	if err != nil {
-		return fmt.Errorf("prepare migrations: %w", err)
-	}
-	ctx := context.Background()
-	if err := refuseNewer(ctx, provider); err != nil {
-		return err
-	}
-	if _, err := provider.Up(ctx); err != nil {
-		return fmt.Errorf("apply migrations: %w", err)
-	}
-	return nil
-}
-
-// refuseNewer fails if a newer app has migrated the database past the newest
-// migration this one embeds: its schema may not be one this app can use, so
-// Open changes nothing and stops.
-func refuseNewer(ctx context.Context, provider *goose.Provider) error {
-	current, err := provider.GetDBVersion(ctx)
-	if err != nil {
-		return fmt.Errorf("read database version: %w", err)
-	}
-	sources := provider.ListSources() // never empty: goose refuses to start with no migrations
-	if newest := sources[len(sources)-1].Version; current > newest {
-		return fmt.Errorf("the data was saved by a newer version of the app (database version %d, this app knows up to %d)", current, newest)
-	}
-	return nil
 }
 
 // Close closes the database.

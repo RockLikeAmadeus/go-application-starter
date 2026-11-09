@@ -78,7 +78,7 @@ internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --s
 internal/adapters/cli, tui       Cobra / Bubble Tea + Lip Gloss
 internal/adapters/desktop        desktop app wiring with no Wails import: data folder, storage, in-process handler
 internal/adapters/mobile         Android wiring on top of desktop's, no Wails import: the page handler and Serve, the API bridge
-internal/adapters/storage/*      memory, jsonfile, sqlite (goose migrations in sqlite/migrations), + storagetest contract suite
+internal/adapters/storage/*      memory, jsonfile, sqlite (goose migrations in sqlstore/migrations), + storagetest contract suite
 internal/adapters/workspace      ports.WorkspaceResolver: Local (the local edition's one workspace), FromContext (set with WithID)
 internal/adapters/plans          ports.EntitlementsProvider and ports.PlanCatalog from the plans file (plans.jsonc, built in; STARTER_PLANS_FILE replaces it); plans.StoredPlanOf reads stored plans
 internal/bootstrap               composition root: the only place that picks adapters
