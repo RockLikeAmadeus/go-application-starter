@@ -1,6 +1,6 @@
 # 5. Hosted and local editions share one core
 
-- Status: accepted. Workspaces (step 1), plan limits (step 2), plan features (step 3), plan changes (step 4) and SQLite (step 6) are built; the rest is planned. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
+- Status: accepted. Workspaces (step 1), plan limits (step 2), plan features (step 3), plan changes (step 4), plain text in a synced folder (step 5) and SQLite (step 6) are built; the rest is planned. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
 - Date: 2026-10-31
 
 ## Context
@@ -53,8 +53,15 @@ A product built from this template may be sold as a hosted service: many users, 
 ### Synced data folders: one device at a time
 
 - A local data folder may sit in a folder that a file-sync service (Dropbox, Syncthing, iCloud Drive, …) keeps in sync, as long as only one device uses it at a time.
-- **The app doesn't merge.** The plain-text format keeps one file per record, so any clash is limited to that record. The app reports the sync service's conflict copies, and warns, best effort, when another device seems to be using the folder.
-- SQLite can be corrupted by file-sync services, so the app warns when a SQLite folder looks synced.
+- **The app doesn't merge.** The plain-text format keeps one file per record, so any clash is limited to that record (ADR 3). The app reports the sync service's conflict copies, and warns, best effort, when another device seems to be using the folder.
+- **Plain text is never used in the hosted edition,** so a plain-text data folder only ever holds one workspace. The files need no folder per workspace, and nothing in them needs to perform well across many workspaces. `jsonfile` still takes the workspace on every call and passes the isolation suite, because the ports are shared.
+- **A conflict copy is a file that doesn't match its own key** (ADR 3). Every copy of the app warns about them on plain text, naming the files, whether or not the folder looks synced: a copy is itself the evidence, so `ignore_synced_folder` doesn't turn it off.
+- **Each device marks the folder in a file of its own,** `<data dir>/.devices/<device>.json`, holding the device and the time. One shared lock file would itself get a conflict copy when two devices rewrite it, in exactly the case we warn about. The device is the computer's name (`os.Hostname()`), so the desktop app and the CLI on one computer are one device, and two computers with the same name look like one. With no name, the app leaves no mark.
+- **A mark is written only when the folder looks synced:** `syncedfolder.Detect` finds a service and `ignore_synced_folder` is off. So the default folder, servers and the Android app make no background writes, and a sync setup we can't detect gets no warning. Every plain-text copy still reads other devices' marks.
+- **Timing:** the mark is renewed every minute and removed on closing (`App.Close`), and a mark five minutes old or more doesn't count, to allow for slow sync services. So a device that crashed or lost power stops counting by itself. Times are compared on this device's clock, so a skewed clock can miss or invent a warning.
+- **Both warnings are checked when the data is opened,** and go in `App.Warnings`, so every front end shows them with no new plumbing. A desktop app left open sees a new conflict copy the next time it opens.
+- **Where it lives:** the conflict copy scan is `jsonfile.Store.ConflictCopies`, since only it knows the layout. Marks are in `internal/adapters/syncedfolder` (`KeepMark`, `OtherDevices`), beside `Detect`, and `internal/bootstrap` composes them. Neither adapter imports the other. The local `.lock` still stops two programs on one computer.
+- SQLite can be corrupted by file-sync services, so the app warns when a SQLite folder looks synced. Marks are plain text only.
 - There is no sync between local and cloud data (ADR 4). For live use from several devices, use the hosted edition.
 
 Rejected:

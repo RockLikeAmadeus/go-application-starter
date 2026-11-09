@@ -14,6 +14,10 @@ paths:
 
 A new storage backend implements the `…Repository` ports and **must** run each one's contract suite from `storagetest` in its tests. Wire it in `internal/bootstrap`, including its readiness check (`App.Ready`, which answers the server's `/readyz`), as jsonfile's and sqlite's `Store.Ready` are. Readiness comes from storage, never from an entity's data.
 
+## jsonfile: one file per record (ADR 3)
+
+Each record is `<data dir>/<table>/<key>.json`, holding `{"version": 2, "key": …, "record": …}`, written through `writeRecord` (temp file, fsync, rename) and read with `readRecord` (one file, for a lookup) or `readRecords` (the whole table). Use these for a new entity, never a file of your own. A file whose key doesn't match its name is a sync service's conflict copy: reading skips it, `Store.ConflictCopies` lists it, and `bootstrap` warns about it. While a folder looks synced (and `ignore_synced_folder` is off), `bootstrap` keeps this device's mark in `.devices/` with `syncedfolder.KeepMark`, and warns about other devices' recent marks (`syncedfolder.OtherDevices`); `App.Close` removes the mark. Plain text is local edition only, so a data folder holds one workspace.
+
 ## jsonfile: the data directory lock
 
 The jsonfile adapter locks its data directory (`flock` on Unix, `LockFileEx` on Windows, nothing elsewhere; the `go-windows` CI job runs its tests on Windows, which nothing local can); sqlite doesn't (see below). The embedded CLI and TUI share the desktop app's data folder by default (`config.LocalDataDir`: `STARTER_DATA_DIR`, else the settings file's `data_dir`, else `~/.config/starter` on Linux; `starter info` prints it), so while the desktop app is open they fail fast with "Your data folder is in use by another program on this computer ({path}).", as does a second copy of the app. The server keeps `./data` (in the repository under `task dev`), so it doesn't clash with them; to reach its data, use `--server http://localhost:8080`. `task run:cli` and `task run:tui` use your real data folder, as `task run:desktop` does.

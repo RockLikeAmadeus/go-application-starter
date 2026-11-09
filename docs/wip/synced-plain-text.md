@@ -197,7 +197,8 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Refactor: `slices.Contains` replaces the loop in the "this device" step. The init suite wasn't run: only template steps changed.
 
 Finish:
-- [ ] 15. Docs: ADR 3 (layout, version 2, what "one file per domain type" became, a rough record count from task 8d), ADR 5 (plain text is never used in the hosted edition, and any other detail that changed), `docs/data-locations.md` (including `workspace_plans.json` and the iCloud limit), `docs/configuration.md` (`ignore_synced_folder` also stops the mark), `.claude/rules/storage.md`, the `jsonfile` package comment.
+- [x] 15. Docs: ADR 3 (layout, version 2, what "one file per domain type" became, a rough record count from task 8d), ADR 5 (plain text is never used in the hosted edition, and any other detail that changed), `docs/data-locations.md` (including `workspace_plans.json` and the iCloud limit), `docs/configuration.md` (`ignore_synced_folder` also stops the mark), `.claude/rules/storage.md`, the `jsonfile` package comment.
+  - Red: none, and no green: docs only. Done as listed, plus the `jsonfile` line of `docs/workspaces.md`, which still named `lookup`. The plan's step 5 waits for task 16.
 - [ ] 16. Run `task test:init`, `task check` and `task accept`, remove `@wip`, delete this file, and mark step 5 done in the plan.
 
 Run the init suite at tasks 5b, 7d, 7e, 9 and 10 too: they add code next to the sample's. Until task 16, `task test:init` itself is red: its `go test ./test/...` has no tag filter, so the undefined `@wip` steps fail in strict mode. So copy the working tree to the scratchpad, delete `features/synced-plain-text.feature`, commit in the copy, and run `go test ./scripts/initproject/acceptance/ -count=1 -timeout 30m` there. Task 16 runs it for real.

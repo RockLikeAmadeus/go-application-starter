@@ -1,14 +1,21 @@
-// Package jsonfile is a plain-text storage adapter that keeps one JSON file
-// per domain type ("one file ≈ one table") inside a data directory:
+// Package jsonfile is a plain-text storage adapter that keeps each domain type
+// in a folder of a data directory, much like a table, and each record in its
+// own JSON file there:
 //
-//	<dir>/<table>.json   {"version": 1, "records": {"<key>": {...}, ...}}
-//	<dir>/.lock          advisory lock held while a Store is open
+//	<dir>/<table>/<key>.json   {"version": 2, "key": "<key>", "record": {...}}
+//	<dir>/.lock                advisory lock held while a Store is open
+//
+// The file name is the escaped key. A file whose key doesn't match its name is
+// a file sync service's conflict copy: reading a table skips it, and
+// Store.ConflictCopies lists it.
 //
 // Every record belongs to a workspace, and repositories only return records
-// in the workspace they are asked about.
+// in the workspace they are asked about. Plain text is only used by the local
+// edition, so a data directory holds one workspace's records.
 //
 // Trade-offs (see docs/adr/0003-plain-text-storage.md):
-//   - every write rewrites the whole file, so it suits small datasets;
+//   - a write touches only its record's file, but listing a table opens every
+//     file in it, so it suits small datasets (roughly 10,000 records);
 //   - only one process may open a data directory at a time (enforced by the
 //     lock file), so do not run more than one server instance per volume.
 package jsonfile

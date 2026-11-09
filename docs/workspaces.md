@@ -101,7 +101,7 @@ Every use case opens with the same resolve-or-return block, before any other cal
 Each adapter keeps the workspace with the record and checks it on every lookup:
 
 - **memory:** a `lookup(workspace, id)` helper that treats a record in another workspace as missing, used by `FindByID` and `Delete`; `FindAll` keeps only the workspace's records.
-- **jsonfile:** the on-disk record gets a `workspaceId` field, and the same `lookup` and filter run over the records.
+- **jsonfile:** the on-disk record gets a `workspaceId` field. `FindByID` and `Delete` read the one record with `readRecord` and treat another workspace's as missing (the sample's `workspaceRecord`), and `FindAll` keeps only the workspace's records from `readRecords`.
 - **sqlite:** a new goose migration in `internal/adapters/storage/sqlite/migrations/` (the next number) creating the table, with a `workspace_id` column in the primary key (`PRIMARY KEY (workspace_id, id)`), `WHERE workspace_id = ?` on **every** query, including updates and deletes, and the workspace in any unique index that should be per workspace (`UNIQUE (workspace_id, name)`). Item's `00002_items.sql` and `item_repository.go` are the pattern.
 
 Then run the isolation suite from the adapter's contract tests:
