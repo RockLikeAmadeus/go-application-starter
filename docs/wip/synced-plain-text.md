@@ -179,7 +179,10 @@ Marks (`syncedfolder`, then `bootstrap`):
   - Red: `TestApp_MarksAPlainTextFolderThatLooksSynced` failed: no device had a mark, want this computer.
   - Green: `markFolder` writes this device's mark once on opening plain text, with no check yet that the folder looks synced (14b, 14c) and no renewing or removal (14d). With no computer name it leaves no mark.
   - Refactor: nothing. `markFolder` is short, and the test's `.dropbox` setup, also in the SQLite test, is left until 14c shows whether a helper fits. The init suite ran on a copy.
-- [ ] 14b. A folder that doesn't look synced gets no mark.
+- [x] 14b. A folder that doesn't look synced gets no mark.
+  - Red: `TestApp_LeavesNoMarkInAFolderThatDoesNotLookSynced` failed: this computer had a mark in a folder with no sync service.
+  - Green: `markFolder` returns before marking unless `syncedfolder.Detect` finds a service.
+  - Refactor: only `markFolder`'s doc comment, which now says it marks only a folder that looks synced. The `.dropbox` setup is left until 14c shows whether a helper fits.
 - [ ] 14c. `ignore_synced_folder` means no mark.
 - [ ] 14d. The mark is renewed every minute, and `App.Close` stops it before the store closes.
 - [ ] 14e. Define the mark steps; turns the last 4 scenarios green.

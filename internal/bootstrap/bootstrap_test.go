@@ -484,6 +484,25 @@ func TestApp_MarksAPlainTextFolderThatLooksSynced(t *testing.T) {
 	}
 }
 
+// Only a folder that looks synced is marked, so the default folder, servers
+// and Android have no background writes.
+func TestApp_LeavesNoMarkInAFolderThatDoesNotLookSynced(t *testing.T) {
+	if _, err := os.Hostname(); err != nil {
+		t.Skipf("this computer's name can't be read, so no mark is left anyway: %v", err)
+	}
+	dir := filepath.Join(t.TempDir(), "data")
+
+	a, err := bootstrap.New(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	if got := syncedfolder.OtherDevices(dir, "another-device", time.Now()); len(got) != 0 {
+		t.Errorf("devices with a mark = %q, want none", got)
+	}
+}
+
 // A scan that fails can't say there are no conflict copies, so plain text says
 // it couldn't look, and the app still opens: the scan guards the data rather
 // than being needed to reach it.

@@ -228,9 +228,13 @@ func otherDeviceWarning(cfg config.Config) (string, bool) {
 		"changes: please close the application on your other devices before continuing.", true
 }
 
-// markFolder leaves this device's mark in the data folder. If this computer's
-// name can't be read, it leaves none.
+// markFolder leaves this device's mark in the data folder, but only when the
+// folder looks synced, so an unsynced folder gets no background writes. If this
+// computer's name can't be read, it leaves none.
 func markFolder(cfg config.Config) {
+	if _, ok := syncedfolder.Detect(cfg.DataDir); !ok {
+		return
+	}
 	device, err := os.Hostname()
 	if err != nil {
 		return
