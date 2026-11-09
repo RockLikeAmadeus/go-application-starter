@@ -179,7 +179,7 @@ func startSQLite() (*harness, error) {
 		store.Close()
 		os.RemoveAll(dir)
 	}
-	if err := h.usePlans(sqlite.NewWorkspacePlanRepository(store), workspace.FromContext{}); err != nil {
+	if err := h.usePlans(sqlstore.NewWorkspacePlanRepository(store.DB()), workspace.FromContext{}); err != nil {
 		h.cleanup()
 		return nil, err
 	}

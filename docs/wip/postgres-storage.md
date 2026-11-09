@@ -42,7 +42,10 @@ The shared SQL layer (on SQLite, so it runs without Postgres):
   - Red: `TestItemRepositoryContractOnSQLite` (sqlstore) failed every contract and isolation check against a stub repository.
   - Green: `sqlstore.ItemRepository` in portable SQL (`ON CONFLICT` upsert, `$n`, which modernc binds).
   - Refactor: `sqlite.ItemRepository` removed; `sqlite.Store.DB()` added, and bootstrap and the acceptance sqlite driver use `sqlstore.NewItemRepository(store.DB())`; UTC test moved to sqlstore, the two-stores test stays in sqlite; init manifest updated.
-- [ ] 3. The workspace plan repository moves to `sqlstore.NewWorkspacePlanRepository(db)` in the same way, passing its contract suite on SQLite.
+- [x] 3. The workspace plan repository moves to `sqlstore.NewWorkspacePlanRepository(db)` in the same way, passing its contract suite on SQLite.
+  - Red: `TestWorkspacePlanRepositoryContractOnSQLite` (sqlstore) failed every contract check against a stub repository.
+  - Green: `sqlstore.WorkspacePlanRepository` in portable SQL (`ON CONFLICT` upsert, `$n`).
+  - Refactor: `sqlite.WorkspacePlanRepository` and its contract test removed; the acceptance sqlite driver uses `sqlstore.NewWorkspacePlanRepository(store.DB())`; the reopen test stays in sqlite on the shared repository.
 
 The Postgres adapter:
 - [ ] 4. `postgres.Open(ctx, url)` connects through pgx and brings the schema up to date with `sqlstore.Migrate`, and `postgrestest.NewDatabase(t)` gives each test a fresh database (skipping without `STARTER_TEST_DATABASE_URL`). Add the compose `postgres` service, `task db:up` and `task db:down`, and Docker in README Prerequisites (`task setup`, Gotchas).
