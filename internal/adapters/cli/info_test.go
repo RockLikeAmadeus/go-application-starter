@@ -177,6 +177,22 @@ func TestCommandsUseTheLocalSettingsFile(t *testing.T) {
 	}
 }
 
+func TestCommandsCreateTheDefaultSettingsFileWhenThereIsNone(t *testing.T) {
+	settings := t.TempDir()
+	local := filepath.Join(settings, "starter")
+
+	if _, err := runCLIWith(t, computer(settings, nil), "--storage", "memory", "info"); err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(local, "config.toml"))
+	if err != nil {
+		t.Fatalf("read the settings file: %v", err)
+	}
+	if want := config.DefaultSettingsFileText(local); string(got) != want {
+		t.Errorf("settings file =\n%s\nwant the default one:\n%s", got, want)
+	}
+}
+
 func TestConfigNamesTheSettingsFileForOneCommand(t *testing.T) {
 	data := filepath.Join(t.TempDir(), "work-data")
 	file := filepath.Join(t.TempDir(), "work.toml")
@@ -207,17 +223,25 @@ func TestInfoNamesTheSettingsFile(t *testing.T) {
 	file := filepath.Join(t.TempDir(), "work.toml")
 	writeSettings(t, file, `storage = "memory"`)
 
+	// A settings folder the default settings file can't be created in.
+	readOnly := t.TempDir()
+	if err := os.Chmod(readOnly, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(readOnly, 0o700) })
+
 	tests := []struct {
-		name string
-		args []string
-		want string
+		name     string
+		settings string
+		args     []string
+		want     string
 	}{
-		{"named with --config", []string{"--config", file}, "Settings file: " + file + "\n"},
-		{"none", nil, "Settings file: none\n"},
+		{"named with --config", t.TempDir(), []string{"--config", file}, "Settings file: " + file + "\n"},
+		{"none, when the default one can't be created", readOnly, nil, "Settings file: none\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out, err := runCLI(t, append(tt.args, "--storage", "memory", "info")...)
+			out, err := runCLIWith(t, computer(tt.settings, nil), append(tt.args, "--storage", "memory", "info")...)
 			if err != nil {
 				t.Fatalf("info: %v", err)
 			}

@@ -42,13 +42,58 @@ func LocalConfigFile(env Env) (string, error) {
 	if file := env.Getenv("STARTER_CONFIG_FILE"); file != "" {
 		return file, nil
 	}
-	configDir, err := env.UserConfigDir()
+	file, err := defaultSettingsFile(env)
 	if err != nil {
 		return "", err
 	}
-	file := filepath.Join(configDir, appFolder, "config.toml")
 	if _, err := os.Stat(file); errors.Is(err, fs.ErrNotExist) {
 		return "", nil
 	}
 	return file, nil
+}
+
+// CreateDefaultSettingsFile writes DefaultSettingsFileText, for the default
+// data folder (the app's folder in the user's settings folder), to the
+// default settings file, making the app's folder. It never overwrites a
+// settings file that's already there, and does nothing when
+// STARTER_CONFIG_FILE names another one. When it can't find the settings
+// folder, make the app's folder or write the file, it carries on silently:
+// the program runs on the built-in settings, and the next run tries again.
+func CreateDefaultSettingsFile(env Env) {
+	if env.Getenv("STARTER_CONFIG_FILE") != "" {
+		return
+	}
+	file, err := defaultSettingsFile(env)
+	if err != nil {
+		return
+	}
+	appDir := filepath.Dir(file)
+	if err := os.MkdirAll(appDir, 0o755); err != nil {
+		return
+	}
+	_ = writeNewFile(file, DefaultSettingsFileText(appDir))
+}
+
+// writeNewFile writes text to file only if there is no file there yet, so it
+// never overwrites one, even another program's written at the same moment.
+func writeNewFile(file, text string) error {
+	f, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.WriteString(text); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
+}
+
+// defaultSettingsFile is config.toml in the app's folder in the user's
+// settings folder.
+func defaultSettingsFile(env Env) (string, error) {
+	configDir, err := env.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(configDir, appFolder, "config.toml"), nil
 }

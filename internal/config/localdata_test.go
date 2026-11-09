@@ -107,3 +107,98 @@ func TestWithoutTheDefaultSettingsFileThereIsNone(t *testing.T) {
 		t.Errorf("LocalConfigFile = %q, want none", got)
 	}
 }
+
+func TestTheDefaultSettingsFileIsCreatedWhenMissing(t *testing.T) {
+	settings := t.TempDir()
+	env := config.Env{Getenv: envOf(nil), UserConfigDir: configDirAt(settings)}
+
+	config.CreateDefaultSettingsFile(env)
+
+	got, err := os.ReadFile(filepath.Join(settings, "starter", "config.toml"))
+	if err != nil {
+		t.Fatalf("read the settings file: %v", err)
+	}
+	if want := config.DefaultSettingsFileText(filepath.Join(settings, "starter")); string(got) != want {
+		t.Errorf("settings file =\n%s\nwant\n%s", got, want)
+	}
+}
+
+func TestTheDefaultSettingsFileIsNeverOverwritten(t *testing.T) {
+	settings := t.TempDir()
+	file := filepath.Join(settings, "starter", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const mine = "storage = \"memory\"\n"
+	if err := os.WriteFile(file, []byte(mine), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := config.Env{Getenv: envOf(nil), UserConfigDir: configDirAt(settings)}
+
+	config.CreateDefaultSettingsFile(env)
+
+	got, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatalf("read the settings file: %v", err)
+	}
+	if string(got) != mine {
+		t.Errorf("settings file =\n%s\nwant it left as\n%s", got, mine)
+	}
+}
+
+func TestNoDefaultSettingsFileIsCreatedWhenStarterConfigFileNamesOne(t *testing.T) {
+	settings := t.TempDir()
+	named := filepath.Join(t.TempDir(), "settings.toml")
+	env := config.Env{
+		Getenv:        envOf(map[string]string{"STARTER_CONFIG_FILE": named}),
+		UserConfigDir: configDirAt(settings),
+	}
+
+	config.CreateDefaultSettingsFile(env)
+
+	for _, file := range []string{filepath.Join(settings, "starter", "config.toml"), named} {
+		if _, err := os.Stat(file); !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("%s was created (Stat: %v), want nothing created", file, err)
+		}
+	}
+}
+
+func TestTheDefaultSettingsFileCarriesOnWhenItCantWrite(t *testing.T) {
+	settings := t.TempDir()
+	// A file where the app's folder should be, so nothing can be written there.
+	blocker := filepath.Join(settings, "starter")
+	const mine = "not a folder\n"
+	if err := os.WriteFile(blocker, []byte(mine), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := config.Env{Getenv: envOf(nil), UserConfigDir: configDirAt(settings)}
+
+	config.CreateDefaultSettingsFile(env)
+
+	got, err := os.ReadFile(blocker)
+	if err != nil {
+		t.Fatalf("read the file in the app's folder's place: %v", err)
+	}
+	if string(got) != mine {
+		t.Errorf("file in the app's folder's place =\n%s\nwant it left as\n%s", got, mine)
+	}
+}
+
+func TestTheDefaultSettingsFileCarriesOnWithoutASettingsFolder(t *testing.T) {
+	// Without a settings folder, a relative path like starter/config.toml
+	// would land in the working directory, so watch an empty one.
+	workDir := t.TempDir()
+	t.Chdir(workDir)
+	errNoHome := errors.New("neither $XDG_CONFIG_HOME nor $HOME are defined")
+	env := config.Env{Getenv: envOf(nil), UserConfigDir: func() (string, error) { return "", errNoHome }}
+
+	config.CreateDefaultSettingsFile(env)
+
+	entries, err := os.ReadDir(workDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		t.Errorf("%s was created in the working directory, want nothing created", entry.Name())
+	}
+}

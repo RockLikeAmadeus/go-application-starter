@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -27,14 +28,14 @@ func (w *world) mySettingsFileChoosesTheDataFolder(name string) error {
 	if w.local == nil {
 		return errNoLocalComputer
 	}
-	return w.local.addSetting("data_dir", filepath.Join(w.local.dir, name))
+	return w.local.setSetting("data_dir", filepath.Join(w.local.dir, name))
 }
 
 func (w *world) mySettingsFileHasTheSetting(key, value string) error {
 	if w.local == nil {
 		return errNoLocalComputer
 	}
-	return w.local.addSetting(key, value)
+	return w.local.setSetting(key, value)
 }
 
 func (w *world) iStartWithTheDataFolderInTheEnvironment(name string) error {
@@ -77,19 +78,23 @@ func (c *localComputer) settingsFile() string {
 	return filepath.Join(c.dir, "settings", "starter", "config.toml")
 }
 
-// addSetting adds key = "value" to the settings file, creating it if needed.
-func (c *localComputer) addSetting(key, value string) error {
+// setSetting sets key = "value" in the settings file, replacing the key's
+// line if the file already has one, and creating the file if needed.
+func (c *localComputer) setSetting(key, value string) error {
 	path := c.settingsFile()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
+	text, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	if _, err := fmt.Fprintf(f, "%s = %s\n", key, strconv.Quote(value)); err != nil {
-		f.Close()
-		return err
+	line := fmt.Sprintf("%s = %s", key, strconv.Quote(value))
+	keyLine := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + `\s*=.*$`)
+	if keyLine.Match(text) {
+		text = keyLine.ReplaceAllLiteral(text, []byte(line))
+	} else {
+		text = append(text, line+"\n"...)
 	}
-	return f.Close()
+	return os.WriteFile(path, text, 0o644)
 }

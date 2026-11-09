@@ -25,7 +25,7 @@ func (w *world) theDesktopAppKeepsItsDataInSQLite() error {
 	if w.local == nil || w.reopen == nil {
 		return errNoLocalComputer
 	}
-	if err := w.local.addSetting("storage", string(sqliteStorage)); err != nil {
+	if err := w.local.setSetting("storage", string(sqliteStorage)); err != nil {
 		return err
 	}
 	return w.reopen()
