@@ -102,7 +102,10 @@ Settings and wiring:
   - Red: `TestNewEmbedded_RefusesPostgresWithNoDatabaseURL` failed: `read database version: failed to connect to` a default local socket.
   - Green: the `StoragePostgres` case returns the agreed error when `cfg.DatabaseURL` is empty, before opening anything.
   - Refactor: nothing worth changing. One caller, so the sentence stays beside its check.
-- [ ] 9d. `starter info` on `postgres` says where the data is, rather than a folder: `dataLocation` in `internal/adapters/cli/info.go` knows only folders, a server and memory, so it would print `Data folder: ./data` (user-facing: agree the wording first).
+- [x] 9d. `starter info` on `postgres` says where the data is, rather than a folder: `dataLocation` in `internal/adapters/cli/info.go` knows only folders, a server and memory, so it would print `Data folder: ./data` (wording agreed with the user: `Data: kept in the Postgres database at database_url`).
+  - Red: `TestInfoWithPostgresStorageNamesTheSettingAndNotTheURL` failed: `info` printed `Data folder: …` on `postgres`.
+  - Green: `dataLocation` has a `StoragePostgres` case printing the agreed line, with nothing from the URL.
+  - Refactor: comments only (`newInfoCmd`, `dataLocation`), to name the Postgres case; the switch is still clearer than a table.
 - [ ] 10. `desktop.Open` refuses `storage = "postgres"` (user-facing: agree the wording first).
 
 Acceptance and CI:

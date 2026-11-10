@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
@@ -160,6 +162,28 @@ func TestInfoWithMemoryStorageSaysTheDataIsNotSaved(t *testing.T) {
 	}
 	if !strings.Contains(out, "Data: kept in memory, not saved") || strings.Contains(out, "Data folder") {
 		t.Errorf("info output doesn't say the data is kept in memory:\n%s", out)
+	}
+}
+
+func TestInfoWithPostgresStorageNamesTheSettingAndNotTheURL(t *testing.T) {
+	databaseURL := postgrestest.NewDatabase(t)
+	env := computer(t.TempDir(), map[string]string{"STARTER_DATABASE_URL": databaseURL})
+
+	out, err := runCLIWith(t, env, "--storage", "postgres", "info")
+	if err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	if !strings.Contains(out, "Data: kept in the Postgres database at database_url\n") || strings.Contains(out, "Data folder") {
+		t.Errorf("info output doesn't say the data is in Postgres:\n%s", out)
+	}
+	parsed, err := url.Parse(databaseURL)
+	if err != nil {
+		t.Fatalf("database URL: %v", err)
+	}
+	// The whole user:password pair: the test server's password is the word
+	// "postgres", which the output contains anyway as the storage setting.
+	if strings.Contains(out, databaseURL) || (parsed.User != nil && strings.Contains(out, parsed.User.String())) {
+		t.Errorf("info output shows the database URL or its password:\n%s", out)
 	}
 }
 
