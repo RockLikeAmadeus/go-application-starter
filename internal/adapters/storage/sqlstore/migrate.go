@@ -12,20 +12,34 @@ import (
 	"io/fs"
 
 	"github.com/pressly/goose/v3"
+	"github.com/pressly/goose/v3/lock"
 )
 
 //go:embed migrations/*.sql
 var migrations embed.FS
 
+// A server waiting for another's migration lock tries again every second, for
+// up to five minutes: goose's limit, at a shorter interval than its default of
+// five seconds, so that a waiting server starts sooner.
+const (
+	lockPollSeconds = 1
+	lockPollCount   = 300
+)
+
 // Migrate brings db's schema up to date with the shared migrations. It
 // refuses a database whose version is newer than the newest migration, and
-// then changes nothing.
+// then changes nothing. On Postgres it holds a session lock while it works, so
+// that servers starting at once don't race.
 func Migrate(ctx context.Context, db *sql.DB, dialect goose.Dialect) error {
 	sub, err := fs.Sub(migrations, "migrations")
 	if err != nil {
 		return fmt.Errorf("embedded migrations: %w", err)
 	}
-	provider, err := goose.NewProvider(dialect, db, sub)
+	options, err := lockOptions(dialect)
+	if err != nil {
+		return fmt.Errorf("prepare migration lock: %w", err)
+	}
+	provider, err := goose.NewProvider(dialect, db, sub, options...)
 	if err != nil {
 		return fmt.Errorf("prepare migrations: %w", err)
 	}
@@ -36,6 +50,20 @@ func Migrate(ctx context.Context, db *sql.DB, dialect goose.Dialect) error {
 		return fmt.Errorf("apply migrations: %w", err)
 	}
 	return nil
+}
+
+// lockOptions makes servers starting at once on one Postgres database take
+// turns to migrate it. SQLite needs no lock: its busy timeout makes writers
+// wait.
+func lockOptions(dialect goose.Dialect) ([]goose.ProviderOption, error) {
+	if dialect != goose.DialectPostgres {
+		return nil, nil
+	}
+	locker, err := lock.NewPostgresSessionLocker(lock.WithLockTimeout(lockPollSeconds, lockPollCount))
+	if err != nil {
+		return nil, err
+	}
+	return []goose.ProviderOption{goose.WithSessionLocker(locker)}, nil
 }
 
 // refuseNewer fails if a newer app has migrated the database past the newest

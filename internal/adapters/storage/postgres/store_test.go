@@ -3,6 +3,7 @@ package postgres_test
 import (
 	"database/sql"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres"
@@ -50,6 +51,34 @@ func TestOpenRefusesADatabaseSavedByANewerVersionOfTheApp(t *testing.T) {
 	}
 	if after := migrationRecords(t, db); after != before {
 		t.Errorf("migration records = %d after the refusal, %d before; want no change", after, before)
+	}
+}
+
+func TestOpenSucceedsForSeveralServersStartingAtOnceOnAFreshDatabase(t *testing.T) {
+	const serverCount = 16
+	databaseURL := postgrestest.NewDatabase(t)
+
+	start := make(chan struct{})
+	openErrors := make([]error, serverCount)
+	var servers sync.WaitGroup
+	for server := range serverCount {
+		servers.Go(func() {
+			<-start
+			store, err := postgres.Open(t.Context(), databaseURL)
+			if err != nil {
+				openErrors[server] = err
+				return
+			}
+			store.Close()
+		})
+	}
+	close(start)
+	servers.Wait()
+
+	for server, err := range openErrors {
+		if err != nil {
+			t.Errorf("server %d: Open: %v", server, err)
+		}
 	}
 }
 

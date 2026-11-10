@@ -68,7 +68,10 @@ The Postgres adapter:
   - Red: `TestStoreIsReadyOnlyWhileItsDatabaseCanBeReached` failed with "Ready error = nil while connections are blocked".
   - Green: `Ready` pings with the caller's context; `postgrestest` gained `BlockConnections` and `AllowConnections`.
   - Refactor: `NewDatabase` and `openServerOf` share `openServer`; production `Ready` is one line, so nothing else was worth changing.
-- [ ] 7a. On Postgres, `sqlstore.Migrate` takes goose's session lock, so servers starting at once on one unmigrated database don't race: several concurrent `postgres.Open` calls on a fresh database all succeed. SQLite stays as it is.
+- [x] 7a. On Postgres, `sqlstore.Migrate` takes goose's session lock, so servers starting at once on one unmigrated database don't race: several concurrent `postgres.Open` calls on a fresh database all succeed. SQLite stays as it is.
+  - Red: `TestOpenSucceedsForSeveralServersStartingAtOnceOnAFreshDatabase` failed with "partial migration error … relation \"items\" already exists" (16 servers: 30 of 30 runs; 8 servers failed only 14 of 20).
+  - Green: `Migrate` adds goose's Postgres session locker for `goose.DialectPostgres`.
+  - Refactor: the dialect branch moved to `lockOptions`; the lock is polled every second, keeping goose's 5-minute limit (the test went from 75s to 15s).
 
 Settings and wiring:
 - [ ] 8. `config.StoragePostgres` and the `database_url` setting (`STARTER_DATABASE_URL`): in `envVars`, `Load`, `Config.Settings`, the `serverOnly` list, and `docs/configuration.md`. The unrecognized-storage error lists `postgres` (user-facing: agree the wording first). Add the template-user step to TODO.md.
