@@ -112,7 +112,11 @@ Settings and wiring:
   - Refactor: the doc comment on `Open` now names the refusal. One caller, so the sentence stays beside its check.
 
 Acceptance and CI:
-- [ ] 11. A `postgres` acceptance driver runs every business scenario on Postgres, with a fresh database per scenario, and is left out with a note when the URL is unset. The server driver leaves out `@postgres` then, too. Steps for the three readiness scenarios turn them green.
+- [x] 11. A `postgres` acceptance driver runs every business scenario on Postgres, with a fresh database per scenario, and is left out with a note when the URL is unset. The server driver leaves out `@postgres` then, too.
+  - Red: `TestPostgresScenariosRunOnlyWhenThereIsADatabaseServer` failed with `no driver named "postgres"`.
+  - Green: `driversFor(t, serverURL)` replaces the `drivers` table and adds `startPostgres`, one database per scenario; `TestFeatures` skips a driver with a `skipReason`.
+  - Refactor: the shared sqlstore wiring of `startSQLite` and `startPostgres` moved to `harness.useSQLStore`.
+- [ ] 11b. Steps for the three readiness scenarios turn them green.
 - [ ] 12. Steps for "Servers sharing a Postgres database see each other's items": a second test server on the same database, items driven over each server's HTTP. Sample: `task test:init`.
 - [ ] 13. CI: a Postgres service container in the Go job, setting `STARTER_TEST_DATABASE_URL` for the unit and acceptance tests.
 
@@ -129,3 +133,4 @@ Acceptance and CI:
 - 2026-11-09: split 8b into 8b (read the setting) and 8b2 (hide its value), agreed with the user. `starter info` prints every setting in full, and a database URL usually holds a password.
 - 2026-11-09: split task 9 into 9 (open, readiness, `Close`: template code), 9b (the repositories: sample) and 9c (refuse a missing `database_url`), one test each.
 - 2026-11-09: split 9c into 9c (refuse a missing `database_url`) and 9d (`starter info` on Postgres, its note until now), agreed with the user. Each needs its own test, and 9d's wording is still to agree.
+- 2026-11-09: split task 11 into 11 (the `postgres` driver, and leaving it out without a URL) and 11b (the three readiness scenarios' steps), one test each.

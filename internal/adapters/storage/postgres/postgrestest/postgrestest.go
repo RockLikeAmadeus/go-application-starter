@@ -15,17 +15,17 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver
 )
 
-// serverURLVariable names the setting that points the tests at a server.
-const serverURLVariable = "STARTER_TEST_DATABASE_URL"
+// ServerURLVariable names the setting that points the tests at a server.
+const ServerURLVariable = "STARTER_TEST_DATABASE_URL"
 
 // NewDatabase creates an empty database with a random name, drops it when the
 // test ends, and returns its URL. It skips the test if the server URL is not
 // set, and fails it if the server cannot be reached.
 func NewDatabase(t testing.TB) string {
 	t.Helper()
-	serverURL := os.Getenv(serverURLVariable)
+	serverURL := os.Getenv(ServerURLVariable)
 	if serverURL == "" {
-		t.Skipf("%s is not set: skipping this Postgres test (task db:up starts a server)", serverURLVariable)
+		t.Skipf("%s is not set: skipping this Postgres test (task db:up starts a server)", ServerURLVariable)
 	}
 	server := openServer(t, serverURL)
 	name := randomName(t)
@@ -79,7 +79,7 @@ func openServerOf(t testing.TB, databaseURL string) (*sql.DB, string) {
 	if err != nil {
 		t.Fatalf("database URL: %v", err)
 	}
-	return openServer(t, os.Getenv(serverURLVariable)), strings.TrimPrefix(parsed.Path, "/")
+	return openServer(t, os.Getenv(ServerURLVariable)), strings.TrimPrefix(parsed.Path, "/")
 }
 
 // openServer connects to the test server at serverURL.
@@ -108,7 +108,7 @@ func databaseURL(t testing.TB, serverURL, name string) string {
 	t.Helper()
 	parsed, err := url.Parse(serverURL)
 	if err != nil {
-		t.Fatalf("%s is not a URL: %v", serverURLVariable, err)
+		t.Fatalf("%s is not a URL: %v", ServerURLVariable, err)
 	}
 	parsed.Path = "/" + name
 	return parsed.String()
