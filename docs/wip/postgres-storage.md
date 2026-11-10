@@ -106,7 +106,10 @@ Settings and wiring:
   - Red: `TestInfoWithPostgresStorageNamesTheSettingAndNotTheURL` failed: `info` printed `Data folder: …` on `postgres`.
   - Green: `dataLocation` has a `StoragePostgres` case printing the agreed line, with nothing from the URL.
   - Refactor: comments only (`newInfoCmd`, `dataLocation`), to name the Postgres case; the switch is still clearer than a table.
-- [ ] 10. `desktop.Open` refuses `storage = "postgres"` (user-facing: agree the wording first).
+- [x] 10. `desktop.Open` refuses `storage = "postgres"` (wording agreed with the user: `The storage setting is "postgres", but this application keeps its data on this device. Please use "jsonfile" or "sqlite".`).
+  - Red: `TestOpenRefusesPostgresStorage` failed: `Open` succeeded, silently falling back to jsonfile.
+  - Green: `OpenWithoutDefaultSettingsFile` returns the agreed error on `StoragePostgres`, before choosing a data folder, so the mobile app refuses too.
+  - Refactor: the doc comment on `Open` now names the refusal. One caller, so the sentence stays beside its check.
 
 Acceptance and CI:
 - [ ] 11. A `postgres` acceptance driver runs every business scenario on Postgres, with a fresh database per scenario, and is left out with a note when the URL is unset. The server driver leaves out `@postgres` then, too. Steps for the three readiness scenarios turn them green.

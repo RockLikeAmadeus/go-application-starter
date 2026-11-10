@@ -174,6 +174,23 @@ func TestOpenOnTheSettingsFilesSQLiteCanBeOpenedTwiceOnOneDataFolder(t *testing.
 	t.Cleanup(func() { _ = second.Close() })
 }
 
+// The desktop and mobile apps keep local data. They reach hosted data through
+// a server (remote mode), never the database.
+func TestOpenRefusesPostgresStorage(t *testing.T) {
+	settings := t.TempDir()
+	writeSettings(t, settings, `storage = "postgres"`)
+
+	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
+	if err == nil {
+		_ = app.Close()
+		t.Fatal("Open succeeded, want it to refuse Postgres storage")
+	}
+	want := `The storage setting is "postgres", but this application keeps its data on this device. Please use "jsonfile" or "sqlite".`
+	if err.Error() != want {
+		t.Errorf("Open error = %q, want %q", err, want)
+	}
+}
+
 func TestOpenUsesTheSettingsFilesPlansFile(t *testing.T) {
 	settings := t.TempDir()
 	plans := filepath.Join(t.TempDir(), "plans.jsonc")
