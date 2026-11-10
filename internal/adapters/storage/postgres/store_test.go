@@ -105,6 +105,26 @@ func TestStoreIsReadyOnlyWhileItsDatabaseCanBeReached(t *testing.T) {
 	}
 }
 
+func TestStoreIsReadyOnTheFirstProbeAfterAnOutage(t *testing.T) {
+	databaseURL := postgrestest.NewDatabase(t)
+	store, err := postgres.Open(t.Context(), databaseURL)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer store.Close()
+	// The pool now holds a connection, which the outage ends.
+	if err := store.Ready(t.Context()); err != nil {
+		t.Fatalf("Ready error = %v before the outage, want nil", err)
+	}
+
+	postgrestest.BlockConnections(t, databaseURL)
+	postgrestest.AllowConnections(t, databaseURL)
+
+	if err := store.Ready(t.Context()); err != nil {
+		t.Errorf("Ready error = %v on the first probe after the outage, want nil", err)
+	}
+}
+
 // openDirectly opens the database the way another program would, closed when
 // the test ends.
 func openDirectly(t *testing.T, databaseURL string) *sql.DB {

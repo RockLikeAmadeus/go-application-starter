@@ -120,7 +120,10 @@ Acceptance and CI:
   - Red: `TestServerReadinessFollowsItsPostgresDatabase` failed with `readiness = 200 "ready", want 503` (the steps were stubs).
   - Green: `postgres_steps.go` binds the three steps, the server driver's `testServer` gets a database URL and a per-scenario cleanup. "Ready again" stays red until 11c.
   - Refactor: nothing worth changing.
-- [ ] 11c. `postgres.Store.Ready` is ready on the first probe after an outage: a store test with no `Ready` between blocking and allowing connections, and `Ready` retrying the ping on `driver.ErrBadConn`, at most 3 attempts. Turns "ready again" green.
+- [x] 11c. `postgres.Store.Ready` is ready on the first probe after an outage: a store test with no `Ready` between blocking and allowing connections, and `Ready` retrying the ping on `driver.ErrBadConn`, at most 3 attempts. Turns "ready again" green.
+  - Red: `TestStoreIsReadyOnTheFirstProbeAfterAnOutage` failed: `Ready error = driver: bad connection on the first probe after the outage`.
+  - Green: `Ready` pings again while the ping answers `driver.ErrBadConn`, at most 3 attempts.
+  - Refactor: the 3 is `readyPingAttempts`, and `Ready`'s doc comment says why it pings again.
 - [ ] 12. Steps for "Servers sharing a Postgres database see each other's items": a second test server on the same database, items driven over each server's HTTP. Sample: `task test:init`.
 - [ ] 13. CI: a Postgres service container in the Go job, setting `STARTER_TEST_DATABASE_URL` for the unit and acceptance tests.
 

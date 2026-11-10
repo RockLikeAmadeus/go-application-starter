@@ -6,6 +6,8 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
+	"errors"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver
 	"github.com/pressly/goose/v3"
@@ -37,9 +39,23 @@ func (s *Store) DB() *sql.DB {
 	return s.db
 }
 
-// Ready reports whether the database can be reached.
+// readyPingAttempts bounds how many pings Ready makes while they land on dead
+// pooled connections.
+const readyPingAttempts = 3
+
+// Ready reports whether the database can be reached. After an outage the
+// pool may still hold connections the database ended, and a ping on one
+// answers driver.ErrBadConn without trying another, so Ready pings again,
+// up to readyPingAttempts times.
 func (s *Store) Ready(ctx context.Context) error {
-	return s.db.PingContext(ctx)
+	var err error
+	for range readyPingAttempts {
+		err = s.db.PingContext(ctx)
+		if !errors.Is(err, driver.ErrBadConn) {
+			return err
+		}
+	}
+	return err
 }
 
 // Close closes the database.
