@@ -119,7 +119,7 @@ func (c Config) Settings() []Setting {
 	}{
 		{"storage", string(c.Storage)},
 		{"data_dir", c.DataDir},
-		{"database_url", c.DatabaseURL},
+		{"database_url", hiddenIfSet(c.DatabaseURL)},
 		{"port", c.Port},
 		{"server_url", c.ServerURL},
 		{"log_format", c.LogFormat},
@@ -131,6 +131,15 @@ func (c Config) Settings() []Setting {
 		settings[i] = Setting{Key: v.key, Value: v.value, Source: c.Sources[v.key]}
 	}
 	return settings
+}
+
+// hiddenIfSet keeps a secret out of what Settings lists, while still showing
+// whether it is set. A database URL usually holds a password.
+func hiddenIfSet(secret string) string {
+	if secret == "" {
+		return ""
+	}
+	return "(hidden)"
 }
 
 func (c Config) Validate() error {

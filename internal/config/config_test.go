@@ -161,6 +161,27 @@ func TestDatabaseURLIsASettingReadFromTheEnvironment(t *testing.T) {
 	}
 }
 
+func TestSettingsHidesTheDatabaseURLOnlyWhenItIsSet(t *testing.T) {
+	const databaseURL = "postgres://starter:secret@db.example.com:5432/starter"
+	withURL, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_DATABASE_URL": databaseURL})}, "")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	withoutURL, err := config.Load(config.Env{Getenv: envOf(nil)}, "")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	wantHidden := config.Setting{Key: "database_url", Value: "(hidden)", Source: "environment (STARTER_DATABASE_URL)"}
+	if !listsSetting(withURL.Settings(), wantHidden) {
+		t.Errorf("Settings() = %v, want it to list %v", withURL.Settings(), wantHidden)
+	}
+	wantEmpty := config.Setting{Key: "database_url", Value: "", Source: "built in"}
+	if !listsSetting(withoutURL.Settings(), wantEmpty) {
+		t.Errorf("Settings() = %v, want it to list %v", withoutURL.Settings(), wantEmpty)
+	}
+}
+
 func TestAnUnknownStorageErrorReadsAsASentence(t *testing.T) {
 	_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_STORAGE": "disk"})}, "")
 

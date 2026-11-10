@@ -82,7 +82,10 @@ Settings and wiring:
   - Red: `TestDatabaseURLIsASettingReadFromTheEnvironment` failed with `DatabaseURL = ""` and no `database_url` in `Settings()`.
   - Green: `database_url` is in `envVars`, `Load` and `Config.Settings`, and in the `serverOnly` list.
   - Refactor: no code worth changing. Wrote the `docs/configuration.md` rows and example, and the TODO.md step.
-- [ ] 8b2. `Config.Settings` replaces a set `database_url` with `(hidden)`, so `starter info` prints `database_url = "(hidden)"  # environment (STARTER_DATABASE_URL)` (wording agreed with the user). An unset one stays `""`, and `Config.DatabaseURL` keeps the real URL. Update the `starter info` example if it shows one.
+- [x] 8b2. `Config.Settings` replaces a set `database_url` with `(hidden)`, so `starter info` prints `database_url = "(hidden)"  # environment (STARTER_DATABASE_URL)` (wording agreed with the user). An unset one stays `""`, and `Config.DatabaseURL` keeps the real URL. Update the `starter info` example if it shows one.
+  - Red: `TestSettingsHidesTheDatabaseURLOnlyWhenItIsSet` failed: `Settings()` listed the full URL.
+  - Green: `Config.Settings` lists `(hidden)` for a set `database_url`.
+  - Refactor: moved the rule into `hiddenIfSet`. The `starter info` example shows an unset URL, which stays right.
 - [ ] 8c. The unrecognized-storage error lists `postgres` (user-facing: agree the wording first).
 - [ ] 9. `bootstrap.NewEmbedded` on `postgres` opens `postgres.Open(cfg.DatabaseURL)` with the `sqlstore` repositories, readiness and `Close`, and refuses `postgres` with no `database_url` (user-facing: agree the wording first).
   - Note: `dataLocation` in `internal/adapters/cli/info.go` knows only folders, a server and memory, so it would print `Data folder: ./data` on Postgres.
