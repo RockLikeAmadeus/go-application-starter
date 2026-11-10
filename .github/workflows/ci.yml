@@ -20,6 +20,23 @@ jobs:
   go:
     name: Go (lint, unit, acceptance)
     runs-on: ubuntu-latest
+    # The database the Postgres tests run against, as `task db:up` starts it
+    # locally (docker-compose.yml). Every Go step gets the URL, so no
+    # Postgres test skips in CI.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 1s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      STARTER_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

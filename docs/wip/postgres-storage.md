@@ -128,7 +128,10 @@ Acceptance and CI:
   - Red: `TestServersSharingAPostgresDatabaseSeeEachOthersItems` failed: the stub "second server lists" step answered nil for an item never added.
   - Green: `shared_database_steps.go` (sample) starts a second `testServer` on the first one's database and drives items over each server's HTTP; `testServer.start` serves `Items`, in a sample block. All four `@wip` scenarios pass.
   - Refactor: `errors.New` for the fixed "no second server" error; nothing else worth changing. `task test:init` green.
-- [ ] 13. CI: a Postgres service container in the Go job, setting `STARTER_TEST_DATABASE_URL` for the unit and acceptance tests.
+- [x] 13. CI: a Postgres service container in the Go job, setting `STARTER_TEST_DATABASE_URL` for the unit and acceptance tests.
+  - Red: no red: CI config, which no test can demand; it gets checked on the PR's first CI run (agreed with the user).
+  - Green: skipped. The `go` job has a `postgres:17-alpine` service with a `pg_isready` health check, and a job-level `STARTER_TEST_DATABASE_URL`, so every Go step gets it.
+  - Refactor: nothing worth changing.
 
 - [ ] 14. Docs and finish:
   - Write a new ADR 8 (Postgres, the shared `sqlstore`, the test database), and update ADR 7 (migrations now in `sqlstore`) and ADR 5 if it names the hosted storage.
