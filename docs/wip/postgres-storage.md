@@ -90,7 +90,12 @@ Settings and wiring:
   - Red: `TestAnUnknownStorageErrorReadsAsASentence` failed: the error listed only three storages.
   - Green: `UnrecognizedStorageError` names `postgres`; the three other tests pinning the sentence follow.
   - Refactor: nothing worth changing. Left the list spelled out in the one sentence, as the log-format error does.
-- [ ] 9. `bootstrap.NewEmbedded` on `postgres` opens `postgres.Open(cfg.DatabaseURL)` with the `sqlstore` repositories, readiness and `Close`, and refuses `postgres` with no `database_url` (user-facing: agree the wording first).
+- [x] 9. `bootstrap.NewEmbedded` on `postgres` opens `postgres.Open(cfg.DatabaseURL)`, with its readiness and `Close`.
+  - Red: `TestNewEmbedded_OnPostgresIsReadyUntilClosed` failed with "The storage setting "postgres" is not recognized."
+  - Green: a `StoragePostgres` case opens the store and sets `a.close` and `a.ready`; `Items` has no repository until 9b.
+  - Refactor: nothing worth changing. The two lines shared with the sqlite case are clearer repeated than wrapped.
+- [ ] 9b. `bootstrap.NewEmbedded` on `postgres` uses the `sqlstore` repositories: items are still there after closing and reopening. Sample.
+- [ ] 9c. `bootstrap.NewEmbedded` refuses `postgres` with no `database_url` (user-facing: agree the wording first).
   - Note: `dataLocation` in `internal/adapters/cli/info.go` knows only folders, a server and memory, so it would print `Data folder: ./data` on Postgres.
 - [ ] 10. `desktop.Open` refuses `storage = "postgres"` (user-facing: agree the wording first).
 
@@ -110,3 +115,4 @@ Acceptance and CI:
 - 2026-11-09: added task 7a, agreed with the user. The task 4 cycle found that `sqlstore.Migrate` takes no lock, so servers starting together on an unmigrated database could race, and §4.17 promises several servers can share one.
 - 2026-11-09: split task 8 into 8 (accept `postgres`), 8b (`database_url`) and 8c (the error's wording), one test each.
 - 2026-11-09: split 8b into 8b (read the setting) and 8b2 (hide its value), agreed with the user. `starter info` prints every setting in full, and a database URL usually holds a password.
+- 2026-11-09: split task 9 into 9 (open, readiness, `Close`: template code), 9b (the repositories: sample) and 9c (refuse a missing `database_url`), one test each.

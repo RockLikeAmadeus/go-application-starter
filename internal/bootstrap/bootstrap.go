@@ -16,6 +16,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/plans"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlstore"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/syncedfolder"
@@ -110,6 +111,13 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		// sample:start
 		itemRepo = sqlstore.NewItemRepository(store.DB())
 		// sample:end
+	case config.StoragePostgres:
+		store, err := postgres.Open(context.Background(), cfg.DatabaseURL)
+		if err != nil {
+			return nil, err
+		}
+		a.close = store.Close
+		a.ready = store.Ready
 	default:
 		return nil, config.UnrecognizedStorageError(cfg.Storage)
 	}

@@ -15,6 +15,7 @@ import (
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/syncedfolder"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -64,6 +65,28 @@ func TestNewEmbedded_IsNotReadyOnceTheDataFolderIsRemoved(t *testing.T) {
 				t.Error("Ready error = nil, want an error once the data folder is gone")
 			}
 		})
+	}
+}
+
+// Postgres storage opens the configured database, answers readiness from it,
+// and lets it go on Close.
+func TestNewEmbedded_OnPostgresIsReadyUntilClosed(t *testing.T) {
+	databaseURL := postgrestest.NewDatabase(t)
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StoragePostgres, DatabaseURL: databaseURL})
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	if err := a.Ready(t.Context()); err != nil {
+		t.Fatalf("Ready error = %v before Close, want nil", err)
+	}
+
+	if err := a.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	if err := a.Ready(t.Context()); err == nil {
+		t.Error("Ready error = nil after Close, want an error")
 	}
 }
 
