@@ -39,14 +39,15 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 
 `cmd/server` reads its settings from the environment, over the settings file `STARTER_CONFIG_FILE` names, if any ([docs/configuration.md](configuration.md)):
 
-- `STARTER_STORAGE` (`storage` in the file) is `jsonfile` (the default), `sqlite` or `memory`.
+- `STARTER_STORAGE` (`storage` in the file) is `jsonfile` (the default), `sqlite`, `postgres` or `memory`.
+- `STARTER_DATABASE_URL` (`database_url`) is the database `postgres` connects to. There's no data folder then: the data is in that database ([ADR 8](adr/0008-postgres-storage.md)).
 - `STARTER_DATA_DIR` (`data_dir`) is the data folder, `./data` by default. That path is relative to the process's working folder, not to the binary, so start the server from the same place each time, or set an absolute path.
 
 **In Docker**, the image sets `STARTER_STORAGE=jsonfile` and `STARTER_DATA_DIR=/data`, and declares `/data` a volume. `docker-compose.yml` mounts the named volume `app-data` there, so the data survives `docker compose down` and rebuilds. Docker prefixes the volume's name with the Compose project's (`docker volume ls`), and `docker compose down -v` deletes it.
 
-**On Fly.io**, both apps mount the Fly volume `app_data` at `/data`. A Fly volume belongs to one machine, so run one machine per app, on `jsonfile` (because of the lock) or `sqlite` (which can't be shared between machines) alike.
+**On Fly.io**, both apps mount the Fly volume `app_data` at `/data`. A Fly volume belongs to one machine, so run one machine per app, on `jsonfile` (because of the lock) or `sqlite` (which can't be shared between machines) alike. On `postgres`, several machines can share one database.
 
-**Hosted edition (planned):** one server holds every workspace's data, in the same files, each record tagged with its workspace. The Postgres adapter (planned) will move this into a database server. The data folder then gives way to a connection string.
+**Hosted edition (planned):** the servers hold every workspace's data in one Postgres database, in the same tables, each record tagged with its workspace. The data folder gives way to `database_url`. The desktop and mobile apps refuse `postgres`: they keep their data on the device, and will reach hosted data through a server (remote mode, planned).
 
 ## The CLI and the TUI
 

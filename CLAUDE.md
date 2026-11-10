@@ -50,6 +50,7 @@ Never stage, commit, push or pull unless I explicitly ask. That includes `git ad
 | Unit tests (Go race + Vitest) | `task test` (`task test:go`, `task test:web`) |
 | One Go test | `go test ./internal/core/app/ -run TestName` |
 | Go benchmarks | `task bench` · narrow it: `task bench -- -bench ConflictCopies` (never run by `task check` or CI) |
+| Test database (Postgres) | `task db:up` (Postgres on :5432 for `STARTER_TEST_DATABASE_URL`; safe to re-run) · `task db:down`. Without the URL, Postgres tests skip |
 | Acceptance (Godog) | `task accept` · only WIP: `task accept -- --godog.tags=@wip` · one driver: `task accept -- -run 'TestFeatures/memory'` |
 | Browser e2e (playwright-bdd) | `task e2e` (builds the SPA and starts the Go server itself) |
 | Terminal journeys (Godog) | `task e2e:terminal` (builds `starter` and `server`, runs them in a pseudo-terminal; Unix only) · only WIP: `task e2e:terminal -- --godog.tags=@wip` |
@@ -78,13 +79,13 @@ internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --s
 internal/adapters/cli, tui       Cobra / Bubble Tea + Lip Gloss
 internal/adapters/desktop        desktop app wiring with no Wails import: data folder, storage, in-process handler
 internal/adapters/mobile         Android wiring on top of desktop's, no Wails import: the page handler and Serve, the API bridge
-internal/adapters/storage/*      memory, jsonfile, sqlite (goose migrations in sqlstore/migrations), + storagetest contract suite
+internal/adapters/storage/*      memory, jsonfile, sqlite, postgres; sqlstore (the SQL both share: goose migrations, repositories); storagetest contract suite
 internal/adapters/workspace      ports.WorkspaceResolver: Local (the local edition's one workspace), FromContext (set with WithID)
 internal/adapters/plans          ports.EntitlementsProvider and ports.PlanCatalog from the plans file (plans.jsonc, built in; STARTER_PLANS_FILE replaces it); plans.StoredPlanOf reads stored plans
 internal/bootstrap               composition root: the only place that picks adapters
 web/                             Vite + React + TS + Tailwind + TanStack Query; components every screen can use (e.g. `ErrorMessage`) go in web/src/components
 mobile/android                   Wails' generated Gradle project for the Android app (see docs/mobile.md)
-features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, sqlite, http, desktop, mobile and server drivers (tags pick drivers; see .claude/rules/testing.md)
+features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, sqlite, postgres, http, desktop, mobile and server drivers (tags pick drivers; see .claude/rules/testing.md)
 web/e2e                          playwright-bdd browser journeys
 test/terminal                    Godog terminal journeys: the built CLI and TUI (and a server for --server) in a pseudo-terminal; term is the terminal helper (Unix only)
 test/packaging                   package check: builds the Linux packages and the Windows setup program and inspects them (build tag `packaging`, `task test:package`)

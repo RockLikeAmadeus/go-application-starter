@@ -196,7 +196,7 @@ All data belongs to a workspace, so that when one server serves many users, nobo
 - Workspace Alpha has "Widget", and Beta has "Gadget" → Alpha lists only "Widget", and Beta only "Gadget".
 - Someone in Beta tries to rename or delete Alpha's "Widget" → they're told it wasn't found, and Alpha still has "Widget".
 
-**Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory, jsonfile and sqlite drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition.
+**Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory, jsonfile, sqlite and postgres drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition.
 <!-- sample:end -->
 
 ### 4.9 Plans, features and limits
@@ -232,7 +232,7 @@ Each workspace is on a **plan**, which turns **features** on or off and sets its
   - A workspace on the free plan tries to export → it's told "Item export is not included in your current plan. To use this feature, please upgrade to the pro plan." The web app shows the export button locked, with the note "Available on the pro plan". `starter --help` lists the command with "(not included in your current plan; available on the pro plan)", and `starter item export` refuses with the same message.
   - With item export hidden when off, a workspace on the free plan sees no export button, and `starter --help` doesn't list the command.
 
-**Specification:** [`features/plans.feature`](features/plans.feature) (limits) and [`features/plan-features.feature`](features/plan-features.feature) (features). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile, sqlite and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
+**Specification:** [`features/plans.feature`](features/plans.feature) (limits) and [`features/plan-features.feature`](features/plan-features.feature) (features). These scenarios choose each workspace's plan, so they run only on the memory, jsonfile, sqlite, postgres and http drivers. The desktop and mobile apps are on the local plan ([`features/desktop.feature`](features/desktop.feature), [`features/mobile.feature`](features/mobile.feature)).
 <!-- sample:end -->
 
 ### 4.10 Tell when the server is ready
@@ -372,7 +372,7 @@ An admin can move a workspace to another plan, for example when its owner starts
 - An admin moves Alpha to the pro plan → Beta stays on the free plan.
 - A user runs `starter admin set-plan local pro` on their own computer → it fails with "The plan for the local edition is set when the application is built and cannot be changed."
 
-**Specification:** [`features/plan-changes.feature`](features/plan-changes.feature). The scenarios that move a workspace run on the memory, jsonfile, sqlite and http drivers; the one that switches between workspaces runs on memory, jsonfile and sqlite only; the local edition's refusal runs on the desktop driver. Keeping the plan after a restart is checked by each storage adapter's contract tests. The command's output and exit status are checked by a terminal journey ([`test/terminal/features/command-line.feature`](test/terminal/features/command-line.feature)).
+**Specification:** [`features/plan-changes.feature`](features/plan-changes.feature). The scenarios that move a workspace run on the memory, jsonfile, sqlite, postgres and http drivers; the one that switches between workspaces runs on memory, jsonfile, sqlite and postgres only; the local edition's refusal runs on the desktop driver. Keeping the plan after a restart is checked by each storage adapter's contract tests. The command's output and exit status are checked by a terminal journey ([`test/terminal/features/command-line.feature`](test/terminal/features/command-line.feature)).
 
 ### 4.16 Keep plain-text data in a synced folder
 

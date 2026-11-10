@@ -89,10 +89,13 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
 - The warning when SQLite's folder looks synced is deferred to a follow-up, now in TODO.md.
   - Done 2026-11-04 as that follow-up: every front end warns, naming the service, when SQLite's data folder looks synced by its path or marker files (`internal/adapters/syncedfolder`); `ignore_synced_folder` turns it off. [`features/synced-folder.feature`](../../features/synced-folder.feature).
 
-### 7. Postgres adapter — in progress
-SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-storage.feature) · [`docs/wip/postgres-storage.md`](../wip/postgres-storage.md).
-- For the hosted edition. It shares the schema with SQLite where possible, and is tested against a Postgres container in CI.
-- Agreed 2026-11-09: one source for both engines. The migrations and repositories move into a shared `sqlstore` package in portable SQL, and `sqlite` and `postgres` keep only opening, goose's dialect and readiness.
+### 7. Postgres adapter — done
+SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-storage.feature) · [ADR 8](../adr/0008-postgres-storage.md) · `internal/adapters/storage/postgres`, `internal/adapters/storage/sqlstore`.
+- Done 2026-11-10: `storage = "postgres"` with `database_url` (`STARTER_DATABASE_URL`, shown as `(hidden)` by `starter info`) keeps the data in Postgres (pgx, pure Go), on the server, the CLI and the TUI. A missing `database_url` is refused at start, and the desktop and Android apps refuse `postgres`.
+- One SQL layer for both engines: the goose migrations, `sqlstore.Migrate` and the repositories live in `sqlstore`, in SQL that SQLite and Postgres both run; `sqlite` and `postgres` keep only opening, goose's dialect and readiness. On Postgres, `Migrate` takes goose's session lock, so servers starting together don't race.
+- Readiness pings, and pings again on a dead pooled connection, so a server recovers on the first probe after an outage.
+- Tests read `STARTER_TEST_DATABASE_URL` (`task db:up` locally, a service container in CI) and skip without it; each test and scenario gets its own database. A new `postgres` acceptance driver runs every business scenario, and the server driver covers readiness, an outage and recovery, and two servers sharing a database.
+- ADR 5, ADR 7, `docs/workspaces.md`, `docs/configuration.md`, `docs/data-locations.md`, `.claude/rules/` and README are updated. `task test:init` passes.
 
 ### 8. Authentication — not started
 - This is the existing "Authentication behind a port" TODO item.
@@ -152,3 +155,5 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - 2026-11-06: step 4 finished. Its stored-plan wiring moved to step 8 here, since the task list that held it is gone. `task test:init` found a template step depending on the sample's `in` helper (from task 12c, which didn't run it), so `in` moved to `steps.go`.
 - 2026-11-06: step 5 started. The "lock file" became one mark per device (`.devices/<device>.json`), since two devices rewriting one file would make a conflict copy in exactly the case we warn about. A device writes its mark only when the folder looks synced, and both warnings are checked when the data is opened.
 - 2026-11-08: step 5 finished. Its task list split most tasks into one test each, added direct one-record reads with benchmarks (a question about the cost of opening many files), and moved the plans' records to one file per workspace. The by-hand check with two machines (Verification) is still to do.
+- 2026-11-09: step 7 started. Agreed: one source for the SQL, shared by SQLite and Postgres (`sqlstore`), rather than a second copy per engine, so a new entity is written once. The test database is a URL plus compose (`task db:up`), and the desktop and mobile apps refuse `postgres`, as they will reach hosted data through a server (step 10).
+- 2026-11-10: step 7 finished, recorded in ADR 8. Its task list split most tasks into one test each, and added a migration lock (servers starting together on an unmigrated database raced), hiding `database_url` in `starter info` (a URL usually holds a password), `starter info` naming the database rather than a folder, and a readiness retry on a dead pooled connection (the first probe after an outage answered 503).
