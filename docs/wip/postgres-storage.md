@@ -98,8 +98,11 @@ Settings and wiring:
   - Red: `TestNewEmbedded_OnPostgresKeepsItemsAfterClosingAndReopening` panicked on the first `CreateItem`: nil `ItemRepository` on `postgres`.
   - Green: the `StoragePostgres` case sets `itemRepo` to `sqlstore.NewItemRepository(store.DB())`, in a sample block.
   - Refactor: the SQLite and Postgres reopen tests share `assertKeepsItemsAfterClosingAndReopening`; production unchanged, as the sample block matches the sqlite case's.
-- [ ] 9c. `bootstrap.NewEmbedded` refuses `postgres` with no `database_url` (user-facing: agree the wording first).
-  - Note: `dataLocation` in `internal/adapters/cli/info.go` knows only folders, a server and memory, so it would print `Data folder: ./data` on Postgres.
+- [x] 9c. `bootstrap.NewEmbedded` refuses `postgres` with no `database_url` (wording agreed with the user: `The storage setting is "postgres", but the database_url setting is missing. Please set database_url in the settings file or the STARTER_DATABASE_URL environment variable.`).
+  - Red: `TestNewEmbedded_RefusesPostgresWithNoDatabaseURL` failed: `read database version: failed to connect to` a default local socket.
+  - Green: the `StoragePostgres` case returns the agreed error when `cfg.DatabaseURL` is empty, before opening anything.
+  - Refactor: nothing worth changing. One caller, so the sentence stays beside its check.
+- [ ] 9d. `starter info` on `postgres` says where the data is, rather than a folder: `dataLocation` in `internal/adapters/cli/info.go` knows only folders, a server and memory, so it would print `Data folder: ./data` (user-facing: agree the wording first).
 - [ ] 10. `desktop.Open` refuses `storage = "postgres"` (user-facing: agree the wording first).
 
 Acceptance and CI:
@@ -119,3 +122,4 @@ Acceptance and CI:
 - 2026-11-09: split task 8 into 8 (accept `postgres`), 8b (`database_url`) and 8c (the error's wording), one test each.
 - 2026-11-09: split 8b into 8b (read the setting) and 8b2 (hide its value), agreed with the user. `starter info` prints every setting in full, and a database URL usually holds a password.
 - 2026-11-09: split task 9 into 9 (open, readiness, `Close`: template code), 9b (the repositories: sample) and 9c (refuse a missing `database_url`), one test each.
+- 2026-11-09: split 9c into 9c (refuse a missing `database_url`) and 9d (`starter info` on Postgres, its note until now), agreed with the user. Each needs its own test, and 9d's wording is still to agree.

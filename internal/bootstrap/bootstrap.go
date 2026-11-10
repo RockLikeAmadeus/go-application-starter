@@ -112,6 +112,9 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		itemRepo = sqlstore.NewItemRepository(store.DB())
 		// sample:end
 	case config.StoragePostgres:
+		if cfg.DatabaseURL == "" {
+			return nil, errors.New(`The storage setting is "postgres", but the database_url setting is missing. Please set database_url in the settings file or the STARTER_DATABASE_URL environment variable.`)
+		}
 		store, err := postgres.Open(context.Background(), cfg.DatabaseURL)
 		if err != nil {
 			return nil, err

@@ -115,6 +115,18 @@ func TestNewEmbedded_AnUnknownStorageErrorReadsAsASentence(t *testing.T) {
 	}
 }
 
+func TestNewEmbedded_RefusesPostgresWithNoDatabaseURL(t *testing.T) {
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StoragePostgres})
+	if err == nil {
+		_ = a.Close()
+	}
+
+	want := `The storage setting is "postgres", but the database_url setting is missing. Please set database_url in the settings file or the STARTER_DATABASE_URL environment variable.`
+	if err == nil || err.Error() != want {
+		t.Errorf("err = %v, want %q", err, want)
+	}
+}
+
 func TestNewEmbedded_WithAPlansFile(t *testing.T) {
 	t.Run("uses it instead of the shipped one", func(t *testing.T) {
 		path := writePlansFile(t, `{"plans": {"local": {"limits": {"items": {"max": 5, "whenOver": "read-only"}}}}}`)
