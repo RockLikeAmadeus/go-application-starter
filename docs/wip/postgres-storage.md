@@ -94,7 +94,10 @@ Settings and wiring:
   - Red: `TestNewEmbedded_OnPostgresIsReadyUntilClosed` failed with "The storage setting "postgres" is not recognized."
   - Green: a `StoragePostgres` case opens the store and sets `a.close` and `a.ready`; `Items` has no repository until 9b.
   - Refactor: nothing worth changing. The two lines shared with the sqlite case are clearer repeated than wrapped.
-- [ ] 9b. `bootstrap.NewEmbedded` on `postgres` uses the `sqlstore` repositories: items are still there after closing and reopening. Sample.
+- [x] 9b. `bootstrap.NewEmbedded` on `postgres` uses the `sqlstore` repositories: items are still there after closing and reopening. Sample.
+  - Red: `TestNewEmbedded_OnPostgresKeepsItemsAfterClosingAndReopening` panicked on the first `CreateItem`: nil `ItemRepository` on `postgres`.
+  - Green: the `StoragePostgres` case sets `itemRepo` to `sqlstore.NewItemRepository(store.DB())`, in a sample block.
+  - Refactor: the SQLite and Postgres reopen tests share `assertKeepsItemsAfterClosingAndReopening`; production unchanged, as the sample block matches the sqlite case's.
 - [ ] 9c. `bootstrap.NewEmbedded` refuses `postgres` with no `database_url` (user-facing: agree the wording first).
   - Note: `dataLocation` in `internal/adapters/cli/info.go` knows only folders, a server and memory, so it would print `Data folder: ./data` on Postgres.
 - [ ] 10. `desktop.Open` refuses `storage = "postgres"` (user-facing: agree the wording first).

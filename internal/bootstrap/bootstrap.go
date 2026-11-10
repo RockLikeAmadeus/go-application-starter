@@ -118,6 +118,9 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		}
 		a.close = store.Close
 		a.ready = store.Ready
+		// sample:start
+		itemRepo = sqlstore.NewItemRepository(store.DB())
+		// sample:end
 	default:
 		return nil, config.UnrecognizedStorageError(cfg.Storage)
 	}
