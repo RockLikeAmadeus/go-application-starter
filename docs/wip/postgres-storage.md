@@ -20,7 +20,7 @@ Decided in planning:
 - **Driver: `github.com/jackc/pgx/v5/stdlib`** through `database/sql`, so `sqlstore` takes a `*sql.DB`. It's pure Go, so `CGO_ENABLED=0` still builds.
 - **Per-test isolation:** a test helper (`postgres/postgrestest`) creates a fresh database with a random name from the test URL, and drops it on cleanup. Each contract run and each acceptance scenario gets its own.
 - **Unreachable database in the scenarios:** the helper can block connections to a scenario's database (`ALTER DATABASE … ALLOW_CONNECTIONS false` plus `pg_terminate_backend`) and allow them again, so readiness can fail and recover without stopping the shared container.
-- **Readiness:** `postgres.Store.Ready` pings with the request's context. A pool reconnects by itself, so recovery needs no code beyond the ping.
+- **Readiness:** `postgres.Store.Ready` pings with the request's context. A pool reconnects by itself, but `PingContext` doesn't retry a ping that lands on a dead pooled connection, so `Ready` pings again on `driver.ErrBadConn`, at most 3 attempts (task 11c).
 - **No connection-count tuning** (`SetMaxOpenConns`) beyond pgx's defaults for now. SQLite keeps its single connection.
 - **The acceptance `postgres` driver** runs what the `sqlite` driver runs (`~@desktop && ~@mobile && ~@server`). The server driver adds `~@postgres` when the URL is unset.
 - **Sample boundary:** the Item repository and `00002_items.sql` are sample code in `sqlstore`. The migration runner, the baseline and the plan repository are template code. Run `task test:init` in tasks 1–3 and 10–11.
@@ -116,7 +116,11 @@ Acceptance and CI:
   - Red: `TestPostgresScenariosRunOnlyWhenThereIsADatabaseServer` failed with `no driver named "postgres"`.
   - Green: `driversFor(t, serverURL)` replaces the `drivers` table and adds `startPostgres`, one database per scenario; `TestFeatures` skips a driver with a `skipReason`.
   - Refactor: the shared sqlstore wiring of `startSQLite` and `startPostgres` moved to `harness.useSQLStore`.
-- [ ] 11b. Steps for the three readiness scenarios turn them green.
+- [x] 11b. Steps for the three readiness scenarios turn them green.
+  - Red: `TestServerReadinessFollowsItsPostgresDatabase` failed with `readiness = 200 "ready", want 503` (the steps were stubs).
+  - Green: `postgres_steps.go` binds the three steps, the server driver's `testServer` gets a database URL and a per-scenario cleanup. "Ready again" stays red until 11c.
+  - Refactor: nothing worth changing.
+- [ ] 11c. `postgres.Store.Ready` is ready on the first probe after an outage: a store test with no `Ready` between blocking and allowing connections, and `Ready` retrying the ping on `driver.ErrBadConn`, at most 3 attempts. Turns "ready again" green.
 - [ ] 12. Steps for "Servers sharing a Postgres database see each other's items": a second test server on the same database, items driven over each server's HTTP. Sample: `task test:init`.
 - [ ] 13. CI: a Postgres service container in the Go job, setting `STARTER_TEST_DATABASE_URL` for the unit and acceptance tests.
 
@@ -134,3 +138,4 @@ Acceptance and CI:
 - 2026-11-09: split task 9 into 9 (open, readiness, `Close`: template code), 9b (the repositories: sample) and 9c (refuse a missing `database_url`), one test each.
 - 2026-11-09: split 9c into 9c (refuse a missing `database_url`) and 9d (`starter info` on Postgres, its note until now), agreed with the user. Each needs its own test, and 9d's wording is still to agree.
 - 2026-11-09: split task 11 into 11 (the `postgres` driver, and leaving it out without a URL) and 11b (the three readiness scenarios' steps), one test each.
+- 2026-11-10: added task 11c and corrected the readiness decision, agreed with the user. The 11b cycle found that the first ping after an outage with no probe during it lands on a dead pooled connection and answers 503.

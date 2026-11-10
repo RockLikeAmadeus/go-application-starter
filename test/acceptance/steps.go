@@ -58,6 +58,7 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		w.registerEntitlementsSteps(sc)
 		w.registerReadinessSteps(sc)
 		w.registerSQLiteSteps(sc)
+		w.registerPostgresSteps(sc)
 		w.registerSyncedFolderSteps(sc)
 		w.registerSyncedPlainTextSteps(sc)
 		// sample:start

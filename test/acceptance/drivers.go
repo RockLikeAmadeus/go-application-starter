@@ -116,7 +116,7 @@ func driversFor(t testing.TB, serverURL string) []driver {
 		{name: "http", start: startHTTP, tags: "~@desktop && ~@mobile && ~@workspaces && ~@server"},
 		{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server"},
 		{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server"},
-		{name: "server", start: startServer, tags: serverTags},
+		{name: "server", start: func() (*harness, error) { return startServer(t) }, tags: serverTags},
 	}
 }
 
@@ -306,16 +306,18 @@ func (h *harness) driveOverHTTP(url string) error {
 
 // startServer wires the core as cmd/server does, on jsonfile storage in a
 // temporary data folder, and serves it over HTTP.
-func startServer() (*harness, error) {
+func startServer(t testing.TB) (*harness, error) {
 	dir, err := os.MkdirTemp("", "acceptance-server-*")
 	if err != nil {
 		return nil, err
 	}
+	scenario := &scenarioTest{TB: t}
 	h := newHarness()
-	h.server = &testServer{dataDir: dir}
+	h.server = &testServer{dataDir: dir, scenario: scenario}
 	h.cleanup = func() {
 		h.server.stop()
 		os.RemoveAll(dir)
+		scenario.runCleanups()
 	}
 	if err := h.server.start(config.StorageJSONFile); err != nil {
 		h.cleanup()
@@ -328,13 +330,18 @@ func startServer() (*harness, error) {
 type testServer struct {
 	url     string
 	dataDir string
-	close   func()
+	// databaseURL is the Postgres database the server keeps its data in, when
+	// it does.
+	databaseURL string
+	// scenario holds what is left to clean up when the scenario ends.
+	scenario *scenarioTest
+	close    func()
 }
 
 // start wires the core as cmd/server does, on storage in the server's data
 // folder, and serves it over HTTP.
 func (s *testServer) start(storage config.StorageBackend) error {
-	core, err := bootstrap.NewEmbedded(config.Config{Storage: storage, DataDir: s.dataDir})
+	core, err := bootstrap.NewEmbedded(config.Config{Storage: storage, DataDir: s.dataDir, DatabaseURL: s.databaseURL})
 	if err != nil {
 		return err
 	}
