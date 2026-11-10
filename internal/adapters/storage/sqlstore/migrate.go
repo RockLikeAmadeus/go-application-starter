@@ -1,7 +1,7 @@
 // Package sqlstore holds what the SQL storage adapters share: the goose
 // migrations and the repositories, in SQL that both SQLite and Postgres run.
 // The sqlite and postgres packages keep only what differs between them:
-// opening the database, goose's dialect and readiness.
+// opening the database, goose's dialect, and readiness.
 package sqlstore
 
 import (

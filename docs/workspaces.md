@@ -121,13 +121,13 @@ It checks that a record keeps its workspace, that `FindAll` lists only the given
 ### 5. Wiring
 
 - `internal/bootstrap`, `NewEmbedded`: build the service with `workspace.Local{}`, beside `system.Clock{}` and `system.UUIDs{}`.
-- The acceptance harness (`test/acceptance/drivers.go`): the memory, jsonfile, sqlite and postgres drivers build services with `workspace.FromContext{}` (sqlite and postgres share `harness.useSQLStore`), and the http driver with `workspace.Local{}`. A `Before` hook in `steps.go` already puts every scenario in the local workspace, so your feature's scenarios don't need to name one.
+- The acceptance harness (`test/acceptance/drivers.go`): the memory, jsonfile, sqlite, and postgres drivers build services with `workspace.FromContext{}` (sqlite and postgres share `harness.useSQLStore`), and the http driver with `workspace.Local{}`. A `Before` hook in `steps.go` already puts every scenario in the local workspace, so your feature's scenarios don't need to name one.
 
 ### 6. Tests
 
 - **Use cases:** build the service with `testsupport.FixedWorkspace(…)` and check new records get that workspace. Add a fail-closed table test: with `testsupport.NoWorkspace{}` and a repository that counts its calls, every use case returns `ErrNoWorkspace` and the repository is never called. Item's `TestUseCases_WithoutAWorkspaceAreRefusedBeforeStorage` is the pattern.
 - **Storage:** the isolation suite above, plus a case for each extra query method.
-- **Acceptance (optional):** the entity's business scenarios run in the local workspace without saying so. If the entity has workspace rules of its own, add scenarios tagged `@workspaces`: they run only on the memory, jsonfile, sqlite and postgres drivers, and their steps build a context with `workspace.WithID`.
+- **Acceptance (optional):** the entity's business scenarios run in the local workspace without saying so. If the entity has workspace rules of its own, add scenarios tagged `@workspaces`: they run only on the memory, jsonfile, sqlite, and postgres drivers, and their steps build a context with `workspace.WithID`.
 
 ### Checklist
 

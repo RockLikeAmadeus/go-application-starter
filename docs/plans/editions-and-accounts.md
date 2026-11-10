@@ -91,11 +91,11 @@ SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-stor
 
 ### 7. Postgres adapter — done
 SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-storage.feature) · [ADR 8](../adr/0008-postgres-storage.md) · `internal/adapters/storage/postgres`, `internal/adapters/storage/sqlstore`.
-- Done 2026-11-10: `storage = "postgres"` with `database_url` (`STARTER_DATABASE_URL`, shown as `(hidden)` by `starter info`) keeps the data in Postgres (pgx, pure Go), on the server, the CLI and the TUI. A missing `database_url` is refused at start, and the desktop and Android apps refuse `postgres`.
-- One SQL layer for both engines: the goose migrations, `sqlstore.Migrate` and the repositories live in `sqlstore`, in SQL that SQLite and Postgres both run; `sqlite` and `postgres` keep only opening, goose's dialect and readiness. On Postgres, `Migrate` takes goose's session lock, so servers starting together don't race.
+- Done 2026-11-10: `storage = "postgres"` with `database_url` (`STARTER_DATABASE_URL`, shown as `(hidden)` by `starter info`) keeps the data in Postgres (pgx, pure Go), on the server, the CLI, and the TUI. A missing `database_url` is refused at start, and the desktop and Android apps refuse `postgres`.
+- One SQL layer for both engines: the goose migrations, `sqlstore.Migrate`, and the repositories live in `sqlstore`, in SQL that SQLite and Postgres both run; `sqlite` and `postgres` keep only opening, goose's dialect, and readiness. On Postgres, `Migrate` takes goose's session lock, so servers starting together don't race.
 - Readiness pings, and pings again on a dead pooled connection, so a server recovers on the first probe after an outage.
 - Tests read `STARTER_TEST_DATABASE_URL` (`task db:up` locally, a service container in CI) and skip without it; each test and scenario gets its own database. A new `postgres` acceptance driver runs every business scenario, and the server driver covers readiness, an outage and recovery, and two servers sharing a database.
-- ADR 5, ADR 7, `docs/workspaces.md`, `docs/configuration.md`, `docs/data-locations.md`, `.claude/rules/` and README are updated. `task test:init` passes.
+- ADR 5, ADR 7, `docs/workspaces.md`, `docs/configuration.md`, `docs/data-locations.md`, `.claude/rules/`, and README are updated. `task test:init` passes.
 
 ### 8. Authentication — not started
 - This is the existing "Authentication behind a port" TODO item.

@@ -12,7 +12,7 @@ paths:
 
 ## Adding a backend
 
-A new storage backend implements the `…Repository` ports and **must** run each one's contract suite from `storagetest` in its tests. Wire it in `internal/bootstrap`, including its readiness check (`App.Ready`, which answers the server's `/readyz`), as jsonfile's, sqlite's and postgres's `Store.Ready` are. A SQL backend shares `sqlstore` (below) rather than writing its own repositories. Readiness comes from storage, never from an entity's data.
+A new storage backend implements the `…Repository` ports and **must** run each one's contract suite from `storagetest` in its tests. Wire it in `internal/bootstrap`, including its readiness check (`App.Ready`, which answers the server's `/readyz`), as jsonfile's, sqlite's, and postgres's `Store.Ready` are. A SQL backend shares `sqlstore` (below) rather than writing its own repositories. Readiness comes from storage, never from an entity's data.
 
 ## jsonfile: one file per record (ADR 3)
 

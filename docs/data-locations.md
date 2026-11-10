@@ -39,7 +39,7 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 
 `cmd/server` reads its settings from the environment, over the settings file `STARTER_CONFIG_FILE` names, if any ([docs/configuration.md](configuration.md)):
 
-- `STARTER_STORAGE` (`storage` in the file) is `jsonfile` (the default), `sqlite`, `postgres` or `memory`.
+- `STARTER_STORAGE` (`storage` in the file) is `jsonfile` (the default), `sqlite`, `postgres`, or `memory`.
 - `STARTER_DATABASE_URL` (`database_url`) is the database `postgres` connects to. There's no data folder then: the data is in that database ([ADR 8](adr/0008-postgres-storage.md)).
 - `STARTER_DATA_DIR` (`data_dir`) is the data folder, `./data` by default. That path is relative to the process's working folder, not to the binary, so start the server from the same place each time, or set an absolute path.
 

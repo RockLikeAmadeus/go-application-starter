@@ -89,7 +89,7 @@ Nothing to add for gating itself. `GET /api/v1/entitlements` already lists every
 
 ### 5. Tests
 
-- **Acceptance:** scenarios tagged `@plans` run on the memory, jsonfile, sqlite, postgres and http drivers. The harness's `testPlans` turns hints on and can turn a feature on or off for a scenario. The helpers that do it (`setFeature`, `setWhenOff`) live in the sample's `plan_feature_steps.go`, so copy them out before removing the sample.
+- **Acceptance:** scenarios tagged `@plans` run on the memory, jsonfile, sqlite, postgres, and http drivers. The harness's `testPlans` turns hints on and can turn a feature on or off for a scenario. The helpers that do it (`setFeature`, `setWhenOff`) live in the sample's `plan_feature_steps.go`, so copy them out before removing the sample.
 - **Journeys:** the sample has one browser journey (`web/e2e/features/items.feature`, "Export the items") and terminal journeys (`test/terminal/features/items.feature`). Add one only if the feature's wiring isn't already proven by them.
 
 ### Checklist
