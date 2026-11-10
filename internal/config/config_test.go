@@ -137,6 +137,30 @@ func TestStorageAcceptsPostgres(t *testing.T) {
 	}
 }
 
+func TestDatabaseURLIsASettingReadFromTheEnvironment(t *testing.T) {
+	const databaseURL = "postgres://starter@db.example.com:5432/starter"
+	env := envOf(map[string]string{"STARTER_DATABASE_URL": databaseURL})
+
+	cfg, err := config.Load(config.Env{Getenv: env}, "")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	if cfg.DatabaseURL != databaseURL {
+		t.Errorf("DatabaseURL = %q, want %q", cfg.DatabaseURL, databaseURL)
+	}
+	const wantSource = "environment (STARTER_DATABASE_URL)"
+	isListed := false
+	for _, setting := range cfg.Settings() {
+		if setting.Key == "database_url" && setting.Source == wantSource {
+			isListed = true
+		}
+	}
+	if !isListed {
+		t.Errorf("Settings() = %v, want database_url from %q", cfg.Settings(), wantSource)
+	}
+}
+
 func TestAnUnknownStorageErrorReadsAsASentence(t *testing.T) {
 	_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_STORAGE": "disk"})}, "")
 

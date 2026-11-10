@@ -77,9 +77,10 @@ ignore_synced_folder = false
 
 func TestTheDefaultSettingsFileHasEverySettingTheDesktopAppAndTheCommandLineRead(t *testing.T) {
 	text := config.DefaultSettingsFileText("/home/ann/.config/starter")
-	// Only the server reads these, and it never reads the default settings
-	// file.
-	serverOnly := map[string]bool{"port": true, "log_format": true}
+	// These are for running a server, which never reads the default settings
+	// file. An operator's command that reaches hosted data (database_url) sets
+	// them in the environment too.
+	serverOnly := map[string]bool{"port": true, "log_format": true, "database_url": true}
 
 	cfg, err := config.Load(config.Env{Getenv: envOf(nil)}, "")
 	if err != nil {

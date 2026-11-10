@@ -78,9 +78,14 @@ Settings and wiring:
   - Red: `TestStorageAcceptsPostgres` failed with "The storage setting "postgres" is not recognized."
   - Green: `Config.Validate` accepts `StoragePostgres`.
   - Refactor: nothing worth changing. Left the error's list for 8c.
-- [ ] 8b. The `database_url` setting (`STARTER_DATABASE_URL`): in `envVars`, `Load`, `Config.Settings`, the `serverOnly` list, and `docs/configuration.md` (which also adds `postgres` to the `storage` row). Add the template-user step to TODO.md.
+- [x] 8b. The `database_url` setting (`STARTER_DATABASE_URL`): in `envVars`, `Load`, `Config.Settings`, the `serverOnly` list, and `docs/configuration.md` (which also adds `postgres` to the `storage` row). Add the template-user step to TODO.md.
+  - Red: `TestDatabaseURLIsASettingReadFromTheEnvironment` failed with `DatabaseURL = ""` and no `database_url` in `Settings()`.
+  - Green: `database_url` is in `envVars`, `Load` and `Config.Settings`, and in the `serverOnly` list.
+  - Refactor: no code worth changing. Wrote the `docs/configuration.md` rows and example, and the TODO.md step.
+- [ ] 8b2. `Config.Settings` replaces a set `database_url` with `(hidden)`, so `starter info` prints `database_url = "(hidden)"  # environment (STARTER_DATABASE_URL)` (wording agreed with the user). An unset one stays `""`, and `Config.DatabaseURL` keeps the real URL. Update the `starter info` example if it shows one.
 - [ ] 8c. The unrecognized-storage error lists `postgres` (user-facing: agree the wording first).
 - [ ] 9. `bootstrap.NewEmbedded` on `postgres` opens `postgres.Open(cfg.DatabaseURL)` with the `sqlstore` repositories, readiness and `Close`, and refuses `postgres` with no `database_url` (user-facing: agree the wording first).
+  - Note: `dataLocation` in `internal/adapters/cli/info.go` knows only folders, a server and memory, so it would print `Data folder: ./data` on Postgres.
 - [ ] 10. `desktop.Open` refuses `storage = "postgres"` (user-facing: agree the wording first).
 
 Acceptance and CI:
@@ -98,3 +103,4 @@ Acceptance and CI:
 - 2026-11-09: split task 6 into 6 (Item) and 6b (workspace plan), one contract test each.
 - 2026-11-09: added task 7a, agreed with the user. The task 4 cycle found that `sqlstore.Migrate` takes no lock, so servers starting together on an unmigrated database could race, and §4.17 promises several servers can share one.
 - 2026-11-09: split task 8 into 8 (accept `postgres`), 8b (`database_url`) and 8c (the error's wording), one test each.
+- 2026-11-09: split 8b into 8b (read the setting) and 8b2 (hide its value), agreed with the user. `starter info` prints every setting in full, and a database URL usually holds a password.
