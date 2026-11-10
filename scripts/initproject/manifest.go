@@ -69,6 +69,8 @@ var SampleFiles = []string{
 	"test/acceptance/item_steps.go",
 	"test/acceptance/plan_feature_steps.go",
 	"test/acceptance/plan_steps.go",
+	"test/acceptance/shared_database_steps.go",
+	"test/acceptance/shared_database_steps_test.go",
 	"test/acceptance/workspace_steps.go",
 	"web/e2e/features/items.feature",
 	"web/e2e/steps/items.steps.ts",

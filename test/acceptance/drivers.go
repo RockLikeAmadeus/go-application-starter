@@ -345,11 +345,15 @@ func (s *testServer) start(storage config.StorageBackend) error {
 	if err != nil {
 		return err
 	}
-	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{
+	opts := httpapi.Options{
 		Entitlements: core.Entitlements,
 		Ready:        core.Ready,
 		Warnings:     core.Warnings,
-	}))
+	}
+	// sample:start
+	opts.Items = core.Items
+	// sample:end
+	srv := httptest.NewServer(httpapi.NewHandler(opts))
 	s.url = srv.URL
 	s.close = func() {
 		srv.Close()

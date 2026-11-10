@@ -124,7 +124,10 @@ Acceptance and CI:
   - Red: `TestStoreIsReadyOnTheFirstProbeAfterAnOutage` failed: `Ready error = driver: bad connection on the first probe after the outage`.
   - Green: `Ready` pings again while the ping answers `driver.ErrBadConn`, at most 3 attempts.
   - Refactor: the 3 is `readyPingAttempts`, and `Ready`'s doc comment says why it pings again.
-- [ ] 12. Steps for "Servers sharing a Postgres database see each other's items": a second test server on the same database, items driven over each server's HTTP. Sample: `task test:init`.
+- [x] 12. Steps for "Servers sharing a Postgres database see each other's items": a second test server on the same database, items driven over each server's HTTP. Sample: `task test:init`.
+  - Red: `TestServersSharingAPostgresDatabaseSeeEachOthersItems` failed: the stub "second server lists" step answered nil for an item never added.
+  - Green: `shared_database_steps.go` (sample) starts a second `testServer` on the first one's database and drives items over each server's HTTP; `testServer.start` serves `Items`, in a sample block. All four `@wip` scenarios pass.
+  - Refactor: `errors.New` for the fixed "no second server" error; nothing else worth changing. `task test:init` green.
 - [ ] 13. CI: a Postgres service container in the Go job, setting `STARTER_TEST_DATABASE_URL` for the unit and acceptance tests.
 
 - [ ] 14. Docs and finish:
