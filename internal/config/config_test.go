@@ -127,6 +127,16 @@ func TestStorageAcceptsSQLite(t *testing.T) {
 	}
 }
 
+func TestStorageAcceptsPostgres(t *testing.T) {
+	cfg, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_STORAGE": "postgres"})}, "")
+	if err != nil {
+		t.Fatalf("Load with postgres: %v", err)
+	}
+	if cfg.Storage != config.StoragePostgres {
+		t.Errorf("Storage = %q, want %q", cfg.Storage, config.StoragePostgres)
+	}
+}
+
 func TestAnUnknownStorageErrorReadsAsASentence(t *testing.T) {
 	_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_STORAGE": "disk"})}, "")
 

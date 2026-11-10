@@ -74,7 +74,12 @@ The Postgres adapter:
   - Refactor: the dialect branch moved to `lockOptions`; the lock is polled every second, keeping goose's 5-minute limit (the test went from 75s to 15s).
 
 Settings and wiring:
-- [ ] 8. `config.StoragePostgres` and the `database_url` setting (`STARTER_DATABASE_URL`): in `envVars`, `Load`, `Config.Settings`, the `serverOnly` list, and `docs/configuration.md`. The unrecognized-storage error lists `postgres` (user-facing: agree the wording first). Add the template-user step to TODO.md.
+- [x] 8. `config.StoragePostgres`: `storage = "postgres"` loads.
+  - Red: `TestStorageAcceptsPostgres` failed with "The storage setting "postgres" is not recognized."
+  - Green: `Config.Validate` accepts `StoragePostgres`.
+  - Refactor: nothing worth changing. Left the error's list for 8c.
+- [ ] 8b. The `database_url` setting (`STARTER_DATABASE_URL`): in `envVars`, `Load`, `Config.Settings`, the `serverOnly` list, and `docs/configuration.md` (which also adds `postgres` to the `storage` row). Add the template-user step to TODO.md.
+- [ ] 8c. The unrecognized-storage error lists `postgres` (user-facing: agree the wording first).
 - [ ] 9. `bootstrap.NewEmbedded` on `postgres` opens `postgres.Open(cfg.DatabaseURL)` with the `sqlstore` repositories, readiness and `Close`, and refuses `postgres` with no `database_url` (user-facing: agree the wording first).
 - [ ] 10. `desktop.Open` refuses `storage = "postgres"` (user-facing: agree the wording first).
 
@@ -92,3 +97,4 @@ Acceptance and CI:
 ## Changes to the plan
 - 2026-11-09: split task 6 into 6 (Item) and 6b (workspace plan), one contract test each.
 - 2026-11-09: added task 7a, agreed with the user. The task 4 cycle found that `sqlstore.Migrate` takes no lock, so servers starting together on an unmigrated database could race, and §4.17 promises several servers can share one.
+- 2026-11-09: split task 8 into 8 (accept `postgres`), 8b (`database_url`) and 8c (the error's wording), one test each.

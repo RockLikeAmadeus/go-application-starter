@@ -18,6 +18,7 @@ const (
 	StorageMemory   StorageBackend = "memory"
 	StorageJSONFile StorageBackend = "jsonfile"
 	StorageSQLite   StorageBackend = "sqlite"
+	StoragePostgres StorageBackend = "postgres"
 )
 
 type Config struct {
@@ -129,7 +130,7 @@ func (c Config) Settings() []Setting {
 
 func (c Config) Validate() error {
 	switch c.Storage {
-	case StorageMemory, StorageJSONFile, StorageSQLite:
+	case StorageMemory, StorageJSONFile, StorageSQLite, StoragePostgres:
 	default:
 		return UnrecognizedStorageError(c.Storage)
 	}
