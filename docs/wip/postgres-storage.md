@@ -86,7 +86,10 @@ Settings and wiring:
   - Red: `TestSettingsHidesTheDatabaseURLOnlyWhenItIsSet` failed: `Settings()` listed the full URL.
   - Green: `Config.Settings` lists `(hidden)` for a set `database_url`.
   - Refactor: moved the rule into `hiddenIfSet`. The `starter info` example shows an unset URL, which stays right.
-- [ ] 8c. The unrecognized-storage error lists `postgres` (user-facing: agree the wording first).
+- [x] 8c. The unrecognized-storage error lists `postgres` (wording agreed with the user: `Please use "memory", "jsonfile", "sqlite", or "postgres".`).
+  - Red: `TestAnUnknownStorageErrorReadsAsASentence` failed: the error listed only three storages.
+  - Green: `UnrecognizedStorageError` names `postgres`; the three other tests pinning the sentence follow.
+  - Refactor: nothing worth changing. Left the list spelled out in the one sentence, as the log-format error does.
 - [ ] 9. `bootstrap.NewEmbedded` on `postgres` opens `postgres.Open(cfg.DatabaseURL)` with the `sqlstore` repositories, readiness and `Close`, and refuses `postgres` with no `database_url` (user-facing: agree the wording first).
   - Note: `dataLocation` in `internal/adapters/cli/info.go` knows only folders, a server and memory, so it would print `Data folder: ./data` on Postgres.
 - [ ] 10. `desktop.Open` refuses `storage = "postgres"` (user-facing: agree the wording first).

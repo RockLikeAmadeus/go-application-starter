@@ -157,7 +157,7 @@ func (c Config) Validate() error {
 // UnrecognizedStorageError is the error for a storage setting this program
 // doesn't have.
 func UnrecognizedStorageError(storage StorageBackend) error {
-	return fmt.Errorf("The storage setting %q is not recognized. Please use %q, %q, or %q.", storage, StorageMemory, StorageJSONFile, StorageSQLite)
+	return fmt.Errorf("The storage setting %q is not recognized. Please use %q, %q, %q, or %q.", storage, StorageMemory, StorageJSONFile, StorageSQLite, StoragePostgres)
 }
 
 // envVars are the settings, by their key in a settings file, each with the

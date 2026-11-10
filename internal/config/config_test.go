@@ -185,7 +185,7 @@ func TestSettingsHidesTheDatabaseURLOnlyWhenItIsSet(t *testing.T) {
 func TestAnUnknownStorageErrorReadsAsASentence(t *testing.T) {
 	_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_STORAGE": "disk"})}, "")
 
-	want := `The storage setting "disk" is not recognized. Please use "memory", "jsonfile", or "sqlite".`
+	want := `The storage setting "disk" is not recognized. Please use "memory", "jsonfile", "sqlite", or "postgres".`
 	if err == nil || err.Error() != want {
 		t.Errorf("error = %v, want %q", err, want)
 	}
