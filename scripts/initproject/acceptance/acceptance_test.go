@@ -301,7 +301,10 @@ func (p *project) specHasNoSample() error {
 func (p *project) buildsAndPasses() error {
 	for _, args := range [][]string{
 		{"build", "./..."},
-		{"test", "-count=1", "./internal/...", "./test/..."},
+		{"test", "-count=1", "./internal/...", "./test/terminal/..."},
+		// A feature in progress has @wip scenarios whose steps aren't
+		// written yet, so they are left out, as `task accept` leaves them.
+		{"test", "-count=1", "./test/acceptance/", "--godog.tags=~@wip"},
 	} {
 		if out, err := run(p.dir, "go", args...); err != nil {
 			return fmt.Errorf("go %s: %w\n%s", strings.Join(args, " "), err, firstLines(out, 40))

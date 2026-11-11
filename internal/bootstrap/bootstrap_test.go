@@ -15,6 +15,7 @@ import (
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/syncedfolder"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -67,6 +68,28 @@ func TestNewEmbedded_IsNotReadyOnceTheDataFolderIsRemoved(t *testing.T) {
 	}
 }
 
+// Postgres storage opens the configured database, answers readiness from it,
+// and lets it go on Close.
+func TestNewEmbedded_OnPostgresIsReadyUntilClosed(t *testing.T) {
+	databaseURL := postgrestest.NewDatabase(t)
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StoragePostgres, DatabaseURL: databaseURL})
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	if err := a.Ready(t.Context()); err != nil {
+		t.Fatalf("Ready error = %v before Close, want nil", err)
+	}
+
+	if err := a.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	if err := a.Ready(t.Context()); err == nil {
+		t.Error("Ready error = nil after Close, want an error")
+	}
+}
+
 // A build whose local plan isn't in the plans file fails at start, naming
 // the plan, rather than on the first request.
 func TestNewEmbedded_RefusesALocalPlanThePlansFileDoesntHave(t *testing.T) {
@@ -86,7 +109,19 @@ func TestNewEmbedded_RefusesALocalPlanThePlansFileDoesntHave(t *testing.T) {
 func TestNewEmbedded_AnUnknownStorageErrorReadsAsASentence(t *testing.T) {
 	_, err := bootstrap.NewEmbedded(config.Config{Storage: "disk"})
 
-	want := `The storage setting "disk" is not recognized. Please use "memory", "jsonfile", or "sqlite".`
+	want := `The storage setting "disk" is not recognized. Please use "memory", "jsonfile", "sqlite", or "postgres".`
+	if err == nil || err.Error() != want {
+		t.Errorf("err = %v, want %q", err, want)
+	}
+}
+
+func TestNewEmbedded_RefusesPostgresWithNoDatabaseURL(t *testing.T) {
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StoragePostgres})
+	if err == nil {
+		_ = a.Close()
+	}
+
+	want := `The storage setting is "postgres", but the database_url setting is missing. Please set database_url in the settings file or the STARTER_DATABASE_URL environment variable.`
 	if err == nil || err.Error() != want {
 		t.Errorf("err = %v, want %q", err, want)
 	}

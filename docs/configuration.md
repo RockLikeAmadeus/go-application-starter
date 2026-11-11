@@ -13,8 +13,9 @@ So the settings file holds what you want every time, and an environment variable
 
 | Key in the file | Environment variable | CLI option | Default | What it does |
 |---|---|---|---|---|
-| `storage` | `STARTER_STORAGE` | `--storage` | `jsonfile` | Where the core keeps its data: `jsonfile` (plain JSON in a data folder, one program at a time), `sqlite` (one SQLite database, `data.db`, in the data folder, which several programs can use at once; [ADR 7](adr/0007-sqlite-storage.md)) or `memory` (lost when the process ends). The desktop app takes `jsonfile` or `sqlite`, and uses `jsonfile` for anything else. The Android app always uses `jsonfile`. |
+| `storage` | `STARTER_STORAGE` | `--storage` | `jsonfile` | Where the core keeps its data: `jsonfile` (plain JSON in a data folder, one program at a time), `sqlite` (one SQLite database, `data.db`, in the data folder, which several programs can use at once; [ADR 7](adr/0007-sqlite-storage.md)), `postgres` (a Postgres database, for hosted servers, at `database_url`; [ADR 8](adr/0008-postgres-storage.md)), or `memory` (lost when the process ends). The desktop app takes `jsonfile` or `sqlite`, refuses `postgres`, and uses `jsonfile` for anything else. The Android app uses `jsonfile`, and refuses `postgres` too. |
 | `data_dir` | `STARTER_DATA_DIR` | `--data-dir` | see below | The data folder for `jsonfile` and `sqlite`. |
+| `database_url` | `STARTER_DATABASE_URL` | | none | The database that `postgres` storage connects to, for example `postgres://user:password@host:5432/starter`. It usually holds a password, so set it in the environment, as a secret, rather than in a settings file. |
 | `port` | `PORT` | | `8080` | The port the server listens on. `PORT` has no prefix: it's the name cloud platforms set. |
 | `server_url` | `STARTER_SERVER_URL` | `--server` | none | Makes the CLI and TUI use a server at this URL instead of their own data. |
 | `log_format` | `STARTER_LOG_FORMAT` | | `text` | The server's log format: `text` or `json`. |
@@ -59,7 +60,7 @@ ignore_synced_folder = false
 # plans_file = "/path/to/plans.jsonc"
 ```
 
-`port` and `log_format` are left out: only the server reads them, and it never reads this file. Edit the file to change a setting: for example, `data_dir = "/home/you/Sync/starter"` keeps the data in a synced folder (one device at a time: see [docs/data-locations.md](data-locations.md)), and `storage = "sqlite"` lets the CLI work while the desktop app is open (but not in a synced folder, where a sync service can damage the database).
+`port`, `log_format`, and `database_url` are left out: they are for running a server, which never reads this file. Edit the file to change a setting: for example, `data_dir = "/home/you/Sync/starter"` keeps the data in a synced folder (one device at a time: see [docs/data-locations.md](data-locations.md)), and `storage = "sqlite"` lets the CLI work while the desktop app is open (but not in a synced folder, where a sync service can damage the database).
 
 **When the file is created:**
 - only when the default file is missing. A file that's already there is never changed, even if it's empty or sets nothing, and two programs starting at once can't both write it (it's opened with `O_EXCL`);
@@ -91,6 +92,7 @@ $ STARTER_LOG_FORMAT=json starter info
 Settings file: /home/you/.config/starter/config.toml
   storage = "jsonfile"  # settings file
   data_dir = "/home/you/Sync/starter"  # settings file
+  database_url = ""  # built in
   port = 8080  # built in
   server_url = ""  # built in
   log_format = "json"  # environment (STARTER_LOG_FORMAT)

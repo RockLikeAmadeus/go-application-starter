@@ -102,7 +102,7 @@ Each adapter keeps the workspace with the record and checks it on every lookup:
 
 - **memory:** a `lookup(workspace, id)` helper that treats a record in another workspace as missing, used by `FindByID` and `Delete`; `FindAll` keeps only the workspace's records.
 - **jsonfile:** the on-disk record gets a `workspaceId` field. `FindByID` and `Delete` read the one record with `readRecord` and treat another workspace's as missing (the sample's `workspaceRecord`), and `FindAll` keeps only the workspace's records from `readRecords`.
-- **sqlite:** a new goose migration in `internal/adapters/storage/sqlite/migrations/` (the next number) creating the table, with a `workspace_id` column in the primary key (`PRIMARY KEY (workspace_id, id)`), `WHERE workspace_id = ?` on **every** query, including updates and deletes, and the workspace in any unique index that should be per workspace (`UNIQUE (workspace_id, name)`). Item's `00002_items.sql` and `item_repository.go` are the pattern.
+- **sqlstore (SQLite and Postgres):** written once, for both engines ([ADR 8](adr/0008-postgres-storage.md)). A new goose migration in `internal/adapters/storage/sqlstore/migrations/` (the next number) creates the table, with a `workspace_id` column in the primary key (`PRIMARY KEY (workspace_id, id)`), and the workspace in any unique index that should be per workspace (`UNIQUE (workspace_id, name)`). The repository in `sqlstore` takes a `*sql.DB` and puts `WHERE workspace_id = $1` on **every** query, including updates and deletes, in SQL both engines run (`$n` placeholders, `INSERT … ON CONFLICT (…) DO UPDATE SET …`). Item's `00002_items.sql` and `item_repository.go` are the pattern. Its contract test runs on SQLite and on Postgres (`TestItemRepositoryContractOnSQLite`, `…OnPostgres`, which skips without `STARTER_TEST_DATABASE_URL`).
 
 Then run the isolation suite from the adapter's contract tests:
 
@@ -121,13 +121,13 @@ It checks that a record keeps its workspace, that `FindAll` lists only the given
 ### 5. Wiring
 
 - `internal/bootstrap`, `NewEmbedded`: build the service with `workspace.Local{}`, beside `system.Clock{}` and `system.UUIDs{}`.
-- The acceptance harness (`test/acceptance/drivers.go`): the memory, jsonfile and sqlite drivers build services with `workspace.FromContext{}`, and the http driver with `workspace.Local{}`. A `Before` hook in `steps.go` already puts every scenario in the local workspace, so your feature's scenarios don't need to name one.
+- The acceptance harness (`test/acceptance/drivers.go`): the memory, jsonfile, sqlite, and postgres drivers build services with `workspace.FromContext{}` (sqlite and postgres share `harness.useSQLStore`), and the http driver with `workspace.Local{}`. A `Before` hook in `steps.go` already puts every scenario in the local workspace, so your feature's scenarios don't need to name one.
 
 ### 6. Tests
 
 - **Use cases:** build the service with `testsupport.FixedWorkspace(…)` and check new records get that workspace. Add a fail-closed table test: with `testsupport.NoWorkspace{}` and a repository that counts its calls, every use case returns `ErrNoWorkspace` and the repository is never called. Item's `TestUseCases_WithoutAWorkspaceAreRefusedBeforeStorage` is the pattern.
 - **Storage:** the isolation suite above, plus a case for each extra query method.
-- **Acceptance (optional):** the entity's business scenarios run in the local workspace without saying so. If the entity has workspace rules of its own, add scenarios tagged `@workspaces`: they run only on the memory, jsonfile and sqlite drivers, and their steps build a context with `workspace.WithID`.
+- **Acceptance (optional):** the entity's business scenarios run in the local workspace without saying so. If the entity has workspace rules of its own, add scenarios tagged `@workspaces`: they run only on the memory, jsonfile, sqlite, and postgres drivers, and their steps build a context with `workspace.WithID`.
 
 ### Checklist
 

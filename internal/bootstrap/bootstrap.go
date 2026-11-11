@@ -16,7 +16,9 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/plans"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlstore"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/syncedfolder"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/system"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
@@ -107,7 +109,20 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 			a.Warnings = append(a.Warnings, warning)
 		}
 		// sample:start
-		itemRepo = sqlite.NewItemRepository(store)
+		itemRepo = sqlstore.NewItemRepository(store.DB())
+		// sample:end
+	case config.StoragePostgres:
+		if cfg.DatabaseURL == "" {
+			return nil, errors.New(`The storage setting is "postgres", but the database_url setting is missing. Please set database_url in the settings file or the STARTER_DATABASE_URL environment variable.`)
+		}
+		store, err := postgres.Open(context.Background(), cfg.DatabaseURL)
+		if err != nil {
+			return nil, err
+		}
+		a.close = store.Close
+		a.ready = store.Ready
+		// sample:start
+		itemRepo = sqlstore.NewItemRepository(store.DB())
 		// sample:end
 	default:
 		return nil, config.UnrecognizedStorageError(cfg.Storage)

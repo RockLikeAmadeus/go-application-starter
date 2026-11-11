@@ -5,15 +5,8 @@ import (
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
-	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/storagetest"
-	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlstore"
 )
-
-func TestWorkspacePlanRepositoryContract(t *testing.T) {
-	storagetest.RunWorkspacePlanRepositoryContract(t, func(t *testing.T) ports.WorkspacePlanRepository {
-		return sqlite.NewWorkspacePlanRepository(openStore(t, t.TempDir()))
-	})
-}
 
 func TestWorkspacePlansSurviveReopen(t *testing.T) {
 	dir := t.TempDir()
@@ -23,14 +16,14 @@ func TestWorkspacePlansSurviveReopen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	if err := sqlite.NewWorkspacePlanRepository(store).SavePlan(ctx, "ws-a", "pro"); err != nil {
+	if err := sqlstore.NewWorkspacePlanRepository(store.DB()).SavePlan(ctx, "ws-a", "pro"); err != nil {
 		t.Fatalf("SavePlan: %v", err)
 	}
 	if err := store.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 
-	got, err := sqlite.NewWorkspacePlanRepository(openStore(t, dir)).PlanOf(ctx, "ws-a")
+	got, err := sqlstore.NewWorkspacePlanRepository(openStore(t, dir).DB()).PlanOf(ctx, "ws-a")
 	if err != nil || got != "pro" {
 		t.Fatalf("after reopen PlanOf = %q, %v, want \"pro\"", got, err)
 	}

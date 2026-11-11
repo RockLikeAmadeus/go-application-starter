@@ -28,6 +28,8 @@ type world struct {
 	// sample:start
 	// exportedCSV is the items' CSV that the last export gave.
 	exportedCSV []byte
+	// secondServer shares the server's Postgres database.
+	secondServer *testServer
 	// sample:end
 }
 
@@ -58,12 +60,14 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		w.registerEntitlementsSteps(sc)
 		w.registerReadinessSteps(sc)
 		w.registerSQLiteSteps(sc)
+		w.registerPostgresSteps(sc)
 		w.registerSyncedFolderSteps(sc)
 		w.registerSyncedPlainTextSteps(sc)
 		// sample:start
 		w.registerItemSteps(sc)
 		w.registerPlanSteps(sc)
 		w.registerPlanFeatureSteps(sc)
+		w.registerSharedDatabaseSteps(sc)
 		w.registerWorkspaceSteps(sc)
 		// sample:end
 	}

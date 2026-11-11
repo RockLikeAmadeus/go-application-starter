@@ -65,7 +65,7 @@ func TestAServerThatCannotStartPrintsItsErrorOnStderr(t *testing.T) {
 	if status != 1 {
 		t.Errorf("exit status = %d, want 1", status)
 	}
-	want := `Error: The storage setting "disk" is not recognized. Please use "memory", "jsonfile", or "sqlite".` + "\n"
+	want := `Error: The storage setting "disk" is not recognized. Please use "memory", "jsonfile", "sqlite", or "postgres".` + "\n"
 	if got := errOut.String(); got != want {
 		t.Errorf("stderr = %q, want %q", got, want)
 	}

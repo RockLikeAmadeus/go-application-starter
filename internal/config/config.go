@@ -18,6 +18,7 @@ const (
 	StorageMemory   StorageBackend = "memory"
 	StorageJSONFile StorageBackend = "jsonfile"
 	StorageSQLite   StorageBackend = "sqlite"
+	StoragePostgres StorageBackend = "postgres"
 )
 
 type Config struct {
@@ -26,6 +27,9 @@ type Config struct {
 	// DataDir is where the jsonfile adapter keeps its files (data_dir;
 	// STARTER_DATA_DIR).
 	DataDir string
+	// DatabaseURL is where the postgres adapter connects (database_url;
+	// STARTER_DATABASE_URL). It may hold a password.
+	DatabaseURL string
 	// Port is the HTTP listen port (port; PORT, the de-facto cloud convention).
 	Port int
 	// ServerURL, when set, makes CLI/TUI use a remote server (server_url;
@@ -81,6 +85,7 @@ func Load(env Env, settingsFile string) (Config, error) {
 		Sources:      sources,
 		Storage:      StorageBackend(setting("storage", string(StorageJSONFile))),
 		DataDir:      setting("data_dir", "./data"),
+		DatabaseURL:  setting("database_url", ""),
 		ServerURL:    setting("server_url", ""),
 		LogFormat:    setting("log_format", "text"),
 		PlansFile:    setting("plans_file", ""),
@@ -114,6 +119,7 @@ func (c Config) Settings() []Setting {
 	}{
 		{"storage", string(c.Storage)},
 		{"data_dir", c.DataDir},
+		{"database_url", hiddenIfSet(c.DatabaseURL)},
 		{"port", c.Port},
 		{"server_url", c.ServerURL},
 		{"log_format", c.LogFormat},
@@ -127,9 +133,18 @@ func (c Config) Settings() []Setting {
 	return settings
 }
 
+// hiddenIfSet keeps a secret out of what Settings lists, while still showing
+// whether it is set. A database URL usually holds a password.
+func hiddenIfSet(secret string) string {
+	if secret == "" {
+		return ""
+	}
+	return "(hidden)"
+}
+
 func (c Config) Validate() error {
 	switch c.Storage {
-	case StorageMemory, StorageJSONFile, StorageSQLite:
+	case StorageMemory, StorageJSONFile, StorageSQLite, StoragePostgres:
 	default:
 		return UnrecognizedStorageError(c.Storage)
 	}
@@ -142,7 +157,7 @@ func (c Config) Validate() error {
 // UnrecognizedStorageError is the error for a storage setting this program
 // doesn't have.
 func UnrecognizedStorageError(storage StorageBackend) error {
-	return fmt.Errorf("The storage setting %q is not recognized. Please use %q, %q, or %q.", storage, StorageMemory, StorageJSONFile, StorageSQLite)
+	return fmt.Errorf("The storage setting %q is not recognized. Please use %q, %q, %q, or %q.", storage, StorageMemory, StorageJSONFile, StorageSQLite, StoragePostgres)
 }
 
 // envVars are the settings, by their key in a settings file, each with the
@@ -150,6 +165,7 @@ func UnrecognizedStorageError(storage StorageBackend) error {
 var envVars = map[string]string{
 	"storage":              "STARTER_STORAGE",
 	"data_dir":             "STARTER_DATA_DIR",
+	"database_url":         "STARTER_DATABASE_URL",
 	"port":                 "PORT",
 	"server_url":           "STARTER_SERVER_URL",
 	"log_format":           "STARTER_LOG_FORMAT",

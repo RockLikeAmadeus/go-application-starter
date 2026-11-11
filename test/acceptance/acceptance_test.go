@@ -7,6 +7,8 @@ import (
 
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
 )
 
 var opts = godog.Options{
@@ -24,8 +26,11 @@ func init() {
 // TestFeatures runs every feature against every driver. Restrict drivers with
 // `-run 'TestFeatures/memory'`.
 func TestFeatures(t *testing.T) {
-	for _, d := range drivers {
+	for _, d := range driversFor(t, os.Getenv(postgrestest.ServerURLVariable)) {
 		t.Run(d.name, func(t *testing.T) {
+			if d.skipReason != "" {
+				t.Skip(d.skipReason)
+			}
 			o := opts
 			o.TestingT = t
 			o.Tags = joinTags(opts.Tags, d.tags)

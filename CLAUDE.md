@@ -43,6 +43,12 @@ Never skip a step or merge steps unless I ask. Never write production code witho
 
 Never stage, commit, push or pull unless I explicitly ask. That includes `git add`, `git mv` and `git rm`, which stage changes. Running `/iterate` is such a request, for its own cycle only (see `.claude/commands/iterate.md`, whose `allowed-tools` lets it run `git add`, `git commit` and `git push` without a prompt). Running `/iterate-all` is the same request for each of its cycles. Both open the feature's pull request after its last task (`.claude/rules/work-tracking.md`), and `/feature` creates the feature's branch; nothing else opens a pull request or changes branch unless I ask. Running `/feature` is the same request for its own spec, scenarios and task list. `/red`, `/green` and `/refactor` leave everything unstaged. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
 
+## Writing and asking
+
+Use the Oxford comma in everything written in this repository: docs, rules, commands, Gherkin, code comments, and messages. Docs for developers (README, SPEC.md, the `docs/` guides, and the ADRs) favour clarity over brevity, as set out in `.claude/rules/documentation.md`.
+
+When you ask me a question, don't assume I know the tools, terms, or patterns behind it, including design, devops, and industry practices that might seem standard. I'm new to much of this stack, and I often pick your recommendation only because I can't judge the other options. So explain what is being decided and why it matters. For each option, say what it would mean in practice, and its trade-offs: what it costs, and what it makes harder later. Link to a tool's documentation where that helps, and draw a small diagram (plain text in the terminal) when the choice is about how parts fit together.
+
 ## Commands
 
 | Task | Command |
@@ -50,6 +56,7 @@ Never stage, commit, push or pull unless I explicitly ask. That includes `git ad
 | Unit tests (Go race + Vitest) | `task test` (`task test:go`, `task test:web`) |
 | One Go test | `go test ./internal/core/app/ -run TestName` |
 | Go benchmarks | `task bench` · narrow it: `task bench -- -bench ConflictCopies` (never run by `task check` or CI) |
+| Test database (Postgres) | `task db:up` (Postgres on :5432 for `STARTER_TEST_DATABASE_URL`; safe to re-run) · `task db:down`. Without the URL, Postgres tests skip |
 | Acceptance (Godog) | `task accept` · only WIP: `task accept -- --godog.tags=@wip` · one driver: `task accept -- -run 'TestFeatures/memory'` |
 | Browser e2e (playwright-bdd) | `task e2e` (builds the SPA and starts the Go server itself) |
 | Terminal journeys (Godog) | `task e2e:terminal` (builds `starter` and `server`, runs them in a pseudo-terminal; Unix only) · only WIP: `task e2e:terminal -- --godog.tags=@wip` |
@@ -78,13 +85,13 @@ internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --s
 internal/adapters/cli, tui       Cobra / Bubble Tea + Lip Gloss
 internal/adapters/desktop        desktop app wiring with no Wails import: data folder, storage, in-process handler
 internal/adapters/mobile         Android wiring on top of desktop's, no Wails import: the page handler and Serve, the API bridge
-internal/adapters/storage/*      memory, jsonfile, sqlite (goose migrations in sqlite/migrations), + storagetest contract suite
+internal/adapters/storage/*      memory, jsonfile, sqlite, postgres; sqlstore (the SQL both share: goose migrations, repositories); storagetest contract suite
 internal/adapters/workspace      ports.WorkspaceResolver: Local (the local edition's one workspace), FromContext (set with WithID)
 internal/adapters/plans          ports.EntitlementsProvider and ports.PlanCatalog from the plans file (plans.jsonc, built in; STARTER_PLANS_FILE replaces it); plans.StoredPlanOf reads stored plans
 internal/bootstrap               composition root: the only place that picks adapters
 web/                             Vite + React + TS + Tailwind + TanStack Query; components every screen can use (e.g. `ErrorMessage`) go in web/src/components
 mobile/android                   Wails' generated Gradle project for the Android app (see docs/mobile.md)
-features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, sqlite, http, desktop, mobile and server drivers (tags pick drivers; see .claude/rules/testing.md)
+features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, sqlite, postgres, http, desktop, mobile, and server drivers (tags pick drivers; see .claude/rules/testing.md)
 web/e2e                          playwright-bdd browser journeys
 test/terminal                    Godog terminal journeys: the built CLI and TUI (and a server for --server) in a pseudo-terminal; term is the terminal helper (Unix only)
 test/packaging                   package check: builds the Linux packages and the Windows setup program and inspects them (build tag `packaging`, `task test:package`)
@@ -113,7 +120,8 @@ Each loads when you read a file matching its paths. Read one directly when a tas
 
 | File | Covers |
 |---|---|
-| `naming.md` | naming types after what their values are, the "is a" test, renaming |
+| `naming.md` | naming types after what their values are, the "is a" test, naming files, renaming |
+| `documentation.md` | developer docs: clarity over brevity, explaining tools and terms, examples, diagrams |
 | `user-facing-text.md` | agreeing wording with me first, formal style, the Oxford comma |
 | `work-tracking.md` | keeping `docs/wip/` task lists and `docs/plans/` plans |
 | `workspaces-and-plans.md` | workspace scoping, entitlements, the local plan and plans file, changing a plan, domain errors |

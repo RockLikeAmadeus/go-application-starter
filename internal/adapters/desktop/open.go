@@ -4,6 +4,7 @@
 package desktop
 
 import (
+	"errors"
 	"io/fs"
 	"net/http"
 
@@ -25,7 +26,8 @@ type App struct {
 // Open creates the default settings file when there is none
 // (config.CreateDefaultSettingsFile), loads the configuration from the local
 // settings file and the environment (config.Load), with SQLite storage when the settings choose it
-// and jsonfile otherwise (never memory: the desktop app keeps its data),
+// and jsonfile otherwise (never memory: the desktop app keeps its data; and
+// it refuses Postgres, because hosted data is reached through a server),
 // opens the desktop app's data folder (config.LocalDataDir:
 // STARTER_DATA_DIR, else data_dir in the settings file, else the user's
 // settings folder) and wires the core behind the server's HTTP handler.
@@ -48,6 +50,9 @@ func OpenWithoutDefaultSettingsFile(getenv func(string) string, userConfigDir fu
 	cfg, err := config.Load(env, settingsFile)
 	if err != nil {
 		return nil, err
+	}
+	if cfg.Storage == config.StoragePostgres {
+		return nil, errors.New(`The storage setting is "postgres", but this application keeps its data on this device. Please use "jsonfile" or "sqlite".`)
 	}
 	if cfg.Storage != config.StorageSQLite {
 		cfg.Storage = config.StorageJSONFile

@@ -127,10 +127,65 @@ func TestStorageAcceptsSQLite(t *testing.T) {
 	}
 }
 
+func TestStorageAcceptsPostgres(t *testing.T) {
+	cfg, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_STORAGE": "postgres"})}, "")
+	if err != nil {
+		t.Fatalf("Load with postgres: %v", err)
+	}
+	if cfg.Storage != config.StoragePostgres {
+		t.Errorf("Storage = %q, want %q", cfg.Storage, config.StoragePostgres)
+	}
+}
+
+func TestDatabaseURLIsASettingReadFromTheEnvironment(t *testing.T) {
+	const databaseURL = "postgres://starter@db.example.com:5432/starter"
+	env := envOf(map[string]string{"STARTER_DATABASE_URL": databaseURL})
+
+	cfg, err := config.Load(config.Env{Getenv: env}, "")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	if cfg.DatabaseURL != databaseURL {
+		t.Errorf("DatabaseURL = %q, want %q", cfg.DatabaseURL, databaseURL)
+	}
+	const wantSource = "environment (STARTER_DATABASE_URL)"
+	isListed := false
+	for _, setting := range cfg.Settings() {
+		if setting.Key == "database_url" && setting.Source == wantSource {
+			isListed = true
+		}
+	}
+	if !isListed {
+		t.Errorf("Settings() = %v, want database_url from %q", cfg.Settings(), wantSource)
+	}
+}
+
+func TestSettingsHidesTheDatabaseURLOnlyWhenItIsSet(t *testing.T) {
+	const databaseURL = "postgres://starter:secret@db.example.com:5432/starter"
+	withURL, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_DATABASE_URL": databaseURL})}, "")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	withoutURL, err := config.Load(config.Env{Getenv: envOf(nil)}, "")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	wantHidden := config.Setting{Key: "database_url", Value: "(hidden)", Source: "environment (STARTER_DATABASE_URL)"}
+	if !listsSetting(withURL.Settings(), wantHidden) {
+		t.Errorf("Settings() = %v, want it to list %v", withURL.Settings(), wantHidden)
+	}
+	wantEmpty := config.Setting{Key: "database_url", Value: "", Source: "built in"}
+	if !listsSetting(withoutURL.Settings(), wantEmpty) {
+		t.Errorf("Settings() = %v, want it to list %v", withoutURL.Settings(), wantEmpty)
+	}
+}
+
 func TestAnUnknownStorageErrorReadsAsASentence(t *testing.T) {
 	_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_STORAGE": "disk"})}, "")
 
-	want := `The storage setting "disk" is not recognized. Please use "memory", "jsonfile", or "sqlite".`
+	want := `The storage setting "disk" is not recognized. Please use "memory", "jsonfile", "sqlite", or "postgres".`
 	if err == nil || err.Error() != want {
 		t.Errorf("error = %v, want %q", err, want)
 	}

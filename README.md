@@ -19,8 +19,8 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
  Desktop / Android ┘              core (domain + app)
  (in-process, no port)                 │
                                driven ports
-                           ┌──────────┼──────────┐
-                        memory    jsonfile    sqlite   (← Postgres planned)
+                           ┌──────────┼──────────┬──────────┐
+                        memory    jsonfile    sqlite     postgres
 
  Local edition:  CLI / TUI embedded, desktop and Android apps, a self-hosted server
  Hosted edition: the web app on a hosted server with sign-in, plus the CLI / TUI and
@@ -37,7 +37,7 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
 | Task | 3 | `go install github.com/go-task/task/v3/cmd/task@latest` |
 | golangci-lint | 2 | https://golangci-lint.run/welcome/install/ |
 | lefthook (optional) | 2 | `go install github.com/evilmartians/lefthook/v2@v2.2.2` |
-| Docker (optional) | | for `task docker:*` |
+| Docker (optional) | | for `task docker:*` and `task db:up`, usable without `sudo` (on Linux, `sudo usermod -aG docker $USER`, then log in again). Without a test database, Postgres tests skip |
 | GitHub CLI (optional) | 2 | only for the Claude Code workflow, which opens a feature's pull request with `gh pr create`. https://cli.github.com, then `gh auth login` |
 | Desktop build deps (optional) | | only for the desktop app (`task run:desktop`, `task build:desktop`). Linux (Ubuntu/Debian): `sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev`. macOS: `xcode-select --install`. Windows: nothing extra (Wails uses no cgo there, and the WebView2 runtime ships with Windows 10 and 11; the setup program installs it if missing). Tried on Windows on 2026-11-02 |
 | Linux packaging tools (optional) | | only for the desktop app's Linux packages (`task package:desktop:linux`, `task test:package`), on top of the desktop build deps. `sudo apt install desktop-file-utils rpm libfuse2t64`: `desktop-file-validate` checks the desktop file, `rpm` reads the `.rpm` (its checks are skipped without it), and FUSE 2 runs an AppImage (on Ubuntu before 24.04, `libfuse2`). The first AppImage build downloads `linuxdeploy` from GitHub. Build the AppImage where WebKitGTK 4.1 isn't installed (`sudo apt remove libwebkit2gtk-4.1-dev` if nothing else needs it), or it bundles that too, about 90 MB the app never uses |
@@ -72,6 +72,8 @@ task package:desktop:windows     # Windows setup .exe of the desktop app in ./bi
 task mobile:android:build        # ./bin/starter.apk, a debug build for phones and the emulator (needs the Android tools)
 ./bin/server                     # the built app on :8080, installable from Chrome (see docs/installable-app.md)
 task docker:up                   # production image locally on :8080
+task db:up                       # Postgres for tests on :5432 (task db:down stops it); run Postgres tests with
+                                 # STARTER_TEST_DATABASE_URL='postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable'
 task rename -- --name "New Name" # rebrand the project; --dry-run previews it (see docs/rename.md)
 ```
 
@@ -92,7 +94,7 @@ Repeat red → green → refactor until `task accept` is green. The last task dr
 
 ### Three layers of Gherkin
 
-- `features/*.feature` (**Godog**) holds the business rules in domain language. Each scenario runs against up to six drivers (in-memory core, jsonfile storage, SQLite storage, the full HTTP server+client, the desktop app's wiring, and the mobile app's wiring across its bridge), all in-process and fast.
+- `features/*.feature` (**Godog**) holds the business rules in domain language. Each scenario runs against up to seven drivers (in-memory core, jsonfile storage, SQLite storage, Postgres storage when a test database is set, the full HTTP server+client, the desktop app's wiring, and the mobile app's wiring across its bridge), all in-process and fast.
 - `web/e2e/features/*.feature` (**playwright-bdd**) holds a thin set of browser journeys proving the UI → API → core wiring.
 - `test/terminal/features/*.feature` (**Godog**, with `creack/pty` and `charmbracelet/x/vt`) holds a thin set of terminal journeys: the built `starter` program, in a real pseudo-terminal, proving the CLI's options, output and exit status, and the TUI's keys and screen, reach the core and back (also through `--server`).
 
@@ -133,7 +135,7 @@ Then, in GitHub, open **Settings → Environments** and:
 
 Fly must be able to pull the image from GHCR. The simplest option is to make the package public (**Package settings → Change visibility**). To keep it private, change `deploy.yml` to `flyctl deploy --remote-only` (Fly builds from source) instead of `--image`.
 
-> ⚠️ Both file-based adapters need **one machine per volume**: `jsonfile` takes an exclusive lock, and a `sqlite` database can't be shared between machines (several processes on one machine are fine; see [ADR 7](docs/adr/0007-sqlite-storage.md)). Don't `fly scale count` above 1 until you've moved to a database server such as Postgres (planned).
+> ⚠️ Both file-based adapters need **one machine per volume**: `jsonfile` takes an exclusive lock, and a `sqlite` database can't be shared between machines (several processes on one machine are fine; see [ADR 7](docs/adr/0007-sqlite-storage.md)). To run more than one machine, use `postgres` storage: create a Postgres database (Fly Postgres or any other), set `STARTER_STORAGE=postgres`, and set `STARTER_DATABASE_URL` as a secret (`fly secrets set`), not in `fly.toml` ([ADR 8](docs/adr/0008-postgres-storage.md)). Until then, don't `fly scale count` above 1.
 
 ### Docker
 

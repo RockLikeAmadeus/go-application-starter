@@ -11,8 +11,8 @@ import (
 
 // newInfoCmd shows where the settings and the data are: it opens the app, as
 // any command that uses the data does, and names the settings file it read
-// (or none), lists each setting with where it came from, the data folder it opened (or the server it uses, or says the
-// data is only in memory) and the workspace's plan.
+// (or none), lists each setting with where it came from, says where the data
+// is (see dataLocation) and names the workspace's plan.
 func newInfoCmd(open appOpener) *cobra.Command {
 	return &cobra.Command{
 		Use:   "info",
@@ -45,13 +45,16 @@ func newInfoCmd(open appOpener) *cobra.Command {
 }
 
 // dataLocation says where cfg keeps the data, as a label and a location: a data
-// folder, a server, or only memory.
+// folder, a server, only memory, or a Postgres database, named by its setting
+// because its URL usually holds a password.
 func dataLocation(cfg config.Config) (label, location string) {
 	switch {
 	case cfg.ServerURL != "":
 		return "Server", cfg.ServerURL
 	case cfg.Storage == config.StorageMemory:
 		return "Data", "kept in memory, not saved"
+	case cfg.Storage == config.StoragePostgres:
+		return "Data", "kept in the Postgres database at database_url"
 	}
 	return "Data folder", cfg.DataDir
 }

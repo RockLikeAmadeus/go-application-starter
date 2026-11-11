@@ -1,4 +1,4 @@
-package sqlite
+package sqlstore
 
 import (
 	"context"
@@ -10,23 +10,24 @@ import (
 )
 
 // WorkspacePlanRepository stores which plan each workspace is on, in the
-// store's workspace_plans table.
+// workspace_plans table.
 type WorkspacePlanRepository struct {
-	store *Store
+	db *sql.DB
 }
 
 var _ ports.WorkspacePlanRepository = (*WorkspacePlanRepository)(nil)
 
-// NewWorkspacePlanRepository returns a repository built on store.
-func NewWorkspacePlanRepository(store *Store) *WorkspacePlanRepository {
-	return &WorkspacePlanRepository{store: store}
+// NewWorkspacePlanRepository returns a repository built on db, which
+// Migrate has brought up to date.
+func NewWorkspacePlanRepository(db *sql.DB) *WorkspacePlanRepository {
+	return &WorkspacePlanRepository{db: db}
 }
 
 // PlanOf returns the workspace's plan.
 func (r *WorkspacePlanRepository) PlanOf(ctx context.Context, workspace domain.WorkspaceID) (string, error) {
 	var plan string
-	err := r.store.db.QueryRowContext(ctx,
-		`SELECT plan FROM workspace_plans WHERE workspace_id = ?`, workspace).Scan(&plan)
+	err := r.db.QueryRowContext(ctx,
+		`SELECT plan FROM workspace_plans WHERE workspace_id = $1`, workspace).Scan(&plan)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", domain.ErrNotFound
 	}
@@ -35,7 +36,8 @@ func (r *WorkspacePlanRepository) PlanOf(ctx context.Context, workspace domain.W
 
 // SavePlan stores the workspace's plan.
 func (r *WorkspacePlanRepository) SavePlan(ctx context.Context, workspace domain.WorkspaceID, plan string) error {
-	_, err := r.store.db.ExecContext(ctx,
-		`INSERT OR REPLACE INTO workspace_plans (workspace_id, plan) VALUES (?, ?)`, workspace, plan)
+	_, err := r.db.ExecContext(ctx,
+		`INSERT INTO workspace_plans (workspace_id, plan) VALUES ($1, $2)
+		ON CONFLICT (workspace_id) DO UPDATE SET plan = excluded.plan`, workspace, plan)
 	return err
 }

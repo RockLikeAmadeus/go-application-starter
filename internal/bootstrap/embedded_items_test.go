@@ -6,6 +6,7 @@ package bootstrap_test
 import (
 	"testing"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
@@ -13,7 +14,17 @@ import (
 // Items saved on SQLite are still there for the next program to open the
 // same data folder.
 func TestNewEmbedded_OnSQLiteKeepsItemsAfterClosingAndReopening(t *testing.T) {
-	cfg := config.Config{Storage: config.StorageSQLite, DataDir: t.TempDir()}
+	assertKeepsItemsAfterClosingAndReopening(t, config.Config{Storage: config.StorageSQLite, DataDir: t.TempDir()})
+}
+
+// Items saved on Postgres are still there for the next program to open the
+// same database.
+func TestNewEmbedded_OnPostgresKeepsItemsAfterClosingAndReopening(t *testing.T) {
+	assertKeepsItemsAfterClosingAndReopening(t, config.Config{Storage: config.StoragePostgres, DatabaseURL: postgrestest.NewDatabase(t)})
+}
+
+func assertKeepsItemsAfterClosingAndReopening(t *testing.T, cfg config.Config) {
+	t.Helper()
 
 	first, err := bootstrap.NewEmbedded(cfg)
 	if err != nil {

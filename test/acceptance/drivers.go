@@ -6,12 +6,15 @@
 package acceptance
 
 import (
+	"database/sql"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/desktop"
@@ -21,7 +24,10 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/mobile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlstore"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -73,8 +79,14 @@ type driver struct {
 	// tags limits the scenarios this driver runs, as a Godog tag expression
 	// combined with --godog.tags. Empty runs every scenario.
 	tags string
+	// skipReason, when set, is why this driver can't run here.
+	skipReason string
 }
 
+// driversFor lists the drivers, for a test Postgres server at serverURL, which
+// is empty when there isn't one. Then the Postgres driver is left out with a
+// note, and the server driver leaves out the scenarios that need Postgres.
+//
 // Desktop-only scenarios (@desktop) run only on the desktop driver, and
 // mobile-only ones (@mobile) only on the mobile driver. Each of those also
 // runs every feature that isn't the other's. Scenarios that switch between
@@ -85,14 +97,27 @@ type driver struct {
 // mobile apps are on the local plan. Scenarios about running the server
 // (@server) run only on the server driver, which runs nothing else: they
 // need its data folder, and the http driver covers the API.
-var drivers = []driver{
-	{name: "memory", start: startMemory, tags: "~@desktop && ~@mobile && ~@server"},
-	{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile && ~@server"},
-	{name: "sqlite", start: startSQLite, tags: "~@desktop && ~@mobile && ~@server"},
-	{name: "http", start: startHTTP, tags: "~@desktop && ~@mobile && ~@workspaces && ~@server"},
-	{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server"},
-	{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server"},
-	{name: "server", start: startServer, tags: "@server"},
+func driversFor(t testing.TB, serverURL string) []driver {
+	postgresDriver := driver{
+		name:  "postgres",
+		start: func() (*harness, error) { return startPostgres(t) },
+		tags:  "~@desktop && ~@mobile && ~@server",
+	}
+	serverTags := "@server"
+	if serverURL == "" {
+		postgresDriver.skipReason = postgrestest.ServerURLVariable + " is not set: leaving out the Postgres driver (task db:up starts a server)"
+		serverTags = "@server && ~@postgres"
+	}
+	return []driver{
+		{name: "memory", start: startMemory, tags: "~@desktop && ~@mobile && ~@server"},
+		{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile && ~@server"},
+		{name: "sqlite", start: startSQLite, tags: "~@desktop && ~@mobile && ~@server"},
+		postgresDriver,
+		{name: "http", start: startHTTP, tags: "~@desktop && ~@mobile && ~@workspaces && ~@server"},
+		{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server"},
+		{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server"},
+		{name: "server", start: func() (*harness, error) { return startServer(t) }, tags: serverTags},
+	}
 }
 
 func newHarness() *harness {
@@ -114,6 +139,18 @@ func (h *harness) usePlans(stored ports.WorkspacePlanRepository, workspaces port
 	h.plans = p
 	h.entitlements = app.NewEntitlementsService(p, workspaces)
 	h.billing = app.NewBillingService(stored, p)
+	return nil
+}
+
+// useSQLStore keeps the scenario's plans and data in db, through the shared
+// SQL repositories, in the workspace named by the context.
+func (h *harness) useSQLStore(db *sql.DB) error {
+	if err := h.usePlans(sqlstore.NewWorkspacePlanRepository(db), workspace.FromContext{}); err != nil {
+		return err
+	}
+	// sample:start
+	h.items = h.newItemService(sqlstore.NewItemRepository(db), workspace.FromContext{})
+	// sample:end
 	return nil
 }
 
@@ -178,14 +215,54 @@ func startSQLite() (*harness, error) {
 		store.Close()
 		os.RemoveAll(dir)
 	}
-	if err := h.usePlans(sqlite.NewWorkspacePlanRepository(store), workspace.FromContext{}); err != nil {
+	if err := h.useSQLStore(store.DB()); err != nil {
 		h.cleanup()
 		return nil, err
 	}
-	// sample:start
-	h.items = h.newItemService(sqlite.NewItemRepository(store), workspace.FromContext{})
-	// sample:end
 	return h, nil
+}
+
+// startPostgres keeps the scenario's data in a database of its own, dropped
+// when the scenario ends.
+func startPostgres(t testing.TB) (*harness, error) {
+	scenario := &scenarioTest{TB: t}
+	store, err := postgres.Open(t.Context(), postgrestest.NewDatabase(scenario))
+	if err != nil {
+		scenario.runCleanups()
+		return nil, err
+	}
+	h := newHarness()
+	h.cleanup = func() {
+		store.Close()
+		scenario.runCleanups()
+	}
+	if err := h.useSQLStore(store.DB()); err != nil {
+		h.cleanup()
+		return nil, err
+	}
+	return h, nil
+}
+
+// scenarioTest is the driver's test, except that what is left to clean up
+// waits for the end of the scenario rather than of the driver's whole run.
+// Godog runs scenarios as subtests that a driver can't reach, and databases
+// kept to the end of the run would use up the server's connections.
+type scenarioTest struct {
+	testing.TB
+	cleanups []func()
+}
+
+// Cleanup registers f to run when the scenario ends.
+func (s *scenarioTest) Cleanup(f func()) {
+	s.cleanups = append(s.cleanups, f)
+}
+
+// runCleanups runs what was registered, last first.
+func (s *scenarioTest) runCleanups() {
+	for _, cleanup := range slices.Backward(s.cleanups) {
+		cleanup()
+	}
+	s.cleanups = nil
 }
 
 func startHTTP() (*harness, error) {
@@ -229,16 +306,18 @@ func (h *harness) driveOverHTTP(url string) error {
 
 // startServer wires the core as cmd/server does, on jsonfile storage in a
 // temporary data folder, and serves it over HTTP.
-func startServer() (*harness, error) {
+func startServer(t testing.TB) (*harness, error) {
 	dir, err := os.MkdirTemp("", "acceptance-server-*")
 	if err != nil {
 		return nil, err
 	}
+	scenario := &scenarioTest{TB: t}
 	h := newHarness()
-	h.server = &testServer{dataDir: dir}
+	h.server = &testServer{dataDir: dir, scenario: scenario}
 	h.cleanup = func() {
 		h.server.stop()
 		os.RemoveAll(dir)
+		scenario.runCleanups()
 	}
 	if err := h.server.start(config.StorageJSONFile); err != nil {
 		h.cleanup()
@@ -251,21 +330,30 @@ func startServer() (*harness, error) {
 type testServer struct {
 	url     string
 	dataDir string
-	close   func()
+	// databaseURL is the Postgres database the server keeps its data in, when
+	// it does.
+	databaseURL string
+	// scenario holds what is left to clean up when the scenario ends.
+	scenario *scenarioTest
+	close    func()
 }
 
 // start wires the core as cmd/server does, on storage in the server's data
 // folder, and serves it over HTTP.
 func (s *testServer) start(storage config.StorageBackend) error {
-	core, err := bootstrap.NewEmbedded(config.Config{Storage: storage, DataDir: s.dataDir})
+	core, err := bootstrap.NewEmbedded(config.Config{Storage: storage, DataDir: s.dataDir, DatabaseURL: s.databaseURL})
 	if err != nil {
 		return err
 	}
-	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{
+	opts := httpapi.Options{
 		Entitlements: core.Entitlements,
 		Ready:        core.Ready,
 		Warnings:     core.Warnings,
-	}))
+	}
+	// sample:start
+	opts.Items = core.Items
+	// sample:end
+	srv := httptest.NewServer(httpapi.NewHandler(opts))
 	s.url = srv.URL
 	s.close = func() {
 		srv.Close()

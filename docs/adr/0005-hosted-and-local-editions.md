@@ -1,6 +1,6 @@
 # 5. Hosted and local editions share one core
 
-- Status: accepted. Workspaces (step 1), plan limits (step 2), plan features (step 3), plan changes (step 4), plain text in a synced folder (step 5) and SQLite (step 6) are built; the rest is planned. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
+- Status: accepted. Workspaces (step 1), plan limits (step 2), plan features (step 3), plan changes (step 4), plain text in a synced folder (step 5), SQLite (step 6), and Postgres (step 7, ADR 8) are built; the rest is planned. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
 - Date: 2026-10-31
 
 ## Context
@@ -11,7 +11,7 @@ A product built from this template may be sold as a hosted service: many users, 
 
 ### Two editions, chosen at the composition root
 
-- The **hosted edition** is multi-user, with Postgres on a server. It's reached by the web app, by the CLI and TUI after `starter login`, and by the desktop and mobile apps in remote mode (ADR 4).
+- The **hosted edition** is multi-user, with Postgres on a server (ADR 8). It's reached by the web app, by the CLI and TUI after `starter login`, and by the desktop and mobile apps in remote mode (ADR 4).
 - The **local edition** is single-user, with plain text or SQLite in a data folder the user chooses: the CLI, the TUI, and the desktop and mobile apps in local mode.
 - **The server can run as either edition.** With sign-in on, it is the hosted edition. With sign-in off, it is a single-user local edition, for someone hosting it for themselves (a home server or NAS). It uses the same fixed local workspace as the desktop app, and the web app works the same either way.
 - Each copy of a front-end uses one edition, never both.
