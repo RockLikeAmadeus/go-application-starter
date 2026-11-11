@@ -174,7 +174,16 @@ The server:
   - Red: `TestNoWorkspaceComesBackAsErrNoWorkspace` failed: the error read as "The server returned an error (401): …", not `ErrNoWorkspace`.
   - Green: `toError` maps `no_workspace` to `domain.ErrNoWorkspace`.
   - Refactor: nothing worth changing; the case and test follow their neighbours. `workspaces-and-plans.md` still says it isn't mapped: task 26 updates it.
-- [ ] 14. The dev sign-in routes: `GET /auth/sign-in` and `GET /auth/dev` show the form, `POST /auth/dev` signs in as the given name (issuer `dev`) and sets the cookie, and `POST /auth/sign-out` ends the session and clears it. Add them to `navigateFallbackDenylist`.
+- [x] 14. `POST /auth/dev` signs in as the given name (issuer `dev`, the name as the subject), sets the session cookie (`HttpOnly`, `SameSite=Lax`, path `/`), and goes to `/`. On with `httpapi.Options.IsDevSignInOn`.
+  - Red: `TestTheDevSignInSignsInAsTheGivenNameAndSetsTheSessionCookie` failed with status 200 (the SPA's hint page), want 303 to `/`. To compile: `Options.IsDevSignInOn`.
+  - Green: with `IsDevSignInOn`, `POST /auth/dev` signs in as the form's `name` (issuer `dev`), sets the cookie, and redirects (303) to `/`; a refused sign-in is a problem (`problemFor`), pinned by 14g.
+  - Refactor: the handler moved to `httpapi/dev_sign_in.go` (`devSignIn`), the issuer is `httpapi.DevIssuer`, and `setSessionCookie` (in `session.go`) sets the cookie, ready for 14b, 14c, and 14f.
+- [ ] 14b. The session cookie lasts as long as the session (`domain.SessionLifetime`), so it outlives the browser.
+- [ ] 14c. Over HTTPS, the session cookie is `Secure`.
+- [ ] 14d. `GET /auth/dev` shows the form asking for a name, posting to `POST /auth/dev`.
+- [ ] 14e. `GET /auth/sign-in` goes to the configured sign-in adapter (`/auth/dev`). Add `/auth/` to `navigateFallbackDenylist`.
+- [ ] 14f. `POST /auth/sign-out` ends the session, clears the cookie, and goes to `/`.
+- [ ] 14g. A refused dev sign-in (a blank name) is a 400 problem, and sets no cookie.
 - [ ] 15. With a session cookie, a request that changes something from another site is refused (403).
 - [ ] 16. `GET /api/v1/session` in `api/openapi.yaml` (`task gen`), served from `CurrentAccount`, and `httpclient` reads it.
 
@@ -207,3 +216,4 @@ The web app:
 - 2026-11-10, task 12: split into 12 (a valid session cookie puts its workspace in the context) and 12b (no cookie, or an unknown one, leaves none), as each needs its own test.
 - 2026-11-10, task 12b: split into 12b (no cookie leaves no workspace) and 12c (an unknown cookie leaves none), as each needs its own test.
 - 2026-11-11, task 13: split into 13 (the server's 401 problem) and 13b (`httpclient` maps it back), as each needs its own test. The user agreed `ErrNoWorkspace`'s message, "Please sign in to continue.", which is also the problem's detail.
+- 2026-11-11, task 14: split into 14 (`POST /auth/dev` signs in and sets the cookie), 14b (the cookie lasts as long as the session), 14c (`Secure` over HTTPS), 14d (`GET /auth/dev` shows the form), 14e (`GET /auth/sign-in` goes to it, and the denylist), 14f (signing out), and 14g (a refused dev sign-in, added at green, where the code needed an error path), as each needs its own test.

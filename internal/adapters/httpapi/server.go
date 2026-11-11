@@ -37,6 +37,8 @@ type Options struct {
 	// SignIn knows each session's account. When set, a request with a
 	// session cookie runs in that account's workspace.
 	SignIn ports.SignInService
+	// IsDevSignInOn serves the dev sign-in under /auth/dev. It needs SignIn.
+	IsDevSignInOn bool
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and
@@ -77,6 +79,10 @@ func NewHandler(opts Options) http.Handler {
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeProblem(w, problem(http.StatusNotFound, ProblemNotFound, "no such endpoint", nil))
 	})
+
+	if opts.IsDevSignInOn {
+		mux.Handle("POST /auth/dev", devSignIn(opts.SignIn))
+	}
 
 	mux.Handle("/", spaHandler(opts.WebAssets))
 

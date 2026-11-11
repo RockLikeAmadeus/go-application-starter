@@ -1,0 +1,69 @@
+package httpapi_test
+
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+)
+
+// signInRecorder is a ports.SignInService that records the identity it signs
+// in and answers the same token for every sign-in.
+type signInRecorder struct {
+	token      string
+	identities []domain.Identity
+}
+
+func (s *signInRecorder) SignIn(_ context.Context, identity domain.Identity) (string, error) {
+	s.identities = append(s.identities, identity)
+	return s.token, nil
+}
+
+func (s *signInRecorder) CurrentAccount(context.Context, string) (domain.Account, error) {
+	return domain.Account{}, domain.ErrNoWorkspace
+}
+
+func (s *signInRecorder) SignOut(context.Context, string) error {
+	return nil
+}
+
+// sessionCookieOf returns the response's session cookie, failing the test
+// without one.
+func sessionCookieOf(t *testing.T, rec *httptest.ResponseRecorder) *http.Cookie {
+	t.Helper()
+	for _, cookie := range rec.Result().Cookies() {
+		if cookie.Name == httpapi.SessionCookie {
+			return cookie
+		}
+	}
+	t.Fatalf("no %q cookie in %v", httpapi.SessionCookie, rec.Result().Header.Values("Set-Cookie"))
+	return nil
+}
+
+func TestTheDevSignInSignsInAsTheGivenNameAndSetsTheSessionCookie(t *testing.T) {
+	signIn := &signInRecorder{token: "token-ada"}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: signIn, IsDevSignInOn: true})
+	form := url.Values{"name": {"Ada"}}
+	req := httptest.NewRequest(http.MethodPost, "/auth/dev", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/" {
+		t.Fatalf("status = %d, Location = %q; want %d to %q", rec.Code, rec.Header().Get("Location"), http.StatusSeeOther, "/")
+	}
+	want := domain.Identity{Issuer: httpapi.DevIssuer, Subject: "Ada", Name: "Ada"}
+	if len(signIn.identities) != 1 || signIn.identities[0] != want {
+		t.Errorf("signed in as %+v, want %+v", signIn.identities, want)
+	}
+	cookie := sessionCookieOf(t, rec)
+	if cookie.Value != "token-ada" || !cookie.HttpOnly || cookie.SameSite != http.SameSiteLaxMode || cookie.Path != "/" {
+		t.Errorf("cookie = %+v, want token-ada, HttpOnly, SameSite=Lax, and path /", cookie)
+	}
+}
