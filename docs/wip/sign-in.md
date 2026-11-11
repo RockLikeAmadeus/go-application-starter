@@ -78,7 +78,10 @@ Storage:
   - Red: `TestAccountRepositoryContract/FindByIdentity_with_no_saved_account_returns_ErrNotFound` failed: `err = <nil>, want ErrNotFound`.
   - Green: the new `memory.AccountRepository`'s `FindByIdentity` always returns `ErrNotFound`; `Find` and `Save` are stubs until 7d–7f.
   - Refactor: nothing worth changing; the stubs are left for 7b–7f to drive.
-- [ ] 7b. Account contract: `FindByIdentity` returns the saved account with the identity's issuer and subject, even under another name.
+- [x] 7b. Account contract: `FindByIdentity` returns the saved account with the identity's issuer and subject, even under another name.
+  - Red: `TestAccountRepositoryContract/FindByIdentity_returns_the_account_with_the_issuer_and_subject,_whatever_the_name` failed: `FindByIdentity: The requested record could not be found.`
+  - Green: `memory.AccountRepository` keeps accounts by ID (`Save`), and `FindByIdentity` returns the one with the issuer and subject.
+  - Refactor: nothing worth changing; an `Identity` matching method in `domain` was left, as the SQL repository will match in its query and no second caller needs it.
 - [ ] 7c. Account contract: `FindByIdentity` doesn't match an account with the same name but another issuer or subject.
 - [ ] 7d. Account contract: `Find` returns the saved account by its ID.
 - [ ] 7e. Account contract: `Find` of an unknown ID is `ErrNotFound`.
