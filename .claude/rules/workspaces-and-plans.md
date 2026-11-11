@@ -11,7 +11,7 @@ paths:
   - "docs/billing.md"
 ---
 
-# Workspaces, plans and domain errors (ADR 5)
+# Workspaces, plans, and domain errors (ADR 5)
 
 ## Workspaces
 

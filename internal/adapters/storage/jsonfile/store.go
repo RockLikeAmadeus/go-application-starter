@@ -98,7 +98,7 @@ func (s *Store) Close() error {
 
 // Ready reports whether the store can still write to its data directory,
 // by creating and removing an empty temp file there. It fails when the
-// directory has gone, is read-only or is full, and checks afresh each time,
+// directory has gone, is read-only, or is full, and checks afresh each time,
 // so a directory that comes back is ready again.
 func (s *Store) Ready(context.Context) error {
 	f, err := os.CreateTemp(s.dir, ".ready-*.tmp")

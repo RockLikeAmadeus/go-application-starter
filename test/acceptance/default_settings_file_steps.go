@@ -151,7 +151,7 @@ func (w *world) theMobileAppHasCreatedNoSettingsFile() error {
 }
 
 // mySettingsFileSets checks the settings file sets key to value: a quoted
-// string, true or false, or "the desktop app's data folder".
+// string, true, or false, or "the desktop app's data folder".
 func (w *world) mySettingsFileSets(key, value string) error {
 	settings, err := w.readSettingsFile()
 	if err != nil {
@@ -195,7 +195,7 @@ func (w *world) readSettingsFile() (map[string]any, error) {
 	return toml.Parser().Unmarshal(text)
 }
 
-// settingValue is the value a step names: a quoted string, true or false, or
+// settingValue is the value a step names: a quoted string, true, or false, or
 // "the desktop app's data folder", which with nothing choosing another is
 // the app's folder in the settings folder.
 func (w *world) settingValue(value string) (any, error) {

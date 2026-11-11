@@ -15,7 +15,7 @@ This serves the app and the API on http://localhost:8080, with data in `./data`.
 
 ## Install it on a computer
 
-Use Google Chrome, Chromium or Edge. Firefox can't install web apps on Linux or macOS. Safari on macOS uses *File › Add to Dock*.
+Use Google Chrome, Chromium, or Edge. Firefox can't install web apps on Linux or macOS. Safari on macOS uses *File › Add to Dock*.
 
 1. Open http://localhost:8080.
 2. Click the install icon at the right of the address bar, or open the ⋮ menu › *Cast, save and share* › *Install page as app…*.

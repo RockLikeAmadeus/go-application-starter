@@ -2,7 +2,7 @@
 
 Every piece of data belongs to a **workspace**, and a request only ever sees or changes its own workspace's data. This guide explains how that works, then walks through adding a new entity that follows the rule. The decision behind it is [ADR 5](adr/0005-hosted-and-local-editions.md); the business rules are in `SPEC.md`, "Keep each workspace's data separate".
 
-**Why every entity needs it:** the same core runs in two editions. The **local edition** (CLI, TUI, desktop and mobile apps, a self-hosted server) has exactly one workspace. The **hosted edition** serves many users from one server, each in their own workspace. If one entity skips the rule, the hosted edition leaks that entity's data between users, and nothing else in the stack would stop it. So the rule is built in at the core, and checked by tests every storage backend must pass.
+**Why every entity needs it:** the same core runs in two editions. The **local edition** (CLI, TUI, desktop and mobile apps, and a self-hosted server) has exactly one workspace. The **hosted edition** serves many users from one server, each in their own workspace. If one entity skips the rule, the hosted edition leaks that entity's data between users, and nothing else in the stack would stop it. So the rule is built in at the core, and checked by tests every storage backend must pass.
 
 ## How it works
 
@@ -147,7 +147,7 @@ Some data is one value per workspace rather than a list of records, such as whic
 
 ## Pitfalls
 
-- **Taking the workspace from the request.** A workspace ID in an API body, query string or CLI flag would let anyone pick any workspace. Only the resolver decides. (`starter admin set-plan` names a workspace, but it runs beside the storage, so whoever can run it already has the data.)
+- **Taking the workspace from the request.** A workspace ID in an API body, query string, or CLI flag would let anyone pick any workspace. Only the resolver decides. (`starter admin set-plan` names a workspace, but it runs beside the storage, so whoever can run it already has the data.)
 - **A new query without the workspace.** Search, count, "find by name", exports: each one is a new way to leak. Give it the workspace and its own isolation test.
 - **Returning "forbidden" for another workspace's record.** That tells the caller the record exists. Return `ErrNotFound`.
 - **A cache or index shared across workspaces.** Key it by workspace.

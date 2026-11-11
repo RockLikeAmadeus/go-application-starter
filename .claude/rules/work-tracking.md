@@ -14,7 +14,7 @@ paths:
 - When resuming a feature, run `task wip:next` first. It prints the file's links, decisions and open tasks, and leaves out the finished tasks and the plan-change log. Read those only when the task needs them.
 - To update an item, find it with `grep -n` and read just those lines, rather than the whole file.
 - Tick an item only when its refactor is done: `task wip:next` hides ticked items, and with them any **For refactor:** note.
-- After each `/red`, `/green` or `/refactor`, tick off or annotate the item it advanced. If the plan changes, revise the list and note why.
+- After each `/red`, `/green`, or `/refactor`, tick off or annotate the item it advanced. If the plan changes, revise the list and note why.
 - `/green` leaves a **For refactor:** note under its item, listing the refactoring it spotted. `/refactor` starts from that note and replaces it with what it did.
 - Delete the file in the same change that removes the `@wip` tags. `/feature` makes this, and updating the plan, the feature's last task (docs and finish).
 

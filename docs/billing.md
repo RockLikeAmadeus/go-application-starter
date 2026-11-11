@@ -1,6 +1,6 @@
 # Billing: connecting plans to payments
 
-This guide explains how a product built from this template gets paid. It covers the concepts, running paid accounts by hand, connecting Stripe, merchant-of-record providers, downgrades and failed payments, and a paid local licence. The decision behind it is [ADR 5](adr/0005-hosted-and-local-editions.md), "Billing is a driving adapter". The business rules are in `SPEC.md` §4.15, "Change a workspace's plan".
+This guide explains how a product built from this template gets paid. It covers the concepts, running paid accounts by hand, connecting Stripe, merchant-of-record providers, downgrades, and failed payments, and a paid local licence. The decision behind it is [ADR 5](adr/0005-hosted-and-local-editions.md), "Billing is a driving adapter". The business rules are in `SPEC.md` §4.15, "Change a workspace's plan".
 
 ## What exists today
 
@@ -23,7 +23,7 @@ use cases ◄── EntitlementsProvider ◄── plans.Provider ◄── plan
 ```
 
 - **A plan is a name in the plans file** (`internal/adapters/plans/plans.jsonc`). It sets a workspace's limits and features. It knows nothing about prices. `docs/features.md` covers features, and `.claude/rules/workspaces-and-plans.md` covers limits.
-- **`ChangePlan(ctx, workspace, plan)` is the core's only billing concept.** The core has no idea of money, invoices or subscriptions. Those live in the payment provider, and the provider's adapter translates them into a call to `ChangePlan`.
+- **`ChangePlan(ctx, workspace, plan)` is the core's only billing concept.** The core has no idea of money, invoices, or subscriptions. Those live in the payment provider, and the provider's adapter translates them into a call to `ChangePlan`.
 - **A payment provider is a driving adapter.** It calls the core through a driving port, as a REST handler does. It goes in its own package under `internal/adapters`, and `internal/bootstrap` wires it.
 - **The workspace is an argument.** Everywhere else, a use case asks `ports.WorkspaceResolver` for the current workspace. `ChangePlan` is the exception, because an admin or a webhook acts on someone else's workspace, with no signed-in user behind the request. So the caller must get the workspace from somewhere it can trust (see [Which workspace paid?](#which-workspace-paid)).
 
@@ -183,7 +183,7 @@ Stripe sends `customer.subscription.deleted` when a subscription ends, with the 
 
 This handler assumes one subscription per workspace. Send customers to the [Customer Portal](https://docs.stripe.com/customer-management) to switch plans or cancel, which changes that one subscription. A second subscription could otherwise overwrite the first one's plan. The portal needs the Stripe customer ID, so keep it for each workspace in a small repository like `ports.WorkspacePlanRepository`, written when the checkout completes.
 
-### Duplicates, ordering and failures
+### Duplicates, ordering, and failures
 
 - **Duplicate deliveries:** Stripe may deliver an event more than once. `ChangePlan` gives the same result each time, so you don't need to record event IDs. Record them only if you add something that mustn't happen twice, such as a welcome email.
 - **Ordering:** Stripe doesn't guarantee the order of events, and its `created` timestamp can't sort them. That's why the handler reads the subscription from Stripe instead of trusting the event's copy: a late event then sets the current state, not an old one.
@@ -220,7 +220,7 @@ Also write ordinary tests: `stripe-go` can sign a test payload (`webhook.Generat
 
 ## Merchant-of-record providers
 
-With Stripe you are the seller, so sales tax, VAT and invoicing rules in each customer's country are yours to handle. A **merchant of record** such as [Paddle](https://developer.paddle.com) or [Lemon Squeezy](https://docs.lemonsqueezy.com) is the legal seller instead, and takes on that tax work for a higher fee. Check their current pricing and whether they accept your kind of product. For a small team selling worldwide, the higher fee is often worth it.
+With Stripe you are the seller, so sales tax, VAT, and invoicing rules in each customer's country are yours to handle. A **merchant of record** such as [Paddle](https://developer.paddle.com) or [Lemon Squeezy](https://docs.lemonsqueezy.com) is the legal seller instead, and takes on that tax work for a higher fee. Check their current pricing and whether they accept your kind of product. For a small team selling worldwide, the higher fee is often worth it.
 
 The adapter has the same shape as Stripe's. Only the names change:
 

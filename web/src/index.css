@@ -21,7 +21,7 @@
   --spacing-row: var(--style-row-py);
 }
 
-/* Headings, buttons and table headers: upper-case and monospaced in some styles. */
+/* Headings, buttons, and table headers: upper-case and monospaced in some styles. */
 @utility type-label {
   font-family: var(--style-font-label);
   text-transform: var(--style-label-case);

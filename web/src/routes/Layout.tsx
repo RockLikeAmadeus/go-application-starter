@@ -133,7 +133,7 @@ type SidebarContentProps = {
 };
 
 /**
- * Logo, navigation and Appearance controls, shared by the sidebar and the phone
+ * Logo, navigation, and Appearance controls, shared by the sidebar and the phone
  * menu. It fills its container, so in the menu only a tap outside it reaches
  * the dialog itself (which counts as the backdrop).
  */

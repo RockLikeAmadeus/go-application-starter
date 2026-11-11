@@ -8,7 +8,7 @@ Run an `/iterate` cycle for each open task of one `docs/wip/` file, without stop
 
 > $ARGUMENTS
 
-You coordinate. Each cycle runs in its own subagent, so it starts from a clean context, as it would after `/clear`. Stay small: don't read the code, the plan or test output yourself. Rely on what each subagent reports, apart from the review and the sweep below, which read only the lines their searches find.
+You coordinate. Each cycle runs in its own subagent, so it starts from a clean context, as it would after `/clear`. Stay small: don't read the code, the plan, or test output yourself. Rely on what each subagent reports, apart from the review and the sweep below, which read only the lines their searches find.
 
 **Pick the file.** If the arguments name a feature, use `docs/wip/<slug>.md`. Otherwise use the only file in `docs/wip/`, or, when there are several, the one with open tasks (`- [ ]`) that was committed to most recently:
 
@@ -36,23 +36,23 @@ Say which file you picked before the first cycle, and stay on it. If it has no o
 **Review each cycle before committing it.** A `DONE` report can be wrong, so check four things. Don't read the whole diff: search it, and read only the hunks the searches point at. Search the changes to tracked files with `git diff -U0 HEAD`, and new files by passing `git ls-files -o --exclude-standard` to `grep`.
 - **Paths:** `git status --short` lists the same paths as the report.
 - **Imports:** for each new import of one of this module's packages (`go list -m` gives the module path), check it against the architecture in `CLAUDE.md`. depguard only guards the core, so look for an adapter importing another adapter, a package outside `internal/bootstrap` choosing a storage adapter, and template code importing sample code.
-- **Deferred work:** search the added lines for `until`, `for now`, `temporary`, `later` and `task [0-9]`. Each note that leaves something for later must name an open task in the file that does it.
-- **Commit message:** for everything the message says this cycle removes, renames or replaces, `grep` that the old form is gone.
+- **Deferred work:** search the added lines for `until`, `for now`, `temporary`, `later`, and `task [0-9]`. Each note that leaves something for later must name an open task in the file that does it.
+- **Commit message:** for everything the message says this cycle removes, renames, or replaces, `grep` that the old form is gone.
 
-If something is wrong, send it to the same subagent with SendMessage, to fix it, run the finishing checks again and report again. If it needs a decision from me rather than a fix, ask me with AskUserQuestion, as for `QUESTION`. Commit only once the review is clean.
+If something is wrong, send it to the same subagent with SendMessage, to fix it, run the finishing checks again, and report again. If it needs a decision from me rather than a fix, ask me with AskUserQuestion, as for `QUESTION`. Commit only once the review is clean.
 
 **Sweep before the last task.** The last task often only tidies up or updates the docs, so anything an earlier cycle left behind has to be found before it starts. Search for promises that no remaining task will keep:
-- in this loop's commit messages: `git log <starting point>..HEAD --format=%B`, searched for `until`, `later`, `for now`, `temporar`, `remove` and `task [0-9]`;
+- in this loop's commit messages: `git log <starting point>..HEAD --format=%B`, searched for `until`, `later`, `for now`, `temporar`, `remove`, and `task [0-9]`;
 - in the tree: `git grep -nIiE 'until .{0,40}task [0-9]|for now|temporar'`, leaving out `docs/plans/` and other `docs/wip/` files. The file's own notes count.
 
 For each promise, check that the last task covers it, or that it points to another feature's task. If any don't, ask me with AskUserQuestion whether to add tasks for them, and add the tasks I agree to as unticked tasks before the last one. Then carry on with the loop, which now does those tasks first.
 
-**When a cycle is cut off.** A subagent can end without a report, or with one that doesn't start with `DONE`, `QUESTION` or `BLOCKED`. This happens when it hits an API error, runs out of context or reaches a usage limit. Its work may be half done, so:
+**When a cycle is cut off.** A subagent can end without a report, or with one that doesn't start with `DONE`, `QUESTION`, or `BLOCKED`. This happens when it hits an API error, runs out of context, or reaches a usage limit. Its work may be half done, so:
 1. Don't commit, stage or discard anything, don't start a new subagent, and don't wait or schedule a retry yourself.
 2. Run `git status --short`. Then STOP and tell me the task, the subagent's ID, what it said last, and which paths it left changed.
 3. When I say to carry on, resume the same subagent with SendMessage. Tell it that it was interrupted, to check the tree and the task's notes, and to carry on from where it stopped. If it can't be resumed, start a new subagent with the usual prompt and this added: "A cycle for this task was interrupted and left these changes: <paths>. They are part of this cycle: check them against the task, and keep or finish them. Report `BLOCKED` if you can't tell how far it got." Either way, the cycle goes through the review before it's committed.
 
-A usage limit applies to the whole account, so it stops you as well as the subagent. You can't run steps 1 and 2 when it happens: everything just stops until it resets. The steps start with the next message I send you after that. Before anything else, read the `docs/wip/` file, `git log` and `git status --short` to see where the loop is. If they show uncommitted changes, do step 2, and then step 3 if my message says to carry on. The same applies if you are cut off for any other reason.
+A usage limit applies to the whole account, so it stops you as well as the subagent. You can't run steps 1 and 2 when it happens: everything just stops until it resets. The steps start with the next message I send you after that. Before anything else, read the `docs/wip/` file, `git log`, and `git status --short` to see where the loop is. If they show uncommitted changes, do step 2, and then step 3 if my message says to carry on. The same applies if you are cut off for any other reason.
 
 Prompt for each subagent, with `<file>` filled in:
 
@@ -60,7 +60,7 @@ Prompt for each subagent, with `<file>` filled in:
 >
 > - Wherever they say `task wip:next`, run `task wip:next -- <file>`.
 > - You can't reach me directly. Where they say to ask me, don't use AskUserQuestion. End your turn with a report starting `QUESTION`: each question standing on its own, with its options and your recommendation. I'll answer by message, and you carry on from where you stopped.
-> - Don't stage, commit or push. Stop after the finishing checks, leaving everything unstaged. The coordinator commits.
+> - Don't stage, commit, or push. Stop after the finishing checks, leaving everything unstaged. The coordinator commits.
 > - If the coordinator names changes that aren't part of this cycle, leave them alone and don't ask about them.
 >
 > End with a report. Its first word is `DONE` if the cycle ran to the end and the finishing checks are green, or `BLOCKED` if it can't finish, whatever the reason, including anything red that you can't fix. For `BLOCKED`, say why and what state the tree is in. For `DONE`, keep it short: the task; how far the `@wip` scenarios got; any decision you took without asking; every path you changed; and the full commit message `iterate.md` describes, without attribution lines.
@@ -69,7 +69,7 @@ The `docs/wip/` file and the git history hold the loop's state, not this convers
 
 **STOP the loop, and say why, when:**
 - no open task is left;
-- a subagent reports `BLOCKED` or is cut off, a check after `DONE` fails, or a commit or push fails. Never force-push, pull or rewrite history, and don't start another cycle on top of it;
+- a subagent reports `BLOCKED` or is cut off, a check after `DONE` fails, or a commit or push fails. Never force-push, pull, or rewrite history, and don't start another cycle on top of it;
 - I ask you to stop.
 
 **Don't go beyond the tasks.** Removing the `@wip` tags, deleting the `docs/wip/` file, and marking a step done in `docs/plans/` stay with me unless they are tasks in the file (`/feature` makes them its last task). `/iterate`'s permission to commit covers each cycle only. The one step past the tasks is the pull request at the end, below.

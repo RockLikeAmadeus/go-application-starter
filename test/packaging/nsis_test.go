@@ -41,7 +41,7 @@ func TestExeIsAWindowsGUIProgramForAmd64(t *testing.T) {
 	}
 }
 
-// The program carries the product's icon, so Explorer, the Start menu and the
+// The program carries the product's icon, so Explorer, the Start menu, and the
 // taskbar show it: its icon images are the ones in build/desktop/windows/icon.ico.
 func TestExeCarriesTheProductIcon(t *testing.T) {
 	f := openWindows(t, exe)
@@ -272,7 +272,7 @@ func sevenZip(t *testing.T) string {
 	return ""
 }
 
-// rtIcon, rtVersion and rtManifest are the resource types of one icon image
+// rtIcon, rtVersion, and rtManifest are the resource types of one icon image
 // (RT_ICON), the version info (RT_VERSION) and the manifest (RT_MANIFEST).
 const (
 	rtIcon     = 3

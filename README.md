@@ -77,7 +77,7 @@ task db:up                       # Postgres for tests on :5432 (task db:down sto
 task rename -- --name "New Name" # rebrand the project; --dry-run previews it (see docs/rename.md)
 ```
 
-Settings come from an optional TOML settings file, overridden by environment variables (see `.env.example`), overridden in turn by command-line options. The CLI, TUI and desktop app share `~/.config/starter/config.toml` (on Linux), which they create, with the defaults, when it's missing; the server reads a file only when `STARTER_CONFIG_FILE` names one. `starter info` shows where each setting came from. Every setting, and the rules, are in [docs/configuration.md](docs/configuration.md) ([ADR 6](docs/adr/0006-layered-configuration.md)). Where each front end keeps its data, on each OS, is in [docs/data-locations.md](docs/data-locations.md).
+Settings come from an optional TOML settings file, overridden by environment variables (see `.env.example`), overridden in turn by command-line options. The CLI, TUI, and desktop app share `~/.config/starter/config.toml` (on Linux), which they create, with the defaults, when it's missing; the server reads a file only when `STARTER_CONFIG_FILE` names one. `starter info` shows where each setting came from. Every setting, and the rules, are in [docs/configuration.md](docs/configuration.md) ([ADR 6](docs/adr/0006-layered-configuration.md)). Where each front end keeps its data, on each OS, is in [docs/data-locations.md](docs/data-locations.md).
 
 ## Development workflow (with Claude Code)
 
@@ -87,7 +87,7 @@ Settings come from an optional TOML settings file, overridden by environment var
 | Red | `/red <behaviour>` | exactly one failing unit test |
 | Green | `/green` | the minimum code to pass, then stop |
 | Refactor | `/refactor` | cleaner code, all tests still green |
-| One cycle | `/iterate [behaviour]` | red, green and refactor for the next open task, stopping only for questions; then commits and pushes it, if all went cleanly; after the last task, opens the pull request |
+| One cycle | `/iterate [behaviour]` | red, green, and refactor for the next open task, stopping only for questions; then commits and pushes it, if all went cleanly; after the last task, opens the pull request |
 | Every open task | `/iterate-all [feature]` | `/iterate` in a loop through a feature's open tasks, each in a fresh subagent with one commit after a short review, pausing only for questions; stops when the tasks are done (opening the pull request) or a cycle can't finish cleanly |
 
 Repeat red → green → refactor until `task accept` is green. The last task drops the `@wip` tags and the `docs/wip/` file. See `CLAUDE.md` for the architecture rules Claude follows, `.claude/rules/` for its topic-specific rules (loaded when it works on matching files), and `.claude/settings.json` for permissions and the auto-format hook.
@@ -110,7 +110,7 @@ GitHub Actions, in `.github/workflows/`. [docs/ci-cd.md](docs/ci-cd.md) explains
 | `deploy.yml` | CI success on `main` → **staging**; on `v*` tag → **production**. Only once `DEPLOY_ENABLED` is `true` (see below) | `flyctl deploy --image …`, then a `/readyz` smoke test |
 | `release.yml` | `v*` tag; **Run workflow** | On a tag, creates the GitHub Release: GoReleaser's CLI/TUI binaries for Linux, macOS and Windows, and the desktop app's Linux and Windows installers. By hand, builds only the installers, as artifacts (see [docs/ci-cd.md](docs/ci-cd.md#making-a-release)) |
 
-Dependabot keeps Go, npm, Actions and Docker dependencies current.
+Dependabot keeps Go, npm, Actions, and Docker dependencies current.
 
 ### One-time Fly.io setup
 

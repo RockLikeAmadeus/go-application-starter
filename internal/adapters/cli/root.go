@@ -89,7 +89,7 @@ func NewRootCmd(newApp AppFactory, newBilling BillingFactory, env config.Env, ou
 		return cfg, nil
 	}
 
-	// openApp loads config, wires the app and prints its warnings.
+	// openApp loads config, wires the app, and prints its warnings.
 	openApp := func() (*bootstrap.App, config.Config, error) {
 		cfg, err := loadConfig()
 		if err != nil {

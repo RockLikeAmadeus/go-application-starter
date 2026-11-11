@@ -12,7 +12,7 @@ import (
 const appFolder = "starter"
 
 // LocalDataDir returns the local edition's data folder on this computer,
-// which the desktop app, the CLI and the TUI share: STARTER_DATA_DIR when set,
+// which the desktop app, the CLI, and the TUI share: STARTER_DATA_DIR when set,
 // else data_dir in the TOML settingsFile ("" for none), else the app's folder
 // in the user's settings folder.
 func LocalDataDir(env Env, settingsFile string) (string, error) {
@@ -34,7 +34,7 @@ func LocalDataDir(env Env, settingsFile string) (string, error) {
 }
 
 // LocalConfigFile returns the local edition's settings file on this
-// computer, which the desktop app, the CLI and the TUI share:
+// computer, which the desktop app, the CLI, and the TUI share:
 // STARTER_CONFIG_FILE when set, else config.toml in the app's folder in the
 // user's settings folder. Load fails if a file named this way is missing,
 // but the default one is optional: without it, there is none ("").
@@ -57,7 +57,7 @@ func LocalConfigFile(env Env) (string, error) {
 // default settings file, making the app's folder. It never overwrites a
 // settings file that's already there, and does nothing when
 // STARTER_CONFIG_FILE names another one. When it can't find the settings
-// folder, make the app's folder or write the file, it carries on silently:
+// folder, make the app's folder, or write the file, it carries on silently:
 // the program runs on the built-in settings, and the next run tries again.
 func CreateDefaultSettingsFile(env Env) {
 	if env.Getenv("STARTER_CONFIG_FILE") != "" {

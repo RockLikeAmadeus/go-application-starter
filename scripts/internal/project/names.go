@@ -20,7 +20,7 @@ type Names struct {
 
 // Slug derives the project's machine name from its brand name: lower case,
 // with each run of anything other than ASCII letters and digits turned into a
-// single hyphen. It names the command, the Docker image and the deploy configs,
+// single hyphen. It names the command, the Docker image, and the deploy configs,
 // so other characters are dropped ("Café" becomes "caf"). Names with double
 // quotes or backslashes are refused: the brand lands in quoted strings, which
 // those would break.

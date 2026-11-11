@@ -149,7 +149,7 @@ func (p *project) uncommittedChanges() error {
 
 // --- acting ----------------------------------------------------------------
 
-// packageDetails are the description, publisher and email the tool is given
+// packageDetails are the description, publisher, and email the tool is given
 // when a step doesn't name them: the tool needs them, but most scenarios are
 // about something else.
 var packageDetails = map[string]string{

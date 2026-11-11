@@ -18,7 +18,7 @@ import (
 )
 
 // The web app manifest's type must not depend on the host's MIME tables:
-// Go's own table, the freedesktop one and the distroless image all lack it.
+// Go's own table, the freedesktop one, and the distroless image all lack it.
 func TestServesWebAppManifestAsManifestJSON(t *testing.T) {
 	assets := fstest.MapFS{
 		"index.html":           {Data: []byte("<!doctype html>")},
@@ -142,7 +142,7 @@ func TestEntitlementsAreTheCurrentWorkspacesPlanAndLimits(t *testing.T) {
 }
 
 // The entitlements list every feature the plans know, by key, whether it's on
-// or off, so front ends can show it, lock it or hide it.
+// or off, so front ends can show it, lock it, or hide it.
 func TestEntitlementsIncludeEveryFeatureByKey(t *testing.T) {
 	free := fixedEntitlements{
 		Plan: "free",

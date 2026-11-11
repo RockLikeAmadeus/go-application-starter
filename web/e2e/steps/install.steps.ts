@@ -4,7 +4,7 @@ import { createBdd } from "playwright-bdd";
 const { Given, When, Then } = createBdd();
 
 // "Installable" is checked the way a browser decides it: a linked manifest
-// with a name, a standalone display, a start URL and loadable PNG icons.
+// with a name, a standalone display, a start URL, and loadable PNG icons.
 // "Without a connection" is the browser context going offline, so only the
 // service worker can answer.
 

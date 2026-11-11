@@ -1,6 +1,6 @@
 # Features: turning something on or off by plan
 
-A **feature** is something a workspace's plan turns on or off, like exporting items. This guide explains how gating works, then gives a checklist for gating a new feature. The decision behind it is [ADR 5](adr/0005-hosted-and-local-editions.md). The business rules are in `SPEC.md` §4.9, "Plans, features and limits". Limits, which count things, work differently: see `.claude/rules/workspaces-and-plans.md`.
+A **feature** is something a workspace's plan turns on or off, like exporting items. This guide explains how gating works, then gives a checklist for gating a new feature. The decision behind it is [ADR 5](adr/0005-hosted-and-local-editions.md). The business rules are in `SPEC.md` §4.9, "Plans, features, and limits". Limits, which count things, work differently: see `.claude/rules/workspaces-and-plans.md`.
 
 ## How it works
 
@@ -12,7 +12,7 @@ plans.jsonc ──► plans adapter ──► Entitlements.Features ──► us
 
 1. **The plans file defines the feature.** You add it to the top-level `features` section with a key, a `name` that people read, and `whenOff`. Each plan lists the keys it turns on. A feature a plan doesn't list is off for that plan. The file fails to load if a plan lists an unknown key, a `name` is missing or blank, or `whenOff` isn't `show-locked` or `hide`.
 2. **The core refuses, and the front ends only show.** The use case gets the workspace's entitlements and calls `entitlements.CheckFeature(key)` before doing anything else. That returns a `*domain.FeatureError` ("Item export is not included in your current plan. To use this feature, please upgrade to the pro plan.") when the feature is off, or when the key isn't in the catalog. If the entitlements can't be looked up, the use case refuses too. A front end never decides on its own whether a feature can be used.
-3. **The error is the same everywhere.** Over HTTP it's a 403 problem with `feature`, `name` and `availableOn`, and `httpclient` turns it back into the same `*FeatureError`. The CLI and TUI print it the same way in `--server` mode as with local data.
+3. **The error is the same everywhere.** Over HTTP it's a 403 problem with `feature`, `name`, and `availableOn`, and `httpclient` turns it back into the same `*FeatureError`. The CLI and TUI print it the same way in `--server` mode as with local data.
 4. **The upgrade hint** (`Feature.AvailableOn`) lists the plans that have the feature, leaving out the local edition's plan. A hidden feature has no hint. The local edition gives no hints at all, so a locked feature there just says it isn't available.
 
 ### What each front end shows
@@ -83,7 +83,7 @@ Nothing to add for gating itself. `GET /api/v1/entitlements` already lists every
   </FeatureGate>
   ```
 
-  Include `entitlementsQuery` in the page's loading state, next to the page's own query, so the first paint already has the control in its final state. For anything other than a single control, `useFeature(key)` returns `on`, `locked` (with `availableOn`), `hidden` or `pending`.
+  Include `entitlementsQuery` in the page's loading state, next to the page's own query, so the first paint already has the control in its final state. For anything other than a single control, `useFeature(key)` returns `on`, `locked` (with `availableOn`), `hidden`, or `pending`.
 - **CLI:** wrap the command: `Gated("widget-sharing", &cobra.Command{…})`. The help notes it or hides it by the plan, reading only the entitlements and never opening storage. Running the command while the feature is off fails through the core's error. You don't need to check anything in the command.
 - **TUI:** build the key's entry in the screen's help line with `gatedKeyHelp("s share", entitlements.Features["widget-sharing"])`, and leave it out when the result is empty. The entitlements come from `ports.EntitlementsService` (`bootstrap.App`'s `Entitlements`). As with the CLI, the core refuses the key's action when the feature is off.
 
@@ -94,15 +94,15 @@ Nothing to add for gating itself. `GET /api/v1/entitlements` already lists every
 
 ### Checklist
 
-- [ ] The feature is in `plans.jsonc`'s `features` section, with a lasting key, a `name` and `whenOff`, and each plan that has it lists its key.
-- [ ] Every use case the feature gates checks the entitlements first, and refuses when they can't be looked up. Unit tests cover on, off and a failed lookup.
+- [ ] The feature is in `plans.jsonc`'s `features` section, with a lasting key, a `name`, and `whenOff`, and each plan that has it lists its key.
+- [ ] Every use case the feature gates checks the entitlements first, and refuses when they can't be looked up. Unit tests cover on, off, and a failed lookup.
 - [ ] The web control sits in a `FeatureGate`, and its page waits for `entitlementsQuery` in its loading state.
 - [ ] A CLI command for it is wrapped in `Gated`. A TUI key for it shows its help through `gatedKeyHelp`.
 - [ ] `@plans` scenarios cover the feature on and off.
 
 ## Pitfalls
 
-- **Checking in a front end only.** Hiding a button isn't gating: the API, the CLI and other clients can still call the use case. The use case must call `CheckFeature`.
+- **Checking in a front end only.** Hiding a button isn't gating: the API, the CLI, and other clients can still call the use case. The use case must call `CheckFeature`.
 - **Treating a failed lookup as "on".** The core refuses. A front end that can't read the entitlements shows the feature locked (web) or plainly (CLI help), and leaves refusing to the core.
-- **Opening the app to show the CLI's help.** That would create the data folder, run migrations and fail on a locked folder. `Gated` and the help use `bootstrap.NewEntitlementsService`, which opens no storage.
-- **Renaming a key.** Every plan's list, the use case's constant and the front ends' gates name it. Change the `name` instead.
+- **Opening the app to show the CLI's help.** That would create the data folder, run migrations, and fail on a locked folder. `Gated` and the help use `bootstrap.NewEntitlementsService`, which opens no storage.
+- **Renaming a key.** Every plan's list, the use case's constant, and the front ends' gates name it. Change the `name` instead.

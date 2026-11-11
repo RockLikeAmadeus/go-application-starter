@@ -4,7 +4,7 @@ Feature: Change a workspace's plan
   So that each workspace gets the plan its owner pays for
 
   # The scenarios that move a workspace choose plans (@plans), so they run on
-  # the drivers whose plans the tests set: memory, jsonfile, sqlite and http.
+  # the drivers whose plans the tests set: memory, jsonfile, sqlite, and http.
   # The http driver's admin works on the server's storage, as
   # `starter admin set-plan` does beside a server: the API can't change plans.
   # The one that switches between workspaces (@workspaces) runs on memory,
