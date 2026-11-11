@@ -212,7 +212,9 @@ The server:
 - [x] 15b. A request that changes something with an `Origin` from another host (no `Sec-Fetch-Site`) is refused.
   - Red: none. `TestASignOutWithAnOriginFromAnotherHostIsRefused` passed straight away, since `http.CrossOriginProtection` already checks `Origin`; kept as a guard (with the server's own origin it fails, 303). Green skipped.
   - Refactor: the cross-site tests share `signOutWithHeader` and `wantCrossSiteProblem`, ready for 15c.
-- [ ] 15c. A same-origin request that changes something, with the session cookie, still goes through.
+- [x] 15c. A same-origin request that changes something, with the session cookie, still goes through.
+  - Red: none. `TestASameOriginSignOutStillGoesThrough` passed straight away, as `http.CrossOriginProtection` lets `Sec-Fetch-Site: same-origin` through; kept as a guard (with `cross-site` it fails, 403, as task 15 shows). Green skipped.
+  - Refactor: nothing worth changing; the test reuses `signOutWithHeader`, and its assertions match the sign-out test's.
 - [ ] 16. `GET /api/v1/session` in `api/openapi.yaml` (`task gen`), served from `CurrentAccount`, and `httpclient` reads it.
 
 Settings and wiring:

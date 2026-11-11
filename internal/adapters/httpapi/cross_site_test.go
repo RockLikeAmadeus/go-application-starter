@@ -31,6 +31,17 @@ func TestASignOutWithAnOriginFromAnotherHostIsRefused(t *testing.T) {
 	}
 }
 
+func TestASameOriginSignOutStillGoesThrough(t *testing.T) {
+	rec, signIn := signOutWithHeader("Sec-Fetch-Site", "same-origin")
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want %d; body %q", rec.Code, http.StatusSeeOther, rec.Body.String())
+	}
+	if len(signIn.signedOut) != 1 || signIn.signedOut[0] != "token-ada" {
+		t.Errorf("signed out %q, want [token-ada]", signIn.signedOut)
+	}
+}
+
 // signOutWithHeader sends a sign-out, with a session cookie and the given
 // header, to a handler with sign-in on, served at http://starter.example.
 func signOutWithHeader(name, value string) (*httptest.ResponseRecorder, *signInRecorder) {
