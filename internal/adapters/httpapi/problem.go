@@ -18,6 +18,7 @@ const (
 	ProblemLimit       = "limit"
 	ProblemFeature     = "feature"
 	ProblemBadRequest  = "bad_request"
+	ProblemCrossSite   = "cross_site"
 	ProblemInternal    = "internal"
 )
 

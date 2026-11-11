@@ -94,6 +94,7 @@ func NewHandler(opts Options) http.Handler {
 	var handler http.Handler = mux
 	if opts.SignIn != nil {
 		handler = sessionMiddleware(opts.SignIn, handler)
+		handler = refuseCrossSite(handler)
 	}
 	return recoverer(log, requestLogger(log, handler))
 }
