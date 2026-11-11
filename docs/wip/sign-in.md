@@ -82,7 +82,10 @@ Storage:
   - Red: `TestAccountRepositoryContract/FindByIdentity_returns_the_account_with_the_issuer_and_subject,_whatever_the_name` failed: `FindByIdentity: The requested record could not be found.`
   - Green: `memory.AccountRepository` keeps accounts by ID (`Save`), and `FindByIdentity` returns the one with the issuer and subject.
   - Refactor: nothing worth changing; an `Identity` matching method in `domain` was left, as the SQL repository will match in its query and no second caller needs it.
-- [ ] 7c. Account contract: `FindByIdentity` doesn't match an account with the same name but another issuer or subject.
+- [x] 7c. Account contract: `FindByIdentity` doesn't match an account with the same name but another issuer or subject.
+  - Red: none. `TestAccountRepositoryContract/FindByIdentity_doesn't_match_an_account_with_the_same_name_but_another_issuer_or_subject` passed at once, as 7b's green already matches on issuer and subject; kept as a guard (it fails on a repository that matches by name).
+  - Green: skipped, as no production code was demanded.
+  - Refactor: nothing worth changing; the two contract cases share a saved account, but one setup helper for two cases isn't clearer yet.
 - [ ] 7d. Account contract: `Find` returns the saved account by its ID.
 - [ ] 7e. Account contract: `Find` of an unknown ID is `ErrNotFound`.
 - [ ] 7f. Account contract: `Save` replaces the account with the same ID.
