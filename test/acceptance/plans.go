@@ -28,11 +28,11 @@ var (
 )
 
 func newTestPlans(stored ports.WorkspacePlanRepository) (*testPlans, error) {
-	catalog, err := plans.Default()
+	file, err := plans.Default()
 	if err != nil {
 		return nil, err
 	}
-	return &testPlans{catalog: catalog, stored: stored}, nil
+	return &testPlans{catalog: file.Catalog, stored: stored}, nil
 }
 
 func (p *testPlans) For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error) {

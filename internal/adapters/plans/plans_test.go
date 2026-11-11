@@ -329,15 +329,25 @@ func TestStoredPlanOf_PassesOnAnyOtherErrorInsteadOfTheDefault(t *testing.T) {
 }
 
 func TestDefault_HasALocalPlanWithNoLimits(t *testing.T) {
-	catalog, err := plans.Default()
+	file, err := plans.Default()
 	if err != nil {
 		t.Fatalf("Default: %v", err)
 	}
-	local, ok := catalog["local"]
+	local, ok := file.Catalog["local"]
 	if !ok {
-		t.Fatalf("the shipped plans file has no local plan; it has %v", catalog)
+		t.Fatalf("the shipped plans file has no local plan; it has %v", file.Catalog)
 	}
 	if len(local.Limits) != 0 {
 		t.Errorf("local plan limits = %v, want none", local.Limits)
+	}
+}
+
+func TestDefault_StartsNewWorkspacesOnFree(t *testing.T) {
+	file, err := plans.Default()
+	if err != nil {
+		t.Fatalf("Default: %v", err)
+	}
+	if file.NewWorkspacePlan != "free" {
+		t.Errorf("NewWorkspacePlan = %q, want %q", file.NewWorkspacePlan, "free")
 	}
 }

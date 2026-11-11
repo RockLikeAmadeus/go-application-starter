@@ -148,7 +148,10 @@ Plans:
   - Red: `TestParse_RefusesABadPlansFile/a_newWorkspacePlan_that_isn't_a_plan` failed with "Parse succeeded, want an error".
   - Green: `Parse` refuses a `newWorkspacePlan` missing from the catalog, naming it.
   - Refactor: `Parse`'s doc comment says the plan must be one of the file's. Nothing else worth changing.
-- [ ] 11d. The built-in file starts new workspaces on `free`.
+- [x] 11d. The built-in file starts new workspaces on `free`.
+  - Red: none. `TestDefault_StartsNewWorkspacesOnFree` passed straight away, as 11b already set `plans.jsonc` to `free`; kept as a guard (it fails when the file says `local`). To compile, `Default` now returns the `plans.File`.
+  - Green: skipped, as no production code was demanded.
+  - Refactor: nothing worth changing. Left: `Load` keeps returning a `Catalog` until task 20 needs the field from it.
 
 The server:
 - [ ] 12. `httpapi` session middleware: a valid session cookie puts its workspace in the request's context (`workspace.WithID`). No cookie, or an unknown one, leaves none.

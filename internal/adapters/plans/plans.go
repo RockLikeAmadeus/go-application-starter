@@ -233,19 +233,19 @@ func StoredPlanOf(repository ports.WorkspacePlanRepository, fallback string) fun
 //go:embed plans.jsonc
 var shipped []byte
 
-// Default returns the plans in the file built into the binary,
-// plans.jsonc. A product edits that file to set its own plans; Load reads
-// another one instead (STARTER_PLANS_FILE).
-func Default() (Catalog, error) {
-	file, err := Parse(shipped)
-	return file.Catalog, err
+// Default returns the plans file built into the binary, plans.jsonc. A
+// product edits that file to set its own plans; Load reads another one
+// instead (STARTER_PLANS_FILE).
+func Default() (File, error) {
+	return Parse(shipped)
 }
 
 // Load returns the plans in the file at path, or Default's when path is
 // empty.
 func Load(path string) (Catalog, error) {
 	if path == "" {
-		return Default()
+		file, err := Default()
+		return file.Catalog, err
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
