@@ -45,6 +45,28 @@ linters:
               desc: domain must not depend on ports
             - pkg: github.com/RockLikeAmadeus/go-application-starter/internal/core/app
               desc: domain must not depend on use cases
+        # The core's tests are unit tests: no database, network, or files.
+        # Strict mode refuses any import not allowed here, so they can use
+        # the standard library, the core, memory storage, and the testsupport
+        # fakes, and no other adapter, even one added later. A deny entry
+        # overrides an allow entry, which keeps the parts of the standard
+        # library that reach outside the process out.
+        core-tests:
+          list-mode: strict
+          files:
+            - "**/internal/core/**/*_test.go"
+          allow:
+            - $gostd
+            - github.com/RockLikeAmadeus/go-application-starter/internal/core
+            - github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory
+            - github.com/RockLikeAmadeus/go-application-starter/internal/testsupport
+          deny:
+            - pkg: database/sql
+              desc: core tests use no database; use memory storage
+            - pkg: net
+              desc: core tests use no network
+            - pkg: os
+              desc: core tests use no files or environment; use the testsupport fakes
     staticcheck:
       # golangci-lint's default checks, plus -ST1005: error strings users read
       # are whole sentences, capitalised and ending in a full stop

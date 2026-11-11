@@ -19,3 +19,4 @@ paths:
 - Web: Vitest + Testing Library, querying by role or label. Stub `fetch` rather than mocking modules.
 - E2E scenarios run in parallel against one server, so use unique names and don't assert on whole lists.
 - Time and IDs come from `ports.Clock` / `ports.IDGenerator`. Use `internal/testsupport` fakes in tests (also `testsupport.FixedWorkspace`, `NoWorkspace`, `FixedEntitlements`).
+- Tests in `internal/core/` are unit tests: no database, network, or files. Lint (depguard's `core-tests` list) lets them import only the standard library, the core, `storage/memory`, and `internal/testsupport`, and refuses `database/sql`, `net/...`, and `os`. Test an adapter in its own package.
