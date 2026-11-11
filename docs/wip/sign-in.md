@@ -209,7 +209,9 @@ The server:
   - Red: `TestASignOutFromAnotherSiteIsRefused` failed with status 303 (signed out), want 403. To compile: `ProblemCrossSite`.
   - Green: with `SignIn` set, `NewHandler` wraps the handler in `http.CrossOriginProtection`, whose deny handler writes the 403 `cross_site` problem with the agreed detail.
   - Refactor: the wrapping moved to `refuseCrossSite` in `httpapi/cross_site.go`, with a comment on what it closes beyond `SameSite=Lax`.
-- [ ] 15b. A request that changes something with an `Origin` from another host (no `Sec-Fetch-Site`) is refused.
+- [x] 15b. A request that changes something with an `Origin` from another host (no `Sec-Fetch-Site`) is refused.
+  - Red: none. `TestASignOutWithAnOriginFromAnotherHostIsRefused` passed straight away, since `http.CrossOriginProtection` already checks `Origin`; kept as a guard (with the server's own origin it fails, 303). Green skipped.
+  - Refactor: the cross-site tests share `signOutWithHeader` and `wantCrossSiteProblem`, ready for 15c.
 - [ ] 15c. A same-origin request that changes something, with the session cookie, still goes through.
 - [ ] 16. `GET /api/v1/session` in `api/openapi.yaml` (`task gen`), served from `CurrentAccount`, and `httpclient` reads it.
 
