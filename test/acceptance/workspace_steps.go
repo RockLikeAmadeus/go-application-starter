@@ -12,7 +12,8 @@ import (
 )
 
 // registerWorkspaceSteps binds the steps of features/workspaces.feature, which
-// only the drivers wired with workspace.FromContext run.
+// only the drivers that can switch between workspaces run: those wired with
+// workspace.FromContext, and http, which signs in to each workspace's account.
 func (w *world) registerWorkspaceSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^workspace "([^"]*)" has an item named "([^"]*)"$`, w.workspaceHasAnItemNamed)
 	sc.Step(`^workspace "([^"]*)" has the items:$`, w.workspaceHasTheItems)
@@ -24,19 +25,34 @@ func (w *world) registerWorkspaceSteps(sc *godog.ScenarioContext) {
 }
 
 func (w *world) workspaceHasAnItemNamed(name, item string) error {
-	return w.anItemNamed(in(name), item)
-}
-
-func (w *world) workspaceHasTheItems(name string, table *godog.Table) error {
-	return w.theItemsAre(in(name), table)
-}
-
-func (w *world) someoneTriesToReachAnotherWorkspacesItem(requester, action, item, owner string) error {
-	target, err := w.findByName(in(owner), item)
+	ctx, err := w.inWorkspace(name)
 	if err != nil {
 		return err
 	}
-	ctx := in(requester)
+	return w.anItemNamed(ctx, item)
+}
+
+func (w *world) workspaceHasTheItems(name string, table *godog.Table) error {
+	ctx, err := w.inWorkspace(name)
+	if err != nil {
+		return err
+	}
+	return w.theItemsAre(ctx, table)
+}
+
+func (w *world) someoneTriesToReachAnotherWorkspacesItem(requester, action, item, owner string) error {
+	ownerCtx, err := w.inWorkspace(owner)
+	if err != nil {
+		return err
+	}
+	target, err := w.findByName(ownerCtx, item)
+	if err != nil {
+		return err
+	}
+	ctx, err := w.inWorkspace(requester)
+	if err != nil {
+		return err
+	}
 	w.clock.Advance(time.Second)
 	switch action {
 	case "view":
@@ -49,16 +65,21 @@ func (w *world) someoneTriesToReachAnotherWorkspacesItem(requester, action, item
 	return nil
 }
 
-// The no-workspace steps use a fresh context, not the scenario's, which the
-// Before hook put in the local workspace.
-
 func (w *world) someoneWithNoWorkspaceTriesToList() error {
-	_, w.lastErr = w.items.ListItems(context.Background())
+	ctx, err := w.inNoWorkspace()
+	if err != nil {
+		return err
+	}
+	_, w.lastErr = w.items.ListItems(ctx)
 	return nil
 }
 
 func (w *world) someoneWithNoWorkspaceTriesToCreate(name string) error {
-	_, w.lastErr = w.items.CreateItem(context.Background(), name)
+	ctx, err := w.inNoWorkspace()
+	if err != nil {
+		return err
+	}
+	_, w.lastErr = w.items.CreateItem(ctx, name)
 	return nil
 }
 
@@ -67,4 +88,15 @@ func (w *world) theyAreToldTheyHaveNoWorkspace() error {
 		return fmt.Errorf("expected no workspace, got %w", w.lastErr)
 	}
 	return nil
+}
+
+// inNoWorkspace returns a context that works in no workspace: on a driver
+// running the hosted edition, as someone who hasn't signed in.
+func (w *world) inNoWorkspace() (context.Context, error) {
+	// A fresh context, not the scenario's, which the Before hook may have put
+	// in the local workspace.
+	if w.signIn == nil {
+		return context.Background(), nil
+	}
+	return w.signIn.signedOut(context.Background())
 }

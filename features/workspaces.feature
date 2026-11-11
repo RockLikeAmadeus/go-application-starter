@@ -4,11 +4,13 @@ Feature: Keep each workspace's data separate
   I want my workspace's data kept apart from everyone else's
   So that nobody else can see or change it
 
-  # These scenarios run only on the memory, jsonfile, sqlite, and postgres drivers (see
-  # test/acceptance). Until sign-in exists, nothing over HTTP can pick a
-  # workspace, and the desktop and mobile apps are the local edition, with one
-  # workspace. The local edition's single workspace is covered by every other
-  # feature, which runs without naming a workspace.
+  # These scenarios run only on the memory, jsonfile, sqlite, postgres, and
+  # http drivers (see test/acceptance). Over HTTP, the server is the hosted
+  # edition: workspace "Alpha" is the personal workspace of an account named
+  # "Alpha", and "someone with no workspace" hasn't signed in. The desktop and
+  # mobile apps are the local edition, with one workspace. The local edition's
+  # single workspace is covered by every other feature, which runs without
+  # naming a workspace.
 
   Scenario: Each workspace lists only its own items
     Given workspace "Alpha" has an item named "Widget"

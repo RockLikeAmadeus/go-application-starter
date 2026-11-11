@@ -299,7 +299,10 @@ Acceptance:
   - Red: none. Before the steps, every `@sign-in` scenario failed as undefined; with them, all 6 passed at once on all four drivers, as tasks 1–20h built the behaviour. Kept as a guard (the hosted http driver on `workspace.Local{}` fails three of them).
   - Green: skipped, as no production code was demanded. A driver's `startHosted` runs the `@sign-in` scenarios as the hosted edition (plans start on `newWorkspacePlan`); memory, sqlite, and postgres sign in directly, and http through `/auth/dev` with a cookie jar per account.
   - Refactor: nothing worth changing. `test:init` passes. The driver comment on `@workspaces` over HTTP is left for task 22.
-- [ ] 22. `@workspaces` runs on the http driver too, each workspace a signed-in account's. Update the feature's comment and SPEC.md §4.8. Sample: `task test:init`.
+- [x] 22. `@workspaces` runs on the http driver too, each workspace a signed-in account's. Update the feature's comment and SPEC.md §4.8. Sample: `task test:init`.
+  - Red: dropping `~@workspaces` from the http driver's tags failed all 7 `@workspaces` scenarios there (Alpha listed Beta's item; no not-found or no-workspace error; plan-changes' Alpha stayed "local").
+  - Green: harness only, no production code demanded. The http driver's `needsSignInForWorkspaces` runs `@workspaces` as the hosted edition; the named-workspace steps go through `inWorkspace`, `workspaceNamed`, and `inNoWorkspace`, which sign in to the account of that name (or out).
+  - Refactor: `hasTag` pulled out of `isSignInScenario`; stale comments on `startHTTP`, `driversFor`, `plan-changes.feature`, and `testing.md` updated; `inNoWorkspace` moved into the sample `workspace_steps.go`, its only user, after `test:init` found it unused without the sample. `test:init` passes.
 
 The web app:
 - [ ] 23. Signed out with sign-in on, the web app shows a sign-in screen linking to `/auth/sign-in`, and no data. (Agree the wording.)

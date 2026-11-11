@@ -40,9 +40,10 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		w := &world{}
 
 		sc.Before(func(ctx context.Context, scenario *godog.Scenario) (context.Context, error) {
-			if isSignInScenario(scenario) {
+			if isSignInScenario(scenario) || (d.needsSignInForWorkspaces && hasTag(scenario, "@workspaces")) {
 				// Scenarios that sign in run on the hosted edition, and start
-				// signed out, in no workspace.
+				// signed out, in no workspace. So do those that switch between
+				// workspaces on a driver that can switch only by signing in.
 				if d.startHosted == nil {
 					return ctx, fmt.Errorf("the %s driver has no hosted edition: leave out @sign-in in its tags", d.name)
 				}
@@ -99,15 +100,46 @@ func (w *world) iAmToldTheFieldIsInvalid(field string) error {
 
 // isSignInScenario is whether the scenario signs in (@sign-in).
 func isSignInScenario(scenario *godog.Scenario) bool {
+	return hasTag(scenario, "@sign-in")
+}
+
+// hasTag is whether the scenario, or its feature, has the tag.
+func hasTag(scenario *godog.Scenario, name string) bool {
 	for _, tag := range scenario.Tags {
-		if tag.Name == "@sign-in" {
+		if tag.Name == name {
 			return true
 		}
 	}
 	return false
 }
 
-// in returns a context that works in the named workspace.
-func in(name string) context.Context {
-	return workspace.WithID(context.Background(), domain.WorkspaceID(name))
+// inWorkspace returns a context that works in the named workspace. On a
+// driver running the hosted edition, that is the personal workspace of the
+// account of that name, so it signs in as it.
+func (w *world) inWorkspace(name string) (context.Context, error) {
+	if w.signIn == nil {
+		return workspace.WithID(context.Background(), domain.WorkspaceID(name)), nil
+	}
+	return w.signIn.signIn(context.Background(), name)
+}
+
+// workspaceNamed is the ID of the named workspace. On a driver running the
+// hosted edition, it signs in as the account of that name, making the
+// account if there isn't one, and answers its personal workspace.
+func (w *world) workspaceNamed(name string) (domain.WorkspaceID, error) {
+	if w.signIn == nil {
+		return domain.WorkspaceID(name), nil
+	}
+	if _, err := w.signIn.signIn(context.Background(), name); err != nil {
+		return "", err
+	}
+	identity, err := devIdentity(name)
+	if err != nil {
+		return "", err
+	}
+	account, err := w.accounts.FindByIdentity(context.Background(), identity)
+	if err != nil {
+		return "", err
+	}
+	return account.WorkspaceID, nil
 }

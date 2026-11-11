@@ -88,6 +88,11 @@ type driver struct {
 	// tags limits the scenarios this driver runs, as a Godog tag expression
 	// combined with --godog.tags. Empty runs every scenario.
 	tags string
+	// needsSignInForWorkspaces is whether the driver can work in a named
+	// workspace only by signing in to the account of that name, whose
+	// personal workspace it is. Then it runs @workspaces as the hosted
+	// edition too.
+	needsSignInForWorkspaces bool
 	// skipReason, when set, is why this driver can't run here.
 	skipReason string
 }
@@ -99,9 +104,9 @@ type driver struct {
 // Desktop-only scenarios (@desktop) run only on the desktop driver, and
 // mobile-only ones (@mobile) only on the mobile driver. Each of those also
 // runs every feature that isn't the other's. Scenarios that switch between
-// workspaces (@workspaces) run only where the core is wired directly: nothing
-// over HTTP can pick a workspace until sign-in exists, and the desktop and
-// mobile apps are the local edition. Scenarios that choose each workspace's
+// workspaces (@workspaces) run where the core is wired directly, and over
+// HTTP as the hosted edition, signing in to each workspace's account. The
+// desktop and mobile apps are the local edition. Scenarios that choose each workspace's
 // plan (@plans) run only where the tests wire the plans: the desktop and
 // mobile apps are on the local plan. Scenarios about running the server
 // (@server) run only on the server driver, which runs nothing else: they
@@ -135,7 +140,13 @@ func driversFor(t testing.TB, serverURL string) []driver {
 			tags:        "~@desktop && ~@mobile && ~@server",
 		},
 		postgresDriver,
-		{name: "http", start: startHTTP, startHosted: startHostedHTTP, tags: "~@desktop && ~@mobile && ~@workspaces && ~@server"},
+		{
+			name:                     "http",
+			start:                    startHTTP,
+			startHosted:              startHostedHTTP,
+			tags:                     "~@desktop && ~@mobile && ~@server",
+			needsSignInForWorkspaces: true,
+		},
 		{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server && ~@sign-in"},
 		{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server && ~@sign-in"},
 		{name: "server", start: func() (*harness, error) { return startServer(t) }, tags: serverTags},
@@ -308,8 +319,8 @@ func (s *scenarioTest) runCleanups() {
 
 func startHTTP() (*harness, error) {
 	h := newHarness()
-	// Nothing over HTTP carries a workspace yet, so the server is the local
-	// edition, as cmd/server is.
+	// With sign-in off, nothing over HTTP carries a workspace, so the server
+	// is the local edition, as cmd/server is by default.
 	if err := h.usePlans(memory.NewWorkspacePlanRepository(), workspace.Local{}, localEdition); err != nil {
 		return nil, err
 	}
