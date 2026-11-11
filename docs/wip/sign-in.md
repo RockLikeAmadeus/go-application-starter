@@ -162,7 +162,10 @@ The server:
   - Red: none. `TestNoSessionCookieLeavesNoWorkspaceInTheRequest` passed straight away, as task 12's middleware only sets a workspace from a cookie; kept as a guard (it fails when the middleware sets one without a cookie).
   - Green: skipped, as no production code was demanded.
   - Refactor: nothing worth changing; the test reuses `requestWorkspace`.
-- [ ] 12c. An unknown session cookie leaves no workspace in the request's context.
+- [x] 12c. An unknown session cookie leaves no workspace in the request's context.
+  - Red: none. `TestAnUnknownSessionCookieLeavesNoWorkspaceInTheRequest` passed straight away, as task 12's middleware sets a workspace only when `CurrentAccount` answers; kept as a guard (a middleware that sets one despite the error fails it with workspace "leak").
+  - Green: skipped, as no production code was demanded.
+  - Refactor: nothing worth changing; the test reuses `requestWorkspace`, and folding the two signed-out tests into one table would hide which case failed for little gain.
 - [ ] 13. `problem.go` maps `ErrNoWorkspace` to a 401 problem, and `httpclient` maps it back.
 - [ ] 14. The dev sign-in routes: `GET /auth/sign-in` and `GET /auth/dev` show the form, `POST /auth/dev` signs in as the given name (issuer `dev`) and sets the cookie, and `POST /auth/sign-out` ends the session and clears it. Add them to `navigateFallbackDenylist`.
 - [ ] 15. With a session cookie, a request that changes something from another site is refused (403).

@@ -87,3 +87,13 @@ func TestNoSessionCookieLeavesNoWorkspaceInTheRequest(t *testing.T) {
 		t.Errorf("workspace = %q, want none", got)
 	}
 }
+
+func TestAnUnknownSessionCookieLeavesNoWorkspaceInTheRequest(t *testing.T) {
+	signIn := sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}}
+
+	got := requestWorkspace(t, signIn, &http.Cookie{Name: httpapi.SessionCookie, Value: "token-unknown"})
+
+	if got != "none" {
+		t.Errorf("workspace = %q, want none", got)
+	}
+}
