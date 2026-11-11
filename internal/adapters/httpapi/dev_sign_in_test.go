@@ -98,3 +98,19 @@ func TestTheSessionCookieIsSecureOnlyOverHTTPS(t *testing.T) {
 		}
 	}
 }
+
+func TestTheDevSignInFormAsksForANameAndPostsToTheDevSignIn(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/dev", nil))
+
+	if rec.Code != http.StatusOK || !strings.HasPrefix(rec.Header().Get("Content-Type"), "text/html") {
+		t.Fatalf("status = %d, Content-Type = %q; want %d and an HTML page", rec.Code, rec.Header().Get("Content-Type"), http.StatusOK)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{`<form method="post" action="/auth/dev">`, `<input name="name"`, `<button type="submit">`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the page has no %s:\n%s", want, body)
+		}
+	}
+}

@@ -186,7 +186,10 @@ The server:
   - Red: `TestTheSessionCookieIsSecureOnlyOverHTTPS` failed: posting to `https://…` gave Secure = false, want true (plain HTTP pinned to false, so `Secure: true` alone can't pass).
   - Green: `setSessionCookie` takes the request and sets `Secure` when `r.TLS != nil`.
   - Refactor: the test posts through `postDevSignInTo` (a path or full URL), which `postDevSignIn` now calls. A TLS-terminating proxy (`X-Forwarded-Proto`) isn't covered: not in the task.
-- [ ] 14d. `GET /auth/dev` shows the form asking for a name, posting to `POST /auth/dev`.
+- [x] 14d. `GET /auth/dev` shows the form asking for a name, posting to `POST /auth/dev`.
+  - Red: `TestTheDevSignInFormAsksForANameAndPostsToTheDevSignIn` failed: `GET /auth/dev` served the SPA's hint page, with no form.
+  - Green: with `IsDevSignInOn`, `GET /auth/dev` serves a plain HTML form (a `name` field and a submit button) posting to `/auth/dev`.
+  - Refactor: the page is the constant `devSignInPage`, and `devSignInForm` is a plain handler function. Adding `/auth/` to `navigateFallbackDenylist` is left to 14e.
 - [ ] 14e. `GET /auth/sign-in` goes to the configured sign-in adapter (`/auth/dev`). Add `/auth/` to `navigateFallbackDenylist`.
 - [ ] 14f. `POST /auth/sign-out` ends the session, clears the cookie, and goes to `/`.
 - [ ] 14g. A refused dev sign-in (a blank name) is a 400 problem, and sets no cookie.
