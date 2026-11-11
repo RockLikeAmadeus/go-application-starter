@@ -183,7 +183,7 @@ tasks:
       # so it's written there for the build and deleted afterwards.
       BOOTSTRAPPER: build/desktop/windows/MicrosoftEdgeWebview2Setup.exe
       # The program's version info strings, so the installer names the same
-      # product, publisher and copyright. A value can't contain a double quote
+      # product, publisher, and copyright. A value can't contain a double quote
       # (it would end makensis's -D argument).
       INFO_JSON:
         sh: cat build/desktop/windows/info.json

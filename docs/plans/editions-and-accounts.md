@@ -1,4 +1,4 @@
-# Plan: hosted and local editions (workspaces, plans and entitlements, local-only tools)
+# Plan: hosted and local editions (workspaces, plans, and entitlements, local-only tools)
 
 - TODO item: "Hosted and local editions" in [`TODO.md`](../../TODO.md).
 - Temporary: delete this file in the same change that ticks that TODO item. Move any open follow-ups into `TODO.md` first.
@@ -6,28 +6,28 @@
 - The lasting decisions are in [ADR 5](../adr/0005-hosted-and-local-editions.md). This file is the working plan.
 
 ## Goal
-All clients can operate as commercial products, with data kept separate per account and features gated by paid plans. CLI, TUI and free local-only desktop and mobile apps stay single-user tools on local data (SQLite or plain text, in a folder the user chooses, which can be a cloud-synced one). Both run on the same core and data structures.
+All clients can operate as commercial products, with data kept separate per account and features gated by paid plans. CLI, TUI, and free local-only desktop and mobile apps stay single-user tools on local data (SQLite or plain text, in a folder the user chooses, which can be a cloud-synced one). Both run on the same core and data structures.
 
 ## Decisions (agreed 2026-10-31)
-- **Scope: template seams.** The template ships the ports, a simple reference adapter for each, and a sample gated feature. Each product picks its real auth, billing and hosting.
+- **Scope: template seams.** The template ships the ports, a simple reference adapter for each, and a sample gated feature. Each product picks its real auth, billing, and hosting.
 - **Two editions, one core.** The **hosted edition** is multi-user, with Postgres on a server. The **local edition** has one implicit workspace and local storage. The core never knows which edition it's in; `internal/bootstrap` picks the adapters.
 - **The owner is a workspace.** Every record has a `WorkspaceID`. Each user gets a personal workspace now, and teams later only add members and roles, with no data migration. The current workspace travels in `context`, set by the driving adapter: the auth middleware in the hosted edition, a fixed local workspace in the local edition. Use cases read it and pass it **explicitly** to repositories, so the `storagetest` contract suite can check isolation (workspace A never sees B's records).
 - **Plans and entitlements.** Plans are defined in config, not code. Each plan lists on/off **features** and **limits**.
   - For each limit, config says what happens when a workspace is over it (for example after a downgrade): `block-new` keeps the data and refuses new records; `read-only` makes that data read-only.
   - For each feature, config says whether the UI shows it locked, with an upgrade hint, or hides it.
-  - Use cases ask an `EntitlementsProvider` port. The API exposes the current workspace's entitlements, so the web app, CLI and TUI can show or hide features.
+  - Use cases ask an `EntitlementsProvider` port. The API exposes the current workspace's entitlements, so the web app, CLI, and TUI can show or hide features.
 - **Local feature set: a named plan** from the same config (for example `local`), chosen at build time. A paid local licence later just switches the plan. Local builds show no upgrade hints.
 - **Billing: a port plus a manual adapter.** An admin-only `ChangePlan(workspace, plan)` use case changes a plan. Payment providers are driving adapters that call it, as the REST handlers call the core. The reference adapter is an admin command, `starter admin set-plan`. A detailed guide for template users goes in `docs/billing.md`, covering:
   - the concepts and the plans config;
   - running paid accounts by hand;
   - a Stripe walkthrough: checkout, webhooks, which events to handle, duplicate deliveries, and the Stripe CLI;
   - merchant-of-record options (Paddle, Lemon Squeezy);
-  - downgrades, failed payments and grace periods;
+  - downgrades, failed payments, and grace periods;
   - a future paid local licence (an offline signed key).
 - **Authentication:** an OIDC adapter, which works with any provider (Auth0, Clerk, Keycloak, Google, …), plus a dev-only fake login for tests and `task dev`. We store no passwords. Hosted edition only.
 - **CLI and TUI:** local by default. `starter login --server …` lets a hosted user work on their account through `httpclient`.
 - **No sync between local and cloud data** (ADR 4).
-- **Synced folders: Level 1 only.** A local data folder may live in a Dropbox, Syncthing, iCloud Drive or Google Drive folder, used from **one device at a time**. The app:
+- **Synced folders: Level 1 only.** A local data folder may live in a Dropbox, Syncthing, iCloud Drive, or Google Drive folder, used from **one device at a time**. The app:
   - uses a plain-text layout of one file per record;
   - detects the sync service's conflict copies and tells the user;
   - shows a best-effort "in use on another device" warning (a file per device, holding the device and a heartbeat).
@@ -39,7 +39,7 @@ All clients can operate as commercial products, with data kept separate per acco
 ## Steps
 
 ### 0. Record the plan — done (docs only)
-This file, [ADR 5](../adr/0005-hosted-and-local-editions.md), and a merge of the two duplicate TODO entries into one that links here. The SQL-adapter, authentication and desktop/mobile remote-mode TODO items now point at their steps below. SPEC.md §3 now defines edition, workspace, plan, feature and limit, and §6 links this plan. §2 (personas) waits until the editions exist.
+This file, [ADR 5](../adr/0005-hosted-and-local-editions.md), and a merge of the two duplicate TODO entries into one that links here. The SQL-adapter, authentication, and desktop/mobile remote-mode TODO items now point at their steps below. SPEC.md §3 now defines edition, workspace, plan, feature, and limit, and §6 links this plan. §2 (personas) waits until the editions exist.
 
 ### 1. Workspace scoping — done
 SPEC.md §4.8 · [`features/workspaces.feature`](../../features/workspaces.feature) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Data belongs to a workspace".
@@ -47,19 +47,19 @@ SPEC.md §4.8 · [`features/workspaces.feature`](../../features/workspaces.featu
 - **Resolver port:** use cases ask `ports.WorkspaceResolver` for the current workspace and pass it explicitly to every repository call. `internal/adapters/workspace` has two resolvers:
   - `Local`, which `bootstrap` wires for every current front end;
   - `FromContext`, which reads what `WithID` set and refuses a missing or empty workspace.
-- **Storage:** memory and jsonfile return only the given workspace's items, and treat another workspace's item as missing. Contract-suite cases check that for `FindAll`, `FindByID` and `Delete`. jsonfile records carry `workspaceId`. There's no migration (the template has no users).
+- **Storage:** memory and jsonfile return only the given workspace's items, and treat another workspace's item as missing. Contract-suite cases check that for `FindAll`, `FindByID`, and `Delete`. jsonfile records carry `workspaceId`. There's no migration (the template has no users).
 - **Fail closed:** with no workspace, every use case returns `ErrNoWorkspace` before touching storage (a table test).
-- **Acceptance:** the workspace scenarios run on the memory and jsonfile drivers, which use `FromContext`. A `Before` hook puts every other scenario in the local workspace. The http, desktop and mobile drivers stay on `Local` until sign-in (step 8).
+- **Acceptance:** the workspace scenarios run on the memory and jsonfile drivers, which use `FromContext`. A `Before` hook puts every other scenario in the local workspace. The http, desktop, and mobile drivers stay on `Local` until sign-in (step 8).
 - Users see no change. Left for step 8: mapping `ErrNoWorkspace` to HTTP, and running the isolation scenarios on the http driver.
 
 ### 2. Plans and entitlements — done
 SPEC.md §4.9 · [`features/plans.feature`](../../features/plans.feature) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Features and limits come from plans".
 - **Domain:** `Entitlements` (a plan's name and its limits) with `CheckCreate` and `CheckChange`, `Limit` (built with `NewLimit`), and `LimitError`. Over a `block-new` limit nothing new can be added; over a `read-only` one nothing can be changed either. Deleting always works.
 - **Ports and use case:** the driven `ports.EntitlementsProvider` and the driving `ports.EntitlementsService` (`CurrentEntitlements`, failing closed without a workspace).
-- **Plans file:** `internal/adapters/plans` reads `plans.jsonc` (JSON with full-line comments, built in, with `local`, `free` and `pro`), or `STARTER_PLANS_FILE`'s file. The local plan is `bootstrap.LocalPlan`, set at build time. A bad file or an unknown local plan fails at start.
-- **API:** `GET /api/v1/entitlements`, and a limit error as a 403 problem with `limit`, `max` and `isReadOnly`; `httpclient` maps both back. The server, desktop and Android apps serve it, and remote mode reads it.
+- **Plans file:** `internal/adapters/plans` reads `plans.jsonc` (JSON with full-line comments, built in, with `local`, `free`, and `pro`), or `STARTER_PLANS_FILE`'s file. The local plan is `bootstrap.LocalPlan`, set at build time. A bad file or an unknown local plan fails at start.
+- **API:** `GET /api/v1/entitlements`, and a limit error as a 403 problem with `limit`, `max`, and `isReadOnly`; `httpclient` maps both back. The server, desktop, and Android apps serve it, and remote mode reads it.
 - **Sample:** `ItemService` checks the items limit when creating and renaming, and refuses when the plan or the count can't be looked up. `free` has the sample items limit (3, block-new), inside a sample block. `task test:init` passes.
-- **Acceptance:** the harness has its own plans; `@plans` scenarios run on memory, jsonfile and http. Desktop and mobile check they're on the local plan.
+- **Acceptance:** the harness has its own plans; `@plans` scenarios run on memory, jsonfile, and http. Desktop and mobile check they're on the local plan.
 - Found along the way, and fixed: template code that depended on sample code (now a rule in CLAUDE.md); `/readyz` and generic UI helpers in the sample are TODO.md items.
 
 ### 3. Sample paid feature: CSV export of items — done
@@ -69,7 +69,7 @@ SPEC.md §4.9 · [`features/plan-features.feature`](../../features/plan-features
 
 ### 4. Changing a workspace's plan — done
 SPEC.md §4.15 · [`features/plan-changes.feature`](../../features/plan-changes.feature) · [`docs/billing.md`](../billing.md) · [ADR 5](../adr/0005-hosted-and-local-editions.md) "Billing is a driving adapter".
-- Done 2026-11-06: the admin-only `ChangePlan` use case (`ports.BillingService`), reached by `starter admin set-plan`, with no API. Each workspace's plan is stored through `ports.WorkspacePlanRepository` in memory, jsonfile and sqlite, and `plans.StoredPlanOf` reads it. `ports.PlanCatalog` refuses an unknown plan.
+- Done 2026-11-06: the admin-only `ChangePlan` use case (`ports.BillingService`), reached by `starter admin set-plan`, with no API. Each workspace's plan is stored through `ports.WorkspacePlanRepository` in memory, jsonfile, and sqlite, and `plans.StoredPlanOf` reads it. `ports.PlanCatalog` refuses an unknown plan.
 - The local edition's plan stays fixed, so `bootstrap.NewBilling` refuses every copy until step 8 wires the stored plans. Only the acceptance harness changes plans for now. All template code; the sample use is the item scenarios that move plans. `task test:init` passes.
 - `docs/billing.md`, the template users' guide described above.
 
@@ -83,9 +83,9 @@ SPEC.md §4.16 · [`features/synced-plain-text.feature`](../../features/synced-p
 
 ### 6. SQLite adapter and migrations — done
 SPEC.md §4.14 · [`features/sqlite-storage.feature`](../../features/sqlite-storage.feature) · [ADR 7](../adr/0007-sqlite-storage.md) · `internal/adapters/storage/sqlite`.
-- Done 2026-11-03: `storage = "sqlite"` keeps the data in `<data dir>/data.db` (modernc.org/sqlite, goose migrations, WAL, no lock), on the server, the CLI and TUI, and the desktop app. A new `sqlite` acceptance driver runs every business scenario; the desktop and server drivers cover sharing with the CLI, reopening and readiness.
+- Done 2026-11-03: `storage = "sqlite"` keeps the data in `<data dir>/data.db` (modernc.org/sqlite, goose migrations, WAL, no lock), on the server, the CLI, and TUI, and the desktop app. A new `sqlite` acceptance driver runs every business scenario; the desktop and server drivers cover sharing with the CLI, reopening, and readiness.
 - This is the existing "SQL storage adapter" TODO item. It passes every contract suite, including isolation.
-- The user chooses plain text or SQLite (`storage = "sqlite"`). SQLite has no lock: the desktop app, the CLI and TUI, and several servers on one disk can share it.
+- The user chooses plain text or SQLite (`storage = "sqlite"`). SQLite has no lock: the desktop app, the CLI, and TUI, and several servers on one disk can share it.
 - The warning when SQLite's folder looks synced is deferred to a follow-up, now in TODO.md.
   - Done 2026-11-04 as that follow-up: every front end warns, naming the service, when SQLite's data folder looks synced by its path or marker files (`internal/adapters/syncedfolder`); `ignore_synced_folder` turns it off. [`features/synced-folder.feature`](../../features/synced-folder.feature).
 
@@ -136,13 +136,13 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - 2026-11-01: after step 1, more of the workspace work now survives `--remove-sample`, so template users don't redo it for each entity:
   - a generic port, `ports.WorkspaceRepository[T]`, which `ItemRepository` now embeds;
   - a generic isolation suite, `storagetest.RunWorkspaceIsolation`, which the Item contract now calls instead of its own isolation cases;
-  - a guide with a checklist, `docs/workspaces.md`, linked from CLAUDE.md's workspace rule, the port and `/feature`'s planning step;
+  - a guide with a checklist, `docs/workspaces.md`, linked from CLAUDE.md's workspace rule, the port, and `/feature`'s planning step;
   - a comment in `bootstrap.NewEmbedded`, outside the sample block, naming `workspace.Local{}` beside the clock and IDs.
 - 2026-11-01: step 2 covers limits only. On/off features, with show-locked or hide, move to step 3, where CSV export is their first user. The plans file is JSON with full-line `//` comments, so it can carry sample markers.
 - 2026-11-01: step 2 finished. Along the way:
   - `NewRemote` reads the server's plan too, so the CLI and TUI with `--server` see it.
   - The item endpoints keep their `default` problem response, which covers the limit's 403, rather than listing it.
-  - `free` and `pro` ship in the plans file as example data, for sign-in (step 8) to put hosted workspaces on.
+  - `free`, and `pro` ship in the plans file as example data, for sign-in (step 8) to put hosted workspaces on.
   - Template code had come to depend on sample code (`bootstrap`'s plans, httpclient's `toError`). Both are fixed, CLAUDE.md now says to keep machinery in template code with one thin sample use, and to run `task test:init` whenever a cycle touches a sample boundary. The other cases found are TODO.md items (`/readyz`, generic UI helpers).
 - 2026-11-03: step 6 (SQLite) started before step 5, at the user's request; neither depends on the other. Its synced-folder warning moves to a follow-up. Decided: modernc.org/sqlite (pure Go), goose migrations, no lock (WAL), so SQLite lifts ADR 3's one-program limit.
 - 2026-11-03: step 6 finished, recorded in ADR 7. The synced-folder warning went into TODO.md now, not at the end of the plan, so it isn't lost. The template keeps a no-op baseline migration, so SQLite still opens with the sample removed.

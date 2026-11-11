@@ -67,7 +67,7 @@ func Detect(dir string) (service string, ok bool) {
 }
 
 // markedBy reports the service whose marker dir holds, if any. It matches
-// the names in dir rather than globbing under it, so `[`, `*` or `?` in dir's
+// the names in dir rather than globbing under it, so `[`, `*`, or `?` in dir's
 // own path stay plain characters. A folder it can't read holds no markers.
 func markedBy(dir string) (service string, ok bool) {
 	entries, _ := os.ReadDir(dir)

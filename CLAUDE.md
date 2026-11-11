@@ -19,7 +19,7 @@ Each copy uses one edition, and nothing syncs between them. Outside `internal/bo
 
 ## Workflow: BDD outside, TDD inside
 
-1. `/feature <desc>` checks that we're on an up-to-date, clean `main`, creates the branch `feature/<feature-slug>`, updates SPEC.md, writes `@wip` Gherkin in `features/`, shows it failing, and commits and pushes the spec, scenarios and task list. No production code. The task list ends with a docs-and-finish task that removes the `@wip` tags, deletes the `docs/wip/` file and updates the plan.
+1. `/feature <desc>` checks that we're on an up-to-date, clean `main`, creates the branch `feature/<feature-slug>`, updates SPEC.md, writes `@wip` Gherkin in `features/`, shows it failing, and commits and pushes the spec, scenarios, and task list. No production code. The task list ends with a docs-and-finish task that removes the `@wip` tags, deletes the `docs/wip/` file, and updates the plan.
 2. `/red <behaviour>` writes one failing unit test.
 3. `/green` writes the minimum code to pass it.
 4. `/refactor` tidies the code on green, with no behaviour change.
@@ -31,7 +31,7 @@ Each copy uses one edition, and nothing syncs between them. Outside `internal/bo
 
 Keep tool output small, as every cycle starts from a cleared context. Search narrowly: `grep -l` or `-m`, a specific path, and `head` on `find`. When output was too long and was saved to a file, `grep` or `tail` that file instead of reading all of it. Read a large file by section, not whole.
 
-When a change leaves something that a developer starting a new project from this template must set up or fill in themselves (a placeholder name, publisher or description, an account, a key), add a step for them in the same change. Until the template's permanent starter TODO list exists, these steps go under the TODO.md item that creates it ("Steps the new file must give the developer using the template"). They are tasks for template users, not for us.
+When a change leaves something that a developer starting a new project from this template must set up or fill in themselves (a placeholder name, publisher, or description, an account, a key), add a step for them in the same change. Until the template's permanent starter TODO list exists, these steps go under the TODO.md item that creates it ("Steps the new file must give the developer using the template"). They are tasks for template users, not for us.
 
 <!-- template:start -->
 This is still the template and has no users, so don't build backwards compatibility. Don't migrate data saved before a change, don't add defaults for old records, and don't hold a release for old data. Breaking changes are fine. Products built from the template handle their own compatibility. (`task init` removes this paragraph.)
@@ -41,7 +41,7 @@ The sample `Item` feature is removed by most projects, so work spent on it is mo
 
 Never skip a step or merge steps unless I ask. Never write production code without a failing test that demands it.
 
-Never stage, commit, push or pull unless I explicitly ask. That includes `git add`, `git mv` and `git rm`, which stage changes. Running `/iterate` is such a request, for its own cycle only (see `.claude/commands/iterate.md`, whose `allowed-tools` lets it run `git add`, `git commit` and `git push` without a prompt). Running `/iterate-all` is the same request for each of its cycles. Both open the feature's pull request after its last task (`.claude/rules/work-tracking.md`), and `/feature` creates the feature's branch; nothing else opens a pull request or changes branch unless I ask. Running `/feature` is the same request for its own spec, scenarios and task list. `/red`, `/green` and `/refactor` leave everything unstaged. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
+Never stage, commit, push, or pull unless I explicitly ask. That includes `git add`, `git mv`, and `git rm`, which stage changes. Running `/iterate` is such a request, for its own cycle only (see `.claude/commands/iterate.md`, whose `allowed-tools` lets it run `git add`, `git commit`, and `git push` without a prompt). Running `/iterate-all` is the same request for each of its cycles. Both open the feature's pull request after its last task (`.claude/rules/work-tracking.md`), and `/feature` creates the feature's branch; nothing else opens a pull request or changes branch unless I ask. Running `/feature` is the same request for its own spec, scenarios, and task list. `/red`, `/green`, and `/refactor` leave everything unstaged. Move or delete files with plain `mv` and `rm`. I review and commit the changes myself.
 
 ## Writing and asking
 
@@ -68,7 +68,7 @@ When you ask me a question, don't assume I know the tools, terms, or patterns be
 | Run locally | `task dev` (API on :8080, restarted by Air on Go changes + Vite on :5173 with HMR, opened in your browser) · `task run:cli -- --help` · `task run:tui` · `task run:desktop` |
 | Build | `task build` (`bin/server` with the SPA embedded, `bin/starter`) |
 
-Desktop builds and packaging, the Android app and the app icons have their own commands, listed in `desktop.md`, `desktop-packaging.md`, `mobile.md` and `web.md` under `.claude/rules/`.
+Desktop builds and packaging, the Android app, and the app icons have their own commands, listed in `desktop.md`, `desktop-packaging.md`, `mobile.md` and `web.md` under `.claude/rules/`.
 
 ## Architecture
 
@@ -99,9 +99,9 @@ test/packaging                   package check: builds the Linux packages and th
 
 ### Rules (enforced by depguard in `.golangci.yml`)
 
-- `core/domain` imports only the stdlib. `core/app` imports `domain` and `ports`, never adapters, `bootstrap`, `config`, `net/http`, `os` or `database/sql`.
+- `core/domain` imports only the stdlib. `core/app` imports `domain` and `ports`, never adapters, `bootstrap`, `config`, `net/http`, `os`, or `database/sql`.
 - Business rules live in `domain`. Use cases in `app` only orchestrate.
-- UIs call the core **only** through driving ports (the `…Service` interfaces in `ports`). Never put business logic in handlers, Cobra commands, Bubble Tea models or React components.
+- UIs call the core **only** through driving ports (the `…Service` interfaces in `ports`). Never put business logic in handlers, Cobra commands, Bubble Tea models, or React components.
 - A new storage backend implements the `…Repository` ports, runs each one's `storagetest` contract suite, and is wired (with its readiness check) in `internal/bootstrap` (`.claude/rules/storage.md`).
 - Data belongs to a workspace, passed **explicitly** to every repository call; plans set a workspace's limits, checked before saving and never on delete; domain errors are the shared language across HTTP. Details are in `.claude/rules/workspaces-and-plans.md`. **Adding an entity: follow the checklist in `docs/workspaces.md`. Gating a feature by plan: `docs/features.md`. Connecting a payment provider: `docs/billing.md`.**
 - Time and IDs come from `ports.Clock` / `ports.IDGenerator`. Use `internal/testsupport` fakes in tests.
@@ -132,7 +132,7 @@ Each loads when you read a file matching its paths. Read one directly when a tas
 | `web.md` | Node/TS versions, icons, installable app, offline behaviour, Android bridge client |
 | `web-styles.md` | styles, palette, focus, phone width, entry transitions |
 | `web-e2e.md` | Playwright projects, `@phone`, WebKit deps |
-| `testing.md` | Go, Godog, terminal and web test conventions; acceptance driver tags |
+| `testing.md` | Go, Godog, terminal, and web test conventions; acceptance driver tags |
 | `desktop.md` | Wails desktop build, GTK/WebKitGTK deps, local data |
 | `desktop-packaging.md` | Linux packages and the Windows setup program |
 | `mobile.md` | Android build, lint, the API bridge |

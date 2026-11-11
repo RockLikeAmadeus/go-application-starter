@@ -2,7 +2,7 @@
 
 The mobile app (SPEC.md §4.7) is the web app as an Android app, with the core and its data on the phone. It needs no server and works offline. It uses Wails v3, like the desktop app; ADR 4 explains why. This page covers setting up the Android tools, running the app on the emulator or a phone, debugging it, and how it works inside.
 
-iPhone, remote mode, release signing and an app icon aren't done yet: see `TODO.md`.
+iPhone, remote mode, release signing, and an app icon aren't done yet: see `TODO.md`.
 
 ## Set up the Android tools (once)
 
@@ -69,13 +69,13 @@ The data folder is in the app's private storage: `/data/data/com.example.starter
 
 ## How it works
 
-The phone runs the desktop app's wiring. `mobile.Open` (in `internal/adapters/mobile`) calls `desktop.Open` with the app's private storage as the settings folder, so the core, jsonfile storage and the REST handler are the same as on the desktop. `cmd/mobile/main.go` (build tag `android`) only wraps it in Wails. Five things differ from the desktop.
+The phone runs the desktop app's wiring. `mobile.Open` (in `internal/adapters/mobile`) calls `desktop.Open` with the app's private storage as the settings folder, so the core, jsonfile storage, and the REST handler are the same as on the desktop. `cmd/mobile/main.go` (build tag `android`) only wraps it in Wails. Five things differ from the desktop.
 
 **The API goes over the Wails bridge.** On Android, Wails hands every page request to Go as a `GET` with no body, and treats any status but 200 as "not found". So the web app can't reach the REST API the normal way: a `POST` would arrive as a `GET`, and a 404 or 422 would be lost. Instead:
 
 1. On Android, `web/src/api/client.ts` gives the API client `apiFetch`, which sends each request through `bridgeFetch` (`web/src/api/bridge.ts`).
 2. `bridgeFetch` calls the Go method `main.Bridge.Serve(method, path, body)` with the Wails runtime's `Call.ByName`.
-3. `Bridge.Serve` (in `cmd/mobile`) passes it to `mobile.Serve`, which runs the request through the REST handler and returns the status, content type and body.
+3. `Bridge.Serve` (in `cmd/mobile`) passes it to `mobile.Serve`, which runs the request through the REST handler and returns the status, content type, and body.
 4. `bridgeFetch` turns that back into a normal `Response` (with no body for a 204). The web app's code doesn't know the difference.
 
 Wails names a bound method after its Go package and type. `cmd/mobile` is package `main`, so the name is `main.Bridge.Serve`, and it survives `task rename`. Renaming the `Bridge` type, or moving it to another package, breaks the app.
@@ -103,7 +103,7 @@ Wails mobile is experimental: it's outside Wails' stability promise, and the bri
   diff -r /tmp/wails-assets/android mobile/android
   ```
 
-  Copy over everything except `Taskfile.yml`, `scripts/` (both for wails3's own build) and `main_android.go` (`cmd/mobile/main.go` already does its job). Then reapply the edits: `applicationId`, `app_name` and `rootProject.name`; the comment on `namespace`; the trimmed permissions in `AndroidManifest.xml`; `android:fitsSystemWindows="true"` in `res/layout/activity_main.xml`; the `app_background` colour and the system-bar items in `res/values/colors.xml` and `themes.xml`; and `chmod +x gradlew`. Keep `mobile/android/.gitignore`.
+  Copy over everything except `Taskfile.yml`, `scripts/` (both for wails3's own build) and `main_android.go` (`cmd/mobile/main.go` already does its job). Then reapply the edits: `applicationId`, `app_name`, and `rootProject.name`; the comment on `namespace`; the trimmed permissions in `AndroidManifest.xml`; `android:fitsSystemWindows="true"` in `res/layout/activity_main.xml`; the `app_background` colour and the system-bar items in `res/values/colors.xml` and `themes.xml`; and `chmod +x gradlew`. Keep `mobile/android/.gitignore`.
 - **Keep the Java package `com.wails.app`.** The Go library's JNI functions are named after it, so only `applicationId` changes per app.
 
 ## The app ID

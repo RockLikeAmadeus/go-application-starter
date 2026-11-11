@@ -5,7 +5,7 @@ Every front end takes the same settings, from up to four places. When a setting 
 1. **Built in:** the defaults below.
 2. **The settings file:** an optional TOML file.
 3. **The environment:** a `STARTER_…` variable (or `PORT`).
-4. **A command-line option:** the CLI's `--data-dir`, `--storage` and `--server`, for one command.
+4. **A command-line option:** the CLI's `--data-dir`, `--storage`, and `--server`, for one command.
 
 So the settings file holds what you want every time, and an environment variable or an option overrides it for one run. Why environment variables beat the file, and why there is a file at all, is in [ADR 6](adr/0006-layered-configuration.md).
 
@@ -22,13 +22,13 @@ So the settings file holds what you want every time, and an environment variable
 | `plans_file` | `STARTER_PLANS_FILE` | | none | A plans file to use instead of the one built in (`internal/adapters/plans/plans.jsonc`). |
 | `ignore_synced_folder` | `STARTER_IGNORE_SYNCED_FOLDER` | | `false` | `true` is for a folder that looks synced but isn't. It turns off the warning that SQLite's data folder looks synced (SPEC.md §4.14), and stops plain text marking the folder as in use on this device (§4.16). It doesn't turn off the conflict copy warning, as a conflict copy is itself the evidence. A value that isn't `true` or `false` stops the app at start. |
 
-The default data folder depends on the front end. The server uses `./data`, relative to the folder it was started in. The CLI, TUI and desktop app share `starter` in the user's settings folder (`~/.config/starter` on Linux). [docs/data-locations.md](data-locations.md) has every case, on every OS.
+The default data folder depends on the front end. The server uses `./data`, relative to the folder it was started in. The CLI, TUI, and desktop app share `starter` in the user's settings folder (`~/.config/starter` on Linux). [docs/data-locations.md](data-locations.md) has every case, on every OS.
 
 ## The settings file
 
 It's [TOML](https://toml.io): one `key = value` per line, strings in quotes, `#` for comments.
 
-When the desktop app, the CLI or the TUI starts and its default settings file (below) is missing, it creates one, with the values it would use without the file. On Linux, for a user called `you`, it looks like this:
+When the desktop app, the CLI, or the TUI starts and its default settings file (below) is missing, it creates one, with the values it would use without the file. On Linux, for a user called `you`, it looks like this:
 
 ```toml
 # The settings for this application. The application created this file with the
@@ -69,7 +69,7 @@ ignore_synced_folder = false
 - if it can't be written (a read-only folder, or no settings folder), the program carries on silently on the built-in settings, and tries again the next time it starts. Delete the file to get a fresh one.
 
 **Which file is read:**
-- **The CLI, TUI and desktop app** read `config.toml` in the app's folder in the user's settings folder, beside the default data folder:
+- **The CLI, TUI, and desktop app** read `config.toml` in the app's folder in the user's settings folder, beside the default data folder:
   - Linux: `~/.config/starter/config.toml` (`$XDG_CONFIG_HOME/starter/config.toml`);
   - Windows: `%AppData%\starter\config.toml`;
   - macOS: `~/Library/Application Support/starter/config.toml`.
@@ -113,4 +113,4 @@ The sources are `built in`, `settings file`, `environment (STARTER_…)` and `op
 - `config.Load(env, settingsFile)` reads the file and the environment, records each setting's source in `Config.Sources`, and validates the result.
 - `config.LocalDataDir(env, settingsFile)` picks the local front ends' data folder.
 
-To add a setting: add a field to `config.Config`, its key and environment variable to `envVars` in `internal/config/config.go`, its lookup in `Load` and its line in `Config.Settings`, then add it to the table above. If the desktop app, the CLI or the TUI reads it, add it to `config.DefaultSettingsFileText` too, with a note above it: set to its default, or commented out when it has no useful default. The note is user-facing text, so agree its wording first. Then change the example file above to match.
+To add a setting: add a field to `config.Config`, its key and environment variable to `envVars` in `internal/config/config.go`, its lookup in `Load`, and its line in `Config.Settings`, then add it to the table above. If the desktop app, the CLI, or the TUI reads it, add it to `config.DefaultSettingsFileText` too, with a note above it: set to its default, or commented out when it has no useful default. The note is user-facing text, so agree its wording first. Then change the example file above to match.

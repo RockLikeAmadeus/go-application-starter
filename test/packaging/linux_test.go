@@ -30,7 +30,7 @@ const root = "../.."
 // the icon.
 const appID = "com.example.starter"
 
-// deb, rpm and appImage are the names of the packages the build makes in bin/.
+// deb, rpm, and appImage are the names of the packages the build makes in bin/.
 const (
 	deb      = "starter-desktop_" + version + "_amd64.deb"
 	rpm      = "starter-desktop-" + version + "-1.x86_64.rpm"

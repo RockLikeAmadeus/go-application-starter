@@ -16,10 +16,10 @@ The app is built for Windows with `CGO_ENABLED=0` (the Windows build and setup t
 - **Newer data is refused.** If the database's goose version is ahead of the newest embedded migration, `Open` fails with "the data was saved by a newer version of the app" and changes nothing.
 - **A template baseline migration** (`00001_baseline.sql`, a no-op) stays when the sample is removed: goose won't start with no migrations, and the newer-data check needs a newest one.
 - **One file:** `<data dir>/data.db`, plus SQLite's `-wal` and `-shm` files beside it. The name is generic, so `task rename` has nothing to rewrite.
-- **No lock: several programs at once.** Write-ahead logging (WAL) and a 5-second busy timeout let the desktop app, the CLI and TUI, and several servers on one disk share the database. Each store keeps one connection (`SetMaxOpenConns(1)`), so a program's own writes queue in Go and only separate programs contend for SQLite's write lock. This lifts ADR 3's single-program limit for SQLite; jsonfile keeps its `flock`.
+- **No lock: several programs at once.** Write-ahead logging (WAL) and a 5-second busy timeout let the desktop app, the CLI, and TUI, and several servers on one disk share the database. Each store keeps one connection (`SetMaxOpenConns(1)`), so a program's own writes queue in Go and only separate programs contend for SQLite's write lock. This lifts ADR 3's single-program limit for SQLite; jsonfile keeps its `flock`.
 - **Readiness** (`Store.Ready`, behind `/readyz`) pings the database **and** checks that the file at its path is still the one `Open` opened (`os.SameFile`). On Unix an open handle keeps a removed file alive, so a ping alone would say "ready" while writes go nowhere.
 - **Workspaces:** every table has a `workspace_id` column, part of the primary key, and every query filters by it. The adapter passes the same contract suites, isolation included, as memory and jsonfile.
-- **The setting:** `storage = "sqlite"` (`STARTER_STORAGE=sqlite`, `--storage sqlite`). The default stays `jsonfile`. The server, the CLI and TUI, and the desktop app honour it; the Android app stays on jsonfile, since it has no settings file.
+- **The setting:** `storage = "sqlite"` (`STARTER_STORAGE=sqlite`, `--storage sqlite`). The default stays `jsonfile`. The server, the CLI, and TUI, and the desktop app honour it; the Android app stays on jsonfile, since it has no settings file.
 
 ## Consequences
 

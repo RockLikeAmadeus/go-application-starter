@@ -25,7 +25,7 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | Term | Meaning |
 |---|---|
 | **Theme** | The colour scheme of the web app: **dark** or **light**. Independent of the style. |
-| **Style** | A named look for the web app: its layout, fonts, shape and density. Independent of the theme; every style works in dark and light. |
+| **Style** | A named look for the web app: its layout, fonts, shape, and density. Independent of the theme; every style works in dark and light. |
 | **Desktop app** | The web app packaged as a program for the user's computer. In the local edition it keeps its own data and needs no server. Working on hosted data instead (remote mode) is planned. |
 | **Command line** | The `starter` program's commands (the CLI), run one at a time in a terminal. |
 | **Terminal app** | The full-screen app the command line opens with `starter tui` (the TUI), worked with the keyboard. |
@@ -55,7 +55,7 @@ The sample capability (§4.1) adds one term:
 <!-- sample:start -->
 ### 4.1 Manage items _(walking skeleton)_
 
-Users can create, list, rename and delete items.
+Users can create, list, rename, and delete items.
 
 **Rules**
 - An item's name is required and is trimmed of surrounding whitespace.
@@ -87,7 +87,7 @@ Users can switch the web app between a dark and a light theme, so it suits their
 Users can switch the web app between styles, so it suits how they like to work: compact and dense, or roomy and soft.
 
 **Rules**
-- The app offers a fixed list of styles. Out of the box it offers **Crisp**, **Terminal** and **Soft**.
+- The app offers a fixed list of styles. Out of the box it offers **Crisp**, **Terminal**, and **Soft**.
 - A first visit uses the first style in the list.
 - A user's chosen style is remembered in their browser and wins on later visits. A remembered style the app no longer offers falls back to the first style.
 - Style and theme are independent: changing one never changes the other.
@@ -139,7 +139,7 @@ Users can install the web app on their phone or computer, so it opens from the h
 
 ### 4.6 Use the desktop app
 
-Users can run the app as a program on their own computer, so they can use it without a server, an account or a connection. This section describes the desktop app in the local edition. Working on hosted data instead (remote mode) is planned: see [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
+Users can run the app as a program on their own computer, so they can use it without a server, an account, or a connection. This section describes the desktop app in the local edition. Working on hosted data instead (remote mode) is planned: see [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
 
 **Rules**
 - The desktop app shows the same app as the web app, with the same styles and themes, in its own window.
@@ -149,11 +149,11 @@ Users can run the app as a program on their own computer, so they can use it wit
 - With plain-text storage (the default), only one copy of the app can use a data folder at a time. A second copy says the data is already in use, and doesn't start. SQLite storage (§4.14) has no such limit.
 - In local-only mode, it never says it is offline, because it doesn't need a connection.
 - It shows the product's icon, the same one as the installed web app (§4.5), in the taskbar or Dock. On Linux the icon comes from the installed app, so a copy that wasn't installed from a package may show a generic icon.
-- On Linux, users install it from a package for their system (`.deb` for Debian, Ubuntu and Pop!_OS; `.rpm` for Fedora and openSUSE), or run it as an AppImage with nothing to install. Once installed, it appears in the app list under the product's name and icon, and uninstalling it leaves the user's data folder alone.
+- On Linux, users install it from a package for their system (`.deb` for Debian, Ubuntu, and Pop!_OS; `.rpm` for Fedora and openSUSE), or run it as an AppImage with nothing to install. Once installed, it appears in the app list under the product's name and icon, and uninstalling it leaves the user's data folder alone.
 - On Windows, users install it with a setup program (`starter-desktop-<version>-setup.exe`). It installs for the current user only, so it needs no administrator, and puts the app in the Start menu under the product's name and icon. Windows lists it under installed apps, where it can be uninstalled. Uninstalling leaves the user's data folder alone. The setup program isn't signed yet, so Windows SmartScreen warns about it before it runs.
 
 **Examples**
-- User adds "Widget", closes the app and opens it again → "Widget" is still there.
+- User adds "Widget", closes the app, and opens it again → "Widget" is still there.
 - User opens the app twice → the second copy says the data is in use.
 - User opens the app on Windows or a Mac → the taskbar or Dock shows the product's icon.
 - User installs the `.deb` on Pop!_OS → "Starter" appears in the app list with its icon, and opens from there.
@@ -165,7 +165,7 @@ Users can run the app as a program on their own computer, so they can use it wit
 
 ### 4.7 Use the mobile app
 
-Users can install the app on their Android phone and use it without a server, an account or a connection. This section describes the mobile app in the local edition. Working on hosted data instead (remote mode) is planned: see [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
+Users can install the app on their Android phone and use it without a server, an account, or a connection. This section describes the mobile app in the local edition. Working on hosted data instead (remote mode) is planned: see [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
 
 **Rules**
 - The mobile app shows the same app as the web app on a phone (§4.4), with the same styles and themes.
@@ -176,7 +176,7 @@ Users can install the app on their Android phone and use it without a server, an
 - Android only for now; iPhone comes later.
 
 **Examples**
-- User adds "Widget", closes the app and opens it again → "Widget" is still there.
+- User adds "Widget", closes the app, and opens it again → "Widget" is still there.
 - User turns on airplane mode and adds "Widget" → it is saved, and the app shows no offline notice.
 
 **Specification:** [`features/mobile.feature`](features/mobile.feature). The mobile app also runs every other feature's scenarios, except the desktop app's. Showing no offline notice is checked by unit tests and by hand.
@@ -199,7 +199,7 @@ All data belongs to a workspace, so that when one server serves many users, nobo
 **Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory, jsonfile, sqlite, and postgres drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition.
 <!-- sample:end -->
 
-### 4.9 Plans, features and limits
+### 4.9 Plans, features, and limits
 
 Each workspace is on a **plan**, which turns **features** on or off and sets its **limits**: for example, whether it can export its items, and how many items it may have. Paid plans can then offer more than free ones (ADR 5). Plans are defined in configuration, not code, so they can change without a new release.
 
@@ -254,7 +254,7 @@ The server says whether it is **ready**: whether it can reach its data and so se
 
 ### 4.11 Share local data between the desktop app and the command line
 
-On one computer, the desktop app, the CLI and the TUI are one local edition, so they work on the same data. A user who adds something in one finds it in the others, whichever folder they ran the command in. The command line can also say where that data is.
+On one computer, the desktop app, the CLI, and the TUI are one local edition, so they work on the same data. A user who adds something in one finds it in the others, whichever folder they ran the command in. The command line can also say where that data is.
 
 **Rules**
 - By default the CLI and the TUI use the desktop app's data folder (§4.6): the user's settings folder for the app (on Linux, `~/.config/starter`). The folder they're run from makes no difference.
@@ -276,18 +276,18 @@ On one computer, the desktop app, the CLI and the TUI are one local edition, so 
 
 ### 4.12 Keep settings in a settings file
 
-Users of the local edition can keep their settings in a settings file, so they don't have to set them each time they start the app. The desktop app, the CLI and the TUI read the same file. Whoever runs a server can give it one too.
+Users of the local edition can keep their settings in a settings file, so they don't have to set them each time they start the app. The desktop app, the CLI, and the TUI read the same file. Whoever runs a server can give it one too.
 
 **Rules**
 - The settings file is optional. Without one, the app uses its built-in defaults.
 - By default it's `config.toml` in the user's settings folder for the app (on Linux, `~/.config/starter/config.toml`). `STARTER_CONFIG_FILE`, or `--config` for one command, names another one.
-- It can hold any of the app's settings: the data folder, the storage, the server to connect to, the log format, the plans file and the port.
+- It can hold any of the app's settings: the data folder, the storage, the server to connect to, the log format, the plans file, and the port.
 - A setting chosen when the app is started overrides the settings file: an environment variable over the file, and a command-line option over both.
-- `starter info` says which settings file was read, and where each setting came from: built in, the settings file, an environment variable or a command-line option.
+- `starter info` says which settings file was read, and where each setting came from: built in, the settings file, an environment variable, or a command-line option.
 - A settings file the app can't understand (a mistake in it, or a setting it doesn't know) stops the app at start, saying which file and which setting. The app never starts on settings it ignored.
 - A named settings file that doesn't exist is a mistake too. The default one may be missing.
 - A server reads a settings file only when `STARTER_CONFIG_FILE` names one, never the user's settings folder.
-- When the desktop app, the CLI or the TUI starts and the default settings file is missing, it creates one, so the user has a file to edit. The file sets the settings these programs use (the storage, the data folder and whether to ignore a synced folder) to the values they would have without it. The data folder is written as this computer's full path. The settings that have no default (the server to connect to and the plans file) are in it as comments. Creating it changes nothing about how the app runs.
+- When the desktop app, the CLI, or the TUI starts and the default settings file is missing, it creates one, so the user has a file to edit. The file sets the settings these programs use (the storage, the data folder, and whether to ignore a synced folder) to the values they would have without it. The data folder is written as this computer's full path. The settings that have no default (the server to connect to and the plans file) are in it as comments. Creating it changes nothing about how the app runs.
 - The app never changes a settings file that's already there. It creates none when `STARTER_CONFIG_FILE` or `--config` names one, and the server and the mobile app never create one.
 - If the settings file can't be created (for example, the folder can't be written to), the app starts on its built-in defaults as before, and tries again next time.
 
@@ -297,7 +297,7 @@ Users of the local edition can keep their settings in a settings file, so they d
 - The settings file has `colour = "blue"` → the app doesn't start, and says `colour` isn't a setting it knows.
 - A user on Linux with no settings file opens the desktop app → `~/.config/starter/config.toml` now exists, with `storage = "jsonfile"`, `data_dir = "/home/<user>/.config/starter"` and `ignore_synced_folder = false`, and the app runs as it did before.
 
-**Specification:** [`features/settings-file.feature`](features/settings-file.feature) and [`features/default-settings-file.feature`](features/default-settings-file.feature). These scenarios run on the desktop driver, on a temporary settings folder, apart from one on the mobile driver showing that the mobile app creates no settings file. Every setting, its environment variable and its option are listed in [docs/configuration.md](docs/configuration.md).
+**Specification:** [`features/settings-file.feature`](features/settings-file.feature) and [`features/default-settings-file.feature`](features/default-settings-file.feature). These scenarios run on the desktop driver, on a temporary settings folder, apart from one on the mobile driver showing that the mobile app creates no settings file. Every setting, its environment variable, and its option are listed in [docs/configuration.md](docs/configuration.md).
 
 ### 4.13 Use the command line and the terminal app
 
@@ -317,7 +317,7 @@ Users who live in a terminal can do their work with the command line, one comman
 - User runs `starter tui`, then presses `q` → the terminal shows what it showed before.
 <!-- sample:start -->
 - User runs `starter item add "Widget"`, then `starter item list` → "Widget" is listed.
-- User opens the terminal app, presses `a`, types "Widget" and presses Enter → "Widget" is listed.
+- User opens the terminal app, presses `a`, types "Widget", and presses Enter → "Widget" is listed.
 <!-- sample:end -->
 
 **Specification:** the business rules are in [`features/`](features/), run against the driving ports. These journeys only prove the wiring: they run the built programs in a terminal, as a user would. [`test/terminal/features/command-line.feature`](test/terminal/features/command-line.feature), [`test/terminal/features/terminal-app.feature`](test/terminal/features/terminal-app.feature).
@@ -327,7 +327,7 @@ Users who live in a terminal can do their work with the command line, one comman
 Data can be kept in a SQLite database instead of as plain text, so that several programs can use it at the same time: the desktop app and the command line on one computer, or several copies of a server on one disk. Plain text stays the default. This is step 6 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md); the hosted edition's database, Postgres, is §4.17.
 
 **Rules**
-- The storage setting (§4.12) chooses how data is kept: `jsonfile` (plain text, the default), `sqlite` or `memory`. The server, the command line, the terminal app and the desktop app all honour it. The mobile app keeps plain text for now.
+- The storage setting (§4.12) chooses how data is kept: `jsonfile` (plain text, the default), `sqlite`, or `memory`. The server, the command line, the terminal app, and the desktop app all honour it. The mobile app keeps plain text for now.
 - SQLite keeps all the data in one database file in the data folder.
 - Several programs can use the same SQLite data at once, and each sees what the others saved. (Plain-text data is still for one program at a time, §4.6 and §4.11.)
 - Opening the data brings its layout up to date with the app. Data saved by a newer version of the app, with a layout this one doesn't know, is refused rather than changed.
@@ -418,7 +418,7 @@ A server can keep its data in a Postgres database, so that several copies of it,
 - `storage = "postgres"` with no `database_url` → the server doesn't start, and says the setting is missing.
 - The desktop app's settings file says `storage = "postgres"` → it doesn't open the data, and says that it keeps local data only.
 
-**Specification:** [`features/postgres-storage.feature`](features/postgres-storage.feature), on the server driver. Every other feature's business scenarios also run on Postgres storage. Refusing a newer layout, a missing `database_url` and the desktop app refusing Postgres are checked by unit tests. These tests need a Postgres database (`task db:up`). Without one they are skipped locally, and CI always runs them.
+**Specification:** [`features/postgres-storage.feature`](features/postgres-storage.feature), on the server driver. Every other feature's business scenarios also run on Postgres storage. Refusing a newer layout, a missing `database_url`, and the desktop app refusing Postgres are checked by unit tests. These tests need a Postgres database (`task db:up`). Without one they are skipped locally, and CI always runs them.
 
 ## 5. Non-functional requirements
 

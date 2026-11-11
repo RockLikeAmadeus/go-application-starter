@@ -1,6 +1,6 @@
 Feature: The command line in a terminal
   # Wiring journeys only: they run the built `starter` program in a terminal,
-  # as a user would, to prove its options, output and status reach the core
+  # as a user would, to prove its options, output, and status reach the core
   # and back. Business rules are specified in /features and run with Godog.
 
   Scenario: The command line says where my data is

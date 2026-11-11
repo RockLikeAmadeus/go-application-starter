@@ -10,7 +10,7 @@ paths:
 
 # User-facing text
 
-User-facing text is what a person using the product reads: warnings, error messages, labels, empty states, command output and help text. Log and developer-only text doesn't count.
+User-facing text is what a person using the product reads: warnings, error messages, labels, empty states, command output, and help text. Log and developer-only text doesn't count.
 
 **Always agree it with me first.** Before writing or changing user-facing text, ask me with the AskUserQuestion tool, even if you're happy with the wording:
 - Ask about one piece of text at a time.

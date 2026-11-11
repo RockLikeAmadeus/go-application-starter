@@ -1,6 +1,6 @@
 # CI/CD
 
-How this project checks, builds and ships itself on GitHub, in plain terms. The README's [CI/CD section](../README.md#cicd) has the short version and the one-time Fly.io setup.
+How this project checks, builds, and ships itself on GitHub, in plain terms. The README's [CI/CD section](../README.md#cicd) has the short version and the one-time Fly.io setup.
 
 - **CI** (continuous integration): every push and pull request runs the project's checks on a GitHub machine, so a mistake is caught even if nobody ran `task check` locally.
 - **CD** (continuous delivery): the same machines build what you ship (the server's Docker image, the CLI and desktop downloads) and deploy the server.
@@ -30,7 +30,7 @@ All of it is **GitHub Actions**, which is built into GitHub: no other service or
 |---|---|---|
 | `ci.yml` | a pull request; a push to `main`; a `v*` tag | The checks `task check` runs, as five jobs: Go (lint, unit, acceptance, terminal journeys), Web (lint, types, format, unit), generated code is up to date, browser e2e, and then the Docker image. The image job waits for the other four, and publishes the server's image to the repository's **Packages** (GHCR) only on a push, not for a pull request. |
 | `deploy.yml` | `ci.yml` finishing | Deploys the image CI just built to Fly.io: a push to `main` goes to **staging**, a `v*` tag to **production**, and then a smoke test asks the new server's `/readyz`. Only after a successful CI run, and only once deploys are switched on (below). |
-| `release.yml` | a `v*` tag; **Run workflow** | On a tag or a click, two desktop jobs build the installers and save them as artifacts: the Linux `.deb`, `.rpm` and AppImage, and the Windows setup `.exe` (cross-compiled on Linux). On a tag only, GoReleaser builds the CLI for Linux, macOS and Windows and creates the GitHub Release, and then `publish` adds the installers to it. A click never publishes anything. |
+| `release.yml` | a `v*` tag; **Run workflow** | On a tag or a click, two desktop jobs build the installers and save them as artifacts: the Linux `.deb`, `.rpm` and AppImage, and the Windows setup `.exe` (cross-compiled on Linux). On a tag only, GoReleaser builds the CLI for Linux, macOS, and Windows and creates the GitHub Release, and then `publish` adds the installers to it. A click never publishes anything. |
 
 So, for each thing you do:
 
@@ -43,7 +43,7 @@ So, for each thing you do:
 
 ### Keeping CI in step with `task check`
 
-`ci.yml` runs the same commands as `task check`, written out step by step rather than calling Task. When you add a check, a test folder or a browser to `task check` or `task setup`, add it to `ci.yml` too, or CI quietly stops covering it. (CI once lacked the WebKit and Firefox browsers the phone e2e tests use, and failed the first time it ran them.)
+`ci.yml` runs the same commands as `task check`, written out step by step rather than calling Task. When you add a check, a test folder, or a browser to `task check` or `task setup`, add it to `ci.yml` too, or CI quietly stops covering it. (CI once lacked the WebKit and Firefox browsers the phone e2e tests use, and failed the first time it ran them.)
 
 `ci.yml`'s branch must match your repository's default branch (`main`). Under another name, pushes run no CI at all, and nothing says so.
 
@@ -84,7 +84,7 @@ Use a plain `vMAJOR.MINOR.PATCH` tag. The desktop installers take their version 
 
 The tag starts two workflows:
 
-- **Release**, on the Actions tab. `goreleaser`, `desktop-linux` and `desktop-windows` run side by side; GoReleaser creates the Release with the CLI downloads, its `checksums.txt` and a list of the changes since the last tag. When all three are green, `publish` adds the installers. If any of them fails, `publish` is skipped and the installers aren't added: fix the problem, then delete the Release and the tag (below) and push the tag again.
+- **Release**, on the Actions tab. `goreleaser`, `desktop-linux`, and `desktop-windows` run side by side; GoReleaser creates the Release with the CLI downloads, its `checksums.txt` and a list of the changes since the last tag. When all three are green, `publish` adds the installers. If any of them fails, `publish` is skipped and the installers aren't added: fix the problem, then delete the Release and the tag (below) and push the tag again.
 - **CI**, as for a push, which also publishes the server's Docker image tagged `1.2.0` to GHCR, and then **Deploy** to production, once deploys are switched on.
 
 When Release is green, the repository's **Releases** page (on the right of its front page) shows the version with all its downloads. `checksums.txt` covers the CLI downloads only.
@@ -134,7 +134,7 @@ To build the desktop installers on GitHub without making a release, e.g. after c
 1. Push the change to a branch on GitHub. (The **Run workflow** button appears only once `release.yml` with `workflow_dispatch:` is on the default branch.)
 2. Open the repository's **Actions** tab, choose **Release** in the list on the left, then **Run workflow** at the right of the list of runs.
 3. Choose the branch to build (usually `main`), then **Run workflow**. The new run appears in the list after a few seconds.
-4. Open the run. `goreleaser` and `publish` are skipped (they only run for a tag); `desktop-linux` and `desktop-windows` run side by side. Open one to follow each step's log. Linux takes several minutes, most of them on the AppImage; Windows is quicker.
+4. Open the run. `goreleaser` and `publish` are skipped (they only run for a tag); `desktop-linux`, and `desktop-windows` run side by side. Open one to follow each step's log. Linux takes several minutes, most of them on the AppImage; Windows is quicker.
 5. When it's green, scroll to **Artifacts** at the bottom of the run's **Summary** page. Each is a zip: `desktop-linux` holds `starter-desktop_0.0.0_amd64.deb`, `starter-desktop-0.0.0-1.x86_64.rpm` and `starter-desktop-0.0.0-x86_64.AppImage`; `desktop-windows` holds `starter-desktop-0.0.0-setup.exe`. A run from a branch is version `0.0.0`; only a release tag gives a version. Artifacts are deleted after 14 days.
 
 To try a package, install it as you would any other, e.g. `sudo apt install ./starter-desktop_0.0.0_amd64.deb`, or make the AppImage executable and run it. On Windows, run the setup program; it's unsigned, so SmartScreen warns first (**More info → Run anyway**).

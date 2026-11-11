@@ -55,7 +55,7 @@ func ParseArgs(args []string) (Options, error) {
 }
 
 // checkDetails checks the package details. The description and publisher land
-// in YAML, JSON, a desktop file and makensis's arguments, so they must be one
+// in YAML, JSON, a desktop file, and makensis's arguments, so they must be one
 // line with no double quotes or backslashes. The publisher also goes in the
 // Linux maintainer, "<publisher> <<email>>", so it can't hold < or >, and the
 // email must be a bare address.

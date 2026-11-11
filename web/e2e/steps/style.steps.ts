@@ -3,7 +3,7 @@ import { createBdd } from "playwright-bdd";
 
 const { When, Then } = createBdd();
 
-// Opening the app, coming back later and the theme steps live in
+// Opening the app, coming back later, and the theme steps live in
 // theme.steps.ts. The style is observed through the picker and the root's
 // data-style attribute, which all style CSS keys off.
 

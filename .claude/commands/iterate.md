@@ -30,7 +30,7 @@ Anything with a conventional answer, or that the code, CLAUDE.md or the `docs/wi
 
 **When the new test passes straight away.** If it passes because the behaviour already exists (not because the test is wrong: check it can fail, e.g. that it waits for or asserts the right thing), don't ask me: keep it as a guard. Skip green, since no production code is demanded, and still run refactor. Record in the `docs/wip/` file that there was no red, and why. Commit it as `test:` (or `feat:` if refactor changed production code). A test that passes only sometimes is not this case: make it fail reliably for the right reason, as `red.md` says.
 
-**Finish.** `task lint`, `task test` and the acceptance run above, all green.
+**Finish.** `task lint`, `task test`, and the acceptance run above, all green.
 
 **Run each check once per state of the code.** While working, run the narrowest test that covers the change. Run `task test` and the acceptance run once after green: refactor's opening check reuses those results instead of running them again. Refactor's small steps re-run only the tests they touch. At the finish, run only what the refactor could have affected since green: if it changed nothing, that's `task lint`; if it changed only one package's tests, that package's tests and `task lint`. Otherwise run the full finishing checks. Slow, separate checks (`task test:init`, `task e2e:terminal`) run once, when the cycle touched what they cover.
 
@@ -47,7 +47,7 @@ Don't commit, and say why, when:
 - anything above isn't clean (the cycle stopped early, or a check is red);
 - the working tree had changes before the cycle started that aren't part of it. Ask whether to include them, leave them out, or not commit.
 
-Never pull, force-push or rewrite history. If the push is refused (for example, the remote has moved on), leave the commit in place and tell me.
+Never pull, force-push, or rewrite history. If the push is refused (for example, the remote has moved on), leave the commit in place and tell me.
 
 **Open the pull request after the last task.** When this cycle's commit was pushed and the `docs/wip/` file has no open task left (`grep -c '^- \[ \]'` gives 0), open the feature's pull request, as `.claude/rules/work-tracking.md` says under "Pull requests". Running `/iterate` on the last task is my request to open it. Don't open one from `main`, or when the branch already has one (`gh pr view --json url` finds it): report that one's link instead.
 

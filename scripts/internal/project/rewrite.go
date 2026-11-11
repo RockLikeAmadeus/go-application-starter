@@ -8,7 +8,7 @@ import (
 // Rewrite replaces the names from goes by in a file's text with the names to goes by.
 //
 // The compound names go first: the module path, the deploy app name, the web
-// package, the environment variable prefix and the app ID. At each
+// package, the environment variable prefix, and the app ID. At each
 // position the replacer tries the pairs in order, so the module path wins over
 // the app name it may contain. The bare brand and slug go last, as whole
 // words, once the compound names are gone.
