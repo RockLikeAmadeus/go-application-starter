@@ -25,6 +25,8 @@ type world struct {
 	// commandLineOptions are given to every command the command line runs,
 	// before the command's own arguments.
 	commandLineOptions []string
+	// isSettingUp is whether the step running is a Given.
+	isSettingUp bool
 	// sample:start
 	// exportedCSV is the items' CSV that the last export gave.
 	exportedCSV []byte
@@ -37,7 +39,17 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
 		w := &world{}
 
-		sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
+		sc.Before(func(ctx context.Context, scenario *godog.Scenario) (context.Context, error) {
+			if isSignInScenario(scenario) {
+				// Scenarios that sign in run on the hosted edition, and start
+				// signed out, in no workspace.
+				if d.startHosted == nil {
+					return ctx, fmt.Errorf("the %s driver has no hosted edition: leave out @sign-in in its tags", d.name)
+				}
+				h, err := d.startHosted()
+				w.harness = h
+				return ctx, err
+			}
 			h, err := d.start()
 			w.harness = h
 			// Scenarios that don't name a workspace work in the local edition's
@@ -63,6 +75,7 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		w.registerPostgresSteps(sc)
 		w.registerSyncedFolderSteps(sc)
 		w.registerSyncedPlainTextSteps(sc)
+		w.registerSignInSteps(sc)
 		// sample:start
 		w.registerItemSteps(sc)
 		w.registerPlanSteps(sc)
@@ -82,6 +95,16 @@ func (w *world) iAmToldTheFieldIsInvalid(field string) error {
 		return fmt.Errorf("validation error on %q, want %q", verr.Field, field)
 	}
 	return nil
+}
+
+// isSignInScenario is whether the scenario signs in (@sign-in).
+func isSignInScenario(scenario *godog.Scenario) bool {
+	for _, tag := range scenario.Tags {
+		if tag.Name == "@sign-in" {
+			return true
+		}
+	}
+	return false
 }
 
 // in returns a context that works in the named workspace.

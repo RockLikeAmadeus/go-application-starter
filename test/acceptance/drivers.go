@@ -71,11 +71,20 @@ type harness struct {
 	// apiURL is the address of the API the driving ports are reached
 	// through, when they're reached over HTTP.
 	apiURL string
+	// signIn signs scenarios in and out, and accounts holds the accounts
+	// they sign in to. Only the drivers running the hosted edition set them.
+	signIn   signInDriver
+	accounts ports.AccountRepository
 }
 
 type driver struct {
-	name  string
+	name string
+	// start starts the driver as the local edition.
 	start func() (*harness, error)
+	// startHosted starts the driver as the hosted edition, with sign-in on,
+	// for the scenarios that sign in (@sign-in). Only the drivers whose
+	// storage keeps accounts and sessions set it.
+	startHosted func() (*harness, error)
 	// tags limits the scenarios this driver runs, as a Godog tag expression
 	// combined with --godog.tags. Empty runs every scenario.
 	tags string
@@ -96,12 +105,15 @@ type driver struct {
 // plan (@plans) run only where the tests wire the plans: the desktop and
 // mobile apps are on the local plan. Scenarios about running the server
 // (@server) run only on the server driver, which runs nothing else: they
-// need its data folder, and the http driver covers the API.
+// need its data folder, and the http driver covers the API. Scenarios that
+// sign in (@sign-in) run only on the drivers whose storage keeps accounts and
+// sessions, as the hosted edition: memory, sqlite, postgres, and http.
 func driversFor(t testing.TB, serverURL string) []driver {
 	postgresDriver := driver{
-		name:  "postgres",
-		start: func() (*harness, error) { return startPostgres(t) },
-		tags:  "~@desktop && ~@mobile && ~@server",
+		name:        "postgres",
+		start:       func() (*harness, error) { return startPostgres(t, localEdition) },
+		startHosted: func() (*harness, error) { return startPostgres(t, hostedEdition) },
+		tags:        "~@desktop && ~@mobile && ~@server",
 	}
 	serverTags := "@server"
 	if serverURL == "" {
@@ -109,16 +121,37 @@ func driversFor(t testing.TB, serverURL string) []driver {
 		serverTags = "@server && ~@postgres"
 	}
 	return []driver{
-		{name: "memory", start: startMemory, tags: "~@desktop && ~@mobile && ~@server"},
-		{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile && ~@server"},
-		{name: "sqlite", start: startSQLite, tags: "~@desktop && ~@mobile && ~@server"},
+		{
+			name:        "memory",
+			start:       func() (*harness, error) { return startMemory(localEdition) },
+			startHosted: func() (*harness, error) { return startMemory(hostedEdition) },
+			tags:        "~@desktop && ~@mobile && ~@server",
+		},
+		{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile && ~@server && ~@sign-in"},
+		{
+			name:        "sqlite",
+			start:       func() (*harness, error) { return startSQLite(localEdition) },
+			startHosted: func() (*harness, error) { return startSQLite(hostedEdition) },
+			tags:        "~@desktop && ~@mobile && ~@server",
+		},
 		postgresDriver,
-		{name: "http", start: startHTTP, tags: "~@desktop && ~@mobile && ~@workspaces && ~@server"},
-		{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server"},
-		{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server"},
+		{name: "http", start: startHTTP, startHosted: startHostedHTTP, tags: "~@desktop && ~@mobile && ~@workspaces && ~@server"},
+		{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server && ~@sign-in"},
+		{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server && ~@sign-in"},
 		{name: "server", start: func() (*harness, error) { return startServer(t) }, tags: serverTags},
 	}
 }
+
+// edition is which of the two editions (ADR 5) a driver runs the core as.
+type edition int
+
+const (
+	// localEdition is one workspace, on the local plan, with no sign-in.
+	localEdition edition = iota
+	// hostedEdition signs people in, each to their own workspace, which
+	// starts on the plans file's newWorkspacePlan.
+	hostedEdition
+)
 
 func newHarness() *harness {
 	return &harness{
@@ -129,10 +162,11 @@ func newHarness() *harness {
 
 // usePlans gives the harness its own plans, with each workspace's plan in
 // stored, and the entitlements use case on them, in the workspace that
-// workspaces resolves. An admin moves workspaces on stored directly, as
+// workspaces resolves. A workspace with no stored plan is on the edition's
+// starting plan. An admin moves workspaces on stored directly, as
 // `starter admin set-plan` would.
-func (h *harness) usePlans(stored ports.WorkspacePlanRepository, workspaces ports.WorkspaceResolver) error {
-	p, err := newTestPlans(stored)
+func (h *harness) usePlans(stored ports.WorkspacePlanRepository, workspaces ports.WorkspaceResolver, e edition) error {
+	p, err := newTestPlans(stored, e)
 	if err != nil {
 		return err
 	}
@@ -143,10 +177,14 @@ func (h *harness) usePlans(stored ports.WorkspacePlanRepository, workspaces port
 }
 
 // useSQLStore keeps the scenario's plans and data in db, through the shared
-// SQL repositories, in the workspace named by the context.
-func (h *harness) useSQLStore(db *sql.DB) error {
-	if err := h.usePlans(sqlstore.NewWorkspacePlanRepository(db), workspace.FromContext{}); err != nil {
+// SQL repositories, in the workspace named by the context. As the hosted
+// edition, it keeps accounts and sessions there too.
+func (h *harness) useSQLStore(db *sql.DB, e edition) error {
+	if err := h.usePlans(sqlstore.NewWorkspacePlanRepository(db), workspace.FromContext{}, e); err != nil {
 		return err
+	}
+	if e == hostedEdition {
+		h.useDirectSignIn(sqlstore.NewAccountRepository(db), sqlstore.NewSessionRepository(db))
 	}
 	// sample:start
 	h.items = h.newItemService(sqlstore.NewItemRepository(db), workspace.FromContext{})
@@ -164,10 +202,13 @@ func (h *harness) newItemService(repo ports.ItemRepository, workspaces ports.Wor
 
 // sample:end
 
-func startMemory() (*harness, error) {
+func startMemory(e edition) (*harness, error) {
 	h := newHarness()
-	if err := h.usePlans(memory.NewWorkspacePlanRepository(), workspace.FromContext{}); err != nil {
+	if err := h.usePlans(memory.NewWorkspacePlanRepository(), workspace.FromContext{}, e); err != nil {
 		return nil, err
+	}
+	if e == hostedEdition {
+		h.useDirectSignIn(memory.NewAccountRepository(), memory.NewSessionRepository())
 	}
 	// sample:start
 	h.items = h.newItemService(memory.NewItemRepository(), workspace.FromContext{})
@@ -190,7 +231,7 @@ func startJSONFile() (*harness, error) {
 		store.Close()
 		os.RemoveAll(dir)
 	}
-	if err := h.usePlans(jsonfile.NewWorkspacePlanRepository(store), workspace.FromContext{}); err != nil {
+	if err := h.usePlans(jsonfile.NewWorkspacePlanRepository(store), workspace.FromContext{}, localEdition); err != nil {
 		h.cleanup()
 		return nil, err
 	}
@@ -200,7 +241,7 @@ func startJSONFile() (*harness, error) {
 	return h, nil
 }
 
-func startSQLite() (*harness, error) {
+func startSQLite(e edition) (*harness, error) {
 	dir, err := os.MkdirTemp("", "acceptance-sqlite-*")
 	if err != nil {
 		return nil, err
@@ -215,7 +256,7 @@ func startSQLite() (*harness, error) {
 		store.Close()
 		os.RemoveAll(dir)
 	}
-	if err := h.useSQLStore(store.DB()); err != nil {
+	if err := h.useSQLStore(store.DB(), e); err != nil {
 		h.cleanup()
 		return nil, err
 	}
@@ -224,7 +265,7 @@ func startSQLite() (*harness, error) {
 
 // startPostgres keeps the scenario's data in a database of its own, dropped
 // when the scenario ends.
-func startPostgres(t testing.TB) (*harness, error) {
+func startPostgres(t testing.TB, e edition) (*harness, error) {
 	scenario := &scenarioTest{TB: t}
 	store, err := postgres.Open(t.Context(), postgrestest.NewDatabase(scenario))
 	if err != nil {
@@ -236,7 +277,7 @@ func startPostgres(t testing.TB) (*harness, error) {
 		store.Close()
 		scenario.runCleanups()
 	}
-	if err := h.useSQLStore(store.DB()); err != nil {
+	if err := h.useSQLStore(store.DB(), e); err != nil {
 		h.cleanup()
 		return nil, err
 	}
@@ -269,7 +310,7 @@ func startHTTP() (*harness, error) {
 	h := newHarness()
 	// Nothing over HTTP carries a workspace yet, so the server is the local
 	// edition, as cmd/server is.
-	if err := h.usePlans(memory.NewWorkspacePlanRepository(), workspace.Local{}); err != nil {
+	if err := h.usePlans(memory.NewWorkspacePlanRepository(), workspace.Local{}, localEdition); err != nil {
 		return nil, err
 	}
 	opts := httpapi.Options{Entitlements: h.entitlements}
@@ -285,17 +326,44 @@ func startHTTP() (*harness, error) {
 	return h, nil
 }
 
+// startHostedHTTP serves the hosted edition over HTTP, with the dev sign-in
+// on, keeping its plans, data, accounts, and sessions in memory. Scenarios
+// sign in through the dev sign-in, as a browser does.
+func startHostedHTTP() (*harness, error) {
+	h := newHarness()
+	if err := h.usePlans(memory.NewWorkspacePlanRepository(), workspace.FromContext{}, hostedEdition); err != nil {
+		return nil, err
+	}
+	h.accounts = memory.NewAccountRepository()
+	opts := httpapi.Options{
+		Entitlements:  h.entitlements,
+		SignIn:        h.newSignInService(h.accounts, memory.NewSessionRepository()),
+		IsDevSignInOn: true,
+	}
+	// sample:start
+	opts.Items = h.newItemService(memory.NewItemRepository(), workspace.FromContext{})
+	// sample:end
+	srv := httptest.NewServer(httpapi.NewHandler(opts))
+	h.cleanup = srv.Close
+	h.signIn = newDevSignInOverHTTP(h, srv.URL)
+	if err := h.driveOverHTTP(srv.URL); err != nil {
+		srv.Close()
+		return nil, err
+	}
+	return h, nil
+}
+
 // driveOverHTTP points the harness's driving ports at the server at url,
-// through the HTTP client adapter.
-func (h *harness) driveOverHTTP(url string) error {
+// through the HTTP client adapter built with opts.
+func (h *harness) driveOverHTTP(url string, opts ...apiclient.ClientOption) error {
 	h.apiURL = url
-	entitlements, err := httpclient.NewEntitlementsService(url)
+	entitlements, err := httpclient.NewEntitlementsService(url, opts...)
 	if err != nil {
 		return err
 	}
 	h.entitlements = entitlements
 	// sample:start
-	client, err := httpclient.NewItemService(url)
+	client, err := httpclient.NewItemService(url, opts...)
 	if err != nil {
 		return err
 	}

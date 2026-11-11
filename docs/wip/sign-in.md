@@ -295,7 +295,10 @@ Settings and wiring:
   - Refactor: comments on `NewBilling`, `hostedEntitlementsProvider`, `entitlementsProviderFor`, and `App.billing` updated. Left: `NewBilling`'s storage stays open until the command's program ends, as `BillingFactory` has no close.
 
 Acceptance:
-- [ ] 21. The `@sign-in` steps on memory, sqlite, postgres, and http, and the driver tags that leave it out of jsonfile, desktop, mobile, and server. The sign-in scenarios pass. Sample: `task test:init`.
+- [x] 21. The `@sign-in` steps on memory, sqlite, postgres, and http, and the driver tags that leave it out of jsonfile, desktop, mobile, and server. The sign-in scenarios pass. Sample: `task test:init`.
+  - Red: none. Before the steps, every `@sign-in` scenario failed as undefined; with them, all 6 passed at once on all four drivers, as tasks 1–20h built the behaviour. Kept as a guard (the hosted http driver on `workspace.Local{}` fails three of them).
+  - Green: skipped, as no production code was demanded. A driver's `startHosted` runs the `@sign-in` scenarios as the hosted edition (plans start on `newWorkspacePlan`); memory, sqlite, and postgres sign in directly, and http through `/auth/dev` with a cookie jar per account.
+  - Refactor: nothing worth changing. `test:init` passes. The driver comment on `@workspaces` over HTTP is left for task 22.
 - [ ] 22. `@workspaces` runs on the http driver too, each workspace a signed-in account's. Update the feature's comment and SPEC.md §4.8. Sample: `task test:init`.
 
 The web app:
