@@ -249,7 +249,11 @@ Settings and wiring:
   - Red: `TestNewEmbedded_RefusesDevSignInWithoutTheDevSignInBuild` (`//go:build !devsignin`) failed, `err = <nil>`, want the agreed message (user picked `The sign-in setting is "dev", but this program was built without the dev sign-in, which is only for development and tests. Please set the sign-in setting to "off", or build the program with the "devsignin" build tag.`).
   - Green: `NewEmbedded` refuses `dev` when `isDevSignInBuilt` is false (`devsignin_off.go`, `//go:build !devsignin`; `devsignin_on.go` sets it true); `.air.toml` and `task run:server`, `run:cli`, and `run:tui` build with `-tags devsignin`.
   - Refactor: the tag's name is one constant, `devSignInBuildTag` (`devsignin.go`), used in the message.
-- [ ] 19b. In a `devsignin` build, `sign_in = "dev"` is accepted, and the dev sign-in is wired. Its test runs only with the tag, so `task test:go` also runs the tagged tests.
+- [x] 19b. In a `devsignin` build, `sign_in = "dev"` is accepted, and the dev sign-in is wired. Its test runs only with the tag, so `task test:go` also runs the tagged tests.
+  - Red: `TestNewEmbedded_TurnsOnTheDevSignInInTheDevSignInBuild` (`//go:build devsignin`) failed, `IsDevSignInOn = false, want true`. To compile: `App.IsDevSignInOn`.
+  - Green: `NewEmbedded` sets `IsDevSignInOn` when `sign_in` is `dev` (only reached in a `devsignin` build); `task test:go` also runs `./internal/bootstrap/` with `-tags devsignin`.
+  - Refactor: a doc comment on `App.IsDevSignInOn`. Left: `golangci-lint` builds without the tag, so `devsignin_on*.go` isn't linted, as adding the tag would skip the `_off` files instead.
+- [ ] 19c. The server passes the App's `IsDevSignInOn` to its handler, so `GET /auth/dev` shows the form.
 - [ ] 20. With sign-in on, `bootstrap` wires the hosted server: the `FromContext` resolver, the session middleware, the account and session repositories from its storage, stored plans (`plans.StoredPlanOf` with `newWorkspacePlan`, hints on), and the real `bootstrap.NewBilling`.
 
 Acceptance:
@@ -282,3 +286,4 @@ The web app:
 - 2026-11-11, task 16: split into 16 (signed in, it names the account), 16b (signed out), 16c (sign-in off), and 16d (`httpclient` reads it), as each needs its own test.
 - 2026-11-11, task 17: split into 17 (`off` by default, or `dev`, and listed in the settings) and 17b (any other value is refused, with an agreed message), as each needs its own test. `sign_in` goes in the default settings file test's `serverOnly` list beside `database_url`: an operator's admin command sets it in the environment too, so the default file gets no line for it.
 - 2026-11-11, task 19: split into 19 (refused without the `devsignin` tag, with the agreed message) and 19b (accepted and wired with it), as each needs its own test. The tag goes in `.air.toml` (`task dev`) and `task run:server`, `run:cli`, and `run:tui` (agreed with the user), as `bootstrap.NewEmbedded`, which the CLI and TUI share, does the check.
+- 2026-11-11, task 19b: added 19c (the server passes the App's `IsDevSignInOn` to its handler), as `cmd/server` needs its own test. The App's `SignIn` service comes in task 20, with the repositories it needs.

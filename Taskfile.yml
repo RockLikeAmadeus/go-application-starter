@@ -290,6 +290,8 @@ tasks:
   test:go:
     cmds:
       - go test -race ./cmd/... ./internal/... ./scripts/internal/... ./scripts/rename/ ./test/terminal/term/... {{.CLI_ARGS}}
+      # The dev sign-in's tests, built only with its tag.
+      - go test -race -tags devsignin ./internal/bootstrap/ {{.CLI_ARGS}}
       # template:start
       - go test -race ./scripts/initproject/ {{.CLI_ARGS}}
       # template:end

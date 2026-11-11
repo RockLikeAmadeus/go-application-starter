@@ -43,6 +43,9 @@ type App struct {
 	Items ports.ItemService
 	// sample:end
 	Entitlements ports.EntitlementsService
+	// IsDevSignInOn says whether the server serves the dev sign-in under
+	// /auth/dev: sign_in is "dev", which only a devsignin build accepts.
+	IsDevSignInOn bool
 	// Warnings are messages every front end shows the user as given, such
 	// as SQLite's data folder looking synced, or a conflict copy in plain text.
 	Warnings []string
@@ -80,7 +83,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 			"The sign-in setting is %q, but this program was built without the dev sign-in, which is only for development and tests. Please set the sign-in setting to %q, or build the program with the %q build tag.",
 			cfg.SignIn, config.SignInOff, devSignInBuildTag)
 	}
-	a := &App{}
+	a := &App{IsDevSignInOn: cfg.SignIn == config.SignInDev}
 	// sample:start
 	var itemRepo ports.ItemRepository
 	// sample:end
