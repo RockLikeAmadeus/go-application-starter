@@ -98,25 +98,49 @@ func TestAnUnknownSessionCookieLeavesNoWorkspaceInTheRequest(t *testing.T) {
 	}
 }
 
-func TestTheSessionEndpointNamesTheSignedInAccount(t *testing.T) {
-	signIn := sessions{"token-a": {ID: "account-a", Identity: domain.Identity{Issuer: "dev", Subject: "Ada", Name: "Ada"}, WorkspaceID: "ws-a"}}
+// session is the body of GET /api/v1/session.
+type session struct {
+	IsSignInOn bool    `json:"isSignInOn"`
+	Name       *string `json:"name"`
+}
+
+// requestSession sends GET /api/v1/session through a handler with the given
+// sign-in service and cookies, and returns the session it answers.
+func requestSession(t *testing.T, signIn sessions, cookies ...*http.Cookie) session {
+	t.Helper()
 	handler := httpapi.NewHandler(httpapi.Options{SignIn: signIn})
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/session", nil)
-	req.AddCookie(&http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d; body %s", rec.Code, http.StatusOK, rec.Body)
 	}
-	var body struct {
-		IsSignInOn bool    `json:"isSignInOn"`
-		Name       *string `json:"name"`
-	}
+	var body session
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode %q: %v", rec.Body.String(), err)
 	}
-	if !body.IsSignInOn || body.Name == nil || *body.Name != "Ada" {
-		t.Errorf("session = %s, want sign-in on and the name Ada", rec.Body)
+	return body
+}
+
+// sessionsWithAda knows one session, token-a, for an account named Ada.
+var sessionsWithAda = sessions{"token-a": {ID: "account-a", Identity: domain.Identity{Issuer: "dev", Subject: "Ada", Name: "Ada"}, WorkspaceID: "ws-a"}}
+
+func TestTheSessionEndpointNamesTheSignedInAccount(t *testing.T) {
+	got := requestSession(t, sessionsWithAda, &http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+
+	if !got.IsSignInOn || got.Name == nil || *got.Name != "Ada" {
+		t.Errorf("session = %+v, want sign-in on and the name Ada", got)
+	}
+}
+
+func TestTheSessionEndpointSaysSignInIsOnWithNoNameWhenSignedOut(t *testing.T) {
+	got := requestSession(t, sessionsWithAda)
+
+	if !got.IsSignInOn || got.Name != nil {
+		t.Errorf("session = %+v, want sign-in on and no name", got)
 	}
 }
