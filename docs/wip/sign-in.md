@@ -74,7 +74,15 @@ The core:
   - Refactor: nothing worth changing; the guard clause and the test are already minimal.
 
 Storage:
-- [ ] 7. `memory.NewAccountRepository` passes a new `storagetest` account contract (find by issuer and subject, not by name; a missing one is `ErrNotFound`).
+- [x] 7. `memory.NewAccountRepository` passes a new `storagetest` account contract: `FindByIdentity` with no saved account is `ErrNotFound`.
+  - Red: `TestAccountRepositoryContract/FindByIdentity_with_no_saved_account_returns_ErrNotFound` failed: `err = <nil>, want ErrNotFound`.
+  - Green: the new `memory.AccountRepository`'s `FindByIdentity` always returns `ErrNotFound`; `Find` and `Save` are stubs until 7d–7f.
+  - Refactor: nothing worth changing; the stubs are left for 7b–7f to drive.
+- [ ] 7b. Account contract: `FindByIdentity` returns the saved account with the identity's issuer and subject, even under another name.
+- [ ] 7c. Account contract: `FindByIdentity` doesn't match an account with the same name but another issuer or subject.
+- [ ] 7d. Account contract: `Find` returns the saved account by its ID.
+- [ ] 7e. Account contract: `Find` of an unknown ID is `ErrNotFound`.
+- [ ] 7f. Account contract: `Save` replaces the account with the same ID.
 - [ ] 8. `memory.NewSessionRepository` passes a new `storagetest` session contract (find by hash, delete; deleting a missing session is `ErrNotFound`, set in task 6b).
 - [ ] 9. Migration `00004_accounts_and_sessions.sql` and `sqlstore.NewAccountRepository` pass the account contract on SQLite and Postgres.
 - [ ] 10. `sqlstore.NewSessionRepository` passes the session contract on SQLite and Postgres.
@@ -110,3 +118,4 @@ The web app:
 
 - 2026-11-10, task 5: split into 5 (a valid token's account), 5b (an unknown token), and 5c (an expired token, deleted), as each needs its own test.
 - 2026-11-10, task 6: split into 6 (signing out deletes the session) and 6b (signing out of an unknown session isn't an error), as each needs its own test.
+- 2026-11-10, task 7: split into 7 (no saved account is `ErrNotFound`), 7b (found by issuer and subject, whatever the name), 7c (not matched by name), 7d (`Find` by ID), 7e (`Find` of an unknown ID), and 7f (`Save` replaces), as each needs its own test.
