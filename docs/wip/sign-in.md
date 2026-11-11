@@ -305,7 +305,10 @@ Acceptance:
   - Refactor: `hasTag` pulled out of `isSignInScenario`; stale comments on `startHTTP`, `driversFor`, `plan-changes.feature`, and `testing.md` updated; `inNoWorkspace` moved into the sample `workspace_steps.go`, its only user, after `test:init` found it unused without the sample. `test:init` passes.
 
 The web app:
-- [ ] 23. Signed out with sign-in on, the web app shows a sign-in screen linking to `/auth/sign-in`, and no data. (Agree the wording.)
+- [x] 23. Signed out with sign-in on, the web app shows a sign-in screen linking to `/auth/sign-in`, and no data. (Agree the wording.)
+  - Red: `Layout` "asks someone signed out to sign in, with no sidebar or page, when sign-in is on" failed, finding no "Sign in" heading. Wording agreed: heading "Sign in", "Please sign in to continue.", link "Sign in"; the whole sidebar (and Menu button) is hidden.
+  - Green: `useSession` (`features/session`) reads `GET /api/v1/session`; `Layout` returns a bare sign-in screen when sign-in is on and no one is signed in.
+  - Refactor: the screen moved into `features/session/SignInScreen.tsx`, styled with the palette and style tokens (a centred panel, the link styled as a button); `useSession` documented.
 - [ ] 24. Signed in, the web app shows a sign-out button, which ends the session; with sign-in off, there's neither. (Agree the wording.)
 - [ ] 25. Browser journey `web/e2e/features/sign-in.feature` (`@wip`): sign in with the dev sign-in, see the items page, sign out, and be asked to sign in again. Its own Playwright project and server with sign-in on.
 

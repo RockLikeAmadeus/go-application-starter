@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { connectionApi } from "../test/connectionApi";
 import { entitlementsApi } from "../test/entitlementsApi";
 import { renderWithClient } from "../test/render";
+import { sessionApi } from "../test/sessionApi";
 import { warningsApi } from "../test/warningsApi";
 import { Layout } from "./Layout";
 
@@ -203,6 +204,19 @@ describe("Layout", () => {
         "/api/v1/entitlements",
       ),
     );
+  });
+
+  it("asks someone signed out to sign in, with no sidebar or page, when sign-in is on", async () => {
+    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true }));
+
+    renderLayout();
+
+    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.getByText("Please sign in to continue.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/sign-in");
+    expect(screen.queryByText("Page")).not.toBeInTheDocument();
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Menu" })).not.toBeInTheDocument();
   });
 
   it("keeps saving after the browser goes offline when no connection is required", async () => {

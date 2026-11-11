@@ -7,6 +7,8 @@ import { Link, Outlet } from "react-router";
 import { afterTransition } from "../lib/afterTransition";
 import { entitlementsQuery } from "../features/entitlements/useFeature";
 import { OfflineNotice } from "../features/offline/OfflineNotice";
+import { SignInScreen } from "../features/session/SignInScreen";
+import { useSession } from "../features/session/useSession";
 import { useLocalDataOnline } from "../features/offline/useLocalDataOnline";
 import type { Style } from "../features/style/style";
 import { StylePicker } from "../features/style/StylePicker";
@@ -21,6 +23,10 @@ export function Layout() {
   usePrefetchQuery(entitlementsQuery);
   const [theme, setTheme] = useTheme();
   const [style, setStyle] = useStyle();
+  const session = useSession();
+  if (session?.isSignInOn && session.name === undefined) {
+    return <SignInScreen />;
+  }
   const content = (
     <SidebarContent theme={theme} onThemeChange={setTheme} style={style} onStyleChange={setStyle} />
   );
