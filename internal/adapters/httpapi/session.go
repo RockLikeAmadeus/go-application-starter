@@ -1,8 +1,10 @@
 package httpapi
 
 import (
+	"context"
 	"net/http"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi/openapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
@@ -19,7 +21,7 @@ func sessionMiddleware(signIn ports.SignInService, next http.Handler) http.Handl
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if cookie, err := r.Cookie(SessionCookie); err == nil {
 			if account, err := signIn.CurrentAccount(r.Context(), cookie.Value); err == nil {
-				r = r.WithContext(workspace.WithID(r.Context(), account.WorkspaceID))
+				r = r.WithContext(withAccount(r.Context(), account))
 			}
 		}
 		next.ServeHTTP(w, r)
@@ -45,4 +47,28 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string) {
 // (Max-Age < 0).
 func clearSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{Name: SessionCookie, Path: "/", MaxAge: -1})
+}
+
+// accountKey is the context key for the signed-in account.
+type accountKey struct{}
+
+// withAccount runs ctx as the signed-in account: in its workspace, with the
+// account itself for accountFrom.
+func withAccount(ctx context.Context, account domain.Account) context.Context {
+	ctx = workspace.WithID(ctx, account.WorkspaceID)
+	return context.WithValue(ctx, accountKey{}, account)
+}
+
+// accountFrom returns the signed-in account withAccount put in ctx, and
+// whether there is one.
+func accountFrom(ctx context.Context) (domain.Account, bool) {
+	account, ok := ctx.Value(accountKey{}).(domain.Account)
+	return account, ok
+}
+
+// The Session endpoint.
+
+func (h *Handlers) GetSession(ctx context.Context, _ openapi.GetSessionRequestObject) (openapi.GetSessionResponseObject, error) {
+	account, _ := accountFrom(ctx)
+	return openapi.GetSession200JSONResponse{IsSignInOn: true, Name: &account.Identity.Name}, nil
 }

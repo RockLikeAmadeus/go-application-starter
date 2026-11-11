@@ -46,6 +46,19 @@ paths:
                 $ref: "#/components/schemas/Warnings"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/session:
+    get:
+      operationId: getSession
+      tags: [session]
+      responses:
+        "200":
+          description: Whether sign-in is on, and who is signed in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
   # sample:start
   /api/v1/items:
     get:
@@ -156,6 +169,19 @@ components:
             True when the app reaches its data over the network (the server).
             False when the data is on this device (the desktop app's local-only
             mode), so a lost connection doesn't matter.
+    Session:
+      type: object
+      required: [isSignInOn]
+      properties:
+        isSignInOn:
+          type: boolean
+          description: |
+            True when this server signs people in (the hosted edition), so the
+            web app asks someone who isn't signed in to sign in. False when it
+            doesn't (the local edition).
+        name:
+          type: string
+          description: The signed-in account's name. Missing when no one is signed in.
     Entitlements:
       type: object
       required: [plan, limits, features]

@@ -215,7 +215,13 @@ The server:
 - [x] 15c. A same-origin request that changes something, with the session cookie, still goes through.
   - Red: none. `TestASameOriginSignOutStillGoesThrough` passed straight away, as `http.CrossOriginProtection` lets `Sec-Fetch-Site: same-origin` through; kept as a guard (with `cross-site` it fails, 403, as task 15 shows). Green skipped.
   - Refactor: nothing worth changing; the test reuses `signOutWithHeader`, and its assertions match the sign-out test's.
-- [ ] 16. `GET /api/v1/session` in `api/openapi.yaml` (`task gen`), served from `CurrentAccount`, and `httpclient` reads it.
+- [x] 16. `GET /api/v1/session` in `api/openapi.yaml` (`task gen`), served from `CurrentAccount`: signed in, sign-in is on and it names the account.
+  - Red: `TestTheSessionEndpointNamesTheSignedInAccount` failed, 404 `no such endpoint`.
+  - Green: `Session` schema and `getSession` in `api/openapi.yaml` (`task gen`); the session middleware also puts the account in the context, and `GetSession` answers sign-in on (hard-coded) with its name.
+  - Refactor: `withAccount` and `accountFrom` keep the context's account in one place; the hard-coded `IsSignInOn` and the empty name when signed out are left for 16b and 16c.
+- [ ] 16b. Signed out with sign-in on, the session endpoint says sign-in is on, with no name.
+- [ ] 16c. With sign-in off, the session endpoint says sign-in is off.
+- [ ] 16d. `httpclient` reads the session endpoint.
 
 Settings and wiring:
 - [ ] 17. The `sign_in` setting (`STARTER_SIGN_IN`): `off` by default, or `dev`; any other value is refused. `starter info` shows it.
@@ -250,3 +256,4 @@ The web app:
 - 2026-11-11, task 14f: added 14h (a failed sign-out is a problem and keeps the cookie), at green, where the code needed an error path, as task 14 did for 14g.
 - 2026-11-11, task 14g: a blank name is a 422 `validation` problem, not 400 (agreed with the user): `devSignIn` builds the identity with `domain.NewIdentity`, and `problemFor` maps its `ValidationError` (field `subject`, the existing message), as for any other invalid input.
 - 2026-11-11, task 15: with sign-in on, the cross-origin check covers every request that changes something, cookie or not (agreed with the user), using `http.CrossOriginProtection`; the Decisions entry is updated. Split into 15 (`Sec-Fetch-Site` from another site), 15b (`Origin` from another host), and 15c (same-origin still goes through), as each needs its own test. The user agreed the problem's detail.
+- 2026-11-11, task 16: split into 16 (signed in, it names the account), 16b (signed out), 16c (sign-in off), and 16d (`httpclient` reads it), as each needs its own test.

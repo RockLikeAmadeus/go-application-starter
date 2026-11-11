@@ -97,3 +97,26 @@ func TestAnUnknownSessionCookieLeavesNoWorkspaceInTheRequest(t *testing.T) {
 		t.Errorf("workspace = %q, want none", got)
 	}
 }
+
+func TestTheSessionEndpointNamesTheSignedInAccount(t *testing.T) {
+	signIn := sessions{"token-a": {ID: "account-a", Identity: domain.Identity{Issuer: "dev", Subject: "Ada", Name: "Ada"}, WorkspaceID: "ws-a"}}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: signIn})
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/session", nil)
+	req.AddCookie(&http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body %s", rec.Code, http.StatusOK, rec.Body)
+	}
+	var body struct {
+		IsSignInOn bool    `json:"isSignInOn"`
+		Name       *string `json:"name"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode %q: %v", rec.Body.String(), err)
+	}
+	if !body.IsSignInOn || body.Name == nil || *body.Name != "Ada" {
+		t.Errorf("session = %s, want sign-in on and the name Ada", rec.Body)
+	}
+}

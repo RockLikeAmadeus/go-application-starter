@@ -52,6 +52,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/items": {
         parameters: {
             query?: never;
@@ -113,6 +129,16 @@ export interface components {
              *     mode), so a lost connection doesn't matter.
              */
             isRequired: boolean;
+        };
+        Session: {
+            /**
+             * @description True when this server signs people in (the hosted edition), so the
+             *     web app asks someone who isn't signed in to sign in. False when it
+             *     doesn't (the local edition).
+             */
+            isSignInOn: boolean;
+            /** @description The signed-in account's name. Missing when no one is signed in. */
+            name?: string;
         };
         Entitlements: {
             /** @description The name of the plan the workspace is on. */
@@ -291,6 +317,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Warnings"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Whether sign-in is on, and who is signed in. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
                 };
             };
             default: components["responses"]["Problem"];
