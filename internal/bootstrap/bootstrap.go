@@ -43,6 +43,9 @@ type App struct {
 	Items ports.ItemService
 	// sample:end
 	Entitlements ports.EntitlementsService
+	// SignIn signs people in to the hosted edition. It's nil with sign-in
+	// off, as the local edition has no accounts.
+	SignIn ports.SignInService
 	// IsDevSignInOn says whether the server serves the dev sign-in under
 	// /auth/dev: sign_in is "dev", which only a devsignin build accepts.
 	IsDevSignInOn bool
@@ -87,8 +90,12 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	// sample:start
 	var itemRepo ports.ItemRepository
 	// sample:end
+	var accountRepo ports.AccountRepository
+	var sessionRepo ports.SessionRepository
 	switch cfg.Storage {
 	case config.StorageMemory:
+		accountRepo = memory.NewAccountRepository()
+		sessionRepo = memory.NewSessionRepository()
 		// sample:start
 		itemRepo = memory.NewItemRepository()
 		// sample:end
@@ -146,6 +153,9 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		return nil, err
 	}
 	a.Entitlements = app.NewEntitlementsService(entitlementsProvider, workspacesFor(cfg))
+	if cfg.SignIn.IsOn() {
+		a.SignIn = app.NewSignInService(accountRepo, sessionRepo, system.Tokens{}, system.UUIDs{}, system.Clock{})
+	}
 	// Build each use case on its repository and the driven ports:
 	// workspacesFor(cfg) (the session's workspace with sign-in on, else the
 	// one local workspace, ADR 5), the local plan's entitlements,

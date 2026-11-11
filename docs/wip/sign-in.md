@@ -269,7 +269,10 @@ Settings and wiring:
   - Red: `TestTokensMakesA32ByteRandomTokenEachTime` (`system_test.go`) failed against an empty stub, `token holds 0 bytes, want 32`.
   - Green: `Tokens.NewToken` reads 32 bytes with `crypto/rand` and writes them as unpadded base64url (decided: cookie- and header-safe).
   - Refactor: the package and `Tokens` comments name the token generator and its encoding. Nothing else worth changing.
-- [ ] 20d. With sign-in on, `App.SignIn` signs in on the storage's account and session repositories (memory), and finds the session's account.
+- [x] 20d. With sign-in on, `App.SignIn` signs in on the storage's account and session repositories (memory), and finds the session's account.
+  - Red: `TestNewEmbedded_WithSignInOnSignsInAndFindsTheSessionsAccount` (`hosted_edition_test.go`, `devsignin`) failed, `SignIn = nil, want the sign-in service`.
+  - Green: with sign-in on, `NewEmbedded` builds `App.SignIn` on memory's account and session repositories, `system.Tokens{}`, `system.UUIDs{}`, and `system.Clock{}`.
+  - Refactor: a doc comment on `App.SignIn` (nil with sign-in off). Left: SQLite and Postgres have no account or session repositories until 20e.
 - [ ] 20e. On SQLite and Postgres, a session outlives the App that made it (the `sqlstore` repositories).
 - [ ] 20f. The server passes the App's `SignIn` to its handler, so a session cookie signs a request in.
 - [ ] 20g. With sign-in on, a workspace's entitlements are its stored plan, else the plans file's `newWorkspacePlan`, with hints on.
