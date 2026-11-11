@@ -130,7 +130,10 @@ Storage:
   - Red: `TestSessionRepositoryContractOnSQLite` failed in all five cases, as the stub returns zero values and no errors (e.g. `err = <nil>, want ErrNotFound`).
   - Green: `00004_accounts_and_sessions.sql` adds `sessions` (keyed by token hash, expiry as UTC text), and `sqlstore.SessionRepository` selects by hash, upserts on hash, and deletes with `ErrNotFound` when no row goes.
   - Refactor: `timeFormat`, `formatTime`, and a new `parseTime` moved from the sample `item_repository.go` to the template `times.go`, as the session repository needs them after `task init`. `task test:init` also found the session contract (since 8b) using the sample contract's `baseTime`, now in the template `storagetest/times.go`.
-- [ ] 10b. `sqlstore.NewSessionRepository` passes the session contract on Postgres.
+- [x] 10b. `sqlstore.NewSessionRepository` passes the session contract on Postgres.
+  - Red: none. `TestSessionRepositoryContractOnPostgres` passed at once, as task 10's SQL and migration are shared; kept as a guard (it fails on a broken `Save`).
+  - Green: skipped, as no production code was demanded.
+  - Refactor: nothing worth changing; the test matches `TestAccountRepositoryContractOnPostgres`.
 
 Plans:
 - [ ] 11. The plans file's `newWorkspacePlan` names the starting plan for new workspaces. A missing field, or a plan the file doesn't have, fails at start. The built-in file and the test plans start on `free`.

@@ -19,3 +19,9 @@ func TestSessionRepositoryContractOnSQLite(t *testing.T) {
 		return sqlstore.NewSessionRepository(db)
 	})
 }
+
+func TestSessionRepositoryContractOnPostgres(t *testing.T) {
+	storagetest.RunSessionRepositoryContract(t, func(t *testing.T) ports.SessionRepository {
+		return sqlstore.NewSessionRepository(openPostgres(t))
+	})
+}
