@@ -14,42 +14,36 @@ import (
 // each subtest.
 func RunAccountRepositoryContract(t *testing.T, newRepo func(*testing.T) ports.AccountRepository) {
 	ctx := context.Background()
+	ada := domain.Account{
+		ID:          "account-1",
+		Identity:    domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"},
+		WorkspaceID: "workspace-1",
+	}
 
 	t.Run("FindByIdentity with no saved account returns ErrNotFound", func(t *testing.T) {
 		repo := newRepo(t)
-		identity := domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}
-		if _, err := repo.FindByIdentity(ctx, identity); !errors.Is(err, domain.ErrNotFound) {
+		if _, err := repo.FindByIdentity(ctx, ada.Identity); !errors.Is(err, domain.ErrNotFound) {
 			t.Fatalf("err = %v, want ErrNotFound", err)
 		}
 	})
 
 	t.Run("FindByIdentity returns the account with the issuer and subject, whatever the name", func(t *testing.T) {
 		repo := newRepo(t)
-		saved := domain.Account{
-			ID:          "account-1",
-			Identity:    domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"},
-			WorkspaceID: "workspace-1",
-		}
-		if err := repo.Save(ctx, saved); err != nil {
+		if err := repo.Save(ctx, ada); err != nil {
 			t.Fatalf("Save: %v", err)
 		}
 		got, err := repo.FindByIdentity(ctx, domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada Lovelace"})
 		if err != nil {
 			t.Fatalf("FindByIdentity: %v", err)
 		}
-		if got != saved {
-			t.Fatalf("got %+v, want %+v", got, saved)
+		if got != ada {
+			t.Fatalf("got %+v, want %+v", got, ada)
 		}
 	})
 
 	t.Run("FindByIdentity doesn't match an account with the same name but another issuer or subject", func(t *testing.T) {
 		repo := newRepo(t)
-		saved := domain.Account{
-			ID:          "account-1",
-			Identity:    domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"},
-			WorkspaceID: "workspace-1",
-		}
-		if err := repo.Save(ctx, saved); err != nil {
+		if err := repo.Save(ctx, ada); err != nil {
 			t.Fatalf("Save: %v", err)
 		}
 		for _, identity := range []domain.Identity{
@@ -59,6 +53,27 @@ func RunAccountRepositoryContract(t *testing.T, newRepo func(*testing.T) ports.A
 			if _, err := repo.FindByIdentity(ctx, identity); !errors.Is(err, domain.ErrNotFound) {
 				t.Fatalf("FindByIdentity(%+v): err = %v, want ErrNotFound", identity, err)
 			}
+		}
+	})
+
+	t.Run("Find returns the saved account by its ID", func(t *testing.T) {
+		repo := newRepo(t)
+		grace := domain.Account{
+			ID:          "account-2",
+			Identity:    domain.Identity{Issuer: "dev", Subject: "grace", Name: "Grace"},
+			WorkspaceID: "workspace-2",
+		}
+		for _, account := range []domain.Account{ada, grace} {
+			if err := repo.Save(ctx, account); err != nil {
+				t.Fatalf("Save(%s): %v", account.ID, err)
+			}
+		}
+		got, err := repo.Find(ctx, grace.ID)
+		if err != nil {
+			t.Fatalf("Find: %v", err)
+		}
+		if got != grace {
+			t.Fatalf("got %+v, want %+v", got, grace)
 		}
 	})
 }

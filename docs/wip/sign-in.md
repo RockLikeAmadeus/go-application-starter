@@ -86,7 +86,10 @@ Storage:
   - Red: none. `TestAccountRepositoryContract/FindByIdentity_doesn't_match_an_account_with_the_same_name_but_another_issuer_or_subject` passed at once, as 7b's green already matches on issuer and subject; kept as a guard (it fails on a repository that matches by name).
   - Green: skipped, as no production code was demanded.
   - Refactor: nothing worth changing; the two contract cases share a saved account, but one setup helper for two cases isn't clearer yet.
-- [ ] 7d. Account contract: `Find` returns the saved account by its ID.
+- [x] 7d. Account contract: `Find` returns the saved account by its ID.
+  - Red: `TestAccountRepositoryContract/Find_returns_the_saved_account_by_its_ID` failed: `got {ID: …}, want {ID:account-2 …}` (the stub returned an empty account).
+  - Green: `memory.AccountRepository.Find` returns the account kept under the ID (an unknown ID is left to 7e).
+  - Refactor: the contract's repeated Ada account is now one `ada` fixture shared by its cases.
 - [ ] 7e. Account contract: `Find` of an unknown ID is `ErrNotFound`.
 - [ ] 7f. Account contract: `Save` replaces the account with the same ID.
 - [ ] 8. `memory.NewSessionRepository` passes a new `storagetest` session contract (find by hash, delete; deleting a missing session is `ErrNotFound`, set in task 6b).
