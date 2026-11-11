@@ -114,6 +114,9 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 
 ### 10. Desktop and mobile remote mode — not started
 - This is the existing TODO item, now unblocked by step 8.
+- Keep ADR 4's design: the window and the in-process handler stay, and `desktop.Open` (and so `mobile.Open`) puts `bootstrap.NewRemote` behind them, so `httpclient` makes plain REST calls to any server URL. The web app doesn't change, and no CORS is needed. Not chosen: pointing the window straight at the hosted server's URL, which would make the app a browser wrapper and lose switching between local and remote mode.
+- **Remote mode signs in like the CLI (step 9), not with step 8's cookie.** The requests to the hosted server come from the app's Go code, not from the window, so the app opens the system browser to sign in (RFC 8252, OAuth for native apps), keeps the token in the operating system's credential store, and `httpclient` sends it as a bearer token. The server's middleware accepts both (decided in step 8a).
+- To design here: the web app's "sign in" link reaches the in-process handler, not the hosted server, so that handler must start the browser sign-in itself, and sign out must forget the stored token.
 
 ## Follow-ups for TODO.md (when this plan finishes)
 - Synced folders on Android (Storage Access Framework).
@@ -163,3 +166,4 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - 2026-11-10: step 7 finished, recorded in ADR 8. Its task list split most tasks into one test each, and added a migration lock (servers starting together on an unmigrated database raced), hiding `database_url` in `starter info` (a URL usually holds a password), `starter info` naming the database rather than a folder, and a readiness retry on a dead pooled connection (the first probe after an outage answered 503).
 - 2026-11-10: before step 8, agreed that the app never builds its own email and password sign-in. Users who'd rather not sign in with Google get a dedicated account from the provider (Auth0, Clerk, Keycloak, and others keep their own accounts), which reaches the app through the same OIDC adapter. Step 8's guide for template users says so.
 - 2026-11-10: step 8 started, split into 8a (sign-in with the dev sign-in) and 8b (the OIDC adapter). Agreed: a session cookie rather than tokens in the browser (the backend-for-frontend pattern, which current IETF guidance ranks most secure), sessions and accounts kept in storage, and sign-in only on memory, SQLite, and Postgres, so jsonfile with sign-in is refused at start. Decided: the dev sign-in exists only in builds with the `devsignin` tag. A sweep for expired sessions is a follow-up.
+- 2026-11-10: step 10 notes added. Remote mode keeps ADR 4's in-process handler over `httpclient`, rather than pointing the window at the hosted server, and signs in like the CLI, with a token through the system browser, not step 8's cookie.
