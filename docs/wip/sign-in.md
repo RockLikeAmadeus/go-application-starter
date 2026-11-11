@@ -35,7 +35,10 @@ Decided in planning:
 Each is one `/red` → `/green` → `/refactor` cycle.
 
 The core:
-- [ ] 1. `domain.NewIdentity(issuer, subject, name)` refuses a blank issuer or subject with a `*domain.ValidationError`. An `Account` has an ID, an identity, and a workspace.
+- [x] 1. `domain.NewIdentity(issuer, subject, name)` refuses a blank issuer or subject with a `*domain.ValidationError`. An `Account` has an ID, an identity, and a workspace.
+  - Red: `TestNewIdentity_RefusesABlankIssuerOrSubject` (empty or whitespace issuer or subject) failed: nil error, want a `*ValidationError`.
+  - Green: `NewIdentity` refuses a whitespace-only issuer or subject with the agreed messages ("The sign-in issuer cannot be empty.", "The sign-in subject cannot be empty."), and stores both untrimmed, as subjects are opaque.
+  - Refactor: nothing worth changing. The code is two guard clauses.
 - [ ] 2. `domain.Session` knows when it's expired: `IsExpiredAt(now)` is true at or after its `ExpiresAt`.
 - [ ] 3. `ports.SignInService`, `AccountRepository`, `SessionRepository`, and `TokenGenerator`, with `testsupport` fakes where needed. `app.SignInService.SignIn` with a new identity creates an account and a personal workspace, and returns a token whose session (stored by hash only) expires 30 days later.
 - [ ] 4. `SignIn` with a known identity reuses its account and workspace, even when the name has changed.
