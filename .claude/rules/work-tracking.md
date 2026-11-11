@@ -18,6 +18,10 @@ paths:
 - `/green` leaves a **For refactor:** note under its item, listing the refactoring it spotted. `/refactor` starts from that note and replaces it with what it did.
 - Delete the file in the same change that removes the `@wip` tags. `/feature` makes this, and updating the plan, the feature's last task (docs and finish).
 
+## Finished backlog items (`docs/backlog-history.md`)
+
+A ticked TODO item stays in `TODO.md`, with its "Done" note, until `/prune-backlog` moves it to `docs/backlog-history.md`. It moves only items whose sub-tasks are all ticked. Look there when a TODO item or plan refers to work that is no longer in the backlog.
+
 ## Multi-feature plans (`docs/plans/`)
 
 `TODO.md` is the backlog. When an item needs more than one `/feature`, its plan lives in `docs/plans/<item-slug>.md`, which is also tracked and temporary:
