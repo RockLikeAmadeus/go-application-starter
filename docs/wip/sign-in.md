@@ -94,7 +94,10 @@ Storage:
   - Red: `TestAccountRepositoryContract/Find_of_an_unknown_ID_returns_ErrNotFound` failed: `err = <nil>, want ErrNotFound`.
   - Green: `memory.AccountRepository.Find` returns `ErrNotFound` when no account is kept under the ID.
   - Refactor: nothing worth changing; the two-line lookup matches the other memory repositories.
-- [ ] 7f. Account contract: `Save` replaces the account with the same ID.
+- [x] 7f. Account contract: `Save` replaces the account with the same ID.
+  - Red: none. `TestAccountRepositoryContract/Save_replaces_the_account_with_the_same_ID` passed at once, as the memory map is keyed by ID; kept as a guard (it fails on a `Save` that keeps the first account).
+  - Green: skipped, as no production code was demanded.
+  - Refactor: nothing worth changing; two contract cases now save a list of accounts in a loop, but a helper for two isn't clearer yet.
 - [ ] 8. `memory.NewSessionRepository` passes a new `storagetest` session contract (find by hash, delete; deleting a missing session is `ErrNotFound`, set in task 6b).
 - [ ] 9. Migration `00004_accounts_and_sessions.sql` and `sqlstore.NewAccountRepository` pass the account contract on SQLite and Postgres.
 - [ ] 10. `sqlstore.NewSessionRepository` passes the session contract on SQLite and Postgres.

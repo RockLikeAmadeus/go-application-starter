@@ -86,4 +86,29 @@ func RunAccountRepositoryContract(t *testing.T, newRepo func(*testing.T) ports.A
 			t.Fatalf("err = %v, want ErrNotFound", err)
 		}
 	})
+
+	t.Run("Save replaces the account with the same ID", func(t *testing.T) {
+		repo := newRepo(t)
+		renamed := ada
+		renamed.Identity.Name = "Ada Lovelace"
+		for _, account := range []domain.Account{ada, renamed} {
+			if err := repo.Save(ctx, account); err != nil {
+				t.Fatalf("Save(%+v): %v", account, err)
+			}
+		}
+		got, err := repo.Find(ctx, ada.ID)
+		if err != nil {
+			t.Fatalf("Find: %v", err)
+		}
+		if got != renamed {
+			t.Fatalf("Find: got %+v, want %+v", got, renamed)
+		}
+		got, err = repo.FindByIdentity(ctx, ada.Identity)
+		if err != nil {
+			t.Fatalf("FindByIdentity: %v", err)
+		}
+		if got != renamed {
+			t.Fatalf("FindByIdentity: got %+v, want %+v", got, renamed)
+		}
+	})
 }
