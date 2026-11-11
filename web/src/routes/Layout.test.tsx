@@ -233,6 +233,21 @@ describe("Layout", () => {
     expect(form).toHaveAttribute("action", "/auth/sign-out");
   });
 
+  it("shows no signed-in name or Sign out button when sign-in is off", async () => {
+    const fetch = sessionApi({ isSignInOn: false });
+    vi.stubGlobal("fetch", fetch);
+
+    renderLayout();
+    // Nothing on screen changes once the session is read, so wait for the
+    // request, then flush.
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    await act(async () => {});
+
+    const sidebar = within(screen.getByRole("complementary"));
+    expect(sidebar.queryByText(/Signed in as/)).not.toBeInTheDocument();
+    expect(sidebar.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
+  });
+
   it("keeps saving after the browser goes offline when no connection is required", async () => {
     const fetch = connectionApi(false);
     vi.stubGlobal("fetch", fetch);

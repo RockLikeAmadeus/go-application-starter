@@ -313,7 +313,9 @@ The web app:
   - Red: `Layout` "shows who is signed in, and a Sign out button that posts to /auth/sign-out, in the sidebar" failed, finding no "Signed in as Alpha.". Wording agreed: "Signed in as <name>." above a "Sign out" button.
   - Green: `SidebarContent` takes the session's name and, when there is one, shows it above a form posting to `/auth/sign-out` with a "Sign out" button.
   - Refactor: the form moved into `features/session/SignOutForm.tsx`, styled with the sidebar palette and style tokens, and sits with the Appearance controls at the foot of the sidebar.
-- [ ] 24b. With sign-in off, the web app shows no sign-out button and no signed-in name.
+- [x] 24b. With sign-in off, the web app shows no sign-out button and no signed-in name.
+  - Red: none. `Layout` "shows no signed-in name or Sign out button when sign-in is off" passed at once, as task 24 shows them only for a session with a name; kept as a guard (it failed with `Layout` showing the form whenever the session is read).
+  - Refactor: nothing worth changing; the test follows the file's wait-then-flush pattern.
 - [ ] 25. Browser journey `web/e2e/features/sign-in.feature` (`@wip`): sign in with the dev sign-in, see the items page, sign out, and be asked to sign in again. Its own Playwright project and server with sign-in on.
 
 - [ ] 26. **Docs and finish:** a new ADR 9 (sign-in and sessions: the session cookie and why, sessions in storage, signed out as no workspace, the dev sign-in build tag). Update ADR 5, a new `docs/sign-in.md` guide (how sign-in works, the dev sign-in, sessions; 8b adds providers and the email-and-password note), `docs/configuration.md` (`sign_in`), `docs/billing.md` (stored plans are now switched on), `docs/workspaces.md`, README, SPEC.md §2 and §5, and `.claude/rules/` (`workspaces-and-plans.md`: `ErrNoWorkspace` is mapped and stored plans are on; `testing.md`: the `@sign-in` tag; `server.md`: the `/auth/` routes). Add a template-user step under the TODO.md starter-list item if one arises. Remove the `@wip` tags, run `task check`, `task e2e`, and `task test:init`, delete this file, and mark 8a done in the plan.
