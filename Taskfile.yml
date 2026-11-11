@@ -78,18 +78,18 @@ tasks:
   run:server:
     desc: Run the API server (API-only; the UI comes from Vite in dev)
     cmds:
-      - go run ./cmd/server
+      - go run -tags devsignin ./cmd/server
 
   run:cli:
     desc: "Run the CLI, e.g. task run:cli -- --help"
     cmds:
-      - go run ./cmd/starter {{.CLI_ARGS}}
+      - go run -tags devsignin ./cmd/starter {{.CLI_ARGS}}
 
   run:tui:
     desc: Run the terminal UI
     interactive: true
     cmds:
-      - go run ./cmd/starter tui {{.CLI_ARGS}}
+      - go run -tags devsignin ./cmd/starter tui {{.CLI_ARGS}}
 
   run:desktop:
     desc: Run the desktop app (needs the desktop build deps, see README)

@@ -75,6 +75,11 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 			"The sign-in setting is %q, but the storage setting is %q. Sign-in needs %q, %q, or %q storage. Please change the storage setting, or set the sign-in setting to %q.",
 			cfg.SignIn, cfg.Storage, config.StorageMemory, config.StorageSQLite, config.StoragePostgres, config.SignInOff)
 	}
+	if cfg.SignIn == config.SignInDev && !isDevSignInBuilt {
+		return nil, fmt.Errorf(
+			"The sign-in setting is %q, but this program was built without the dev sign-in, which is only for development and tests. Please set the sign-in setting to %q, or build the program with the %q build tag.",
+			cfg.SignIn, config.SignInOff, devSignInBuildTag)
+	}
 	a := &App{}
 	// sample:start
 	var itemRepo ports.ItemRepository

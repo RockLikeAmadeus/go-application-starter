@@ -3,7 +3,8 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "go build -o ./tmp/server ./cmd/server"
+  # The devsignin tag builds in the dev sign-in, for STARTER_SIGN_IN=dev.
+  cmd = "go build -tags devsignin -o ./tmp/server ./cmd/server"
   entrypoint = ["./tmp/server"]
   include_ext = ["go"]
   # The web UI hot-reloads through Vite; tests and data don't need a restart.
@@ -16,7 +17,7 @@ tmp_dir = "tmp"
 
   # Windows only runs programs whose names end in .exe.
   [build.windows]
-    cmd = "go build -o ./tmp/server.exe ./cmd/server"
+    cmd = "go build -tags devsignin -o ./tmp/server.exe ./cmd/server"
     entrypoint = ["./tmp/server.exe"]
 
 [misc]
