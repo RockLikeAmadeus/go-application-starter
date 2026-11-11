@@ -201,7 +201,10 @@ The server:
 - [x] 14h. A sign-out that fails (storage can't be reached) is a problem, and keeps the cookie.
   - Red: none. `TestASignOutThatFailsIsAProblemAndKeepsTheCookie` passed at once, as 14f's green already returns `problemFor`'s 500 before clearing the cookie; kept as a guard (clearing the cookie first turns it red).
   - Refactor: the sign-out tests share `postSignOut`; `signInRecorder` fails sign-outs with `signOutErr`.
-- [ ] 14g. A refused dev sign-in (a blank name) is a 400 problem, and sets no cookie.
+- [x] 14g. A refused dev sign-in (a blank name) is a 422 `validation` problem, and sets no cookie.
+  - Red: `TestABlankDevSignInNameIsAValidationProblemAndSetsNoCookie` failed with status 303 (signed in with a blank subject), want 422.
+  - Green: `devSignIn` builds the identity with `domain.NewIdentity`, and answers its error with `problemFor` before signing in.
+  - Refactor: nothing worth changing; the two early returns in `devSignIn` read in the order the checks happen, and merging them would hide it.
 - [ ] 15. With a session cookie, a request that changes something from another site is refused (403).
 - [ ] 16. `GET /api/v1/session` in `api/openapi.yaml` (`task gen`), served from `CurrentAccount`, and `httpclient` reads it.
 
@@ -236,3 +239,4 @@ The web app:
 - 2026-11-11, task 13: split into 13 (the server's 401 problem) and 13b (`httpclient` maps it back), as each needs its own test. The user agreed `ErrNoWorkspace`'s message, "Please sign in to continue.", which is also the problem's detail.
 - 2026-11-11, task 14: split into 14 (`POST /auth/dev` signs in and sets the cookie), 14b (the cookie lasts as long as the session), 14c (`Secure` over HTTPS), 14d (`GET /auth/dev` shows the form), 14e (`GET /auth/sign-in` goes to it, and the denylist), 14f (signing out), and 14g (a refused dev sign-in, added at green, where the code needed an error path), as each needs its own test.
 - 2026-11-11, task 14f: added 14h (a failed sign-out is a problem and keeps the cookie), at green, where the code needed an error path, as task 14 did for 14g.
+- 2026-11-11, task 14g: a blank name is a 422 `validation` problem, not 400 (agreed with the user): `devSignIn` builds the identity with `domain.NewIdentity`, and `problemFor` maps its `ValidationError` (field `subject`, the existing message), as for any other invalid input.

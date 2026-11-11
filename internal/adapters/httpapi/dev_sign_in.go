@@ -38,7 +38,12 @@ func devSignInForm(w http.ResponseWriter, _ *http.Request) {
 func devSignIn(signIn ports.SignInService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
-		token, err := signIn.SignIn(r.Context(), domain.Identity{Issuer: DevIssuer, Subject: name, Name: name})
+		identity, err := domain.NewIdentity(DevIssuer, name, name)
+		if err != nil {
+			writeProblem(w, problemFor(err))
+			return
+		}
+		token, err := signIn.SignIn(r.Context(), identity)
 		if err != nil {
 			writeProblem(w, problemFor(err))
 			return

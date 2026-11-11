@@ -118,3 +118,22 @@ func TestTheDevSignInFormAsksForANameAndPostsToTheDevSignIn(t *testing.T) {
 		}
 	}
 }
+
+func TestABlankDevSignInNameIsAValidationProblemAndSetsNoCookie(t *testing.T) {
+	signIn := &signInRecorder{token: "token-blank"}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: signIn, IsDevSignInOn: true})
+	rec := postDevSignIn(handler, "  ")
+
+	if rec.Code != http.StatusUnprocessableEntity || rec.Header().Get("Content-Type") != "application/problem+json" {
+		t.Fatalf("status = %d, Content-Type = %q; want %d, %q", rec.Code, rec.Header().Get("Content-Type"), http.StatusUnprocessableEntity, "application/problem+json")
+	}
+	if !strings.Contains(rec.Body.String(), `"type":"`+httpapi.ProblemValidation+`"`) {
+		t.Errorf("body = %s, want a %q problem", rec.Body.String(), httpapi.ProblemValidation)
+	}
+	if cookies := rec.Header().Values("Set-Cookie"); len(cookies) != 0 {
+		t.Errorf("Set-Cookie = %q, want none", cookies)
+	}
+	if len(signIn.identities) != 0 {
+		t.Errorf("signed in as %+v, want no sign-in", signIn.identities)
+	}
+}
