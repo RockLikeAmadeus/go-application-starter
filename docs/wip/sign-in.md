@@ -90,7 +90,10 @@ Storage:
   - Red: `TestAccountRepositoryContract/Find_returns_the_saved_account_by_its_ID` failed: `got {ID: …}, want {ID:account-2 …}` (the stub returned an empty account).
   - Green: `memory.AccountRepository.Find` returns the account kept under the ID (an unknown ID is left to 7e).
   - Refactor: the contract's repeated Ada account is now one `ada` fixture shared by its cases.
-- [ ] 7e. Account contract: `Find` of an unknown ID is `ErrNotFound`.
+- [x] 7e. Account contract: `Find` of an unknown ID is `ErrNotFound`.
+  - Red: `TestAccountRepositoryContract/Find_of_an_unknown_ID_returns_ErrNotFound` failed: `err = <nil>, want ErrNotFound`.
+  - Green: `memory.AccountRepository.Find` returns `ErrNotFound` when no account is kept under the ID.
+  - Refactor: nothing worth changing; the two-line lookup matches the other memory repositories.
 - [ ] 7f. Account contract: `Save` replaces the account with the same ID.
 - [ ] 8. `memory.NewSessionRepository` passes a new `storagetest` session contract (find by hash, delete; deleting a missing session is `ErrNotFound`, set in task 6b).
 - [ ] 9. Migration `00004_accounts_and_sessions.sql` and `sqlstore.NewAccountRepository` pass the account contract on SQLite and Postgres.

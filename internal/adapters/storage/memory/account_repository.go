@@ -37,7 +37,11 @@ func (r *AccountRepository) FindByIdentity(_ context.Context, identity domain.Id
 func (r *AccountRepository) Find(_ context.Context, id string) (domain.Account, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	return r.accounts[id], nil
+	account, ok := r.accounts[id]
+	if !ok {
+		return domain.Account{}, domain.ErrNotFound
+	}
+	return account, nil
 }
 
 // Save stores the account.

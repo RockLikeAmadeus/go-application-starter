@@ -76,4 +76,14 @@ func RunAccountRepositoryContract(t *testing.T, newRepo func(*testing.T) ports.A
 			t.Fatalf("got %+v, want %+v", got, grace)
 		}
 	})
+
+	t.Run("Find of an unknown ID returns ErrNotFound", func(t *testing.T) {
+		repo := newRepo(t)
+		if err := repo.Save(ctx, ada); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
+		if _, err := repo.Find(ctx, "account-unknown"); !errors.Is(err, domain.ErrNotFound) {
+			t.Fatalf("err = %v, want ErrNotFound", err)
+		}
+	})
 }
