@@ -106,7 +106,10 @@ Storage:
   - Red: `TestSessionRepositoryContract/FindByHash_returns_the_saved_session_with_the_hash` failed: `FindByHash: The requested record could not be found.`
   - Green: `memory.SessionRepository` keeps sessions in a map by token hash (`Save`), and `FindByHash` returns the one kept under the hash.
   - Refactor: the session comparison is now `assertSessionEqual` (expiry compared with `Equal`, like `assertItemEqual`), ready for 8c.
-- [ ] 8c. Session contract: `Save` replaces the session with the same token hash.
+- [x] 8c. Session contract: `Save` replaces the session with the same token hash.
+  - Red: none. `TestSessionRepositoryContract/Save_replaces_the_session_with_the_same_token_hash` passed at once, as the memory map is keyed by hash; kept as a guard (it fails on a `Save` that keeps the first session).
+  - Green: skipped, as no production code was demanded.
+  - Refactor: nothing worth changing; the save loop now appears twice in the contract, as in the account contract, but a helper for two isn't clearer yet.
 - [ ] 8d. Session contract: `Delete` removes the session, so `FindByHash` then returns `ErrNotFound`.
 - [ ] 8e. Session contract: `Delete` of a missing session is `ErrNotFound` (set in task 6b).
 - [ ] 9. Migration `00004_accounts_and_sessions.sql` and `sqlstore.NewAccountRepository` pass the account contract on SQLite and Postgres.

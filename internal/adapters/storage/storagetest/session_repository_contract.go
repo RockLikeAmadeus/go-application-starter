@@ -38,6 +38,22 @@ func RunSessionRepositoryContract(t *testing.T, newRepo func(*testing.T) ports.S
 		}
 		assertSessionEqual(t, got, graceSession)
 	})
+
+	t.Run("Save replaces the session with the same token hash", func(t *testing.T) {
+		repo := newRepo(t)
+		first := domain.NewSession("token-1", "account-1", baseTime)
+		replacement := domain.NewSession("token-1", "account-1", baseTime.Add(time.Hour))
+		for _, session := range []domain.Session{first, replacement} {
+			if err := repo.Save(ctx, session); err != nil {
+				t.Fatalf("Save(expires %s): %v", session.ExpiresAt, err)
+			}
+		}
+		got, err := repo.FindByHash(ctx, first.TokenHash)
+		if err != nil {
+			t.Fatalf("FindByHash: %v", err)
+		}
+		assertSessionEqual(t, got, replacement)
+	})
 }
 
 // assertSessionEqual compares the expiry with Equal so adapters may
