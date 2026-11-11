@@ -32,8 +32,20 @@ func TestParse_GivesEachPlansEntitlements(t *testing.T) {
 		},
 		"pro": {Plan: "pro", Limits: map[string]domain.Limit{}, Features: map[string]domain.Feature{}},
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
+	if !reflect.DeepEqual(got.Catalog, want) {
+		t.Errorf("Parse =\n%+v\nwant\n%+v", got.Catalog, want)
+	}
+}
+
+func TestParse_ReadsTheNewWorkspacePlan(t *testing.T) {
+	doc := `{"newWorkspacePlan": "free", "plans": {"free": {"limits": {}}}}`
+
+	got, err := plans.Parse([]byte(doc))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if got.NewWorkspacePlan != "free" {
+		t.Errorf("NewWorkspacePlan = %q, want %q", got.NewWorkspacePlan, "free")
 	}
 }
 
@@ -61,8 +73,8 @@ func TestParse_IgnoresFullLineComments(t *testing.T) {
 		Limits:   map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.BlockNew}},
 		Features: map[string]domain.Feature{},
 	}}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
+	if !reflect.DeepEqual(got.Catalog, want) {
+		t.Errorf("Parse =\n%+v\nwant\n%+v", got.Catalog, want)
 	}
 }
 
@@ -91,8 +103,8 @@ func TestParse_ReadsFeatures(t *testing.T) {
 			"free": {Plan: "free", Limits: map[string]domain.Limit{}, Features: catalogFeatures(false)},
 			"pro":  {Plan: "pro", Limits: map[string]domain.Limit{}, Features: catalogFeatures(true)},
 		}
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
+		if !reflect.DeepEqual(got.Catalog, want) {
+			t.Errorf("Parse =\n%+v\nwant\n%+v", got.Catalog, want)
 		}
 	})
 

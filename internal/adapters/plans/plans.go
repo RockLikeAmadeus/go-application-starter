@@ -20,11 +20,19 @@ import (
 // Catalog holds each plan's entitlements, by plan name.
 type Catalog map[string]domain.Entitlements
 
+// File is what a plans file holds: its plans, and the one a new workspace
+// starts on.
+type File struct {
+	Catalog          Catalog
+	NewWorkspacePlan string
+}
+
 // document is the plans file's shape. Its records are separate from the
 // domain types, so the file's format can change on its own.
 type document struct {
-	Features map[string]featureRecord `json:"features"`
-	Plans    map[string]planRecord    `json:"plans"`
+	NewWorkspacePlan string                   `json:"newWorkspacePlan"`
+	Features         map[string]featureRecord `json:"features"`
+	Plans            map[string]planRecord    `json:"plans"`
 }
 
 type featureRecord struct {
@@ -45,6 +53,7 @@ type limitRecord struct {
 // Parse reads a plans document:
 //
 //	{
+//	  "newWorkspacePlan": "<plan>",
 //	  "features": {"<feature>": {"name": "Item export", "whenOff": "show-locked"}},
 //	  "plans": {"<plan>": {
 //	    "limits": {"<limit>": {"max": 3, "whenOver": "block-new"}},
@@ -52,31 +61,32 @@ type limitRecord struct {
 //	  }}
 //	}
 //
-// and returns each plan's entitlements. Every plan gets every feature in
+// and returns each plan's entitlements, in File's Catalog, and the plan a new
+// workspace starts on, in NewWorkspacePlan. Every plan gets every feature in
 // "features", on when the plan lists it and off otherwise; a plan listing a
 // feature that isn't there is refused. Lines whose first non-blank characters
 // are // are comments, so the file can explain itself and carry the template's
 // sample markers. Comments at the end of a line aren't supported.
-func Parse(data []byte) (Catalog, error) {
+func Parse(data []byte) (File, error) {
 	var doc document
 	dec := json.NewDecoder(bytes.NewReader(stripComments(data)))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&doc); err != nil {
-		return nil, fmt.Errorf("plans file: %w", err)
+		return File{}, fmt.Errorf("plans file: %w", err)
 	}
 	features, err := buildFeatures(doc.Features)
 	if err != nil {
-		return nil, fmt.Errorf("plans file: %w", err)
+		return File{}, fmt.Errorf("plans file: %w", err)
 	}
 	catalog := Catalog{}
 	for name, plan := range doc.Plans {
 		entitlements, err := plan.entitlements(name, features)
 		if err != nil {
-			return nil, fmt.Errorf("plans file: plan %q, %w", name, err)
+			return File{}, fmt.Errorf("plans file: plan %q, %w", name, err)
 		}
 		catalog[name] = entitlements
 	}
-	return catalog, nil
+	return File{Catalog: catalog, NewWorkspacePlan: doc.NewWorkspacePlan}, nil
 }
 
 // buildFeatures validates the file's features, all of them off.
@@ -219,7 +229,8 @@ var shipped []byte
 // plans.jsonc. A product edits that file to set its own plans; Load reads
 // another one instead (STARTER_PLANS_FILE).
 func Default() (Catalog, error) {
-	return Parse(shipped)
+	file, err := Parse(shipped)
+	return file.Catalog, err
 }
 
 // Load returns the plans in the file at path, or Default's when path is
@@ -232,5 +243,6 @@ func Load(path string) (Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Parse(data)
+	file, err := Parse(data)
+	return file.Catalog, err
 }

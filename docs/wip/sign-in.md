@@ -136,7 +136,13 @@ Storage:
   - Refactor: nothing worth changing; the test matches `TestAccountRepositoryContractOnPostgres`.
 
 Plans:
-- [ ] 11. The plans file's `newWorkspacePlan` names the starting plan for new workspaces. A missing field, or a plan the file doesn't have, fails at start. The built-in file and the test plans start on `free`.
+- [x] 11. `plans.Parse` reads the plans file's `newWorkspacePlan`, the starting plan for new workspaces.
+  - Red: `TestParse_ReadsTheNewWorkspacePlan` failed with `unknown field "newWorkspacePlan"`. To compile, `Parse` now returns a `plans.File` (`Catalog`, `NewWorkspacePlan`); `Default` and `Load` still return its `Catalog`.
+  - Green: the plans document reads `newWorkspacePlan` into `File.NewWorkspacePlan`.
+  - Refactor: `Parse`'s doc comment shows and explains the field. Left: `Default` and `Load` keep returning a `Catalog` until a test needs the field from them (11d, task 20).
+- [ ] 11b. A plans file without `newWorkspacePlan` is refused, so it fails at start. The test plans start on `free`.
+- [ ] 11c. A `newWorkspacePlan` that isn't one of the file's plans is refused.
+- [ ] 11d. The built-in file starts new workspaces on `free`.
 
 The server:
 - [ ] 12. `httpapi` session middleware: a valid session cookie puts its workspace in the request's context (`workspace.WithID`). No cookie, or an unknown one, leaves none.
@@ -170,3 +176,4 @@ The web app:
 - 2026-11-10, task 8: split into 8 (no saved session is `ErrNotFound`), 8b (found by hash), 8c (`Save` replaces), 8d (`Delete` removes), and 8e (`Delete` of a missing session is `ErrNotFound`), as each needs its own test.
 - 2026-11-10, task 9: split into 9 (the account contract on SQLite) and 9b (on Postgres), as each needs its own test.
 - 2026-11-10, task 10: split into 10 (the session contract on SQLite) and 10b (on Postgres), as each needs its own test.
+- 2026-11-10, task 11: split into 11 (`Parse` reads `newWorkspacePlan`), 11b (a missing field is refused), 11c (an unknown plan is refused), and 11d (the built-in file starts on `free`), as each needs its own test.
