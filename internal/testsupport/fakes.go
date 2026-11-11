@@ -107,6 +107,14 @@ func (a StoredAccounts) FindByIdentity(_ context.Context, identity domain.Identi
 	return domain.Account{}, domain.ErrNotFound
 }
 
+func (a StoredAccounts) Find(_ context.Context, id string) (domain.Account, error) {
+	account, ok := a[id]
+	if !ok {
+		return domain.Account{}, domain.ErrNotFound
+	}
+	return account, nil
+}
+
 func (a StoredAccounts) Save(_ context.Context, account domain.Account) error {
 	a[account.ID] = account
 	return nil
@@ -115,6 +123,14 @@ func (a StoredAccounts) Save(_ context.Context, account domain.Account) error {
 // StoredSessions is a ports.SessionRepository that holds sessions in a map by
 // token hash.
 type StoredSessions map[string]domain.Session
+
+func (s StoredSessions) FindByHash(_ context.Context, tokenHash string) (domain.Session, error) {
+	session, ok := s[tokenHash]
+	if !ok {
+		return domain.Session{}, domain.ErrNotFound
+	}
+	return session, nil
+}
 
 func (s StoredSessions) Save(_ context.Context, session domain.Session) error {
 	s[session.TokenHash] = session

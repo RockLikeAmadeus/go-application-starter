@@ -38,6 +38,19 @@ func (s *SignInService) SignIn(ctx context.Context, identity domain.Identity) (s
 	return token, nil
 }
 
+// CurrentAccount returns the account whose session the token is.
+func (s *SignInService) CurrentAccount(ctx context.Context, token string) (domain.Account, error) {
+	session, err := s.sessions.FindByHash(ctx, domain.HashSessionToken(token))
+	if err != nil {
+		return domain.Account{}, fmt.Errorf("find session: %w", err)
+	}
+	account, err := s.accounts.Find(ctx, session.AccountID)
+	if err != nil {
+		return domain.Account{}, fmt.Errorf("find session's account: %w", err)
+	}
+	return account, nil
+}
+
 // accountFor returns the identity's account, creating it and its personal
 // workspace the first time the identity signs in. The name isn't used to find
 // it, so a changed name still finds the same account.

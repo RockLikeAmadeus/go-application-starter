@@ -52,7 +52,12 @@ The core:
   - Green: `SignIn` finds the account by identity (new `AccountRepository.FindByIdentity`, issuer and subject only) and creates one only on `ErrNotFound`; other find errors are returned, wrapped.
   - Red (review fix): `TestSignIn_WhenTheAccountCantBeLookedUpIsRefusedAndSavesNothing`, checked against the code without the find-error branch, failed: nil error, want the lookup's error. Green: the branch already in place.
   - Refactor: the find-or-create moved into `accountFor`, so `SignIn` reads as account, then session. Whether a changed name is stored is left open: no task asks for it.
-- [ ] 5. `CurrentAccount(ctx, token)` returns the session's account, and `ErrNoWorkspace` for an unknown or expired token (deleting an expired session).
+- [x] 5. `CurrentAccount(ctx, token)` returns the session's account.
+  - Red: `TestCurrentAccount_WithASignedInTokenReturnsTheSessionsAccount` failed: got the zero account, want `account-2` (Grace's).
+  - Green: `CurrentAccount` finds the session by the token's hash (new `SessionRepository.FindByHash`) and returns its account (new `AccountRepository.Find`, by ID); both fakes implement them.
+  - Refactor: the find errors are wrapped, as `SignIn`'s are. Mapping a missing session to `ErrNoWorkspace` is left to 5b, which demands it.
+- [ ] 5b. `CurrentAccount` returns `ErrNoWorkspace` for an unknown token.
+- [ ] 5c. `CurrentAccount` returns `ErrNoWorkspace` for an expired token, and deletes its session.
 - [ ] 6. `SignOut(ctx, token)` deletes the session, so `CurrentAccount` then fails. Signing out of an unknown session isn't an error.
 
 Storage:
@@ -89,3 +94,5 @@ The web app:
 - [ ] 26. **Docs and finish:** a new ADR 9 (sign-in and sessions: the session cookie and why, sessions in storage, signed out as no workspace, the dev sign-in build tag). Update ADR 5, a new `docs/sign-in.md` guide (how sign-in works, the dev sign-in, sessions; 8b adds providers and the email-and-password note), `docs/configuration.md` (`sign_in`), `docs/billing.md` (stored plans are now switched on), `docs/workspaces.md`, README, SPEC.md §2 and §5, and `.claude/rules/` (`workspaces-and-plans.md`: `ErrNoWorkspace` is mapped and stored plans are on; `testing.md`: the `@sign-in` tag; `server.md`: the `/auth/` routes). Add a template-user step under the TODO.md starter-list item if one arises. Remove the `@wip` tags, run `task check`, `task e2e`, and `task test:init`, delete this file, and mark 8a done in the plan.
 
 ## Changes to the plan
+
+- 2026-11-10, task 5: split into 5 (a valid token's account), 5b (an unknown token), and 5c (an expired token, deleted), as each needs its own test.

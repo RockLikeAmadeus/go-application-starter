@@ -94,3 +94,26 @@ func TestSignIn_WhenTheAccountCantBeLookedUpIsRefusedAndSavesNothing(t *testing.
 		t.Errorf("accounts = %v, sessions = %v, want none saved", accounts, sessions)
 	}
 }
+
+func TestCurrentAccount_WithASignedInTokenReturnsTheSessionsAccount(t *testing.T) {
+	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
+	ada := domain.Account{ID: "account-1", Identity: domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}, WorkspaceID: "workspace-1"}
+	grace := domain.Account{ID: "account-2", Identity: domain.Identity{Issuer: "dev", Subject: "grace", Name: "Grace"}, WorkspaceID: "workspace-2"}
+	accounts := testsupport.StoredAccounts{ada.ID: ada, grace.ID: grace}
+	sessions := testsupport.StoredSessions{}
+	for token, account := range map[string]domain.Account{"token-ada": ada, "token-grace": grace} {
+		session := domain.NewSession(token, account.ID, now)
+		sessions[session.TokenHash] = session
+	}
+	svc := app.NewSignInService(accounts, sessions, testsupport.FixedToken("unused"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(now.Add(time.Hour)))
+
+	got, err := svc.CurrentAccount(context.Background(), "token-grace")
+	if err != nil {
+		t.Fatalf("CurrentAccount: %v", err)
+	}
+
+	if !reflect.DeepEqual(got, grace) {
+		t.Errorf("account = %v, want %v", got, grace)
+	}
+}

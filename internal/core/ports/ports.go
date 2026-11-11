@@ -106,6 +106,8 @@ type WorkspaceResolver interface {
 type SignInService interface {
 	// SignIn returns a new session's token for the identity's account.
 	SignIn(ctx context.Context, identity domain.Identity) (string, error)
+	// CurrentAccount returns the account whose session the token is.
+	CurrentAccount(ctx context.Context, token string) (domain.Account, error)
 }
 
 // AccountRepository is the driven port for storing accounts. Accounts aren't
@@ -114,6 +116,8 @@ type AccountRepository interface {
 	// FindByIdentity returns the account with the identity's issuer and
 	// subject (never matched by name), or domain.ErrNotFound.
 	FindByIdentity(ctx context.Context, identity domain.Identity) (domain.Account, error)
+	// Find returns the account with the ID, or domain.ErrNotFound.
+	Find(ctx context.Context, id string) (domain.Account, error)
 	// Save inserts or replaces the account with the same ID.
 	Save(ctx context.Context, account domain.Account) error
 }
@@ -121,6 +125,9 @@ type AccountRepository interface {
 // SessionRepository is the driven port for storing sessions, which are kept
 // by their token's hash only.
 type SessionRepository interface {
+	// FindByHash returns the session kept by the token hash, or
+	// domain.ErrNotFound.
+	FindByHash(ctx context.Context, tokenHash string) (domain.Session, error)
 	// Save inserts or replaces the session with the same token hash.
 	Save(ctx context.Context, session domain.Session) error
 }
