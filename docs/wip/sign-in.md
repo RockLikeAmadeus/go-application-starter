@@ -261,7 +261,10 @@ Settings and wiring:
   - Red: `TestNewEmbedded_WithSignInOnHasNoWorkspaceWithoutOneInTheContext` (`hosted_edition_test.go`, `//go:build devsignin`) failed, `CurrentEntitlements error = <nil>`, want `ErrNoWorkspace`.
   - Green: `NewEmbedded` builds the entitlements service on `workspace.FromContext{}` when `cfg.SignIn.IsOn()`, else `workspace.Local{}`.
   - Refactor: the choice is `workspacesFor(cfg)`, with a comment, ready for 20b. Left: the comment above the item service still names `workspace.Local{}`, which is true until 20b.
-- [ ] 20b. With sign-in on, the App's items take the workspace from the context too. Sample: its test is in a sample file; `task test:init`.
+- [x] 20b. With sign-in on, the App's items take the workspace from the context too. Sample: its test is in a sample file; `task test:init`.
+  - Red: `TestNewEmbedded_WithSignInOnListsNoItemsWithoutAWorkspaceInTheContext` (sample `hosted_edition_items_test.go`, `devsignin`, in the init manifest) failed, `ListItems error = <nil>`, want `ErrNoWorkspace`.
+  - Green: `NewEmbedded` builds the item service on `workspacesFor(cfg)`.
+  - Refactor: the comment above the use cases names `workspacesFor(cfg)`, not `workspace.Local{}`. Left: the entitlements still come from the local plan until 20g.
 - [ ] 20c. `system.Tokens`, the `crypto/rand` `ports.TokenGenerator`: 32 random bytes, different each time.
 - [ ] 20d. With sign-in on, `App.SignIn` signs in on the storage's account and session repositories (memory), and finds the session's account.
 - [ ] 20e. On SQLite and Postgres, a session outlives the App that made it (the `sqlstore` repositories).

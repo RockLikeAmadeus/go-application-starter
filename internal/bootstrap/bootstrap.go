@@ -146,12 +146,12 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		return nil, err
 	}
 	a.Entitlements = app.NewEntitlementsService(entitlementsProvider, workspacesFor(cfg))
-	// Build each use case on its repository and the local edition's driven
-	// ports: workspace.Local{} (the one local workspace, ADR 5), the local
-	// plan's entitlements, system.Clock{} and system.UUIDs{}. See
-	// docs/workspaces.md.
+	// Build each use case on its repository and the driven ports:
+	// workspacesFor(cfg) (the session's workspace with sign-in on, else the
+	// one local workspace, ADR 5), the local plan's entitlements,
+	// system.Clock{}, and system.UUIDs{}. See docs/workspaces.md.
 	// sample:start
-	a.Items = app.NewItemService(itemRepo, workspace.Local{}, entitlementsProvider, system.Clock{}, system.UUIDs{})
+	a.Items = app.NewItemService(itemRepo, workspacesFor(cfg), entitlementsProvider, system.Clock{}, system.UUIDs{})
 	// sample:end
 	return a, nil
 }

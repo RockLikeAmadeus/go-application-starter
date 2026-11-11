@@ -60,6 +60,7 @@ var SampleFiles = []string{
 
 	// Composition root
 	"internal/bootstrap/embedded_items_test.go",
+	"internal/bootstrap/hosted_edition_items_test.go",
 
 	// Specifications
 	"features/items.feature",
