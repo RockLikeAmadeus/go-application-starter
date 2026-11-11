@@ -127,6 +127,18 @@ func TestNewEmbedded_RefusesPostgresWithNoDatabaseURL(t *testing.T) {
 	}
 }
 
+func TestNewEmbedded_RefusesSignInWithPlainTextStorage(t *testing.T) {
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageJSONFile, DataDir: t.TempDir(), SignIn: config.SignInDev})
+	if err == nil {
+		_ = a.Close()
+	}
+
+	want := `The sign-in setting is "dev", but the storage setting is "jsonfile". Sign-in needs "memory", "sqlite", or "postgres" storage. Please change the storage setting, or set the sign-in setting to "off".`
+	if err == nil || err.Error() != want {
+		t.Errorf("err = %v, want %q", err, want)
+	}
+}
+
 func TestNewEmbedded_WithAPlansFile(t *testing.T) {
 	t.Run("uses it instead of the shipped one", func(t *testing.T) {
 		path := writePlansFile(t, `{"newWorkspacePlan": "local", "plans": {"local": {"limits": {"items": {"max": 5, "whenOver": "read-only"}}}}}`)

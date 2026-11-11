@@ -69,6 +69,12 @@ func (a *App) Ready(ctx context.Context) error {
 
 // NewEmbedded wires the core in-process with the configured storage adapter.
 func NewEmbedded(cfg config.Config) (*App, error) {
+	// Plain-text storage has no account or session repositories.
+	if cfg.SignIn.IsOn() && cfg.Storage == config.StorageJSONFile {
+		return nil, fmt.Errorf(
+			"The sign-in setting is %q, but the storage setting is %q. Sign-in needs %q, %q, or %q storage. Please change the storage setting, or set the sign-in setting to %q.",
+			cfg.SignIn, cfg.Storage, config.StorageMemory, config.StorageSQLite, config.StoragePostgres, config.SignInOff)
+	}
 	a := &App{}
 	// sample:start
 	var itemRepo ports.ItemRepository

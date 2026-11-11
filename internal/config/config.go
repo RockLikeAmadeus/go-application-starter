@@ -32,6 +32,12 @@ const (
 	SignInDev SignInMode = "dev"
 )
 
+// IsOn says whether people sign in, which makes this the hosted edition. An
+// unset mode is off, as the setting's default is.
+func (m SignInMode) IsOn() bool {
+	return m != "" && m != SignInOff
+}
+
 type Config struct {
 	// Storage selects the storage adapter (storage; STARTER_STORAGE).
 	Storage StorageBackend
