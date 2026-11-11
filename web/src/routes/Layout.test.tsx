@@ -219,6 +219,20 @@ describe("Layout", () => {
     expect(screen.queryByRole("button", { name: "Menu" })).not.toBeInTheDocument();
   });
 
+  it("shows who is signed in, and a Sign out button that posts to /auth/sign-out, in the sidebar", async () => {
+    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true, name: "Alpha" }));
+
+    renderLayout();
+
+    const sidebar = screen.getByRole("complementary");
+    expect(await within(sidebar).findByText("Signed in as Alpha.")).toBeInTheDocument();
+    const signOut = within(sidebar).getByRole("button", { name: "Sign out" });
+    expect(signOut).toHaveAttribute("type", "submit");
+    const form = signOut.closest("form");
+    expect(form).toHaveAttribute("method", "post");
+    expect(form).toHaveAttribute("action", "/auth/sign-out");
+  });
+
   it("keeps saving after the browser goes offline when no connection is required", async () => {
     const fetch = connectionApi(false);
     vi.stubGlobal("fetch", fetch);
