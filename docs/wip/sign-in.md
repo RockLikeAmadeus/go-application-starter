@@ -198,7 +198,9 @@ The server:
   - Red: `TestSigningOutEndsTheSessionClearsTheCookieAndGoesToTheWebApp` failed with status 200 (the SPA's hint page), want 303 to `/`.
   - Green: with `SignIn` set (any adapter), `POST /auth/sign-out` signs out the cookie's token, clears the cookie (Max-Age < 0), and redirects (303) to `/`; a failed sign-out is a problem (`problemFor`), pinned by 14h.
   - Refactor: clearing the cookie is `clearSessionCookie` in `session.go`, beside `setSessionCookie`; `signOut` sits in `sign_in.go`, as it serves every adapter.
-- [ ] 14h. A sign-out that fails (storage can't be reached) is a problem, and keeps the cookie.
+- [x] 14h. A sign-out that fails (storage can't be reached) is a problem, and keeps the cookie.
+  - Red: none. `TestASignOutThatFailsIsAProblemAndKeepsTheCookie` passed at once, as 14f's green already returns `problemFor`'s 500 before clearing the cookie; kept as a guard (clearing the cookie first turns it red).
+  - Refactor: the sign-out tests share `postSignOut`; `signInRecorder` fails sign-outs with `signOutErr`.
 - [ ] 14g. A refused dev sign-in (a blank name) is a 400 problem, and sets no cookie.
 - [ ] 15. With a session cookie, a request that changes something from another site is refused (403).
 - [ ] 16. `GET /api/v1/session` in `api/openapi.yaml` (`task gen`), served from `CurrentAccount`, and `httpclient` reads it.

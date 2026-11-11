@@ -14,11 +14,12 @@ import (
 
 // signInRecorder is a ports.SignInService that records the identities it
 // signs in and the tokens it signs out, and answers the same token for every
-// sign-in.
+// sign-in. With signOutErr set, signing out fails with it.
 type signInRecorder struct {
 	token      string
 	identities []domain.Identity
 	signedOut  []string
+	signOutErr error
 }
 
 func (s *signInRecorder) SignIn(_ context.Context, identity domain.Identity) (string, error) {
@@ -32,7 +33,7 @@ func (s *signInRecorder) CurrentAccount(context.Context, string) (domain.Account
 
 func (s *signInRecorder) SignOut(_ context.Context, token string) error {
 	s.signedOut = append(s.signedOut, token)
-	return nil
+	return s.signOutErr
 }
 
 // sessionCookieOf returns the response's session cookie, failing the test
