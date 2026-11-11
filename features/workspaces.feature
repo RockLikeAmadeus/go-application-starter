@@ -4,7 +4,7 @@ Feature: Keep each workspace's data separate
   I want my workspace's data kept apart from everyone else's
   So that nobody else can see or change it
 
-  # These scenarios run only on the memory and jsonfile drivers (see
+  # These scenarios run only on the memory, jsonfile, sqlite, and postgres drivers (see
   # test/acceptance). Until sign-in exists, nothing over HTTP can pick a
   # workspace, and the desktop and mobile apps are the local edition, with one
   # workspace. The local edition's single workspace is covered by every other

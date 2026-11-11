@@ -6,8 +6,8 @@ Feature: Features that plans turn on or off
 
   # Item export is the sample feature: it proves the gating that every
   # feature uses. These scenarios choose each workspace's plan, so they run
-  # only on the drivers whose plans the tests set: memory, jsonfile, sqlite
-  # and http (see test/acceptance). The desktop and mobile apps are on the
+  # only on the drivers whose plans the tests set: memory, jsonfile, sqlite,
+  # postgres, and http (see test/acceptance). The desktop and mobile apps are on the
   # local plan (desktop.feature, mobile.feature).
 
   Scenario: A plan with the feature lets the workspace use it
