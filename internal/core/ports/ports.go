@@ -100,6 +100,33 @@ type WorkspaceResolver interface {
 	CurrentWorkspace(ctx context.Context) (domain.WorkspaceID, error)
 }
 
+// SignInService is the driving port for signing in. A sign-in adapter works
+// out who someone is, however they prove it, and hands the core their
+// identity.
+type SignInService interface {
+	// SignIn returns a new session's token for the identity's account.
+	SignIn(ctx context.Context, identity domain.Identity) (string, error)
+}
+
+// AccountRepository is the driven port for storing accounts. Accounts aren't
+// workspace-scoped: an account is what picks the workspace.
+type AccountRepository interface {
+	// Save inserts or replaces the account with the same ID.
+	Save(ctx context.Context, account domain.Account) error
+}
+
+// SessionRepository is the driven port for storing sessions, which are kept
+// by their token's hash only.
+type SessionRepository interface {
+	// Save inserts or replaces the session with the same token hash.
+	Save(ctx context.Context, session domain.Session) error
+}
+
+// TokenGenerator makes session tokens that can't be guessed.
+type TokenGenerator interface {
+	NewToken() string
+}
+
 // Clock abstracts time so use cases are deterministic under test.
 type Clock interface {
 	Now() time.Time

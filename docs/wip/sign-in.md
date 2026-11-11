@@ -43,7 +43,10 @@ The core:
   - Red: `TestSession_IsExpiredAtOrAfterItsExpiry` (before, at, and after) failed: `IsExpiredAt` = false at and after `ExpiresAt`, want true.
   - Green: `domain.Session` (only `ExpiresAt` for now; task 3 adds the rest) and `IsExpiredAt(now)` = `!now.Before(ExpiresAt)`.
   - Refactor: nothing worth changing. The method is one comparison; the session's other fields wait for task 3, which needs them.
-- [ ] 3. `ports.SignInService`, `AccountRepository`, `SessionRepository`, and `TokenGenerator`, with `testsupport` fakes where needed. `app.SignInService.SignIn` with a new identity creates an account and a personal workspace, and returns a token whose session (stored by hash only) expires 30 days later.
+- [x] 3. `ports.SignInService`, `AccountRepository`, `SessionRepository`, and `TokenGenerator`, with `testsupport` fakes where needed. `app.SignInService.SignIn` with a new identity creates an account and a personal workspace, and returns a token whose session (stored by hash only) expires 30 days later.
+  - Red: `TestSignIn_WithANewIdentityCreatesAnAccountWorkspaceAndThirtyDaySession` failed: empty token, no account, and no session stored.
+  - Green: `SignIn` saves an account (ID, then workspace ID, from `IDGenerator`) and a session keyed by the token's hex SHA-256, expiring 30 days from now. Ports hold only the methods a test uses so far.
+  - Refactor: the lifetime and hashing moved into `domain` (`SessionLifetime`, `NewSession`, `HashSessionToken`); save errors are wrapped. The test keeps its own SHA-256 so it pins the hash independently.
 - [ ] 4. `SignIn` with a known identity reuses its account and workspace, even when the name has changed.
 - [ ] 5. `CurrentAccount(ctx, token)` returns the session's account, and `ErrNoWorkspace` for an unknown or expired token (deleting an expired session).
 - [ ] 6. `SignOut(ctx, token)` deletes the session, so `CurrentAccount` then fails. Signing out of an unknown session isn't an error.

@@ -93,3 +93,26 @@ type KnownPlans []string
 func (p KnownPlans) HasPlan(_ context.Context, plan string) (bool, error) {
 	return slices.Contains(p, plan), nil
 }
+
+// StoredAccounts is a ports.AccountRepository that holds accounts in a map by
+// ID.
+type StoredAccounts map[string]domain.Account
+
+func (a StoredAccounts) Save(_ context.Context, account domain.Account) error {
+	a[account.ID] = account
+	return nil
+}
+
+// StoredSessions is a ports.SessionRepository that holds sessions in a map by
+// token hash.
+type StoredSessions map[string]domain.Session
+
+func (s StoredSessions) Save(_ context.Context, session domain.Session) error {
+	s[session.TokenHash] = session
+	return nil
+}
+
+// FixedToken is a ports.TokenGenerator that always makes the same token.
+type FixedToken string
+
+func (t FixedToken) NewToken() string { return string(t) }
