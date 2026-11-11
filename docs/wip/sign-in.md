@@ -64,7 +64,11 @@ The core:
   - Red: `TestCurrentAccount_WithAnExpiredTokenHasNoWorkspaceAndDeletesTheSession` (clock at `ExpiresAt`) failed: nil error, want `ErrNoWorkspace`.
   - Green: `CurrentAccount` deletes an expired session (new `SessionRepository.Delete`, in the fake too) and returns `ErrNoWorkspace`; the delete's error is ignored.
   - Refactor: comments only: why the delete's error is ignored, and expiry in the `CurrentAccount` and port doc comments.
-- [ ] 6. `SignOut(ctx, token)` deletes the session, so `CurrentAccount` then fails. Signing out of an unknown session isn't an error.
+- [x] 6. `SignOut(ctx, token)` deletes the session, so `CurrentAccount` then fails.
+  - Red: `TestSignOut_DeletesTheSessionSoItsTokenIsSignedOut` failed: the session was still stored, and `CurrentAccount` returned no error, want `ErrNoWorkspace`.
+  - Green: `SignOut` (new on `ports.SignInService`) deletes the session by the token's hash.
+  - Refactor: the delete's error is wrapped, as the other calls' are. The repeated Ada setup in three tests is left, as each test reads on its own.
+- [ ] 6b. Signing out of an unknown session isn't an error.
 
 Storage:
 - [ ] 7. `memory.NewAccountRepository` passes a new `storagetest` account contract (find by issuer and subject, not by name; a missing one is `ErrNotFound`).
@@ -102,3 +106,4 @@ The web app:
 ## Changes to the plan
 
 - 2026-11-10, task 5: split into 5 (a valid token's account), 5b (an unknown token), and 5c (an expired token, deleted), as each needs its own test.
+- 2026-11-10, task 6: split into 6 (signing out deletes the session) and 6b (signing out of an unknown session isn't an error), as each needs its own test.

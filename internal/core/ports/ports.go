@@ -109,6 +109,8 @@ type SignInService interface {
 	// CurrentAccount returns the account whose session the token is, or
 	// domain.ErrNoWorkspace when the session is missing or expired.
 	CurrentAccount(ctx context.Context, token string) (domain.Account, error)
+	// SignOut ends the token's session.
+	SignOut(ctx context.Context, token string) error
 }
 
 // AccountRepository is the driven port for storing accounts. Accounts aren't

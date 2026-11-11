@@ -62,6 +62,14 @@ func (s *SignInService) CurrentAccount(ctx context.Context, token string) (domai
 	return account, nil
 }
 
+// SignOut ends the token's session.
+func (s *SignInService) SignOut(ctx context.Context, token string) error {
+	if err := s.sessions.Delete(ctx, domain.HashSessionToken(token)); err != nil {
+		return fmt.Errorf("delete session: %w", err)
+	}
+	return nil
+}
+
 // accountFor returns the identity's account, creating it and its personal
 // workspace the first time the identity signs in. The name isn't used to find
 // it, so a changed name still finds the same account.

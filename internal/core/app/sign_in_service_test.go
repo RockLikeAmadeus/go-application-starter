@@ -146,3 +146,23 @@ func TestCurrentAccount_WithAnExpiredTokenHasNoWorkspaceAndDeletesTheSession(t *
 		t.Errorf("sessions = %v, want the expired one deleted", sessions)
 	}
 }
+
+func TestSignOut_DeletesTheSessionSoItsTokenIsSignedOut(t *testing.T) {
+	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
+	ada := domain.Account{ID: "account-1", Identity: domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}, WorkspaceID: "workspace-1"}
+	session := domain.NewSession("token-ada", ada.ID, now)
+	sessions := testsupport.StoredSessions{session.TokenHash: session}
+	svc := app.NewSignInService(testsupport.StoredAccounts{ada.ID: ada}, sessions, testsupport.FixedToken("unused"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(now.Add(time.Hour)))
+
+	if err := svc.SignOut(context.Background(), "token-ada"); err != nil {
+		t.Fatalf("SignOut: %v", err)
+	}
+
+	if len(sessions) != 0 {
+		t.Errorf("sessions = %v, want the session deleted", sessions)
+	}
+	if _, err := svc.CurrentAccount(context.Background(), "token-ada"); !errors.Is(err, domain.ErrNoWorkspace) {
+		t.Errorf("CurrentAccount after SignOut: err = %v, want %v", err, domain.ErrNoWorkspace)
+	}
+}
