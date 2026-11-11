@@ -106,7 +106,8 @@ type WorkspaceResolver interface {
 type SignInService interface {
 	// SignIn returns a new session's token for the identity's account.
 	SignIn(ctx context.Context, identity domain.Identity) (string, error)
-	// CurrentAccount returns the account whose session the token is.
+	// CurrentAccount returns the account whose session the token is, or
+	// domain.ErrNoWorkspace when the session is missing or expired.
 	CurrentAccount(ctx context.Context, token string) (domain.Account, error)
 }
 
@@ -130,6 +131,8 @@ type SessionRepository interface {
 	FindByHash(ctx context.Context, tokenHash string) (domain.Session, error)
 	// Save inserts or replaces the session with the same token hash.
 	Save(ctx context.Context, session domain.Session) error
+	// Delete removes the session kept by the token hash.
+	Delete(ctx context.Context, tokenHash string) error
 }
 
 // TokenGenerator makes session tokens that can't be guessed.

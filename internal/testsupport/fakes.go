@@ -137,6 +137,11 @@ func (s StoredSessions) Save(_ context.Context, session domain.Session) error {
 	return nil
 }
 
+func (s StoredSessions) Delete(_ context.Context, tokenHash string) error {
+	delete(s, tokenHash)
+	return nil
+}
+
 // FixedToken is a ports.TokenGenerator that always makes the same token.
 type FixedToken string
 

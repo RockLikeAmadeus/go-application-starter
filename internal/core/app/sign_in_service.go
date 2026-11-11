@@ -39,7 +39,8 @@ func (s *SignInService) SignIn(ctx context.Context, identity domain.Identity) (s
 }
 
 // CurrentAccount returns the account whose session the token is. A token with
-// no session is signed out, which is domain.ErrNoWorkspace.
+// no session, or an expired one, is signed out, which is domain.ErrNoWorkspace.
+// An expired session is deleted when found.
 func (s *SignInService) CurrentAccount(ctx context.Context, token string) (domain.Account, error) {
 	session, err := s.sessions.FindByHash(ctx, domain.HashSessionToken(token))
 	if errors.Is(err, domain.ErrNotFound) {
@@ -47,6 +48,12 @@ func (s *SignInService) CurrentAccount(ctx context.Context, token string) (domai
 	}
 	if err != nil {
 		return domain.Account{}, fmt.Errorf("find session: %w", err)
+	}
+	if session.IsExpiredAt(s.clock.Now()) {
+		// A failed delete only leaves an expired session behind, which is
+		// still refused next time, so it doesn't change the answer.
+		_ = s.sessions.Delete(ctx, session.TokenHash)
+		return domain.Account{}, domain.ErrNoWorkspace
 	}
 	account, err := s.accounts.Find(ctx, session.AccountID)
 	if err != nil {

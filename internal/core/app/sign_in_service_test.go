@@ -128,3 +128,21 @@ func TestCurrentAccount_WithAnUnknownTokenHasNoWorkspace(t *testing.T) {
 		t.Fatalf("err = %v, want %v", err, domain.ErrNoWorkspace)
 	}
 }
+
+func TestCurrentAccount_WithAnExpiredTokenHasNoWorkspaceAndDeletesTheSession(t *testing.T) {
+	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
+	ada := domain.Account{ID: "account-1", Identity: domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}, WorkspaceID: "workspace-1"}
+	session := domain.NewSession("token-ada", ada.ID, now)
+	sessions := testsupport.StoredSessions{session.TokenHash: session}
+	svc := app.NewSignInService(testsupport.StoredAccounts{ada.ID: ada}, sessions, testsupport.FixedToken("unused"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(session.ExpiresAt))
+
+	_, err := svc.CurrentAccount(context.Background(), "token-ada")
+
+	if !errors.Is(err, domain.ErrNoWorkspace) {
+		t.Fatalf("err = %v, want %v", err, domain.ErrNoWorkspace)
+	}
+	if len(sessions) != 0 {
+		t.Errorf("sessions = %v, want the expired one deleted", sessions)
+	}
+}

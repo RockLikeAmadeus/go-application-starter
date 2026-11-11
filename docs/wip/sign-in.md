@@ -60,7 +60,10 @@ The core:
   - Red: `TestCurrentAccount_WithAnUnknownTokenHasNoWorkspace` failed: got the wrapped `ErrNotFound` ("find session: …"), want `ErrNoWorkspace`.
   - Green: `CurrentAccount` returns `ErrNoWorkspace` when `FindByHash` gives `ErrNotFound`; other errors are still wrapped.
   - Refactor: the doc comment says an unknown token is `ErrNoWorkspace`. Nothing else worth changing.
-- [ ] 5c. `CurrentAccount` returns `ErrNoWorkspace` for an expired token, and deletes its session.
+- [x] 5c. `CurrentAccount` returns `ErrNoWorkspace` for an expired token, and deletes its session.
+  - Red: `TestCurrentAccount_WithAnExpiredTokenHasNoWorkspaceAndDeletesTheSession` (clock at `ExpiresAt`) failed: nil error, want `ErrNoWorkspace`.
+  - Green: `CurrentAccount` deletes an expired session (new `SessionRepository.Delete`, in the fake too) and returns `ErrNoWorkspace`; the delete's error is ignored.
+  - Refactor: comments only: why the delete's error is ignored, and expiry in the `CurrentAccount` and port doc comments.
 - [ ] 6. `SignOut(ctx, token)` deletes the session, so `CurrentAccount` then fails. Signing out of an unknown session isn't an error.
 
 Storage:
