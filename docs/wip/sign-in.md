@@ -227,7 +227,10 @@ The server:
   - Red: `TestTheSessionEndpointSaysSignInIsOffWithNoSignInService` failed, `{IsSignInOn:true Name:<nil>}`.
   - Green: `Handlers` keeps `isSignInOn` (`opts.SignIn != nil`), and `GetSession` answers it.
   - Refactor: `GetSession` builds one answer and adds the name when signed in, instead of two returns.
-- [ ] 16d. `httpclient` reads the session endpoint.
+- [x] 16d. `httpclient` reads the session endpoint.
+  - Red: `TestCurrentSession_NamesTheSignedInAccount` failed, `{IsSignInOn:false Name:}`, want sign-in on and Ada. To compile: `httpclient.Session`, `SessionService`, and an empty `CurrentSession`.
+  - Green: `CurrentSession` calls `GetSessionWithResponse` and reads its answer, mapping a problem with `toError`, as `CurrentEntitlements` does.
+  - Refactor: the package comment and `SessionService`'s say it isn't a driving port and why; the test's sign-in setup stays inline, as no other test shares it yet.
 
 Settings and wiring:
 - [ ] 17. The `sign_in` setting (`STARTER_SIGN_IN`): `off` by default, or `dev`; any other value is refused. `starter info` shows it.
