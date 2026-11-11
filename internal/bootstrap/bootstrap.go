@@ -144,6 +144,8 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		}
 		a.close = store.Close
 		a.ready = store.Ready
+		accountRepo = sqlstore.NewAccountRepository(store.DB())
+		sessionRepo = sqlstore.NewSessionRepository(store.DB())
 		// sample:start
 		itemRepo = sqlstore.NewItemRepository(store.DB())
 		// sample:end

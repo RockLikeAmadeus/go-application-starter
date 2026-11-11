@@ -11,6 +11,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -60,6 +61,12 @@ func TestNewEmbedded_WithSignInOnSignsInAndFindsTheSessionsAccount(t *testing.T)
 // open the same data folder.
 func TestNewEmbedded_OnSQLiteASessionOutlivesTheAppThatMadeIt(t *testing.T) {
 	assertSessionOutlivesTheAppThatMadeIt(t, config.Config{Storage: config.StorageSQLite, DataDir: t.TempDir(), SignIn: config.SignInDev})
+}
+
+// A session made on Postgres still signs its account in for the next program
+// to open the same database.
+func TestNewEmbedded_OnPostgresASessionOutlivesTheAppThatMadeIt(t *testing.T) {
+	assertSessionOutlivesTheAppThatMadeIt(t, config.Config{Storage: config.StoragePostgres, DatabaseURL: postgrestest.NewDatabase(t), SignIn: config.SignInDev})
 }
 
 func assertSessionOutlivesTheAppThatMadeIt(t *testing.T, cfg config.Config) {

@@ -277,7 +277,10 @@ Settings and wiring:
   - Red: `TestNewEmbedded_OnSQLiteASessionOutlivesTheAppThatMadeIt` (`hosted_edition_test.go`, `devsignin`) failed, a nil-pointer panic in `SignIn`: SQLite wires no account repository.
   - Green: on SQLite, `NewEmbedded` builds the account and session repositories with `sqlstore.NewAccountRepository` and `NewSessionRepository` on `store.DB()`.
   - Refactor: nothing worth changing; Postgres gets the same two lines in 20e2, and only then do they repeat.
-- [ ] 20e2. On Postgres, a session outlives the App that made it.
+- [x] 20e2. On Postgres, a session outlives the App that made it.
+  - Red: `TestNewEmbedded_OnPostgresASessionOutlivesTheAppThatMadeIt` (`hosted_edition_test.go`, `devsignin`) failed, a nil-pointer panic in `SignIn`: Postgres wires no account repository.
+  - Green: on Postgres, `NewEmbedded` builds the account and session repositories with `sqlstore.NewAccountRepository` and `NewSessionRepository` on `store.DB()`.
+  - Refactor: nothing worth changing; the two lines now repeat for SQLite and Postgres, as the item repository's does, and a helper would only hide which repositories each wires.
 - [ ] 20f. The server passes the App's `SignIn` to its handler, so a session cookie signs a request in.
 - [ ] 20g. With sign-in on, a workspace's entitlements are its stored plan, else the plans file's `newWorkspacePlan`, with hints on.
 - [ ] 20h. With sign-in on, `bootstrap.NewBilling` returns the real service on the configured storage, so a changed plan shows in the App's entitlements.
