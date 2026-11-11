@@ -24,7 +24,7 @@ jobs:
     permissions:
       contents: write # create the GitHub Release
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-go@v5
@@ -43,7 +43,7 @@ jobs:
     # named after this release's GTK 4 and WebKitGTK 6.0 packages.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # the tags, which give the packages their version
       - uses: actions/setup-go@v5
@@ -93,7 +93,7 @@ jobs:
     # its makensis.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # the tags, which give the setup program its version
       - uses: actions/setup-go@v5
