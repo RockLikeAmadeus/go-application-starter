@@ -273,7 +273,11 @@ Settings and wiring:
   - Red: `TestNewEmbedded_WithSignInOnSignsInAndFindsTheSessionsAccount` (`hosted_edition_test.go`, `devsignin`) failed, `SignIn = nil, want the sign-in service`.
   - Green: with sign-in on, `NewEmbedded` builds `App.SignIn` on memory's account and session repositories, `system.Tokens{}`, `system.UUIDs{}`, and `system.Clock{}`.
   - Refactor: a doc comment on `App.SignIn` (nil with sign-in off). Left: SQLite and Postgres have no account or session repositories until 20e.
-- [ ] 20e. On SQLite and Postgres, a session outlives the App that made it (the `sqlstore` repositories).
+- [x] 20e. On SQLite, a session outlives the App that made it (the `sqlstore` repositories).
+  - Red: `TestNewEmbedded_OnSQLiteASessionOutlivesTheAppThatMadeIt` (`hosted_edition_test.go`, `devsignin`) failed, a nil-pointer panic in `SignIn`: SQLite wires no account repository.
+  - Green: on SQLite, `NewEmbedded` builds the account and session repositories with `sqlstore.NewAccountRepository` and `NewSessionRepository` on `store.DB()`.
+  - Refactor: nothing worth changing; Postgres gets the same two lines in 20e2, and only then do they repeat.
+- [ ] 20e2. On Postgres, a session outlives the App that made it.
 - [ ] 20f. The server passes the App's `SignIn` to its handler, so a session cookie signs a request in.
 - [ ] 20g. With sign-in on, a workspace's entitlements are its stored plan, else the plans file's `newWorkspacePlan`, with hints on.
 - [ ] 20h. With sign-in on, `bootstrap.NewBilling` returns the real service on the configured storage, so a changed plan shows in the App's entitlements.
@@ -310,3 +314,4 @@ The web app:
 - 2026-11-11, task 19: split into 19 (refused without the `devsignin` tag, with the agreed message) and 19b (accepted and wired with it), as each needs its own test. The tag goes in `.air.toml` (`task dev`) and `task run:server`, `run:cli`, and `run:tui` (agreed with the user), as `bootstrap.NewEmbedded`, which the CLI and TUI share, does the check.
 - 2026-11-11, task 19b: added 19c (the server passes the App's `IsDevSignInOn` to its handler), as `cmd/server` needs its own test. The App's `SignIn` service comes in task 20, with the repositories it needs.
 - 2026-11-11, task 20: split into 20 (entitlements from the context), 20b (items from the context, sample), 20c (the `crypto/rand` token generator, which task 3 named but no task built), 20d (`App.SignIn` on memory), 20e (on SQLite and Postgres), 20f (the server passes it to its handler), 20g (stored plans), and 20h (the real `NewBilling`), as each needs its own test. Their tests need sign-in on, which only a `devsignin` build accepts, so they carry that tag.
+- 2026-11-11, task 20e: split into 20e (SQLite) and 20e2 (Postgres), as each needs its own test, as for tasks 9 and 10. 20e2 is numbered so, as 20f is taken.

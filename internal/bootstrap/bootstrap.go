@@ -129,6 +129,8 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		if warning, ok := syncedFolderWarning(cfg); ok {
 			a.Warnings = append(a.Warnings, warning)
 		}
+		accountRepo = sqlstore.NewAccountRepository(store.DB())
+		sessionRepo = sqlstore.NewSessionRepository(store.DB())
 		// sample:start
 		itemRepo = sqlstore.NewItemRepository(store.DB())
 		// sample:end
