@@ -5,7 +5,7 @@ Feature: Plans and limits
   So that paid plans can offer more than free ones
 
   # These scenarios choose each workspace's plan, so they run only on the
-  # drivers whose plans the tests set: memory, jsonfile, and http (see
+  # drivers whose plans the tests set: memory, jsonfile, sqlite, postgres, and http (see
   # test/acceptance). The desktop and mobile apps are on the local plan
   # (desktop.feature, mobile.feature).
 
