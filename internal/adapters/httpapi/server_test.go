@@ -300,6 +300,31 @@ func TestAFeatureErrorIsAForbiddenProblemNamingTheFeature(t *testing.T) {
 	}
 }
 
+// A request with no workspace is signed out, so it is unauthorized, and its
+// problem document asks the user, in the agreed wording, to sign in.
+func TestNoWorkspaceIsAnUnauthorizedProblemAskingToSignIn(t *testing.T) {
+	rec := httptest.NewRecorder()
+	httpapi.NewHandler(httpapi.Options{Entitlements: failingEntitlements{domain.ErrNoWorkspace}}).
+		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil))
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
+	}
+	if got, want := rec.Header().Get("Content-Type"), "application/problem+json"; got != want {
+		t.Errorf("Content-Type = %q, want %q", got, want)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode %q: %v", rec.Body.String(), err)
+	}
+	want := map[string]any{
+		"type": "no_workspace", "title": "Unauthorized", "status": 401.0, "detail": "Please sign in to continue.",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("body = %v, want %v", got, want)
+	}
+}
+
 // Warnings come from the composition root (bootstrap.App.Warnings) and are
 // served as given, for every front end to show. With none, the list is empty
 // rather than missing, so the web app can always read it.

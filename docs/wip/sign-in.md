@@ -166,7 +166,11 @@ The server:
   - Red: none. `TestAnUnknownSessionCookieLeavesNoWorkspaceInTheRequest` passed straight away, as task 12's middleware sets a workspace only when `CurrentAccount` answers; kept as a guard (a middleware that sets one despite the error fails it with workspace "leak").
   - Green: skipped, as no production code was demanded.
   - Refactor: nothing worth changing; the test reuses `requestWorkspace`, and folding the two signed-out tests into one table would hide which case failed for little gain.
-- [ ] 13. `problem.go` maps `ErrNoWorkspace` to a 401 problem, and `httpclient` maps it back.
+- [x] 13. `problem.go` maps `ErrNoWorkspace` to a 401 problem (type `no_workspace`, detail `err.Error()`). Its message is now the agreed "Please sign in to continue."
+  - Red: `TestNoWorkspaceIsAnUnauthorizedProblemAskingToSignIn` failed with status 500, want 401.
+  - Green: `problemFor` maps `ErrNoWorkspace` to 401 `no_workspace` (`ProblemNoWorkspace`) with `err.Error()`, and `ErrNoWorkspace`'s message is "Please sign in to continue."
+  - Refactor: nothing worth changing; the new case follows `ErrNotFound`'s, and the test follows the limit test's shape. `workspaces-and-plans.md` still says it isn't mapped: task 26 updates it, after 13b.
+- [ ] 13b. `httpclient` maps the `no_workspace` problem back to `ErrNoWorkspace`.
 - [ ] 14. The dev sign-in routes: `GET /auth/sign-in` and `GET /auth/dev` show the form, `POST /auth/dev` signs in as the given name (issuer `dev`) and sets the cookie, and `POST /auth/sign-out` ends the session and clears it. Add them to `navigateFallbackDenylist`.
 - [ ] 15. With a session cookie, a request that changes something from another site is refused (403).
 - [ ] 16. `GET /api/v1/session` in `api/openapi.yaml` (`task gen`), served from `CurrentAccount`, and `httpclient` reads it.
@@ -199,3 +203,4 @@ The web app:
 - 2026-11-10, task 11: split into 11 (`Parse` reads `newWorkspacePlan`), 11b (a missing field is refused), 11c (an unknown plan is refused), and 11d (the built-in file starts on `free`), as each needs its own test.
 - 2026-11-10, task 12: split into 12 (a valid session cookie puts its workspace in the context) and 12b (no cookie, or an unknown one, leaves none), as each needs its own test.
 - 2026-11-10, task 12b: split into 12b (no cookie leaves no workspace) and 12c (an unknown cookie leaves none), as each needs its own test.
+- 2026-11-11, task 13: split into 13 (the server's 401 problem) and 13b (`httpclient` maps it back), as each needs its own test. The user agreed `ErrNoWorkspace`'s message, "Please sign in to continue.", which is also the problem's detail.
