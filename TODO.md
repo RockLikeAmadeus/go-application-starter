@@ -59,6 +59,7 @@ Work through them one at a time (each usually starts with `/feature`), tick them
 - [ ] **Dockerized Mocking Infrastructure** such as a docker-compose stack to spin up auxiliary local services like mock authentication, testing databases, or local S3 object buckets seamlessly.
 - [ ] **Load testing infrastructure** 
 - [ ] **SQL injection and other security checks**
+- [ ] **Create a Claude command to review open Dependabot PRs and branches on provide guidance on which to merge, or if any should be deleted.
 
 ## API and data conventions
 - [ ] **Pagination, sorting, and filtering on list endpoints**, cursor-based. `GET /items` currently returns everything.
@@ -117,3 +118,4 @@ Work through them one at a time (each usually starts with `/feature`), tick them
 - [ ] Add release notes and update ./.claude/ commands to write them automatically
 - [ ] Template-wide sweep to ensure developers using this template will be able to add domain-specific features while touching as few places as possible (Core, API, Docs, Storage adapters, CLI, TUI, and Web I think covers it but I could be missing some). Also make sure `/feature` commands prompt for decisions about the web, TUI, and CLI interfaces, since these cannot all be identical. The intention is that shared code is maximized with reason so that new feature development requires as little work as is feasible.
 - [ ] Project cleanup: go through the project and look for potential opportunities to pair down unnecessary files and leave a clean-as-possible slate for users of the template.
+  - [ ] Merge existing SQL migrations into a single one - backwards compatibility is not a consideration for this task.
