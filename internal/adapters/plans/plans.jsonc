@@ -31,7 +31,8 @@
 				// sample:end
 			]
 		},
-		// Examples of hosted plans, until sign-in puts workspaces on them.
+		// Examples of the hosted edition's plans. A new account's workspace starts
+		// on newWorkspacePlan, and an admin can move it to another.
 		"free": {
 			"limits": {
 				// sample:start

@@ -5,7 +5,6 @@ Feature: Sign in in the browser
   # /features/sign-in.feature and run with Godog. These scenarios run in
   # their own Playwright project, against a server with sign-in on.
 
-  @wip
   Scenario: Sign in, use the app, and sign out
     Given I am signed out
     When I sign in as "Browser Ada"

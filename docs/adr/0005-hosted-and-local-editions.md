@@ -1,6 +1,6 @@
 # 5. Hosted and local editions share one core
 
-- Status: accepted. Workspaces (step 1), plan limits (step 2), plan features (step 3), plan changes (step 4), plain text in a synced folder (step 5), SQLite (step 6), and Postgres (step 7, ADR 8) are built; the rest is planned. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
+- Status: accepted. Workspaces (step 1), plan limits (step 2), plan features (step 3), plan changes (step 4), plain text in a synced folder (step 5), SQLite (step 6), Postgres (step 7, ADR 8), and sign-in with the dev sign-in (step 8a, ADR 9) are built; the rest is planned. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
 - Date: 2026-10-31
 
 ## Context
@@ -22,7 +22,7 @@ A product built from this template may be sold as a hosted service: many users, 
 - Every record has a `WorkspaceID`. In the hosted edition, each user gets a personal workspace, so teams can be added later as workspace members and roles, with no data migration. The local edition has exactly one implicit workspace.
 - **Use cases ask a driven port for the current workspace:** `ports.WorkspaceResolver`. They pass the answer **explicitly** to repositories.
   - The local edition's resolver, `workspace.Local`, always answers the local workspace, so no local front end has to set anything.
-  - The hosted edition's resolver, `workspace.FromContext`, reads what the auth middleware put in the request's `context` (`workspace.WithID`).
+  - The hosted edition's resolver, `workspace.FromContext`, reads what the session middleware put in the request's `context` (`workspace.WithID`). A request with no valid session has no workspace (ADR 9).
   - A missing or empty workspace is refused with `domain.ErrNoWorkspace` before storage is touched.
   - This refines the first plan, where use cases read the context directly. With a resolver port, local front ends need no changes, and a forgotten context value fails closed instead of leaking.
 - The `storagetest` contract suite checks isolation: one workspace never sees another's records. Every storage backend must pass it.
@@ -43,11 +43,13 @@ A product built from this template may be sold as a hosted service: many users, 
 - Each workspace's plan is stored by the storage adapters, through `ports.WorkspacePlanRepository`.
 - **The local edition never reads a stored plan.** Its plan stays fixed at the one named at build time, so a local user can't upgrade their own copy, and `starter admin set-plan` refuses there.
 - A plan change checks no limits: moving to a smaller plan keeps the data, which the over-limit rules then govern.
-- Built in step 4: all of the above, in every storage adapter. Until sign-in adds the hosted edition, every copy is the local edition, so `bootstrap.NewBilling` refuses and only the tests change plans.
+- Built in step 4: all of the above, in every storage adapter.
+- Built in step 8a: with sign-in on, the copy is the hosted edition. `bootstrap.NewBilling` then returns the real billing service on the configured storage, and each workspace's plan is its stored plan. A workspace with no stored plan is on the plans file's `newWorkspacePlan`. With sign-in off, `bootstrap.NewBilling` keeps refusing.
 
 ### Authentication
 
 - Hosted edition only: an OIDC adapter behind a port, plus a dev-only fake login. We store no passwords.
+- Built in step 8a: the port (`ports.SignInService`), accounts, sessions in a cookie and in storage, and the dev sign-in, in dev builds only. ADR 9 records how. The OIDC adapter is step 8b.
 - The CLI and TUI are local by default, and can log in to a hosted server.
 
 ### Synced data folders: one device at a time

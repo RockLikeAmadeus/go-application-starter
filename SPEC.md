@@ -10,8 +10,8 @@ _One paragraph: who the users are, what problem this solves, and what success lo
 
 | Persona | Front-end | Editions (§3) | Notes |
 |---|---|---|---|
-| _e.g. End user_ | Web (React SPA) | Hosted, with sign-in (planned). Or local: a self-hosted server for one user, with no sign-in (works today) | Installable (§4.5) |
-| _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in the desktop app's data folder (§4.11). Hosted, after `starter login --server …` (planned) | Today `--server` reaches only a server without sign-in |
+| _e.g. End user_ | Web (React SPA) | Hosted, with sign-in (§4.18, through the dev sign-in until a real sign-in provider arrives). Or local: a self-hosted server for one user, with no sign-in | Installable (§4.5) |
+| _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in the desktop app's data folder (§4.11). Hosted, after `starter login --server …` (planned) | Today `--server` reaches only a server without sign-in, as the command line can't sign in yet |
 | _e.g. Integrations_ | REST API (`api/openapi.yaml`) | Whichever edition the server runs | |
 | _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | Local, with its data on the computer (§4.6). Hosted, in remote mode (planned) | The web app in its own window |
 | _e.g. Single user on an Android phone_ | Mobile app (Android) | Local, with its data on the phone (§4.7). Hosted, in remote mode (planned) | The web app as a phone app |
@@ -32,7 +32,7 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Settings file** | An optional file of the app's settings (such as the data folder) on the user's computer, shared by the desktop app and the command line. |
 | **Data folder** | The folder where the local edition keeps its data: on the user's computer, shared by the desktop app and the command line, or in the app's private storage on the phone. |
 | **Mobile app** | The web app packaged as an app for the user's phone (Android for now). In the local edition it keeps its own data on the phone and needs no server. Working on hosted data instead (remote mode) is planned. |
-| **Edition** | How a copy of the product runs. The **hosted edition** serves many users from a server, each signing in to an account (planned). The **local edition** is for one user, with no account: data on their own device, or on a server they host for themselves. Both run the same app, and each copy uses one edition only. |
+| **Edition** | How a copy of the product runs. The **hosted edition** serves many users from a server, each signing in to an account (§4.18). The **local edition** is for one user, with no account: data on their own device, or on a server they host for themselves. Both run the same app, and each copy uses one edition only. |
 | **Workspace** | The space a piece of data belongs to. In the hosted edition, each user has their own workspace. The local edition has exactly one. |
 | **Plan** | What a workspace is allowed to do: which features it has and what its limits are (for example, free or paid). |
 | **Feature** | A capability that a plan turns on or off. |
@@ -363,12 +363,12 @@ Data can be kept in a SQLite database instead of as plain text, so that several 
 An admin can move a workspace to another plan, for example when its owner starts or stops paying. This is the product's only billing step: anything that takes payments (a payment provider's notifications, or an admin by hand) does it by moving the workspace to the plan that was paid for (ADR 5). How to connect a payment provider is in [`docs/billing.md`](docs/billing.md). This is step 4 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
 
 **Rules**
-- Only an admin can change a workspace's plan, with `starter admin set-plan WORKSPACE PLAN`, run beside the hosted edition's data. Users can't change their own plan, and nothing in the web app or the API changes it. (An admin API waits for sign-in.)
+- Only an admin can change a workspace's plan, with `starter admin set-plan WORKSPACE PLAN`, run beside the hosted edition's data. Users can't change their own plan, and nothing in the web app or the API changes it. (An admin API waits for roles, which come with teams.)
 - The new plan must be one of the plans in the plans file. Any other plan is refused, and the workspace stays on its plan.
 - The change takes effect straight away: the workspace's features and limits are the new plan's (§4.9). Its data is kept, even when it's now over a limit.
 - Moving one workspace leaves every other workspace on its plan.
 - A workspace's plan is kept with its data, so it stays the same after the app restarts.
-- The local edition's plan can't be changed: it's set when the app is built (§4.9). `starter admin set-plan` refuses there, saying so. Until the hosted edition has sign-in, every copy is the local edition, so only the tests change plans for now.
+- The local edition's plan can't be changed: it's set when the app is built (§4.9). `starter admin set-plan` refuses there, saying so. With sign-in on (§4.18), the server is the hosted edition, and `starter admin set-plan` changes plans when it runs with the server's storage and sign-in settings.
 
 **Examples**
 - An admin moves workspace Alpha from the free plan to the pro plan → Alpha's plan is pro, and it can export its items.
@@ -457,7 +457,7 @@ In the hosted edition, each person signs in to their own **account**, and works 
 |---|---|
 | Availability | _e.g. best effort; single instance while on plain-text storage, several on one disk with SQLite, several on many machines with Postgres_ |
 | Data | _e.g. data survives restarts; backups via volume snapshots_ |
-| Security | _e.g. no sign-in yet; see "Out of scope". Planned: sign-in for the hosted edition. A self-hosted server for one user (local edition) keeps running without sign-in_ |
+| Security | _e.g. the hosted edition signs people in (§4.18) and keeps each session in an `HttpOnly` cookie that page scripts can't read. Requests that change something from another site are refused. A self-hosted server for one user (local edition) keeps running without sign-in. A real sign-in provider (OIDC) is planned_ |
 | Accessibility | Web UI is keyboard navigable, and controls have accessible names (also used by tests) |
 | TUI navigation | Every list or selectable view supports Vim keys alongside the arrow keys: `j` down, `k` up |
 

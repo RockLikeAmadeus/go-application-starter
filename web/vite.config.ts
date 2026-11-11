@@ -59,6 +59,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": process.env.API_URL ?? "http://localhost:8080",
+      // Sign-in's routes (docs/sign-in.md) are the Go server's too.
+      "/auth": process.env.API_URL ?? "http://localhost:8080",
     },
   },
   test: {

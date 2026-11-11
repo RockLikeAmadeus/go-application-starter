@@ -4,7 +4,7 @@ A template for multi-front-end applications: a **hexagonal Go core** driven by a
 
 The app comes in two editions, from the same core ([ADR 5](docs/adr/0005-hosted-and-local-editions.md)):
 - **Local** (works today): one user, no sign-in, data on their own device or on a server they host for themselves.
-- **Hosted** (planned, see [the plan](docs/plans/editions-and-accounts.md)): many users signing in to their own workspaces, with features and limits set by paid plans.
+- **Hosted** (in progress, see [the plan](docs/plans/editions-and-accounts.md)): many users signing in to their own workspaces, with features and limits set by paid plans. The server signs people in today with a dev-only stand-in, the dev sign-in, and a real sign-in provider (OIDC) is next. [docs/sign-in.md](docs/sign-in.md) explains sign-in.
 
 <!-- sample:start -->
 It ships as a working *walking skeleton*: one tiny `Item` domain wired end to end through every layer, tested at every level, and deployable from CI.
@@ -23,8 +23,8 @@ It ships as a working *walking skeleton*: one tiny `Item` domain wired end to en
                         memory    jsonfile    sqlite     postgres
 
  Local edition:  CLI / TUI embedded, desktop and Android apps, a self-hosted server
- Hosted edition: the web app on a hosted server with sign-in, plus the CLI / TUI and
-                 the desktop and Android apps connected to it (all planned)
+ Hosted edition: the web app on a hosted server with sign-in (the dev sign-in today),
+                 plus the CLI / TUI and the desktop and Android apps connected to it (planned)
 ```
 
 ## Prerequisites
@@ -55,6 +55,7 @@ task check     # codegen drift, lint, unit, acceptance, e2e: everything CI runs
 
 ```sh
 task dev                         # API on :8080 + Vite on :5173, opened in your browser; both reload on save
+                                 # (STARTER_SIGN_IN=dev STARTER_STORAGE=memory task dev signs people in: see docs/sign-in.md)
 task run:cli -- --help           # CLI, embedded core, data in the desktop app's folder (task run:cli -- info names it; add --server http://localhost:8080 to use a running server)
 task run:tui                     # terminal UI, on the same data as the CLI (also accepts --server)
 task run:desktop                 # desktop app in a native window, data in your settings folder (needs the desktop build deps)
@@ -153,6 +154,6 @@ Fly must be able to pull the image from GHCR. The simplest option is to make the
 
 - **Devcontainer** (`.devcontainer/`) so the toolchain is reproducible in Codespaces.
 - **OpenTelemetry** tracing and metrics around the driving ports.
-- **Auth** (OIDC) as HTTP middleware, plus a `Principal` passed through `context`.
+- **OIDC sign-in**, behind the sign-in seam that the dev sign-in uses today (step 8b of the editions plan).
 - **Conventional commits + release-please** for automatic changelogs and versions.
 - **Contract tests against the deployed API** by reusing the playwright-bdd suite with `E2E_BASE_URL=https://…`.

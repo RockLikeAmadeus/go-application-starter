@@ -25,4 +25,4 @@ SQLite and Postgres both speak SQL. Writing each entity's migrations and reposit
 - Several server machines can share one database, so a hosted deployment can scale out. It needs a Postgres database and `STARTER_DATABASE_URL` as a secret (Fly Postgres or any other).
 - A new entity needs one migration and one repository, in `sqlstore`, which runs its contract suite on SQLite and, with a test database, on Postgres. SQL that only one engine accepts fails one of the two runs.
 - Running every test locally needs Docker (`task db:up`). Without it, the Postgres tests skip and CI still runs them.
-- Until sign-in (step 8), a server on Postgres is a self-hosted local edition with one workspace, as on any other storage.
+- With sign-in off, a server on Postgres is a self-hosted local edition with one workspace, as on any other storage. With sign-in on (ADR 9), it keeps accounts and sessions in Postgres too, so every server copy on the database knows every session.

@@ -24,9 +24,9 @@ driving adapter ──► use case ──► WorkspaceResolver.CurrentWorkspace(
 | Resolver | Used by | Answers |
 |---|---|---|
 | `workspace.Local{}` | every local-edition front end, wired in `internal/bootstrap` | always `domain.LocalWorkspace` (`"local"`) |
-| `workspace.FromContext{}` | the hosted edition, once sign-in exists; the acceptance tests now | the ID that `workspace.WithID(ctx, id)` put in the context, or `ErrNoWorkspace` if it's missing or empty |
+| `workspace.FromContext{}` | the hosted edition (a server with the `sign_in` setting on), wired in `internal/bootstrap`; the acceptance tests | the ID that `workspace.WithID(ctx, id)` put in the context, or `ErrNoWorkspace` if it's missing or empty |
 
-In the hosted edition, sign-in middleware will call `workspace.WithID` with the signed-in user's workspace (`docs/plans/editions-and-accounts.md`, step 8). Front ends in the local edition don't set anything: `Local` answers for them.
+`internal/bootstrap` picks the resolver from the `sign_in` setting, in `workspacesFor`. With sign-in on, the server's session middleware reads the session cookie and calls `workspace.WithID` with the signed-in account's workspace. A request with no valid session gets no workspace, so the use cases refuse it with `ErrNoWorkspace`. [docs/sign-in.md](sign-in.md) explains sign-in. Front ends in the local edition don't set anything: `Local` answers for them.
 
 For tests, `internal/testsupport` has two fakes: `testsupport.FixedWorkspace("ws-a")` always resolves to its own value, and `testsupport.NoWorkspace{}` always returns `ErrNoWorkspace`.
 
@@ -120,14 +120,14 @@ It checks that a record keeps its workspace, that `FindAll` lists only the given
 
 ### 5. Wiring
 
-- `internal/bootstrap`, `NewEmbedded`: build the service with `workspace.Local{}`, beside `system.Clock{}` and `system.UUIDs{}`.
-- The acceptance harness (`test/acceptance/drivers.go`): the memory, jsonfile, sqlite, and postgres drivers build services with `workspace.FromContext{}` (sqlite and postgres share `harness.useSQLStore`), and the http driver with `workspace.Local{}`. A `Before` hook in `steps.go` already puts every scenario in the local workspace, so your feature's scenarios don't need to name one.
+- `internal/bootstrap`, `NewEmbedded`: build the service with `workspacesFor(cfg)`, beside `system.Clock{}` and `system.UUIDs{}`. It answers `workspace.Local{}` in the local edition and `workspace.FromContext{}` with sign-in on.
+- The acceptance harness (`test/acceptance/drivers.go`): the memory, jsonfile, sqlite, and postgres drivers build services with `workspace.FromContext{}` (sqlite and postgres share `harness.useSQLStore`), and the http driver with `workspace.Local{}`, or with `workspace.FromContext{}` when it runs as the hosted edition (`startHostedHTTP`). A `Before` hook in `steps.go` already puts every scenario in the local workspace, so your feature's scenarios don't need to name one.
 
 ### 6. Tests
 
 - **Use cases:** build the service with `testsupport.FixedWorkspace(…)` and check new records get that workspace. Add a fail-closed table test: with `testsupport.NoWorkspace{}` and a repository that counts its calls, every use case returns `ErrNoWorkspace` and the repository is never called. Item's `TestUseCases_WithoutAWorkspaceAreRefusedBeforeStorage` is the pattern.
 - **Storage:** the isolation suite above, plus a case for each extra query method.
-- **Acceptance (optional):** the entity's business scenarios run in the local workspace without saying so. If the entity has workspace rules of its own, add scenarios tagged `@workspaces`: they run only on the memory, jsonfile, sqlite, and postgres drivers, and their steps build a context with `workspace.WithID`.
+- **Acceptance (optional):** the entity's business scenarios run in the local workspace without saying so. If the entity has workspace rules of its own, add scenarios tagged `@workspaces`. They run only on the memory, jsonfile, sqlite, postgres, and http drivers. On memory, jsonfile, sqlite, and postgres, their steps build a context with `workspace.WithID`. On http, each workspace is a signed-in account's personal workspace, so the steps sign in as that account.
 
 ### Checklist
 
@@ -137,7 +137,7 @@ It checks that a record keeps its workspace, that `FindAll` lists only the given
 - [ ] Every storage adapter filters every read and checks the workspace on every delete and lookup.
 - [ ] Every adapter's contract tests call `storagetest.RunWorkspaceIsolation`, plus an isolation case for each extra query.
 - [ ] A fail-closed table test covers every use case.
-- [ ] `bootstrap` passes `workspace.Local{}`, and the acceptance harness passes the right resolver for each driver.
+- [ ] `bootstrap` passes `workspacesFor(cfg)`, and the acceptance harness passes the right resolver for each driver.
 
 ## When data isn't per workspace
 
@@ -151,4 +151,4 @@ Some data is one value per workspace rather than a list of records, such as whic
 - **A new query without the workspace.** Search, count, "find by name", exports: each one is a new way to leak. Give it the workspace and its own isolation test.
 - **Returning "forbidden" for another workspace's record.** That tells the caller the record exists. Return `ErrNotFound`.
 - **A cache or index shared across workspaces.** Key it by workspace.
-- **Over HTTP:** `ErrNoWorkspace` isn't mapped to an HTTP status yet, because nothing over HTTP can lack a workspace until sign-in exists. The sign-in step maps it (probably to 401).
+- **Over HTTP, a missing workspace is a 401.** `httpapi/problem.go` maps `ErrNoWorkspace` to a 401 `no_workspace` problem, which asks the person to sign in, and `httpclient` maps it back. So a new handler needs no sign-in check of its own: calling the use case is enough.

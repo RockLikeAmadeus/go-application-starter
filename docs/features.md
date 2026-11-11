@@ -13,7 +13,24 @@ plans.jsonc ──► plans adapter ──► Entitlements.Features ──► us
 1. **The plans file defines the feature.** You add it to the top-level `features` section with a key, a `name` that people read, and `whenOff`. Each plan lists the keys it turns on. A feature a plan doesn't list is off for that plan. The file fails to load if a plan lists an unknown key, a `name` is missing or blank, or `whenOff` isn't `show-locked` or `hide`.
 2. **The core refuses, and the front ends only show.** The use case gets the workspace's entitlements and calls `entitlements.CheckFeature(key)` before doing anything else. That returns a `*domain.FeatureError` ("Item export is not included in your current plan. To use this feature, please upgrade to the pro plan.") when the feature is off, or when the key isn't in the catalog. If the entitlements can't be looked up, the use case refuses too. A front end never decides on its own whether a feature can be used.
 3. **The error is the same everywhere.** Over HTTP it's a 403 problem with `feature`, `name`, and `availableOn`, and `httpclient` turns it back into the same `*FeatureError`. The CLI and TUI print it the same way in `--server` mode as with local data.
-4. **The upgrade hint** (`Feature.AvailableOn`) lists the plans that have the feature, leaving out the local edition's plan. A hidden feature has no hint. The local edition gives no hints at all, so a locked feature there just says it isn't available.
+4. **The upgrade hint** (`Feature.AvailableOn`) lists the plans that have the feature, leaving out the local edition's plan. A hidden feature has no hint. The local edition gives no hints at all, so a locked feature there just says it isn't available. The hosted edition, which is a server with sign-in on, gives hints.
+
+### The starting plan
+
+The plans file also names the plan that a new workspace starts on, in its top-level `newWorkspacePlan` field:
+
+```jsonc
+{
+	// The plan a new workspace starts on, one of the plans below.
+	"newWorkspacePlan": "free",
+	"features": { ... },
+	"plans": { ... }
+}
+```
+
+It matters only in the hosted edition, where each account's personal workspace is created the first time someone signs in ([docs/sign-in.md](sign-in.md)). That workspace has no stored plan, so it is on `newWorkspacePlan` until an admin moves it to another plan ([docs/billing.md](billing.md)). The local edition ignores the field, because its one workspace is always on the plan named when the app is built.
+
+The field is required, so that nobody forgets to choose the starting plan. A plans file without it, or with a plan the file doesn't define, fails to load, and the program stops at start. The built-in file and the test plans start new workspaces on `free`.
 
 ### What each front end shows
 
