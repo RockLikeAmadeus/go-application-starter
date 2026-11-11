@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
@@ -35,5 +36,6 @@ func setSessionCookie(w http.ResponseWriter, token string) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int(domain.SessionLifetime.Seconds()),
 	})
 }

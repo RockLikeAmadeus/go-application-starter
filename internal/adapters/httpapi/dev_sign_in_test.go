@@ -45,15 +45,20 @@ func sessionCookieOf(t *testing.T, rec *httptest.ResponseRecorder) *http.Cookie 
 	return nil
 }
 
-func TestTheDevSignInSignsInAsTheGivenNameAndSetsTheSessionCookie(t *testing.T) {
-	signIn := &signInRecorder{token: "token-ada"}
-	handler := httpapi.NewHandler(httpapi.Options{SignIn: signIn, IsDevSignInOn: true})
-	form := url.Values{"name": {"Ada"}}
+// postDevSignIn posts the dev sign-in form with the given name to the handler.
+func postDevSignIn(handler http.Handler, name string) *httptest.ResponseRecorder {
+	form := url.Values{"name": {name}}
 	req := httptest.NewRequest(http.MethodPost, "/auth/dev", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rec := httptest.NewRecorder()
-
 	handler.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestTheDevSignInSignsInAsTheGivenNameAndSetsTheSessionCookie(t *testing.T) {
+	signIn := &signInRecorder{token: "token-ada"}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: signIn, IsDevSignInOn: true})
+	rec := postDevSignIn(handler, "Ada")
 
 	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/" {
 		t.Fatalf("status = %d, Location = %q; want %d to %q", rec.Code, rec.Header().Get("Location"), http.StatusSeeOther, "/")
@@ -65,5 +70,15 @@ func TestTheDevSignInSignsInAsTheGivenNameAndSetsTheSessionCookie(t *testing.T) 
 	cookie := sessionCookieOf(t, rec)
 	if cookie.Value != "token-ada" || !cookie.HttpOnly || cookie.SameSite != http.SameSiteLaxMode || cookie.Path != "/" {
 		t.Errorf("cookie = %+v, want token-ada, HttpOnly, SameSite=Lax, and path /", cookie)
+	}
+}
+
+func TestTheSessionCookieLastsAsLongAsTheSession(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{token: "token-ada"}, IsDevSignInOn: true})
+	rec := postDevSignIn(handler, "Ada")
+
+	cookie := sessionCookieOf(t, rec)
+	if want := int(domain.SessionLifetime.Seconds()); cookie.MaxAge != want {
+		t.Errorf("cookie Max-Age = %d, want %d (the session's lifetime)", cookie.MaxAge, want)
 	}
 }

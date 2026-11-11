@@ -178,7 +178,10 @@ The server:
   - Red: `TestTheDevSignInSignsInAsTheGivenNameAndSetsTheSessionCookie` failed with status 200 (the SPA's hint page), want 303 to `/`. To compile: `Options.IsDevSignInOn`.
   - Green: with `IsDevSignInOn`, `POST /auth/dev` signs in as the form's `name` (issuer `dev`), sets the cookie, and redirects (303) to `/`; a refused sign-in is a problem (`problemFor`), pinned by 14g.
   - Refactor: the handler moved to `httpapi/dev_sign_in.go` (`devSignIn`), the issuer is `httpapi.DevIssuer`, and `setSessionCookie` (in `session.go`) sets the cookie, ready for 14b, 14c, and 14f.
-- [ ] 14b. The session cookie lasts as long as the session (`domain.SessionLifetime`), so it outlives the browser.
+- [x] 14b. The session cookie lasts as long as the session (`domain.SessionLifetime`), so it outlives the browser.
+  - Red: `TestTheSessionCookieLastsAsLongAsTheSession` failed with Max-Age 0, want 2592000.
+  - Green: `setSessionCookie` sets `MaxAge` to `domain.SessionLifetime` in seconds.
+  - Refactor: the dev sign-in tests share `postDevSignIn`, ready for 14c and 14g; `setSessionCookie` uses `MaxAge` (relative), so it needs no clock.
 - [ ] 14c. Over HTTPS, the session cookie is `Secure`.
 - [ ] 14d. `GET /auth/dev` shows the form asking for a name, posting to `POST /auth/dev`.
 - [ ] 14e. `GET /auth/sign-in` goes to the configured sign-in adapter (`/auth/dev`). Add `/auth/` to `navigateFallbackDenylist`.
