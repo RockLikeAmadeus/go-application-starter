@@ -6,6 +6,10 @@ import { cucumberReporter, defineBddConfig } from "playwright-bdd";
 // Build first: `task e2e` does `pnpm build` before running this.
 const PORT = Number(process.env.E2E_PORT ?? 4173);
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
+// @sign-in scenarios need sign-in on, so they get a server of their own, built
+// with the dev sign-in, leaving the other journeys on a server without it.
+const SIGN_IN_PORT = PORT + 1;
+const signInBaseURL = `http://localhost:${SIGN_IN_PORT}`;
 
 const testDir = defineBddConfig({
   features: "e2e/features/**/*.feature",
@@ -34,7 +38,11 @@ export default defineConfig({
   // Playwright can't emulate a mobile device in Firefox, so it gets a
   // phone-sized desktop window instead.
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, grepInvert: /@phone/ },
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      grepInvert: /@phone|@sign-in/,
+    },
     { name: "phone", use: { ...devices["Pixel 7"] }, grep: /@phone/ },
     { name: "iphone", use: { ...devices["iPhone 15"] }, grep: /@phone/ },
     {
@@ -42,16 +50,31 @@ export default defineConfig({
       use: { ...devices["Desktop Firefox"], viewport: { width: 390, height: 844 } },
       grep: /@phone/,
     },
+    {
+      name: "sign-in",
+      use: { ...devices["Desktop Chrome"], baseURL: signInBaseURL },
+      grep: /@sign-in/,
+    },
   ],
   // Skip starting a server when pointing at an existing deployment (smoke tests).
   webServer: process.env.E2E_BASE_URL
     ? undefined
-    : {
-        command: "go run -tags embedweb ./cmd/server",
-        cwd: "..",
-        url: `${baseURL}/readyz`,
-        reuseExistingServer: !process.env.CI,
-        env: { PORT: String(PORT), STARTER_STORAGE: "memory" },
-        timeout: 120_000,
-      },
+    : [
+        {
+          command: "go run -tags embedweb ./cmd/server",
+          cwd: "..",
+          url: `${baseURL}/readyz`,
+          reuseExistingServer: !process.env.CI,
+          env: { PORT: String(PORT), STARTER_STORAGE: "memory" },
+          timeout: 120_000,
+        },
+        {
+          command: "go run -tags embedweb,devsignin ./cmd/server",
+          cwd: "..",
+          url: `${signInBaseURL}/readyz`,
+          reuseExistingServer: !process.env.CI,
+          env: { PORT: String(SIGN_IN_PORT), STARTER_STORAGE: "memory", STARTER_SIGN_IN: "dev" },
+          timeout: 120_000,
+        },
+      ],
 });
