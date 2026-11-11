@@ -54,6 +54,9 @@ type App struct {
 	Warnings []string
 	close    func() error
 	ready    func(context.Context) error
+	// billing changes the stored plans, for NewBilling. It's nil with sign-in
+	// off, as the local edition's plan is fixed.
+	billing ports.BillingService
 }
 
 // Close releases resources such as storage locks.
@@ -92,10 +95,12 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	// sample:end
 	var accountRepo ports.AccountRepository
 	var sessionRepo ports.SessionRepository
+	var workspacePlanRepo ports.WorkspacePlanRepository
 	switch cfg.Storage {
 	case config.StorageMemory:
 		accountRepo = memory.NewAccountRepository()
 		sessionRepo = memory.NewSessionRepository()
+		workspacePlanRepo = memory.NewWorkspacePlanRepository()
 		// sample:start
 		itemRepo = memory.NewItemRepository()
 		// sample:end
@@ -131,6 +136,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		}
 		accountRepo = sqlstore.NewAccountRepository(store.DB())
 		sessionRepo = sqlstore.NewSessionRepository(store.DB())
+		workspacePlanRepo = sqlstore.NewWorkspacePlanRepository(store.DB())
 		// sample:start
 		itemRepo = sqlstore.NewItemRepository(store.DB())
 		// sample:end
@@ -146,19 +152,21 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		a.ready = store.Ready
 		accountRepo = sqlstore.NewAccountRepository(store.DB())
 		sessionRepo = sqlstore.NewSessionRepository(store.DB())
+		workspacePlanRepo = sqlstore.NewWorkspacePlanRepository(store.DB())
 		// sample:start
 		itemRepo = sqlstore.NewItemRepository(store.DB())
 		// sample:end
 	default:
 		return nil, config.UnrecognizedStorageError(cfg.Storage)
 	}
-	entitlementsProvider, err := entitlementsProviderFor(cfg)
+	entitlementsProvider, err := entitlementsProviderFor(cfg, workspacePlanRepo)
 	if err != nil {
 		return nil, err
 	}
 	a.Entitlements = app.NewEntitlementsService(entitlementsProvider, workspacesFor(cfg))
 	if cfg.SignIn.IsOn() {
 		a.SignIn = app.NewSignInService(accountRepo, sessionRepo, system.Tokens{}, system.UUIDs{}, system.Clock{})
+		a.billing = app.NewBillingService(workspacePlanRepo, entitlementsProvider)
 	}
 	// Build each use case on its repository and the driven ports:
 	// workspacesFor(cfg) (the session's workspace with sign-in on, else the
@@ -204,14 +212,23 @@ var ErrLocalPlanIsFixed = errors.New("The plan for the local edition is set when
 // ErrNoPlanChangesOverAServer is the refusal to change a plan with --server.
 var ErrNoPlanChangesOverAServer = errors.New("A plan cannot be changed through a server connection.")
 
-// NewBilling returns the billing service, for `starter admin set-plan`. Every
-// copy is the local edition until sign-in adds the hosted one, so it always
-// refuses with ErrLocalPlanIsFixed, or ErrNoPlanChangesOverAServer with
-// cfg.ServerURL set, opening no storage. It will wire the stored plans for
-// the hosted edition.
+// NewBilling returns the billing service, for `starter admin set-plan`. With
+// sign-in on (the hosted edition), it opens the configured storage as
+// NewEmbedded does and changes the plans stored there, which the hosted
+// edition's entitlements read. The storage stays open until the command's
+// program ends. The local edition's plan is fixed, so otherwise it refuses with
+// ErrLocalPlanIsFixed, or ErrNoPlanChangesOverAServer with cfg.ServerURL set,
+// opening no storage.
 func NewBilling(cfg config.Config) (ports.BillingService, error) {
 	if cfg.ServerURL != "" {
 		return nil, ErrNoPlanChangesOverAServer
+	}
+	if cfg.SignIn.IsOn() {
+		a, err := NewEmbedded(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return a.billing, nil
 	}
 	return nil, ErrLocalPlanIsFixed
 }
@@ -322,15 +339,15 @@ func deviceList(devices []string) string {
 }
 
 // entitlementsProviderFor picks the plans each workspace is on: with sign-in on
-// (the hosted edition), hostedEntitlementsProvider's; otherwise the local
-// edition's one plan, localEntitlementsProvider's.
-func entitlementsProviderFor(cfg config.Config) (plans.Provider, error) {
+// (the hosted edition), hostedEntitlementsProvider's, read from workspacePlans;
+// otherwise the local edition's one plan, localEntitlementsProvider's.
+func entitlementsProviderFor(cfg config.Config, workspacePlans ports.WorkspacePlanRepository) (plans.Provider, error) {
 	file, err := loadPlansFile(cfg.PlansFile)
 	if err != nil {
 		return plans.Provider{}, err
 	}
 	if cfg.SignIn.IsOn() {
-		return hostedEntitlementsProvider(file), nil
+		return hostedEntitlementsProvider(file, workspacePlans), nil
 	}
 	return localEntitlementsProvider(file), nil
 }
@@ -360,15 +377,13 @@ func localEntitlementsProvider(file plans.File) plans.Provider {
 	}
 }
 
-// hostedEntitlementsProvider answers the file's NewWorkspacePlan for every
-// workspace, with upgrade hints that never name LocalPlan, which the hosted
-// edition doesn't offer.
-func hostedEntitlementsProvider(file plans.File) plans.Provider {
+// hostedEntitlementsProvider answers each workspace's stored plan, or the
+// file's NewWorkspacePlan for a workspace with none, with upgrade hints that
+// never name LocalPlan, which the hosted edition doesn't offer.
+func hostedEntitlementsProvider(file plans.File, workspacePlans ports.WorkspacePlanRepository) plans.Provider {
 	return plans.Provider{
-		Catalog: file.Catalog,
-		PlanOf: func(context.Context, domain.WorkspaceID) (string, error) {
-			return file.NewWorkspacePlan, nil
-		},
+		Catalog:         file.Catalog,
+		PlanOf:          plans.StoredPlanOf(workspacePlans, file.NewWorkspacePlan),
 		ShouldGiveHints: true,
 		LocalPlan:       LocalPlan,
 	}

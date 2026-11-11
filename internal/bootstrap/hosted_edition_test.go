@@ -71,6 +71,46 @@ func TestNewEmbedded_WithSignInOnAWorkspaceWithNoStoredPlanIsOnTheNewWorkspacePl
 	}
 }
 
+// `starter admin set-plan` changes a plan beside the hosted edition's storage,
+// and the next program on that storage reads the workspace's stored plan.
+func TestNewBilling_WithSignInOnChangesAPlanThatTheAppsEntitlementsShow(t *testing.T) {
+	plansFile := filepath.Join(t.TempDir(), "plans.jsonc")
+	const plansText = `{
+		"newWorkspacePlan": "starter",
+		"features": {},
+		"plans": {
+			"local": {"limits": {}, "features": []},
+			"starter": {"limits": {}, "features": []},
+			"team": {"limits": {}, "features": []}
+		}
+	}`
+	if err := os.WriteFile(plansFile, []byte(plansText), 0o600); err != nil {
+		t.Fatalf("write plans file: %v", err)
+	}
+	cfg := config.Config{Storage: config.StorageSQLite, DataDir: t.TempDir(), SignIn: config.SignInDev, PlansFile: plansFile}
+	billing, err := bootstrap.NewBilling(cfg)
+	if err != nil {
+		t.Fatalf("NewBilling: %v", err)
+	}
+	if err := billing.ChangePlan(t.Context(), "alpha", "team"); err != nil {
+		t.Fatalf("ChangePlan: %v", err)
+	}
+	a, err := bootstrap.NewEmbedded(cfg)
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	entitlements, err := a.Entitlements.CurrentEntitlements(workspace.WithID(t.Context(), "alpha"))
+
+	if err != nil {
+		t.Fatalf("CurrentEntitlements: %v", err)
+	}
+	if entitlements.Plan != "team" {
+		t.Errorf("plan = %q, want the changed plan, %q", entitlements.Plan, "team")
+	}
+}
+
 func TestNewEmbedded_WithSignInOnSignsInAndFindsTheSessionsAccount(t *testing.T) {
 	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageMemory, SignIn: config.SignInDev})
 	if err != nil {

@@ -289,7 +289,10 @@ Settings and wiring:
   - Red: `TestNewEmbedded_WithSignInOnAWorkspaceWithNoStoredPlanIsOnTheNewWorkspacePlanWithHints` (`hosted_edition_test.go`, `devsignin`, its own plans file) failed, plan `local`, want `starter`, and no upgrade hint, want `[team]`.
   - Green: with sign-in on, `NewEmbedded` answers every workspace the plans file's `newWorkspacePlan`, with hints on (not `LocalPlan`); `plans.Load` returns the `File`.
   - Refactor: `entitlementsProviderFor(cfg)` loads the plans file once (`loadPlansFile`, still refusing one without `LocalPlan`) and picks `hostedEntitlementsProvider` or `localEntitlementsProvider`; `NewEntitlementsService` shares `loadPlansFile`.
-- [ ] 20h. With sign-in on, `bootstrap.NewBilling` returns the real service on the configured storage, and the App's entitlements read the workspace's stored plan (`plans.StoredPlanOf`), falling back to `newWorkspacePlan`, so a changed plan shows in them.
+- [x] 20h. With sign-in on, `bootstrap.NewBilling` returns the real service on the configured storage, and the App's entitlements read the workspace's stored plan (`plans.StoredPlanOf`), falling back to `newWorkspacePlan`, so a changed plan shows in them.
+  - Red: `TestNewBilling_WithSignInOnChangesAPlanThatTheAppsEntitlementsShow` (`hosted_edition_test.go`, SQLite) failed, `NewBilling` refused with `ErrLocalPlanIsFixed`.
+  - Green: with sign-in on, `NewBilling` opens `NewEmbedded`'s App and returns its `app.NewBillingService` on the storage's `WorkspacePlanRepository`; `hostedEntitlementsProvider` reads `plans.StoredPlanOf(repo, newWorkspacePlan)`.
+  - Refactor: comments on `NewBilling`, `hostedEntitlementsProvider`, `entitlementsProviderFor`, and `App.billing` updated. Left: `NewBilling`'s storage stays open until the command's program ends, as `BillingFactory` has no close.
 
 Acceptance:
 - [ ] 21. The `@sign-in` steps on memory, sqlite, postgres, and http, and the driver tags that leave it out of jsonfile, desktop, mobile, and server. The sign-in scenarios pass. Sample: `task test:init`.
