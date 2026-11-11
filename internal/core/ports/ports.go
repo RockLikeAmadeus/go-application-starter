@@ -121,7 +121,9 @@ type AccountRepository interface {
 	FindByIdentity(ctx context.Context, identity domain.Identity) (domain.Account, error)
 	// Find returns the account with the ID, or domain.ErrNotFound.
 	Find(ctx context.Context, id string) (domain.Account, error)
-	// Save inserts or replaces the account with the same ID.
+	// Save inserts or replaces the account with the same ID. It refuses, with
+	// an error, another account with the same issuer and subject, so one
+	// identity has at most one account.
 	Save(ctx context.Context, account domain.Account) error
 }
 

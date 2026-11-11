@@ -87,6 +87,28 @@ func RunAccountRepositoryContract(t *testing.T, newRepo func(*testing.T) ports.A
 		}
 	})
 
+	t.Run("Save refuses another account with the same issuer and subject, and keeps the first", func(t *testing.T) {
+		repo := newRepo(t)
+		if err := repo.Save(ctx, ada); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
+		twin := domain.Account{
+			ID:          "account-2",
+			Identity:    domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada Lovelace"},
+			WorkspaceID: "workspace-2",
+		}
+		if err := repo.Save(ctx, twin); err == nil {
+			t.Fatal("Save of a second account with the same identity succeeded; want an error")
+		}
+		got, err := repo.FindByIdentity(ctx, ada.Identity)
+		if err != nil {
+			t.Fatalf("FindByIdentity: %v", err)
+		}
+		if got != ada {
+			t.Fatalf("FindByIdentity: got %+v, want %+v", got, ada)
+		}
+	})
+
 	t.Run("Save replaces the account with the same ID", func(t *testing.T) {
 		repo := newRepo(t)
 		renamed := ada
