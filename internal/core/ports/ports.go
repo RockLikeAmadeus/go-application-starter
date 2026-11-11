@@ -100,6 +100,51 @@ type WorkspaceResolver interface {
 	CurrentWorkspace(ctx context.Context) (domain.WorkspaceID, error)
 }
 
+// SignInService is the driving port for signing in. A sign-in adapter works
+// out who someone is, however they prove it, and hands the core their
+// identity.
+type SignInService interface {
+	// SignIn returns a new session's token for the identity's account.
+	SignIn(ctx context.Context, identity domain.Identity) (string, error)
+	// CurrentAccount returns the account whose session the token is, or
+	// domain.ErrNoWorkspace when the session is missing or expired.
+	CurrentAccount(ctx context.Context, token string) (domain.Account, error)
+	// SignOut ends the token's session.
+	SignOut(ctx context.Context, token string) error
+}
+
+// AccountRepository is the driven port for storing accounts. Accounts aren't
+// workspace-scoped: an account is what picks the workspace.
+type AccountRepository interface {
+	// FindByIdentity returns the account with the identity's issuer and
+	// subject (never matched by name), or domain.ErrNotFound.
+	FindByIdentity(ctx context.Context, identity domain.Identity) (domain.Account, error)
+	// Find returns the account with the ID, or domain.ErrNotFound.
+	Find(ctx context.Context, id string) (domain.Account, error)
+	// Save inserts or replaces the account with the same ID. It refuses, with
+	// an error, another account with the same issuer and subject, so one
+	// identity has at most one account.
+	Save(ctx context.Context, account domain.Account) error
+}
+
+// SessionRepository is the driven port for storing sessions, which are kept
+// by their token's hash only.
+type SessionRepository interface {
+	// FindByHash returns the session kept by the token hash, or
+	// domain.ErrNotFound.
+	FindByHash(ctx context.Context, tokenHash string) (domain.Session, error)
+	// Save inserts or replaces the session with the same token hash.
+	Save(ctx context.Context, session domain.Session) error
+	// Delete removes the session kept by the token hash, or returns
+	// domain.ErrNotFound when there is none.
+	Delete(ctx context.Context, tokenHash string) error
+}
+
+// TokenGenerator makes session tokens that can't be guessed.
+type TokenGenerator interface {
+	NewToken() string
+}
+
 // Clock abstracts time so use cases are deterministic under test.
 type Clock interface {
 	Now() time.Time

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { connectionApi } from "../test/connectionApi";
 import { entitlementsApi } from "../test/entitlementsApi";
 import { renderWithClient } from "../test/render";
+import { sessionApi } from "../test/sessionApi";
 import { warningsApi } from "../test/warningsApi";
 import { Layout } from "./Layout";
 
@@ -203,6 +204,48 @@ describe("Layout", () => {
         "/api/v1/entitlements",
       ),
     );
+  });
+
+  it("asks someone signed out to sign in, with no sidebar or page, when sign-in is on", async () => {
+    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true }));
+
+    renderLayout();
+
+    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.getByText("Please sign in to continue.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/sign-in");
+    expect(screen.queryByText("Page")).not.toBeInTheDocument();
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Menu" })).not.toBeInTheDocument();
+  });
+
+  it("shows who is signed in, and a Sign out button that posts to /auth/sign-out, in the sidebar", async () => {
+    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true, name: "Alpha" }));
+
+    renderLayout();
+
+    const sidebar = screen.getByRole("complementary");
+    expect(await within(sidebar).findByText("Signed in as Alpha.")).toBeInTheDocument();
+    const signOut = within(sidebar).getByRole("button", { name: "Sign out" });
+    expect(signOut).toHaveAttribute("type", "submit");
+    const form = signOut.closest("form");
+    expect(form).toHaveAttribute("method", "post");
+    expect(form).toHaveAttribute("action", "/auth/sign-out");
+  });
+
+  it("shows no signed-in name or Sign out button when sign-in is off", async () => {
+    const fetch = sessionApi({ isSignInOn: false });
+    vi.stubGlobal("fetch", fetch);
+
+    renderLayout();
+    // Nothing on screen changes once the session is read, so wait for the
+    // request, then flush.
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    await act(async () => {});
+
+    const sidebar = within(screen.getByRole("complementary"));
+    expect(sidebar.queryByText(/Signed in as/)).not.toBeInTheDocument();
+    expect(sidebar.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
   });
 
   it("keeps saving after the browser goes offline when no connection is required", async () => {

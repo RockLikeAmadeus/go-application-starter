@@ -98,12 +98,13 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - Tests read `STARTER_TEST_DATABASE_URL` (`task db:up` locally, a service container in CI) and skip without it; each test and scenario gets its own database. A new `postgres` acceptance driver runs every business scenario, and the server driver covers readiness, an outage and recovery, and two servers sharing a database.
 - ADR 5, ADR 7, `docs/workspaces.md`, `docs/configuration.md`, `docs/data-locations.md`, `.claude/rules/`, and README are updated. `task test:init` passes.
 
-### 8. Authentication — not started
+### 8. Authentication — in progress (8a done)
 - This is the existing "Authentication behind a port" TODO item.
+- Split in two features (2026-11-10). **8a, sign-in with the dev sign-in — done 2026-11-11:** everything below except the OIDC adapter, proved with the dev sign-in. Sessions use a server-side cookie, kept in storage, and sign-in works on memory, SQLite, and Postgres only. Stored plans are on with sign-in, from the plans file's `newWorkspacePlan`. [ADR 9](../adr/0009-sign-in-and-sessions.md), [`docs/sign-in.md`](../sign-in.md), SPEC.md §4.18, [`features/sign-in.feature`](../../features/sign-in.feature), and [`web/e2e/features/sign-in.feature`](../../web/e2e/features/sign-in.feature). **8b, the OIDC adapter** (not started): OIDC behind the same seam, tested against a fake OIDC provider inside the tests, the guide's provider and email-and-password notes, and removing "Authentication" from SPEC.md §6.
 - The OIDC adapter and the dev-only fake login.
 - The guide for template users explains that email and password sign-up comes from choosing a provider that keeps its own accounts (see Decisions, "Authentication"), so products offer it without building it.
 - Auth middleware that sets the workspace, and a personal workspace created at first login.
-- Stored plans in the hosted edition: `bootstrap.NewBilling` wires `app.NewBillingService` beside the hosted storage (the `Local` server keeps refusing), `plans.StoredPlanOf` feeds its `plans.Provider`, and the default plan for a new personal workspace is chosen here (see `docs/billing.md`, "Switching on stored plans").
+- Stored plans in the hosted edition: `bootstrap.NewBilling` wires `app.NewBillingService` beside the hosted storage (the `Local` server keeps refusing), `plans.StoredPlanOf` feeds its `plans.Provider`, and the default plan for a new personal workspace is chosen here (see `docs/billing.md`, "Stored plans are switched on with sign-in").
 - Sign-in is optional on the server. With it off, the server is a self-hosted local edition: it uses the `Local` resolver, as it does today.
 - SPA login and logout. The isolation scenarios run on the http driver.
 - Remove "Authentication and authorization" from SPEC.md §6.
@@ -113,11 +114,25 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 
 ### 10. Desktop and mobile remote mode — not started
 - This is the existing TODO item, now unblocked by step 8.
+- Keep ADR 4's design: the window and the in-process handler stay, and `desktop.Open` (and so `mobile.Open`) puts `bootstrap.NewRemote` behind them, so `httpclient` makes plain REST calls to any server URL. The web app doesn't change, and no CORS is needed. Not chosen: pointing the window straight at the hosted server's URL, which would make the app a browser wrapper and lose switching between local and remote mode.
+- **Remote mode signs in like the CLI (step 9), not with step 8's cookie.** The requests to the hosted server come from the app's Go code, not from the window, so the app opens the system browser to sign in (RFC 8252, OAuth for native apps), keeps the token in the operating system's credential store, and `httpclient` sends it as a bearer token. The server's middleware accepts both (decided in step 8a).
+- To design here: the web app's "sign in" link reaches the in-process handler, not the hosted server, so that handler must start the browser sign-in itself, and sign out must forget the stored token.
 
 ## Follow-ups for TODO.md (when this plan finishes)
 - Synced folders on Android (Storage Access Framework).
 - Teams: workspace members and roles.
 - A paid local licence key, behind the entitlements port.
+- Sweeping expired sessions that nobody looks up again (step 8a deletes one only when it's found expired).
+
+## Loose ends (from step 8a)
+Things step 8a left that need a look, to be dealt with one at a time. Tick each one when it's settled, with a line on what was done.
+- [ ] **`.env.example` and `STARTER_SIGN_IN`.** A permission rule stops Claude reading `.env.example`, so nobody checked whether it should list the new `STARTER_SIGN_IN` setting beside the others.
+- [ ] **Old SQLite databases on the sign-in branch.** Migration `00004_accounts_and_sessions.sql` was edited in place (task 25b) to make the `(issuer, subject)` index unique. A SQLite database that ran the old `00004` keeps the non-unique index, so delete any made on the branch before that change.
+- [ ] **A brief flash before the sign-in screen.** Until `GET /api/v1/session` answers, the web app shows its usual layout. A signed-out visitor may see the normal page for a moment, possibly with a "Please sign in to continue." error, before the sign-in screen replaces it. The server still refuses them any data.
+- [ ] **A changed name isn't saved.** When someone signs in again and their identity's name has changed, `SignIn` finds the existing account and keeps the old name.
+- [ ] **The developer-build files aren't linted.** `golangci-lint` builds without the `devsignin` tag, so it skips `internal/bootstrap/devsignin_on*.go`. Adding the tag would skip the `_off` files instead, so both builds would need a lint run each.
+- [ ] **`set-plan` leaves its storage open.** With sign-in on, `bootstrap.NewBilling` opens a full App and never closes its storage, which stays open until the command's program ends, because `BillingFactory` returns no close. This is also why its test runs on SQLite only, not Postgres.
+- [ ] **An `Origin`-only request through Vite is refused.** Under `task dev`, Vite rewrites `Host` on the way to the server, so a POST that sends `Origin` without `Sec-Fetch-Site` fails the cross-origin check with a 403. Browsers send `Sec-Fetch-Site: same-origin`, so signing in and out in a browser works; tools such as curl need that header too.
 
 ## Verification after every step
 - `task check`, plus `task accept` with the step's `@wip` scenarios passing on every relevant driver.
@@ -160,3 +175,7 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - 2026-11-09: step 7 started. Agreed: one source for the SQL, shared by SQLite and Postgres (`sqlstore`), rather than a second copy per engine, so a new entity is written once. The test database is a URL plus compose (`task db:up`), and the desktop and mobile apps refuse `postgres`, as they will reach hosted data through a server (step 10).
 - 2026-11-10: step 7 finished, recorded in ADR 8. Its task list split most tasks into one test each, and added a migration lock (servers starting together on an unmigrated database raced), hiding `database_url` in `starter info` (a URL usually holds a password), `starter info` naming the database rather than a folder, and a readiness retry on a dead pooled connection (the first probe after an outage answered 503).
 - 2026-11-10: before step 8, agreed that the app never builds its own email and password sign-in. Users who'd rather not sign in with Google get a dedicated account from the provider (Auth0, Clerk, Keycloak, and others keep their own accounts), which reaches the app through the same OIDC adapter. Step 8's guide for template users says so.
+- 2026-11-10: step 8 started, split into 8a (sign-in with the dev sign-in) and 8b (the OIDC adapter). Agreed: a session cookie rather than tokens in the browser (the backend-for-frontend pattern, which current IETF guidance ranks most secure), sessions and accounts kept in storage, and sign-in only on memory, SQLite, and Postgres, so jsonfile with sign-in is refused at start. Decided: the dev sign-in exists only in builds with the `devsignin` tag. A sweep for expired sessions is a follow-up.
+- 2026-11-10: step 10 notes added. Remote mode keeps ADR 4's in-process handler over `httpclient`, rather than pointing the window at the hosted server, and signs in like the CLI, with a token through the system browser, not step 8's cookie.
+- 2026-11-11: step 8a finished, recorded in ADR 9. Its task list split most tasks into one test each, and added: a `crypto/rand` token generator, which the plan named but no task built; a 422 for a blank dev sign-in name; a failed sign-out kept as a problem that keeps the cookie; the cross-origin check covering every request that changes something, cookie or not; the `devsignin` tag on `task run:server`, `run:cli`, and `run:tui`; and one account per sign-in identity (a unique index, and `SignIn` looking the account up again when two first sign-ins race). Two follow-ups went to `TODO.md`: browser smoke runs against a deployment, and the `Secure` cookie behind an HTTPS proxy, which step 8b settles.
+- 2026-11-11: a "Loose ends (from step 8a)" list records seven things the sign-in feature left to look at, one at a time.

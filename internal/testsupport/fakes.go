@@ -93,3 +93,59 @@ type KnownPlans []string
 func (p KnownPlans) HasPlan(_ context.Context, plan string) (bool, error) {
 	return slices.Contains(p, plan), nil
 }
+
+// StoredAccounts is a ports.AccountRepository that holds accounts in a map by
+// ID.
+type StoredAccounts map[string]domain.Account
+
+func (a StoredAccounts) FindByIdentity(_ context.Context, identity domain.Identity) (domain.Account, error) {
+	for _, account := range a {
+		if account.Identity.Issuer == identity.Issuer && account.Identity.Subject == identity.Subject {
+			return account, nil
+		}
+	}
+	return domain.Account{}, domain.ErrNotFound
+}
+
+func (a StoredAccounts) Find(_ context.Context, id string) (domain.Account, error) {
+	account, ok := a[id]
+	if !ok {
+		return domain.Account{}, domain.ErrNotFound
+	}
+	return account, nil
+}
+
+func (a StoredAccounts) Save(_ context.Context, account domain.Account) error {
+	a[account.ID] = account
+	return nil
+}
+
+// StoredSessions is a ports.SessionRepository that holds sessions in a map by
+// token hash.
+type StoredSessions map[string]domain.Session
+
+func (s StoredSessions) FindByHash(_ context.Context, tokenHash string) (domain.Session, error) {
+	session, ok := s[tokenHash]
+	if !ok {
+		return domain.Session{}, domain.ErrNotFound
+	}
+	return session, nil
+}
+
+func (s StoredSessions) Save(_ context.Context, session domain.Session) error {
+	s[session.TokenHash] = session
+	return nil
+}
+
+func (s StoredSessions) Delete(_ context.Context, tokenHash string) error {
+	if _, ok := s[tokenHash]; !ok {
+		return domain.ErrNotFound
+	}
+	delete(s, tokenHash)
+	return nil
+}
+
+// FixedToken is a ports.TokenGenerator that always makes the same token.
+type FixedToken string
+
+func (t FixedToken) NewToken() string { return string(t) }

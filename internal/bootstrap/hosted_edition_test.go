@@ -1,0 +1,181 @@
+//go:build devsignin
+
+package bootstrap_test
+
+// The tests in this file wire the hosted edition, which needs sign-in on. Only
+// the dev sign-in exists so far, and only a devsignin build accepts it, so
+// they carry that tag; `task test:go` runs them.
+
+import (
+	"context"
+	"errors"
+	"os"
+	"path/filepath"
+	"slices"
+	"testing"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+)
+
+func TestNewEmbedded_WithSignInOnHasNoWorkspaceWithoutOneInTheContext(t *testing.T) {
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageMemory, SignIn: config.SignInDev})
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	_, err = a.Entitlements.CurrentEntitlements(context.Background())
+
+	if !errors.Is(err, domain.ErrNoWorkspace) {
+		t.Errorf("CurrentEntitlements error = %v, want ErrNoWorkspace", err)
+	}
+}
+
+// A workspace with no stored plan is on the plans file's newWorkspacePlan, and
+// its locked features name the plans that have them.
+func TestNewEmbedded_WithSignInOnAWorkspaceWithNoStoredPlanIsOnTheNewWorkspacePlanWithHints(t *testing.T) {
+	plansFile := filepath.Join(t.TempDir(), "plans.jsonc")
+	const plansText = `{
+		"newWorkspacePlan": "starter",
+		"features": {"reports": {"name": "Reports", "whenOff": "show-locked"}},
+		"plans": {
+			"local": {"limits": {}, "features": ["reports"]},
+			"starter": {"limits": {}, "features": []},
+			"team": {"limits": {}, "features": ["reports"]}
+		}
+	}`
+	if err := os.WriteFile(plansFile, []byte(plansText), 0o600); err != nil {
+		t.Fatalf("write plans file: %v", err)
+	}
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageMemory, SignIn: config.SignInDev, PlansFile: plansFile})
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	ctx := workspace.WithID(context.Background(), "alpha")
+
+	entitlements, err := a.Entitlements.CurrentEntitlements(ctx)
+
+	if err != nil {
+		t.Fatalf("CurrentEntitlements: %v", err)
+	}
+	if entitlements.Plan != "starter" {
+		t.Errorf("plan = %q, want the newWorkspacePlan, %q", entitlements.Plan, "starter")
+	}
+	if got, want := entitlements.Features["reports"].AvailableOn, []string{"team"}; !slices.Equal(got, want) {
+		t.Errorf("reports' upgrade hint = %v, want %v", got, want)
+	}
+}
+
+// `starter admin set-plan` changes a plan beside the hosted edition's storage,
+// and the next program on that storage reads the workspace's stored plan.
+func TestNewBilling_WithSignInOnChangesAPlanThatTheAppsEntitlementsShow(t *testing.T) {
+	plansFile := filepath.Join(t.TempDir(), "plans.jsonc")
+	const plansText = `{
+		"newWorkspacePlan": "starter",
+		"features": {},
+		"plans": {
+			"local": {"limits": {}, "features": []},
+			"starter": {"limits": {}, "features": []},
+			"team": {"limits": {}, "features": []}
+		}
+	}`
+	if err := os.WriteFile(plansFile, []byte(plansText), 0o600); err != nil {
+		t.Fatalf("write plans file: %v", err)
+	}
+	cfg := config.Config{Storage: config.StorageSQLite, DataDir: t.TempDir(), SignIn: config.SignInDev, PlansFile: plansFile}
+	billing, err := bootstrap.NewBilling(cfg)
+	if err != nil {
+		t.Fatalf("NewBilling: %v", err)
+	}
+	if err := billing.ChangePlan(t.Context(), "alpha", "team"); err != nil {
+		t.Fatalf("ChangePlan: %v", err)
+	}
+	a, err := bootstrap.NewEmbedded(cfg)
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	entitlements, err := a.Entitlements.CurrentEntitlements(workspace.WithID(t.Context(), "alpha"))
+
+	if err != nil {
+		t.Fatalf("CurrentEntitlements: %v", err)
+	}
+	if entitlements.Plan != "team" {
+		t.Errorf("plan = %q, want the changed plan, %q", entitlements.Plan, "team")
+	}
+}
+
+func TestNewEmbedded_WithSignInOnSignsInAndFindsTheSessionsAccount(t *testing.T) {
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageMemory, SignIn: config.SignInDev})
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	if a.SignIn == nil {
+		t.Fatal("SignIn = nil, want the sign-in service")
+	}
+	ctx := context.Background()
+	identity := domain.Identity{Issuer: "dev", Subject: "Alpha", Name: "Alpha"}
+
+	token, err := a.SignIn.SignIn(ctx, identity)
+	if err != nil {
+		t.Fatalf("SignIn: %v", err)
+	}
+	account, err := a.SignIn.CurrentAccount(ctx, token)
+
+	if err != nil {
+		t.Fatalf("CurrentAccount: %v", err)
+	}
+	if account.Identity != identity {
+		t.Errorf("account's identity = %+v, want %+v", account.Identity, identity)
+	}
+}
+
+// A session made on SQLite still signs its account in for the next program to
+// open the same data folder.
+func TestNewEmbedded_OnSQLiteASessionOutlivesTheAppThatMadeIt(t *testing.T) {
+	assertSessionOutlivesTheAppThatMadeIt(t, config.Config{Storage: config.StorageSQLite, DataDir: t.TempDir(), SignIn: config.SignInDev})
+}
+
+// A session made on Postgres still signs its account in for the next program
+// to open the same database.
+func TestNewEmbedded_OnPostgresASessionOutlivesTheAppThatMadeIt(t *testing.T) {
+	assertSessionOutlivesTheAppThatMadeIt(t, config.Config{Storage: config.StoragePostgres, DatabaseURL: postgrestest.NewDatabase(t), SignIn: config.SignInDev})
+}
+
+func assertSessionOutlivesTheAppThatMadeIt(t *testing.T, cfg config.Config) {
+	t.Helper()
+	identity := domain.Identity{Issuer: "dev", Subject: "Alpha", Name: "Alpha"}
+
+	first, err := bootstrap.NewEmbedded(cfg)
+	if err != nil {
+		t.Fatalf("first NewEmbedded: %v", err)
+	}
+	token, err := first.SignIn.SignIn(t.Context(), identity)
+	if err != nil {
+		t.Fatalf("SignIn: %v", err)
+	}
+	if err := first.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	second, err := bootstrap.NewEmbedded(cfg)
+	if err != nil {
+		t.Fatalf("second NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = second.Close() })
+	account, err := second.SignIn.CurrentAccount(t.Context(), token)
+
+	if err != nil {
+		t.Fatalf("CurrentAccount after reopening: %v", err)
+	}
+	if account.Identity != identity {
+		t.Errorf("account's identity after reopening = %+v, want %+v", account.Identity, identity)
+	}
+}

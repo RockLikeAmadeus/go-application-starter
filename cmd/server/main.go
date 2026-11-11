@@ -94,11 +94,13 @@ func handlerOptions(application *bootstrap.App, log *slog.Logger) httpapi.Option
 		// sample:start
 		Items: application.Items,
 		// sample:end
-		Entitlements: application.Entitlements,
-		Ready:        application.Ready,
-		Warnings:     application.Warnings,
-		Logger:       log,
-		WebAssets:    web.Assets(),
+		Entitlements:  application.Entitlements,
+		SignIn:        application.SignIn,
+		IsDevSignInOn: application.IsDevSignInOn,
+		Ready:         application.Ready,
+		Warnings:      application.Warnings,
+		Logger:        log,
+		WebAssets:     web.Assets(),
 	}
 }
 

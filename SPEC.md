@@ -10,8 +10,8 @@ _One paragraph: who the users are, what problem this solves, and what success lo
 
 | Persona | Front-end | Editions (§3) | Notes |
 |---|---|---|---|
-| _e.g. End user_ | Web (React SPA) | Hosted, with sign-in (planned). Or local: a self-hosted server for one user, with no sign-in (works today) | Installable (§4.5) |
-| _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in the desktop app's data folder (§4.11). Hosted, after `starter login --server …` (planned) | Today `--server` reaches only a server without sign-in |
+| _e.g. End user_ | Web (React SPA) | Hosted, with sign-in (§4.18, through the dev sign-in until a real sign-in provider arrives). Or local: a self-hosted server for one user, with no sign-in | Installable (§4.5) |
+| _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in the desktop app's data folder (§4.11). Hosted, after `starter login --server …` (planned) | Today `--server` reaches only a server without sign-in, as the command line can't sign in yet |
 | _e.g. Integrations_ | REST API (`api/openapi.yaml`) | Whichever edition the server runs | |
 | _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | Local, with its data on the computer (§4.6). Hosted, in remote mode (planned) | The web app in its own window |
 | _e.g. Single user on an Android phone_ | Mobile app (Android) | Local, with its data on the phone (§4.7). Hosted, in remote mode (planned) | The web app as a phone app |
@@ -32,7 +32,7 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Settings file** | An optional file of the app's settings (such as the data folder) on the user's computer, shared by the desktop app and the command line. |
 | **Data folder** | The folder where the local edition keeps its data: on the user's computer, shared by the desktop app and the command line, or in the app's private storage on the phone. |
 | **Mobile app** | The web app packaged as an app for the user's phone (Android for now). In the local edition it keeps its own data on the phone and needs no server. Working on hosted data instead (remote mode) is planned. |
-| **Edition** | How a copy of the product runs. The **hosted edition** serves many users from a server, each signing in to an account (planned). The **local edition** is for one user, with no account: data on their own device, or on a server they host for themselves. Both run the same app, and each copy uses one edition only. |
+| **Edition** | How a copy of the product runs. The **hosted edition** serves many users from a server, each signing in to an account (§4.18). The **local edition** is for one user, with no account: data on their own device, or on a server they host for themselves. Both run the same app, and each copy uses one edition only. |
 | **Workspace** | The space a piece of data belongs to. In the hosted edition, each user has their own workspace. The local edition has exactly one. |
 | **Plan** | What a workspace is allowed to do: which features it has and what its limits are (for example, free or paid). |
 | **Feature** | A capability that a plan turns on or off. |
@@ -41,6 +41,10 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Ready** | A server is ready when it can reach its data, so it can serve requests. |
 | **Conflict copy** | A second copy of a file that a file-sync service leaves in a synced folder when the same file changed in two places. |
 | **Device** | A computer that uses a data folder, known by its name. |
+| **Account** | A person who signs in to the hosted edition. A sign-in provider vouches for who they are, and each account has its own personal workspace. |
+| **Sign-in provider** | The service that checks who someone is when they sign in, such as Auth0, Clerk, or Keycloak. The product never sees or stores a password. |
+| **Dev sign-in** | A stand-in for a sign-in provider, for developers and tests only: it signs in whoever names themselves. Release builds don't include it. |
+| **Session** | The time between signing in and signing out, in one browser or program. A session ends when its owner signs out, or when it expires. |
 
 <!-- sample:start -->
 The sample capability (§4.1) adds one term:
@@ -196,7 +200,7 @@ All data belongs to a workspace, so that when one server serves many users, nobo
 - Workspace Alpha has "Widget", and Beta has "Gadget" → Alpha lists only "Widget", and Beta only "Gadget".
 - Someone in Beta tries to rename or delete Alpha's "Widget" → they're told it wasn't found, and Alpha still has "Widget".
 
-**Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory, jsonfile, sqlite, and postgres drivers only: until sign-in exists (`docs/plans/editions-and-accounts.md`, step 8), nothing over HTTP can pick a workspace, and the desktop and mobile apps are the local edition.
+**Specification:** [`features/workspaces.feature`](features/workspaces.feature). These scenarios run on the memory, jsonfile, sqlite, postgres, and http drivers only. Over HTTP, the server is the hosted edition, and each workspace is the personal workspace of a signed-in account of the same name (§4.18). The desktop and mobile apps are the local edition.
 <!-- sample:end -->
 
 ### 4.9 Plans, features, and limits
@@ -359,12 +363,12 @@ Data can be kept in a SQLite database instead of as plain text, so that several 
 An admin can move a workspace to another plan, for example when its owner starts or stops paying. This is the product's only billing step: anything that takes payments (a payment provider's notifications, or an admin by hand) does it by moving the workspace to the plan that was paid for (ADR 5). How to connect a payment provider is in [`docs/billing.md`](docs/billing.md). This is step 4 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
 
 **Rules**
-- Only an admin can change a workspace's plan, with `starter admin set-plan WORKSPACE PLAN`, run beside the hosted edition's data. Users can't change their own plan, and nothing in the web app or the API changes it. (An admin API waits for sign-in.)
+- Only an admin can change a workspace's plan, with `starter admin set-plan WORKSPACE PLAN`, run beside the hosted edition's data. Users can't change their own plan, and nothing in the web app or the API changes it. (An admin API waits for roles, which come with teams.)
 - The new plan must be one of the plans in the plans file. Any other plan is refused, and the workspace stays on its plan.
 - The change takes effect straight away: the workspace's features and limits are the new plan's (§4.9). Its data is kept, even when it's now over a limit.
 - Moving one workspace leaves every other workspace on its plan.
 - A workspace's plan is kept with its data, so it stays the same after the app restarts.
-- The local edition's plan can't be changed: it's set when the app is built (§4.9). `starter admin set-plan` refuses there, saying so. Until the hosted edition has sign-in, every copy is the local edition, so only the tests change plans for now.
+- The local edition's plan can't be changed: it's set when the app is built (§4.9). `starter admin set-plan` refuses there, saying so. With sign-in on (§4.18), the server is the hosted edition, and `starter admin set-plan` changes plans when it runs with the server's storage and sign-in settings.
 
 **Examples**
 - An admin moves workspace Alpha from the free plan to the pro plan → Alpha's plan is pro, and it can export its items.
@@ -420,13 +424,40 @@ A server can keep its data in a Postgres database, so that several copies of it,
 
 **Specification:** [`features/postgres-storage.feature`](features/postgres-storage.feature), on the server driver. Every other feature's business scenarios also run on Postgres storage. Refusing a newer layout, a missing `database_url`, and the desktop app refusing Postgres are checked by unit tests. These tests need a Postgres database (`task db:up`). Without one they are skipped locally, and CI always runs them.
 
+### 4.18 Sign in to the hosted edition
+
+In the hosted edition, each person signs in to their own **account**, and works in that account's personal workspace (§4.8), on that workspace's plan (§4.9). This is part 8a of step 8 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). It builds everything sign-in needs, and proves it with the **dev sign-in**. Part 8b adds a real sign-in provider, through OpenID Connect (OIDC), behind the same seam. Accounts with an email address and a password come from the provider, not from the product (ADR 5).
+
+**Rules**
+- Sign-in is a server setting, and it is off by default. With it off, the server is a self-hosted local edition with one workspace, as it is today. The desktop and mobile apps, and the command line and the terminal app on their own, are always the local edition.
+- With sign-in on, the server keeps accounts and sessions in its storage, so its storage must be memory, SQLite, or Postgres. Plain-text storage with sign-in on is refused when the server starts.
+- The first time someone signs in, the product creates their account and a personal workspace for it. The workspace starts on the plan that the plans file names for new workspaces.
+- Signing in again brings the person back to the same account and workspace, with its data and its plan.
+- Each account sees and changes only its own workspace's data. Someone who hasn't signed in can't see or change any data, and is told to sign in.
+- Signing out ends the session at once: the same browser or program then has to sign in again. A session also expires after a while, which unit tests check.
+- An admin can move a hosted workspace to another plan (§4.15), and the change takes effect for that account at once.
+- The dev sign-in is for developers and tests only. Release builds don't include it, so a public server can't switch it on by mistake.
+- The web app shows a way to sign in while signed out, and a way to sign out while signed in. With sign-in off, it shows neither.
+
+**Examples**
+- Ada signs in for the first time, on a server whose plans file starts new workspaces on the free plan → Ada has an account, and Ada's workspace is on the free plan.
+- An admin moves Ada's workspace to the pro plan, and Ada signs out and in again → Ada's workspace is still on the pro plan.
+- Ada and Grace both sign in → each has their own workspace, and moving Ada's to the pro plan leaves Grace's on the free plan.
+<!-- sample:start -->
+- Ada adds "Widget", and Grace signs in → Grace has no items.
+<!-- sample:end -->
+- Someone opens the web app without signing in → they're asked to sign in, and see no data.
+- A server with `storage = "jsonfile"` and sign-in on → it doesn't start, and says sign-in needs memory, SQLite, or Postgres storage.
+
+**Specification:** [`features/sign-in.feature`](features/sign-in.feature), on the memory, sqlite, postgres, and http drivers, whose storage keeps accounts. The workspace scenarios in [`features/workspaces.feature`](features/workspaces.feature) also run on the http driver, each workspace being a signed-in account's. The web app's sign-in and sign-out are a browser journey ([`web/e2e/features/sign-in.feature`](web/e2e/features/sign-in.feature)). Refusing plain-text storage, expiring sessions, and leaving the dev sign-in out of release builds are checked by unit tests.
+
 ## 5. Non-functional requirements
 
 | Area | Requirement |
 |---|---|
 | Availability | _e.g. best effort; single instance while on plain-text storage, several on one disk with SQLite, several on many machines with Postgres_ |
 | Data | _e.g. data survives restarts; backups via volume snapshots_ |
-| Security | _e.g. no sign-in yet; see "Out of scope". Planned: sign-in for the hosted edition. A self-hosted server for one user (local edition) keeps running without sign-in_ |
+| Security | _e.g. the hosted edition signs people in (§4.18) and keeps each session in an `HttpOnly` cookie that page scripts can't read. Requests that change something from another site are refused. A self-hosted server for one user (local edition) keeps running without sign-in. A real sign-in provider (OIDC) is planned_ |
 | Accessibility | Web UI is keyboard navigable, and controls have accessible names (also used by tests) |
 | TUI navigation | Every list or selectable view supports Vim keys alongside the arrow keys: `j` down, `k` up |
 

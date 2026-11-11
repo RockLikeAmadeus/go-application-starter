@@ -1,6 +1,8 @@
 // Package httpclient implements the core's driving ports over HTTP, so the
 // CLI and TUI can run against a remote server with exactly the same code they
-// use against the embedded core.
+// use against the embedded core. SessionService also reads the server's
+// session endpoint, which no driving port has: it's how a client learns
+// whether the server signs people in, and who is signed in.
 package httpclient
 
 import (
@@ -33,6 +35,8 @@ func toError(status int, p *apiclient.Problem) error {
 	switch problemType {
 	case "not_found":
 		return domain.ErrNotFound
+	case "no_workspace":
+		return domain.ErrNoWorkspace
 	case "validation":
 		return &domain.ValidationError{Field: field, Message: detail}
 	case "limit":

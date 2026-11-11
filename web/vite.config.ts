@@ -15,8 +15,8 @@ const pwa = VitePWA({
   workbox: {
     // Offline, page requests get the cached app, except for these: the API
     // must always reach the server (the app never shows a stored copy of
-    // data), and so must the health probes.
-    navigateFallbackDenylist: [/^\/api\//, /^\/healthz$/, /^\/readyz$/],
+    // data), and so must the health probes and sign-in.
+    navigateFallbackDenylist: [/^\/api\//, /^\/auth\//, /^\/healthz$/, /^\/readyz$/],
     // The Wails runtime is only for the Android app, which runs no service
     // worker, so browsers shouldn't download it when they install the app.
     globIgnores: ["**/wails-runtime-*.js"],
@@ -59,6 +59,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": process.env.API_URL ?? "http://localhost:8080",
+      // Sign-in's routes (docs/sign-in.md) are the Go server's too.
+      "/auth": process.env.API_URL ?? "http://localhost:8080",
     },
   },
   test: {

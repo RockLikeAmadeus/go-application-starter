@@ -20,11 +20,19 @@ import (
 // Catalog holds each plan's entitlements, by plan name.
 type Catalog map[string]domain.Entitlements
 
+// File is what a plans file holds: its plans, and the one a new workspace
+// starts on.
+type File struct {
+	Catalog          Catalog
+	NewWorkspacePlan string
+}
+
 // document is the plans file's shape. Its records are separate from the
 // domain types, so the file's format can change on its own.
 type document struct {
-	Features map[string]featureRecord `json:"features"`
-	Plans    map[string]planRecord    `json:"plans"`
+	NewWorkspacePlan string                   `json:"newWorkspacePlan"`
+	Features         map[string]featureRecord `json:"features"`
+	Plans            map[string]planRecord    `json:"plans"`
 }
 
 type featureRecord struct {
@@ -45,6 +53,7 @@ type limitRecord struct {
 // Parse reads a plans document:
 //
 //	{
+//	  "newWorkspacePlan": "<plan>",
 //	  "features": {"<feature>": {"name": "Item export", "whenOff": "show-locked"}},
 //	  "plans": {"<plan>": {
 //	    "limits": {"<limit>": {"max": 3, "whenOver": "block-new"}},
@@ -52,31 +61,40 @@ type limitRecord struct {
 //	  }}
 //	}
 //
-// and returns each plan's entitlements. Every plan gets every feature in
-// "features", on when the plan lists it and off otherwise; a plan listing a
-// feature that isn't there is refused. Lines whose first non-blank characters
-// are // are comments, so the file can explain itself and carry the template's
-// sample markers. Comments at the end of a line aren't supported.
-func Parse(data []byte) (Catalog, error) {
+// and returns each plan's entitlements, in File's Catalog, and the plan a new
+// workspace starts on, in NewWorkspacePlan. A file without newWorkspacePlan, or
+// whose newWorkspacePlan isn't one of its plans, is refused. Every plan gets
+// every feature in "features", on when the plan lists it and off otherwise; a
+// plan listing a feature that isn't there is refused.
+// Lines whose first non-blank characters are // are comments, so the file can
+// explain itself and carry the template's sample markers. Comments at the end
+// of a line aren't supported.
+func Parse(data []byte) (File, error) {
 	var doc document
 	dec := json.NewDecoder(bytes.NewReader(stripComments(data)))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&doc); err != nil {
-		return nil, fmt.Errorf("plans file: %w", err)
+		return File{}, fmt.Errorf("plans file: %w", err)
 	}
 	features, err := buildFeatures(doc.Features)
 	if err != nil {
-		return nil, fmt.Errorf("plans file: %w", err)
+		return File{}, fmt.Errorf("plans file: %w", err)
 	}
 	catalog := Catalog{}
 	for name, plan := range doc.Plans {
 		entitlements, err := plan.entitlements(name, features)
 		if err != nil {
-			return nil, fmt.Errorf("plans file: plan %q, %w", name, err)
+			return File{}, fmt.Errorf("plans file: plan %q, %w", name, err)
 		}
 		catalog[name] = entitlements
 	}
-	return catalog, nil
+	if doc.NewWorkspacePlan == "" {
+		return File{}, errors.New("plans file: no newWorkspacePlan")
+	}
+	if _, ok := catalog[doc.NewWorkspacePlan]; !ok {
+		return File{}, fmt.Errorf("plans file: newWorkspacePlan %q isn't one of its plans", doc.NewWorkspacePlan)
+	}
+	return File{Catalog: catalog, NewWorkspacePlan: doc.NewWorkspacePlan}, nil
 }
 
 // buildFeatures validates the file's features, all of them off.
@@ -215,22 +233,21 @@ func StoredPlanOf(repository ports.WorkspacePlanRepository, fallback string) fun
 //go:embed plans.jsonc
 var shipped []byte
 
-// Default returns the plans in the file built into the binary,
-// plans.jsonc. A product edits that file to set its own plans; Load reads
-// another one instead (STARTER_PLANS_FILE).
-func Default() (Catalog, error) {
+// Default returns the plans file built into the binary, plans.jsonc. A
+// product edits that file to set its own plans; Load reads another one
+// instead (STARTER_PLANS_FILE).
+func Default() (File, error) {
 	return Parse(shipped)
 }
 
-// Load returns the plans in the file at path, or Default's when path is
-// empty.
-func Load(path string) (Catalog, error) {
+// Load returns the plans file at path, or Default's when path is empty.
+func Load(path string) (File, error) {
 	if path == "" {
 		return Default()
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return File{}, err
 	}
 	return Parse(data)
 }

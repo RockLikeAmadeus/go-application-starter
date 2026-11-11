@@ -24,8 +24,8 @@ func (w *world) registerEntitlementsSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^I try to move my workspace to the "([^"]*)" plan from the command line$`, w.iTryToMoveMyWorkspaceFromTheCommandLine)
 	sc.Step(`^I am told the local edition's plan is set when the app is built$`, w.iAmToldTheLocalPlanIsFixed)
 	sc.Step(`^my workspace's plan is "([^"]*)"$`, w.myWorkspacesPlanIs)
-	sc.Step(`^workspace "([^"]*)" is on the "([^"]*)" plan$`, w.moveWorkspaceToThePlan)
-	sc.Step(`^an admin moves workspace "([^"]*)" to the "([^"]*)" plan$`, w.moveWorkspaceToThePlan)
+	sc.Step(`^workspace "([^"]*)" is on the "([^"]*)" plan$`, w.moveWorkspaceNamedToThePlan)
+	sc.Step(`^an admin moves workspace "([^"]*)" to the "([^"]*)" plan$`, w.moveWorkspaceNamedToThePlan)
 	sc.Step(`^workspace "([^"]*)"'s plan is "([^"]*)"$`, w.workspacesPlanIs)
 }
 
@@ -80,13 +80,25 @@ func (w *world) myWorkspacesPlanIs(ctx context.Context, plan string) error {
 	return nil
 }
 
-func (w *world) moveWorkspaceToThePlan(name, plan string) error {
+func (w *world) moveWorkspaceToThePlan(id, plan string) error {
 	if w.plans == nil {
 		return errFixedPlans
 	}
-	return w.billing.ChangePlan(context.Background(), domain.WorkspaceID(name), plan)
+	return w.billing.ChangePlan(context.Background(), domain.WorkspaceID(id), plan)
+}
+
+func (w *world) moveWorkspaceNamedToThePlan(name, plan string) error {
+	id, err := w.workspaceNamed(name)
+	if err != nil {
+		return err
+	}
+	return w.moveWorkspaceToThePlan(string(id), plan)
 }
 
 func (w *world) workspacesPlanIs(name, plan string) error {
-	return w.myWorkspacesPlanIs(in(name), plan)
+	ctx, err := w.inWorkspace(name)
+	if err != nil {
+		return err
+	}
+	return w.myWorkspacesPlanIs(ctx, plan)
 }

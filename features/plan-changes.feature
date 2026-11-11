@@ -7,9 +7,9 @@ Feature: Change a workspace's plan
   # the drivers whose plans the tests set: memory, jsonfile, sqlite, postgres, and http.
   # The http driver's admin works on the server's storage, as
   # `starter admin set-plan` does beside a server: the API can't change plans.
-  # The one that switches between workspaces (@workspaces) runs on memory,
-  # jsonfile, sqlite, and postgres only. The local edition's refusal runs on the desktop
-  # driver, which is the local edition.
+  # The one that switches between workspaces (@workspaces) runs on those
+  # drivers too, with http signing in to each workspace's account. The local
+  # edition's refusal runs on the desktop driver, which is the local edition.
 
   @plans
   Scenario: An admin moves a workspace to another plan

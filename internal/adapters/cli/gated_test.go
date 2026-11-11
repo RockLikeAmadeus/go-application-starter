@@ -76,6 +76,7 @@ func TestHelpNotesGatedCommandsByThePlan(t *testing.T) {
 // off, and whose local plan lists features (e.g. `"reports"`, or nothing).
 func plansWith(whenOff, features string) string {
 	return `{
+	"newWorkspacePlan": "local",
 	"features": {"reports": {"name": "Reports", "whenOff": ` + whenOff + `}},
 	"plans": {"local": {"limits": {}, "features": [` + features + `]}}
 }`

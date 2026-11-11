@@ -13,13 +13,16 @@ import (
 // testPlans is a ports.EntitlementsProvider and ports.PlanCatalog whose plans the
 // scenarios set: a catalog, starting from the shipped plans file, and the
 // repository holding the plan each workspace is on. A workspace no scenario puts
-// on a plan is on the local plan, as in the local edition. It answers through
+// on a plan is on its edition's starting plan: the local plan in the local
+// edition, and the plans file's newWorkspacePlan in the hosted one. It answers through
 // the plans adapter, which it locks around, because the http driver's server
 // reads it from other goroutines.
 type testPlans struct {
 	mu      sync.Mutex
 	catalog plans.Catalog
 	stored  ports.WorkspacePlanRepository
+	// startingPlan is the plan of a workspace with no stored plan.
+	startingPlan string
 }
 
 var (
@@ -27,12 +30,16 @@ var (
 	_ ports.PlanCatalog          = (*testPlans)(nil)
 )
 
-func newTestPlans(stored ports.WorkspacePlanRepository) (*testPlans, error) {
-	catalog, err := plans.Default()
+func newTestPlans(stored ports.WorkspacePlanRepository, e edition) (*testPlans, error) {
+	file, err := plans.Default()
 	if err != nil {
 		return nil, err
 	}
-	return &testPlans{catalog: catalog, stored: stored}, nil
+	startingPlan := bootstrap.LocalPlan
+	if e == hostedEdition {
+		startingPlan = file.NewWorkspacePlan
+	}
+	return &testPlans{catalog: file.Catalog, stored: stored, startingPlan: startingPlan}, nil
 }
 
 func (p *testPlans) For(ctx context.Context, workspace domain.WorkspaceID) (domain.Entitlements, error) {
@@ -40,7 +47,7 @@ func (p *testPlans) For(ctx context.Context, workspace domain.WorkspaceID) (doma
 	defer p.mu.Unlock()
 	adapter := plans.Provider{
 		Catalog:         p.catalog,
-		PlanOf:          plans.StoredPlanOf(p.stored, bootstrap.LocalPlan),
+		PlanOf:          plans.StoredPlanOf(p.stored, p.startingPlan),
 		ShouldGiveHints: true,
 		LocalPlan:       bootstrap.LocalPlan,
 	}

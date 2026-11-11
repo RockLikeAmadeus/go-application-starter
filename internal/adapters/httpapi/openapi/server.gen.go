@@ -165,6 +165,17 @@ type Problem struct {
 	Type *string `json:"type,omitempty"`
 }
 
+// Session defines model for Session.
+type Session struct {
+	// IsSignInOn True when this server signs people in (the hosted edition), so the
+	// web app asks someone who isn't signed in to sign in. False when it
+	// doesn't (the local edition).
+	IsSignInOn bool `json:"isSignInOn"`
+
+	// Name The signed-in account's name. Missing when no one is signed in.
+	Name *string `json:"name,omitempty"`
+}
+
 // Warning defines model for Warning.
 type Warning struct {
 	// Message The warning, ready to show as given (e.g. that the data folder
@@ -210,6 +221,9 @@ type ServerInterface interface {
 
 	// (PATCH /api/v1/items/{id})
 	RenameItem(w http.ResponseWriter, r *http.Request, id string)
+
+	// (GET /api/v1/session)
+	GetSession(w http.ResponseWriter, r *http.Request)
 
 	// (GET /api/v1/warnings)
 	GetWarnings(w http.ResponseWriter, r *http.Request)
@@ -372,6 +386,20 @@ func (siw *ServerInterfaceWrapper) RenameItem(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
+// GetSession operation middleware
+func (siw *ServerInterfaceWrapper) GetSession(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSession(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetWarnings operation middleware
 func (siw *ServerInterfaceWrapper) GetWarnings(w http.ResponseWriter, r *http.Request) {
 
@@ -509,6 +537,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/connection", wrapper.GetConnection)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/entitlements", wrapper.GetEntitlements)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/warnings", wrapper.GetWarnings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/session", wrapper.GetSession)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/items", wrapper.ListItems)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/items", wrapper.CreateItem)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/items/export", wrapper.ExportItems)
@@ -830,6 +859,44 @@ func (response RenameItemdefaultApplicationProblemPlusJSONResponse) VisitRenameI
 	return err
 }
 
+type GetSessionRequestObject struct {
+}
+
+type GetSessionResponseObject interface {
+	VisitGetSessionResponse(w http.ResponseWriter) error
+}
+
+type GetSession200JSONResponse Session
+
+func (response GetSession200JSONResponse) VisitGetSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSessiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetSessiondefaultApplicationProblemPlusJSONResponse) VisitGetSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetWarningsRequestObject struct {
 }
 
@@ -894,6 +961,9 @@ type StrictServerInterface interface {
 
 	// (PATCH /api/v1/items/{id})
 	RenameItem(ctx context.Context, request RenameItemRequestObject) (RenameItemResponseObject, error)
+
+	// (GET /api/v1/session)
+	GetSession(ctx context.Context, request GetSessionRequestObject) (GetSessionResponseObject, error)
 
 	// (GET /api/v1/warnings)
 	GetWarnings(ctx context.Context, request GetWarningsRequestObject) (GetWarningsResponseObject, error)
@@ -1143,6 +1213,30 @@ func (sh *strictHandler) RenameItem(w http.ResponseWriter, r *http.Request, id s
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RenameItemResponseObject); ok {
 		if err := validResponse.VisitRenameItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSession operation middleware
+func (sh *strictHandler) GetSession(w http.ResponseWriter, r *http.Request) {
+	var request GetSessionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSession(ctx, request.(GetSessionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSession")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSessionResponseObject); ok {
+		if err := validResponse.VisitGetSessionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

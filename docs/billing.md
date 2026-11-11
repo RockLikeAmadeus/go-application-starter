@@ -7,9 +7,10 @@ This guide explains how a product built from this template gets paid. It covers 
 **The template doesn't take payments.** It ships the one step that billing comes down to, moving a workspace to a plan, and an admin command that runs it.
 
 - **Built:** `ChangePlan`, each storage adapter's stored plans, `plans.StoredPlanOf`, and `starter admin set-plan`, all proved by the acceptance tests.
-- **Not built:** the hosted edition. Sign-in is step 8 of `docs/plans/editions-and-accounts.md`. Until then every copy is the local edition, so `bootstrap.NewBilling` refuses and `starter admin set-plan` fails with "The plan for the local edition is set when the application is built and cannot be changed."
+- **Built:** the hosted edition, with the dev sign-in ([docs/sign-in.md](sign-in.md)). With the `sign_in` setting on, each workspace is on its stored plan, and `starter admin set-plan` changes it.
+- **Not built:** a real sign-in provider. It is step 8b of `docs/plans/editions-and-accounts.md`. Until then, only builds with the dev sign-in can turn sign-in on.
 
-Everything below that changes a real workspace's plan needs that step, or your own version of it. See [Switching on stored plans](#switching-on-stored-plans).
+With sign-in off, every copy is the local edition. Then `bootstrap.NewBilling` refuses, and `starter admin set-plan` fails with "The plan for the local edition is set when the application is built and cannot be changed." [Stored plans are switched on](#stored-plans-are-switched-on-with-sign-in) explains the difference.
 
 ## The concepts
 
@@ -43,28 +44,38 @@ A workspace with no stored plan is on the default plan given to `plans.StoredPla
 
 **Keep plan names once they're in use.** Stored plans refer to the plans file by name. If you rename or remove a plan, a workspace still stored on it can't get its entitlements, and everything its plan gates is refused until you move that workspace. Move those workspaces first.
 
-## Switching on stored plans
+## Stored plans are switched on with sign-in
 
-When your product has a hosted edition, `internal/bootstrap` needs two changes. Keep the local edition as it is: its plan stays fixed, and a local user can't upgrade their own copy by editing stored data.
+A workspace's stored plan counts only in the hosted edition, which is a server with the `sign_in` setting on. The local edition keeps its fixed plan, so a local user can't upgrade their own copy by editing stored data. `internal/bootstrap` makes the choice in two places:
 
-1. **`bootstrap.NewBilling`:** in the hosted edition, open the storage and return the real service:
-   ```go
-   return app.NewBillingService(store.WorkspacePlans(), provider), nil
-   ```
-   `store.WorkspacePlans()` stands for however your storage hands you its `ports.WorkspacePlanRepository`, and `provider` is the `plans.Provider`, which is also the `ports.PlanCatalog`. Keep refusing `--server`: `ErrNoPlanChangesOverAServer` stays until an admin API exists.
-2. **The hosted edition's `plans.Provider`:** set `PlanOf` to `plans.StoredPlanOf(repository, defaultPlan)`, where `defaultPlan` is the plan a new workspace starts on (`free`, say), and set `ShouldGiveHints` so that locked features name the plans that have them.
+1. **`bootstrap.NewBilling`** returns the real billing service when sign-in is on. It opens the configured storage, as the server does, and hands back `app.NewBillingService` on that storage's `ports.WorkspacePlanRepository`. With sign-in off, it refuses with `ErrLocalPlanIsFixed`. It always refuses `--server` with `ErrNoPlanChangesOverAServer`, until an admin API exists.
+2. **The hosted edition's `plans.Provider`** reads each workspace's plan with `plans.StoredPlanOf`. A workspace with no stored plan, such as a new account's workspace, is on the plans file's `newWorkspacePlan`. The provider also gives hints, so locked features name the plans that have them.
+
+The plans file names the starting plan in its top-level `newWorkspacePlan` field, which must be one of its plans:
+
+```jsonc
+{
+  "newWorkspacePlan": "free",
+  "plans": { ... }
+}
+```
+
+[docs/features.md](features.md) describes the rest of the plans file.
 
 ## Running paid accounts by hand
 
-You don't need a payment provider to start charging. Send an invoice, and when it's paid, on a computer with access to the hosted edition's storage, run:
+You don't need a payment provider to start charging. Send an invoice, and when it's paid, on a computer with access to the hosted edition's storage, run the command with the server's storage and sign-in settings:
 
 ```sh
-starter admin set-plan WORKSPACE pro
+STARTER_STORAGE=postgres STARTER_DATABASE_URL=postgres://… STARTER_SIGN_IN=dev \
+  starter admin set-plan WORKSPACE pro
 ```
+
+`WORKSPACE` is the workspace's ID. Each account's personal workspace is in the `workspace_id` column of the `accounts` table. Until step 8b adds a real sign-in provider, `STARTER_SIGN_IN=dev` works only in a program built with the `devsignin` build tag, such as `task run:cli`.
 
 It prints `Workspace WORKSPACE is now on the pro plan.` To end a paid account, run it again with your free plan.
 
-- **It's not a network API.** The command works on the storage directly, so being able to run it means having access to the storage. It refuses `--server`. An admin API waits for sign-in and roles.
+- **It's not a network API.** The command works on the storage directly, so being able to run it means having access to the storage. It refuses `--server`. An admin API waits for roles, which come with teams.
 - **It takes effect straight away in the core.** The web app keeps the entitlements it read for the session, so someone already using it sees the new plan after reloading. Until then the core still applies the new plan.
 - **It suits a handful of customers,** such as annual contracts or a closed beta. Beyond that, connect a provider.
 

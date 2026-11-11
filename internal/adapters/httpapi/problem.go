@@ -12,12 +12,14 @@ import (
 
 // Problem type codes. The HTTP client adapter maps these back to domain errors.
 const (
-	ProblemNotFound   = "not_found"
-	ProblemValidation = "validation"
-	ProblemLimit      = "limit"
-	ProblemFeature    = "feature"
-	ProblemBadRequest = "bad_request"
-	ProblemInternal   = "internal"
+	ProblemNotFound    = "not_found"
+	ProblemNoWorkspace = "no_workspace"
+	ProblemValidation  = "validation"
+	ProblemLimit       = "limit"
+	ProblemFeature     = "feature"
+	ProblemBadRequest  = "bad_request"
+	ProblemCrossSite   = "cross_site"
+	ProblemInternal    = "internal"
 )
 
 // problemFor maps a domain error to an RFC 9457 problem document.
@@ -39,6 +41,8 @@ func problemFor(err error) openapi.Problem {
 		return p
 	case errors.Is(err, domain.ErrNotFound):
 		return problem(http.StatusNotFound, ProblemNotFound, err.Error(), nil)
+	case errors.Is(err, domain.ErrNoWorkspace):
+		return problem(http.StatusUnauthorized, ProblemNoWorkspace, err.Error(), nil)
 	default:
 		return internalProblem()
 	}

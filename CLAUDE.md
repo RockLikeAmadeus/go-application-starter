@@ -13,7 +13,7 @@ The sample domain is `Item`; replace it when starting a real product.
 
 The app comes in two **editions** (ADR 5), built step by step from `docs/plans/editions-and-accounts.md`. Most of it is still planned:
 - **Local edition:** one user, one workspace, no sign-in. This is the CLI and TUI (embedded), the desktop and Android apps, and a self-hosted single-user server. All of these work today.
-- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. This is the web app on a hosted server, the CLI and TUI after `starter login`, and the desktop and Android apps in remote mode. All planned.
+- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. The web app on a server with `sign_in` on works today with the dev sign-in (ADR 9, `docs/sign-in.md`). Real providers (OIDC) come in 8b. The CLI and TUI after `starter login`, and the desktop and Android apps in remote mode, are planned.
 
 Each copy uses one edition, and nothing syncs between them. Outside `internal/bootstrap` and `desktop.Open`, never assume local storage or a single user.
 
@@ -80,7 +80,7 @@ cmd/mobile                       Wails v3 Android app around mobile.Open, plus t
 internal/core/domain             entities, value rules, domain errors (stdlib only)
 internal/core/ports              interfaces: driving (…Service) + driven (…Repository, Clock, IDGenerator)
 internal/core/app                use cases implementing driving ports (orchestration only)
-internal/adapters/httpapi        REST server (generated strict interface from OpenAPI) + SPA serving
+internal/adapters/httpapi        REST server (generated strict interface from OpenAPI), SPA serving, and sign-in under `/auth/` (session cookie, dev sign-in in `devsignin` builds)
 internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --server mode (later, desktop and mobile remote mode too)
 internal/adapters/cli, tui       Cobra / Bubble Tea + Lip Gloss
 internal/adapters/desktop        desktop app wiring with no Wails import: data folder, storage, in-process handler
@@ -128,7 +128,7 @@ Each loads when you read a file matching its paths. Read one directly when a tas
 | `workspaces-and-plans.md` | workspace scoping, entitlements, the local plan and plans file, changing a plan, domain errors |
 | `storage.md` | new backends, the jsonfile lock and shared data folder, SQLite (ADR 7) |
 | `configuration.md` | layered settings (ADR 6), adding a setting |
-| `server.md` | SPA embedding, new server routes, `/api/v1/connection` |
+| `server.md` | SPA embedding, new server routes, `/api/v1/connection`, the `/auth/` routes |
 | `tui.md` | vim keys, shared TUI styles |
 | `web.md` | Node/TS versions, icons, installable app, offline behaviour, Android bridge client |
 | `web-styles.md` | styles, palette, focus, phone width, entry transitions |

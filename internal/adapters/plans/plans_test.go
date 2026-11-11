@@ -14,6 +14,7 @@ import (
 
 func TestParse_GivesEachPlansEntitlements(t *testing.T) {
 	doc := `{
+		"newWorkspacePlan": "free",
 		"plans": {
 			"free": {"limits": {"items": {"max": 3, "whenOver": "read-only"}}},
 			"pro": {"limits": {}}
@@ -32,14 +33,27 @@ func TestParse_GivesEachPlansEntitlements(t *testing.T) {
 		},
 		"pro": {Plan: "pro", Limits: map[string]domain.Limit{}, Features: map[string]domain.Feature{}},
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
+	if !reflect.DeepEqual(got.Catalog, want) {
+		t.Errorf("Parse =\n%+v\nwant\n%+v", got.Catalog, want)
+	}
+}
+
+func TestParse_ReadsTheNewWorkspacePlan(t *testing.T) {
+	doc := `{"newWorkspacePlan": "free", "plans": {"free": {"limits": {}}}}`
+
+	got, err := plans.Parse([]byte(doc))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if got.NewWorkspacePlan != "free" {
+		t.Errorf("NewWorkspacePlan = %q, want %q", got.NewWorkspacePlan, "free")
 	}
 }
 
 func TestParse_IgnoresFullLineComments(t *testing.T) {
 	doc := `// The product's plans.
 	{
+		"newWorkspacePlan": "free",
 		"plans": {
 			// The free plan.
 			"free": {
@@ -61,8 +75,8 @@ func TestParse_IgnoresFullLineComments(t *testing.T) {
 		Limits:   map[string]domain.Limit{"items": {Name: "items", Max: 3, WhenOver: domain.BlockNew}},
 		Features: map[string]domain.Feature{},
 	}}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
+	if !reflect.DeepEqual(got.Catalog, want) {
+		t.Errorf("Parse =\n%+v\nwant\n%+v", got.Catalog, want)
 	}
 }
 
@@ -72,7 +86,7 @@ func TestParse_ReadsFeatures(t *testing.T) {
 		"audit": {"name": "Audit log", "whenOff": "hide"}
 	}`
 	t.Run("gives every plan every feature, on when it lists it", func(t *testing.T) {
-		doc := `{` + features + `, "plans": {
+		doc := `{"newWorkspacePlan": "free", ` + features + `, "plans": {
 			"free": {"limits": {}},
 			"pro": {"limits": {}, "features": ["export", "audit"]}
 		}}`
@@ -91,8 +105,8 @@ func TestParse_ReadsFeatures(t *testing.T) {
 			"free": {Plan: "free", Limits: map[string]domain.Limit{}, Features: catalogFeatures(false)},
 			"pro":  {Plan: "pro", Limits: map[string]domain.Limit{}, Features: catalogFeatures(true)},
 		}
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("Parse =\n%+v\nwant\n%+v", got, want)
+		if !reflect.DeepEqual(got.Catalog, want) {
+			t.Errorf("Parse =\n%+v\nwant\n%+v", got.Catalog, want)
 		}
 	})
 
@@ -145,6 +159,14 @@ func TestParse_RefusesABadPlansFile(t *testing.T) {
 		"an unknown field": {
 			`{"plans": {"free": {"limits": {"items": {"maximum": 3, "whenOver": "block-new"}}}}}`,
 			[]string{`unknown field "maximum"`},
+		},
+		"no newWorkspacePlan": {
+			`{"plans": {"free": {"limits": {}}}}`,
+			[]string{"plans file", "newWorkspacePlan"},
+		},
+		"a newWorkspacePlan that isn't a plan": {
+			`{"newWorkspacePlan": "starter", "plans": {"free": {"limits": {}}}}`,
+			[]string{"plans file", "newWorkspacePlan", `"starter"`},
 		},
 	}
 	for name, tc := range cases {
@@ -307,15 +329,25 @@ func TestStoredPlanOf_PassesOnAnyOtherErrorInsteadOfTheDefault(t *testing.T) {
 }
 
 func TestDefault_HasALocalPlanWithNoLimits(t *testing.T) {
-	catalog, err := plans.Default()
+	file, err := plans.Default()
 	if err != nil {
 		t.Fatalf("Default: %v", err)
 	}
-	local, ok := catalog["local"]
+	local, ok := file.Catalog["local"]
 	if !ok {
-		t.Fatalf("the shipped plans file has no local plan; it has %v", catalog)
+		t.Fatalf("the shipped plans file has no local plan; it has %v", file.Catalog)
 	}
 	if len(local.Limits) != 0 {
 		t.Errorf("local plan limits = %v, want none", local.Limits)
+	}
+}
+
+func TestDefault_StartsNewWorkspacesOnFree(t *testing.T) {
+	file, err := plans.Default()
+	if err != nil {
+		t.Fatalf("Default: %v", err)
+	}
+	if file.NewWorkspacePlan != "free" {
+		t.Errorf("NewWorkspacePlan = %q, want %q", file.NewWorkspacePlan, "free")
 	}
 }

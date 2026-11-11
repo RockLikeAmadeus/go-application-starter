@@ -10,7 +10,7 @@ import (
 var ErrNotFound = errors.New("The requested record could not be found.")
 
 // ErrNoWorkspace is returned when a request has no workspace to work in.
-var ErrNoWorkspace = errors.New("no workspace")
+var ErrNoWorkspace = errors.New("Please sign in to continue.")
 
 // ErrValidation is the sentinel matched by every *ValidationError via errors.Is.
 var ErrValidation = errors.New("validation failed")

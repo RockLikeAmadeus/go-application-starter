@@ -34,6 +34,11 @@ type Options struct {
 	// Warnings answers GET /api/v1/warnings: messages every front end shows
 	// as given, such as bootstrap.App.Warnings. None when nil.
 	Warnings []string
+	// SignIn knows each session's account. When set, a request with a
+	// session cookie runs in that account's workspace.
+	SignIn ports.SignInService
+	// IsDevSignInOn serves the dev sign-in under /auth/dev. It needs SignIn.
+	IsDevSignInOn bool
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and
@@ -75,9 +80,23 @@ func NewHandler(opts Options) http.Handler {
 		writeProblem(w, problem(http.StatusNotFound, ProblemNotFound, "no such endpoint", nil))
 	})
 
+	if opts.IsDevSignInOn {
+		mux.HandleFunc("GET /auth/sign-in", signInGoesTo("/auth/dev"))
+		mux.HandleFunc("GET /auth/dev", devSignInForm)
+		mux.Handle("POST /auth/dev", devSignIn(opts.SignIn))
+	}
+	if opts.SignIn != nil {
+		mux.Handle("POST /auth/sign-out", signOut(opts.SignIn))
+	}
+
 	mux.Handle("/", spaHandler(opts.WebAssets))
 
-	return recoverer(log, requestLogger(log, mux))
+	var handler http.Handler = mux
+	if opts.SignIn != nil {
+		handler = sessionMiddleware(opts.SignIn, handler)
+		handler = refuseCrossSite(handler)
+	}
+	return recoverer(log, requestLogger(log, handler))
 }
 
 // spaHandler serves static files and falls back to index.html so client-side

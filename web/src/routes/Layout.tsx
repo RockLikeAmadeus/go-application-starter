@@ -7,6 +7,9 @@ import { Link, Outlet } from "react-router";
 import { afterTransition } from "../lib/afterTransition";
 import { entitlementsQuery } from "../features/entitlements/useFeature";
 import { OfflineNotice } from "../features/offline/OfflineNotice";
+import { SignInScreen } from "../features/session/SignInScreen";
+import { SignOutForm } from "../features/session/SignOutForm";
+import { useSession } from "../features/session/useSession";
 import { useLocalDataOnline } from "../features/offline/useLocalDataOnline";
 import type { Style } from "../features/style/style";
 import { StylePicker } from "../features/style/StylePicker";
@@ -21,8 +24,18 @@ export function Layout() {
   usePrefetchQuery(entitlementsQuery);
   const [theme, setTheme] = useTheme();
   const [style, setStyle] = useStyle();
+  const session = useSession();
+  if (session?.isSignInOn && session.name === undefined) {
+    return <SignInScreen />;
+  }
   const content = (
-    <SidebarContent theme={theme} onThemeChange={setTheme} style={style} onStyleChange={setStyle} />
+    <SidebarContent
+      theme={theme}
+      onThemeChange={setTheme}
+      style={style}
+      onStyleChange={setStyle}
+      signedInName={session?.name}
+    />
   );
   return (
     <div className="flex min-h-screen">
@@ -130,14 +143,22 @@ type SidebarContentProps = {
   onThemeChange: (theme: Theme) => void;
   style: Style;
   onStyleChange: (style: Style) => void;
+  signedInName?: string;
 };
 
 /**
- * Logo, navigation, and Appearance controls, shared by the sidebar and the phone
- * menu. It fills its container, so in the menu only a tap outside it reaches
- * the dialog itself (which counts as the backdrop).
+ * Logo, navigation, who is signed in (with sign-in on), and Appearance
+ * controls, shared by the sidebar and the phone menu. It fills its container,
+ * so in the menu only a tap outside it reaches the dialog itself (which counts
+ * as the backdrop).
  */
-function SidebarContent({ theme, onThemeChange, style, onStyleChange }: SidebarContentProps) {
+function SidebarContent({
+  theme,
+  onThemeChange,
+  style,
+  onStyleChange,
+  signedInName,
+}: SidebarContentProps) {
   return (
     <div className="flex h-full flex-col px-3 py-4 soft:px-4 soft:py-5">
       <Link to="/" className="flex items-center gap-3 px-2 text-lg font-semibold">
@@ -160,11 +181,14 @@ function SidebarContent({ theme, onThemeChange, style, onStyleChange }: SidebarC
         </NavLink>
         {/* sample:end */}
       </nav>
-      <fieldset className="mt-auto flex flex-col gap-3 border-t border-sidebar-line px-2 pt-4 soft:border-t-0">
-        <legend className="sr-only">Appearance</legend>
-        <StylePicker style={style} onChange={onStyleChange} />
-        <ThemeToggle theme={theme} onChange={onThemeChange} />
-      </fieldset>
+      <div className="mt-auto flex flex-col gap-4">
+        {signedInName !== undefined && <SignOutForm name={signedInName} />}
+        <fieldset className="flex flex-col gap-3 border-t border-sidebar-line px-2 pt-4 soft:border-t-0">
+          <legend className="sr-only">Appearance</legend>
+          <StylePicker style={style} onChange={onStyleChange} />
+          <ThemeToggle theme={theme} onChange={onThemeChange} />
+        </fieldset>
+      </div>
     </div>
   );
 }
