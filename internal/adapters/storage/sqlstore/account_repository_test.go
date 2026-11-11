@@ -19,3 +19,9 @@ func TestAccountRepositoryContractOnSQLite(t *testing.T) {
 		return sqlstore.NewAccountRepository(db)
 	})
 }
+
+func TestAccountRepositoryContractOnPostgres(t *testing.T) {
+	storagetest.RunAccountRepositoryContract(t, func(t *testing.T) ports.AccountRepository {
+		return sqlstore.NewAccountRepository(openPostgres(t))
+	})
+}

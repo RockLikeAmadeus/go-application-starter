@@ -122,7 +122,10 @@ Storage:
   - Red: `TestAccountRepositoryContractOnSQLite` failed in all six cases, as the stub returns zero values and no errors (e.g. `err = <nil>, want ErrNotFound`).
   - Green: `00004_accounts_and_sessions.sql` creates `accounts` (only; task 10 adds `sessions` to the same unreleased file), and `sqlstore.AccountRepository` selects by issuer and subject or by ID and upserts on ID.
   - Refactor: `accountColumns` and a `findOne` helper share the select and scan; an index on `(issuer, subject)` for sign-in's lookup, left non-unique as no test demands refusing a second account with one identity.
-- [ ] 9b. `sqlstore.NewAccountRepository` passes the account contract on Postgres.
+- [x] 9b. `sqlstore.NewAccountRepository` passes the account contract on Postgres.
+  - Red: none. `TestAccountRepositoryContractOnPostgres` passed at once, as task 9's SQL and migration are shared; kept as a guard (it fails on a broken `Save`).
+  - Green: skipped, as no production code was demanded.
+  - Refactor: nothing worth changing; the test matches `TestWorkspacePlanRepositoryContractOnPostgres`.
 - [ ] 10. `sqlstore.NewSessionRepository` passes the session contract on SQLite and Postgres.
 
 Plans:
