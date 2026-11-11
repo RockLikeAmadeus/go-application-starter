@@ -105,6 +105,7 @@ test/packaging                   package check: builds the Linux packages and th
 - A new storage backend implements the `…Repository` ports, runs each one's `storagetest` contract suite, and is wired (with its readiness check) in `internal/bootstrap` (`.claude/rules/storage.md`).
 - Data belongs to a workspace, passed **explicitly** to every repository call; plans set a workspace's limits, checked before saving and never on delete; domain errors are the shared language across HTTP. Details are in `.claude/rules/workspaces-and-plans.md`. **Adding an entity: follow the checklist in `docs/workspaces.md`. Gating a feature by plan: `docs/features.md`. Connecting a payment provider: `docs/billing.md`.**
 - Time and IDs come from `ports.Clock` / `ports.IDGenerator`. Use `internal/testsupport` fakes in tests.
+- The core's tests are unit tests, with no database, network, or files: they may import only the standard library, the core, `storage/memory`, and `internal/testsupport`, and never `database/sql`, `net/...`, or `os`.
 
 ### API contract
 
