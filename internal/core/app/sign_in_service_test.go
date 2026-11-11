@@ -117,3 +117,14 @@ func TestCurrentAccount_WithASignedInTokenReturnsTheSessionsAccount(t *testing.T
 		t.Errorf("account = %v, want %v", got, grace)
 	}
 }
+
+func TestCurrentAccount_WithAnUnknownTokenHasNoWorkspace(t *testing.T) {
+	svc := app.NewSignInService(testsupport.StoredAccounts{}, testsupport.StoredSessions{}, testsupport.FixedToken("unused"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
+
+	_, err := svc.CurrentAccount(context.Background(), "token-unknown")
+
+	if !errors.Is(err, domain.ErrNoWorkspace) {
+		t.Fatalf("err = %v, want %v", err, domain.ErrNoWorkspace)
+	}
+}

@@ -38,9 +38,13 @@ func (s *SignInService) SignIn(ctx context.Context, identity domain.Identity) (s
 	return token, nil
 }
 
-// CurrentAccount returns the account whose session the token is.
+// CurrentAccount returns the account whose session the token is. A token with
+// no session is signed out, which is domain.ErrNoWorkspace.
 func (s *SignInService) CurrentAccount(ctx context.Context, token string) (domain.Account, error) {
 	session, err := s.sessions.FindByHash(ctx, domain.HashSessionToken(token))
+	if errors.Is(err, domain.ErrNotFound) {
+		return domain.Account{}, domain.ErrNoWorkspace
+	}
 	if err != nil {
 		return domain.Account{}, fmt.Errorf("find session: %w", err)
 	}

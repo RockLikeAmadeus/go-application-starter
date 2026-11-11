@@ -56,7 +56,10 @@ The core:
   - Red: `TestCurrentAccount_WithASignedInTokenReturnsTheSessionsAccount` failed: got the zero account, want `account-2` (Grace's).
   - Green: `CurrentAccount` finds the session by the token's hash (new `SessionRepository.FindByHash`) and returns its account (new `AccountRepository.Find`, by ID); both fakes implement them.
   - Refactor: the find errors are wrapped, as `SignIn`'s are. Mapping a missing session to `ErrNoWorkspace` is left to 5b, which demands it.
-- [ ] 5b. `CurrentAccount` returns `ErrNoWorkspace` for an unknown token.
+- [x] 5b. `CurrentAccount` returns `ErrNoWorkspace` for an unknown token.
+  - Red: `TestCurrentAccount_WithAnUnknownTokenHasNoWorkspace` failed: got the wrapped `ErrNotFound` ("find session: …"), want `ErrNoWorkspace`.
+  - Green: `CurrentAccount` returns `ErrNoWorkspace` when `FindByHash` gives `ErrNotFound`; other errors are still wrapped.
+  - Refactor: the doc comment says an unknown token is `ErrNoWorkspace`. Nothing else worth changing.
 - [ ] 5c. `CurrentAccount` returns `ErrNoWorkspace` for an expired token, and deletes its session.
 - [ ] 6. `SignOut(ctx, token)` deletes the session, so `CurrentAccount` then fails. Signing out of an unknown session isn't an error.
 
