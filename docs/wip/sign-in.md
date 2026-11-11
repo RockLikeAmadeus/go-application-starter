@@ -110,7 +110,10 @@ Storage:
   - Red: none. `TestSessionRepositoryContract/Save_replaces_the_session_with_the_same_token_hash` passed at once, as the memory map is keyed by hash; kept as a guard (it fails on a `Save` that keeps the first session).
   - Green: skipped, as no production code was demanded.
   - Refactor: nothing worth changing; the save loop now appears twice in the contract, as in the account contract, but a helper for two isn't clearer yet.
-- [ ] 8d. Session contract: `Delete` removes the session, so `FindByHash` then returns `ErrNotFound`.
+- [x] 8d. Session contract: `Delete` removes the session, so `FindByHash` then returns `ErrNotFound`.
+  - Red: `TestSessionRepositoryContract/Delete_removes_the_session,_so_FindByHash_returns_ErrNotFound` failed: `FindByHash after Delete: err = <nil>, want ErrNotFound`.
+  - Green: `memory.SessionRepository.Delete` removes the session kept under the hash.
+  - Refactor: nothing worth changing; `Delete` matches `memory.ItemRepository.Delete`, less its missing-record check, which 8e drives.
 - [ ] 8e. Session contract: `Delete` of a missing session is `ErrNotFound` (set in task 6b).
 - [ ] 9. Migration `00004_accounts_and_sessions.sql` and `sqlstore.NewAccountRepository` pass the account contract on SQLite and Postgres.
 - [ ] 10. `sqlstore.NewSessionRepository` passes the session contract on SQLite and Postgres.
