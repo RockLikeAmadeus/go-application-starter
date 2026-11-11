@@ -200,6 +200,15 @@ func TestAnUnknownLogFormatErrorReadsAsASentence(t *testing.T) {
 	}
 }
 
+func TestAnUnknownSignInErrorReadsAsASentence(t *testing.T) {
+	_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_SIGN_IN": "google"})}, "")
+
+	want := `The sign-in setting "google" is not recognized. Please use "off" or "dev".`
+	if err == nil || err.Error() != want {
+		t.Errorf("error = %v, want %q", err, want)
+	}
+}
+
 func TestShouldIgnoreSyncedFolderIsABoolFromTheSettingsFileOrEnvironmentDefaultingToFalse(t *testing.T) {
 	cases := []struct {
 		name     string

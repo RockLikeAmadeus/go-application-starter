@@ -237,7 +237,10 @@ Settings and wiring:
   - Red: `TestSignInIsOffByDefaultOrDevFromTheSettingsFileOrEnvironment` failed, `SignIn = ""`, want `off` (and `dev`), and `sign_in` not listed by `Settings()`.
   - Green: `config.SignInMode` (`SignInOff`, `SignInDev`), `Config.SignIn` read from `sign_in` (default `off`), listed by `Settings()`; `sign_in` added to the default settings file test's `serverOnly` list.
   - Refactor: doc comments on `Config.SignIn` and the two modes, as the other fields have; nothing else worth changing.
-- [ ] 17b. Any other `sign_in` value is refused at start. (Agree the message.)
+- [x] 17b. Any other `sign_in` value is refused at start. (Agree the message.)
+  - Red: `TestAnUnknownSignInErrorReadsAsASentence` failed, `error = <nil>`, want the agreed message (user picked `The sign-in setting "…" is not recognized. Please use "off" or "dev".`).
+  - Green: `Config.Validate` refuses a `SignIn` other than `SignInOff` or `SignInDev`, listing them from the constants.
+  - Refactor: nothing worth changing; the check matches the storage and log format checks beside it.
 - [ ] 18. `bootstrap` refuses sign-in with jsonfile storage at start, naming memory, SQLite, and Postgres. (Agree the message.)
 - [ ] 19. The dev sign-in is wired only in builds with the `devsignin` tag; without it, `sign_in = "dev"` is refused at start. `task dev` and `task run:*` builds that need it pass the tag; `task build` doesn't. (Agree the message.)
 - [ ] 20. With sign-in on, `bootstrap` wires the hosted server: the `FromContext` resolver, the session middleware, the account and session repositories from its storage, stored plans (`plans.StoredPlanOf` with `newWorkspacePlan`, hints on), and the real `bootstrap.NewBilling`.

@@ -167,6 +167,9 @@ func (c Config) Validate() error {
 	if c.LogFormat != "json" && c.LogFormat != "text" {
 		return fmt.Errorf("The log format setting %q is not recognized. Please use \"text\" or \"json\".", c.LogFormat)
 	}
+	if c.SignIn != SignInOff && c.SignIn != SignInDev {
+		return fmt.Errorf("The sign-in setting %q is not recognized. Please use %q or %q.", c.SignIn, SignInOff, SignInDev)
+	}
 	return nil
 }
 
