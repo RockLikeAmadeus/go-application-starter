@@ -241,6 +241,39 @@ func TestShouldIgnoreSyncedFolderIsABoolFromTheSettingsFileOrEnvironmentDefaulti
 	})
 }
 
+func TestSignInIsOffByDefaultOrDevFromTheSettingsFileOrEnvironment(t *testing.T) {
+	cases := []struct {
+		name     string
+		file     string
+		env      map[string]string
+		want     config.SignInMode
+		wantFrom string
+	}{
+		{"built in", "", nil, config.SignInOff, "built in"},
+		{"settings file", `sign_in = "dev"`, nil, config.SignInDev, "settings file"},
+		{"environment", "", map[string]string{"STARTER_SIGN_IN": "dev"}, config.SignInDev, "environment (STARTER_SIGN_IN)"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			file := ""
+			if c.file != "" {
+				file = writeSettings(t, c.file)
+			}
+
+			cfg, err := config.Load(config.Env{Getenv: envOf(c.env)}, file)
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if cfg.SignIn != c.want {
+				t.Errorf("SignIn = %q, want %q", cfg.SignIn, c.want)
+			}
+			if !listsSetting(cfg.Settings(), config.Setting{Key: "sign_in", Value: string(c.want), Source: c.wantFrom}) {
+				t.Errorf("Settings() = %v, want sign_in = %q from %q", cfg.Settings(), c.want, c.wantFrom)
+			}
+		})
+	}
+}
+
 // listsSetting reports whether settings holds want.
 func listsSetting(settings []config.Setting, want config.Setting) bool {
 	for _, s := range settings {

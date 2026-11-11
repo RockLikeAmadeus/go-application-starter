@@ -233,7 +233,11 @@ The server:
   - Refactor: the package comment and `SessionService`'s say it isn't a driving port and why; the test's sign-in setup stays inline, as no other test shares it yet.
 
 Settings and wiring:
-- [ ] 17. The `sign_in` setting (`STARTER_SIGN_IN`): `off` by default, or `dev`; any other value is refused. `starter info` shows it.
+- [x] 17. The `sign_in` setting (`STARTER_SIGN_IN`): `off` by default, or `dev`. `starter info` shows it (`Config.Settings`).
+  - Red: `TestSignInIsOffByDefaultOrDevFromTheSettingsFileOrEnvironment` failed, `SignIn = ""`, want `off` (and `dev`), and `sign_in` not listed by `Settings()`.
+  - Green: `config.SignInMode` (`SignInOff`, `SignInDev`), `Config.SignIn` read from `sign_in` (default `off`), listed by `Settings()`; `sign_in` added to the default settings file test's `serverOnly` list.
+  - Refactor: doc comments on `Config.SignIn` and the two modes, as the other fields have; nothing else worth changing.
+- [ ] 17b. Any other `sign_in` value is refused at start. (Agree the message.)
 - [ ] 18. `bootstrap` refuses sign-in with jsonfile storage at start, naming memory, SQLite, and Postgres. (Agree the message.)
 - [ ] 19. The dev sign-in is wired only in builds with the `devsignin` tag; without it, `sign_in = "dev"` is refused at start. `task dev` and `task run:*` builds that need it pass the tag; `task build` doesn't. (Agree the message.)
 - [ ] 20. With sign-in on, `bootstrap` wires the hosted server: the `FromContext` resolver, the session middleware, the account and session repositories from its storage, stored plans (`plans.StoredPlanOf` with `newWorkspacePlan`, hints on), and the real `bootstrap.NewBilling`.
@@ -266,3 +270,4 @@ The web app:
 - 2026-11-11, task 14g: a blank name is a 422 `validation` problem, not 400 (agreed with the user): `devSignIn` builds the identity with `domain.NewIdentity`, and `problemFor` maps its `ValidationError` (field `subject`, the existing message), as for any other invalid input.
 - 2026-11-11, task 15: with sign-in on, the cross-origin check covers every request that changes something, cookie or not (agreed with the user), using `http.CrossOriginProtection`; the Decisions entry is updated. Split into 15 (`Sec-Fetch-Site` from another site), 15b (`Origin` from another host), and 15c (same-origin still goes through), as each needs its own test. The user agreed the problem's detail.
 - 2026-11-11, task 16: split into 16 (signed in, it names the account), 16b (signed out), 16c (sign-in off), and 16d (`httpclient` reads it), as each needs its own test.
+- 2026-11-11, task 17: split into 17 (`off` by default, or `dev`, and listed in the settings) and 17b (any other value is refused, with an agreed message), as each needs its own test. `sign_in` goes in the default settings file test's `serverOnly` list beside `database_url`: an operator's admin command sets it in the environment too, so the default file gets no line for it.

@@ -21,6 +21,17 @@ const (
 	StoragePostgres StorageBackend = "postgres"
 )
 
+// SignInMode says how people sign in to a hosted server, or that they don't.
+type SignInMode string
+
+const (
+	// SignInOff is the local edition: no sign-in, and one workspace.
+	SignInOff SignInMode = "off"
+	// SignInDev signs people in by name alone, for development and tests
+	// (builds with the devsignin tag).
+	SignInDev SignInMode = "dev"
+)
+
 type Config struct {
 	// Storage selects the storage adapter (storage; STARTER_STORAGE).
 	Storage StorageBackend
@@ -40,6 +51,9 @@ type Config struct {
 	// PlansFile replaces the plans file built into the binary (plans_file;
 	// STARTER_PLANS_FILE). Empty means the built-in one.
 	PlansFile string
+	// SignIn says how people sign in to this server, which makes it the
+	// hosted edition, or that they don't (sign_in; STARTER_SIGN_IN).
+	SignIn SignInMode
 	// ShouldIgnoreSyncedFolder silences the warning that SQLite's data folder
 	// looks synced (ignore_synced_folder; STARTER_IGNORE_SYNCED_FOLDER).
 	ShouldIgnoreSyncedFolder bool
@@ -89,6 +103,7 @@ func Load(env Env, settingsFile string) (Config, error) {
 		ServerURL:    setting("server_url", ""),
 		LogFormat:    setting("log_format", "text"),
 		PlansFile:    setting("plans_file", ""),
+		SignIn:       SignInMode(setting("sign_in", string(SignInOff))),
 	}
 	port, err := strconv.Atoi(setting("port", "8080"))
 	if err != nil {
@@ -124,6 +139,7 @@ func (c Config) Settings() []Setting {
 		{"server_url", c.ServerURL},
 		{"log_format", c.LogFormat},
 		{"plans_file", c.PlansFile},
+		{"sign_in", string(c.SignIn)},
 		{"ignore_synced_folder", c.ShouldIgnoreSyncedFolder},
 	}
 	settings := make([]Setting, len(values))
@@ -170,6 +186,7 @@ var envVars = map[string]string{
 	"server_url":           "STARTER_SERVER_URL",
 	"log_format":           "STARTER_LOG_FORMAT",
 	"plans_file":           "STARTER_PLANS_FILE",
+	"sign_in":              "STARTER_SIGN_IN",
 	"ignore_synced_folder": "STARTER_IGNORE_SYNCED_FOLDER",
 }
 
