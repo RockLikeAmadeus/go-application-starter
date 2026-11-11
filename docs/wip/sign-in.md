@@ -223,7 +223,10 @@ The server:
   - Red: `TestTheSessionEndpointSaysSignInIsOnWithNoNameWhenSignedOut` failed, `{"isSignInOn":true,"name":""}`.
   - Green: `GetSession` leaves out the name when the context has no account.
   - Refactor: the session-endpoint tests share `requestSession`, the `session` body, and the `sessionsWithAda` fixture; the hard-coded `IsSignInOn` is left for 16c.
-- [ ] 16c. With sign-in off, the session endpoint says sign-in is off.
+- [x] 16c. With sign-in off, the session endpoint says sign-in is off.
+  - Red: `TestTheSessionEndpointSaysSignInIsOffWithNoSignInService` failed, `{IsSignInOn:true Name:<nil>}`.
+  - Green: `Handlers` keeps `isSignInOn` (`opts.SignIn != nil`), and `GetSession` answers it.
+  - Refactor: `GetSession` builds one answer and adds the name when signed in, instead of two returns.
 - [ ] 16d. `httpclient` reads the session endpoint.
 
 Settings and wiring:

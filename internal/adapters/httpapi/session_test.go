@@ -10,6 +10,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
 // sessions is a ports.SignInService that knows each session's account by its
@@ -105,8 +106,9 @@ type session struct {
 }
 
 // requestSession sends GET /api/v1/session through a handler with the given
-// sign-in service and cookies, and returns the session it answers.
-func requestSession(t *testing.T, signIn sessions, cookies ...*http.Cookie) session {
+// sign-in service (nil for sign-in off) and cookies, and returns the session it
+// answers.
+func requestSession(t *testing.T, signIn ports.SignInService, cookies ...*http.Cookie) session {
 	t.Helper()
 	handler := httpapi.NewHandler(httpapi.Options{SignIn: signIn})
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/session", nil)
@@ -142,5 +144,13 @@ func TestTheSessionEndpointSaysSignInIsOnWithNoNameWhenSignedOut(t *testing.T) {
 
 	if !got.IsSignInOn || got.Name != nil {
 		t.Errorf("session = %+v, want sign-in on and no name", got)
+	}
+}
+
+func TestTheSessionEndpointSaysSignInIsOffWithNoSignInService(t *testing.T) {
+	got := requestSession(t, nil)
+
+	if got.IsSignInOn || got.Name != nil {
+		t.Errorf("session = %+v, want sign-in off and no name", got)
 	}
 }

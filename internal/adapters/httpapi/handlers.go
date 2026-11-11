@@ -16,6 +16,7 @@ type Handlers struct {
 	// sample:end
 	entitlements ports.EntitlementsService
 	isDataLocal  bool
+	isSignInOn   bool
 	warnings     []string
 }
 
@@ -29,6 +30,7 @@ func NewHandlers(opts Options) *Handlers {
 		// sample:end
 		entitlements: opts.Entitlements,
 		isDataLocal:  opts.IsDataLocal,
+		isSignInOn:   opts.SignIn != nil,
 		warnings:     opts.Warnings,
 	}
 }

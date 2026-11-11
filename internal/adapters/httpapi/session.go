@@ -69,9 +69,9 @@ func accountFrom(ctx context.Context) (domain.Account, bool) {
 // The Session endpoint.
 
 func (h *Handlers) GetSession(ctx context.Context, _ openapi.GetSessionRequestObject) (openapi.GetSessionResponseObject, error) {
-	account, ok := accountFrom(ctx)
-	if !ok {
-		return openapi.GetSession200JSONResponse{IsSignInOn: true}, nil
+	session := openapi.GetSession200JSONResponse{IsSignInOn: h.isSignInOn}
+	if account, ok := accountFrom(ctx); ok {
+		session.Name = &account.Identity.Name
 	}
-	return openapi.GetSession200JSONResponse{IsSignInOn: true, Name: &account.Identity.Name}, nil
+	return session, nil
 }
