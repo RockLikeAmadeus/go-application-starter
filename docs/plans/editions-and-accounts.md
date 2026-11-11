@@ -124,6 +124,16 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - A paid local licence key, behind the entitlements port.
 - Sweeping expired sessions that nobody looks up again (step 8a deletes one only when it's found expired).
 
+## Loose ends (from step 8a)
+Things step 8a left that need a look, to be dealt with one at a time. Tick each one when it's settled, with a line on what was done.
+- [ ] **`.env.example` and `STARTER_SIGN_IN`.** A permission rule stops Claude reading `.env.example`, so nobody checked whether it should list the new `STARTER_SIGN_IN` setting beside the others.
+- [ ] **Old SQLite databases on the sign-in branch.** Migration `00004_accounts_and_sessions.sql` was edited in place (task 25b) to make the `(issuer, subject)` index unique. A SQLite database that ran the old `00004` keeps the non-unique index, so delete any made on the branch before that change.
+- [ ] **A brief flash before the sign-in screen.** Until `GET /api/v1/session` answers, the web app shows its usual layout. A signed-out visitor may see the normal page for a moment, possibly with a "Please sign in to continue." error, before the sign-in screen replaces it. The server still refuses them any data.
+- [ ] **A changed name isn't saved.** When someone signs in again and their identity's name has changed, `SignIn` finds the existing account and keeps the old name.
+- [ ] **The developer-build files aren't linted.** `golangci-lint` builds without the `devsignin` tag, so it skips `internal/bootstrap/devsignin_on*.go`. Adding the tag would skip the `_off` files instead, so both builds would need a lint run each.
+- [ ] **`set-plan` leaves its storage open.** With sign-in on, `bootstrap.NewBilling` opens a full App and never closes its storage, which stays open until the command's program ends, because `BillingFactory` returns no close. This is also why its test runs on SQLite only, not Postgres.
+- [ ] **An `Origin`-only request through Vite is refused.** Under `task dev`, Vite rewrites `Host` on the way to the server, so a POST that sends `Origin` without `Sec-Fetch-Site` fails the cross-origin check with a 403. Browsers send `Sec-Fetch-Site: same-origin`, so signing in and out in a browser works; tools such as curl need that header too.
+
 ## Verification after every step
 - `task check`, plus `task accept` with the step's `@wip` scenarios passing on every relevant driver.
 - From step 1: every storage adapter passes the isolation contract.
@@ -168,3 +178,4 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - 2026-11-10: step 8 started, split into 8a (sign-in with the dev sign-in) and 8b (the OIDC adapter). Agreed: a session cookie rather than tokens in the browser (the backend-for-frontend pattern, which current IETF guidance ranks most secure), sessions and accounts kept in storage, and sign-in only on memory, SQLite, and Postgres, so jsonfile with sign-in is refused at start. Decided: the dev sign-in exists only in builds with the `devsignin` tag. A sweep for expired sessions is a follow-up.
 - 2026-11-10: step 10 notes added. Remote mode keeps ADR 4's in-process handler over `httpclient`, rather than pointing the window at the hosted server, and signs in like the CLI, with a token through the system browser, not step 8's cookie.
 - 2026-11-11: step 8a finished, recorded in ADR 9. Its task list split most tasks into one test each, and added: a `crypto/rand` token generator, which the plan named but no task built; a 422 for a blank dev sign-in name; a failed sign-out kept as a problem that keeps the cookie; the cross-origin check covering every request that changes something, cookie or not; the `devsignin` tag on `task run:server`, `run:cli`, and `run:tui`; and one account per sign-in identity (a unique index, and `SignIn` looking the account up again when two first sign-ins race). Two follow-ups went to `TODO.md`: browser smoke runs against a deployment, and the `Secure` cookie behind an HTTPS proxy, which step 8b settles.
+- 2026-11-11: a "Loose ends (from step 8a)" list records seven things the sign-in feature left to look at, one at a time.
