@@ -265,7 +265,10 @@ Settings and wiring:
   - Red: `TestNewEmbedded_WithSignInOnListsNoItemsWithoutAWorkspaceInTheContext` (sample `hosted_edition_items_test.go`, `devsignin`, in the init manifest) failed, `ListItems error = <nil>`, want `ErrNoWorkspace`.
   - Green: `NewEmbedded` builds the item service on `workspacesFor(cfg)`.
   - Refactor: the comment above the use cases names `workspacesFor(cfg)`, not `workspace.Local{}`. Left: the entitlements still come from the local plan until 20g.
-- [ ] 20c. `system.Tokens`, the `crypto/rand` `ports.TokenGenerator`: 32 random bytes, different each time.
+- [x] 20c. `system.Tokens`, the `crypto/rand` `ports.TokenGenerator`: 32 random bytes, different each time.
+  - Red: `TestTokensMakesA32ByteRandomTokenEachTime` (`system_test.go`) failed against an empty stub, `token holds 0 bytes, want 32`.
+  - Green: `Tokens.NewToken` reads 32 bytes with `crypto/rand` and writes them as unpadded base64url (decided: cookie- and header-safe).
+  - Refactor: the package and `Tokens` comments name the token generator and its encoding. Nothing else worth changing.
 - [ ] 20d. With sign-in on, `App.SignIn` signs in on the storage's account and session repositories (memory), and finds the session's account.
 - [ ] 20e. On SQLite and Postgres, a session outlives the App that made it (the `sqlstore` repositories).
 - [ ] 20f. The server passes the App's `SignIn` to its handler, so a session cookie signs a request in.
