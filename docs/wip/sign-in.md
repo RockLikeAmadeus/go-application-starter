@@ -182,7 +182,10 @@ The server:
   - Red: `TestTheSessionCookieLastsAsLongAsTheSession` failed with Max-Age 0, want 2592000.
   - Green: `setSessionCookie` sets `MaxAge` to `domain.SessionLifetime` in seconds.
   - Refactor: the dev sign-in tests share `postDevSignIn`, ready for 14c and 14g; `setSessionCookie` uses `MaxAge` (relative), so it needs no clock.
-- [ ] 14c. Over HTTPS, the session cookie is `Secure`.
+- [x] 14c. Over HTTPS, the session cookie is `Secure`.
+  - Red: `TestTheSessionCookieIsSecureOnlyOverHTTPS` failed: posting to `https://…` gave Secure = false, want true (plain HTTP pinned to false, so `Secure: true` alone can't pass).
+  - Green: `setSessionCookie` takes the request and sets `Secure` when `r.TLS != nil`.
+  - Refactor: the test posts through `postDevSignInTo` (a path or full URL), which `postDevSignIn` now calls. A TLS-terminating proxy (`X-Forwarded-Proto`) isn't covered: not in the task.
 - [ ] 14d. `GET /auth/dev` shows the form asking for a name, posting to `POST /auth/dev`.
 - [ ] 14e. `GET /auth/sign-in` goes to the configured sign-in adapter (`/auth/dev`). Add `/auth/` to `navigateFallbackDenylist`.
 - [ ] 14f. `POST /auth/sign-out` ends the session, clears the cookie, and goes to `/`.

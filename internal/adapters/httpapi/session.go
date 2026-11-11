@@ -29,7 +29,7 @@ func sessionMiddleware(signIn ports.SignInService, next http.Handler) http.Handl
 // setSessionCookie gives the browser the session's token in a cookie that
 // page scripts can't read (HttpOnly) and other sites' links and forms don't
 // send, except top-level navigation (SameSite=Lax).
-func setSessionCookie(w http.ResponseWriter, token string) {
+func setSessionCookie(w http.ResponseWriter, r *http.Request, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionCookie,
 		Value:    token,
@@ -37,5 +37,6 @@ func setSessionCookie(w http.ResponseWriter, token string) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(domain.SessionLifetime.Seconds()),
+		Secure:   r.TLS != nil,
 	})
 }

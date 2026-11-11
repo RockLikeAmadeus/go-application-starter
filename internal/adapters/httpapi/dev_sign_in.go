@@ -22,7 +22,7 @@ func devSignIn(signIn ports.SignInService) http.Handler {
 			writeProblem(w, problemFor(err))
 			return
 		}
-		setSessionCookie(w, token)
+		setSessionCookie(w, r, token)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 }
