@@ -154,7 +154,11 @@ Plans:
   - Refactor: nothing worth changing. Left: `Load` keeps returning a `Catalog` until task 20 needs the field from it.
 
 The server:
-- [ ] 12. `httpapi` session middleware: a valid session cookie puts its workspace in the request's context (`workspace.WithID`). No cookie, or an unknown one, leaves none.
+- [x] 12. `httpapi` session middleware: a valid session cookie puts its workspace in the request's context (`workspace.WithID`).
+  - Red: `TestASessionCookiePutsItsAccountsWorkspaceInTheRequest` failed with workspace "none", want "ws-a". To compile: `Options.SignIn` and `httpapi.SessionCookie` (`session`).
+  - Green: `NewHandler` wraps the mux in `sessionMiddleware` when `Options.SignIn` is set; a cookie whose `CurrentAccount` answers puts its workspace in the context.
+  - Refactor: the middleware and `SessionCookie` moved to `httpapi/session.go`, with a comment on failing closed. Left: any `CurrentAccount` error (even a storage failure) runs the request signed out, which fails closed; 12b pins the signed-out cases.
+- [ ] 12b. No session cookie, or an unknown one, leaves no workspace in the request's context.
 - [ ] 13. `problem.go` maps `ErrNoWorkspace` to a 401 problem, and `httpclient` maps it back.
 - [ ] 14. The dev sign-in routes: `GET /auth/sign-in` and `GET /auth/dev` show the form, `POST /auth/dev` signs in as the given name (issuer `dev`) and sets the cookie, and `POST /auth/sign-out` ends the session and clears it. Add them to `navigateFallbackDenylist`.
 - [ ] 15. With a session cookie, a request that changes something from another site is refused (403).
@@ -186,3 +190,4 @@ The web app:
 - 2026-11-10, task 9: split into 9 (the account contract on SQLite) and 9b (on Postgres), as each needs its own test.
 - 2026-11-10, task 10: split into 10 (the session contract on SQLite) and 10b (on Postgres), as each needs its own test.
 - 2026-11-10, task 11: split into 11 (`Parse` reads `newWorkspacePlan`), 11b (a missing field is refused), 11c (an unknown plan is refused), and 11d (the built-in file starts on `free`), as each needs its own test.
+- 2026-11-10, task 12: split into 12 (a valid session cookie puts its workspace in the context) and 12b (no cookie, or an unknown one, leaves none), as each needs its own test.

@@ -34,6 +34,9 @@ type Options struct {
 	// Warnings answers GET /api/v1/warnings: messages every front end shows
 	// as given, such as bootstrap.App.Warnings. None when nil.
 	Warnings []string
+	// SignIn knows each session's account. When set, a request with a
+	// session cookie runs in that account's workspace.
+	SignIn ports.SignInService
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and
@@ -77,7 +80,11 @@ func NewHandler(opts Options) http.Handler {
 
 	mux.Handle("/", spaHandler(opts.WebAssets))
 
-	return recoverer(log, requestLogger(log, mux))
+	var handler http.Handler = mux
+	if opts.SignIn != nil {
+		handler = sessionMiddleware(opts.SignIn, handler)
+	}
+	return recoverer(log, requestLogger(log, handler))
 }
 
 // spaHandler serves static files and falls back to index.html so client-side
