@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
@@ -21,4 +22,30 @@ func RunSessionRepositoryContract(t *testing.T, newRepo func(*testing.T) ports.S
 			t.Fatalf("err = %v, want ErrNotFound", err)
 		}
 	})
+
+	t.Run("FindByHash returns the saved session with the hash", func(t *testing.T) {
+		repo := newRepo(t)
+		adaSession := domain.NewSession("token-1", "account-1", baseTime)
+		graceSession := domain.NewSession("token-2", "account-2", baseTime.Add(time.Hour))
+		for _, session := range []domain.Session{adaSession, graceSession} {
+			if err := repo.Save(ctx, session); err != nil {
+				t.Fatalf("Save(%s): %v", session.AccountID, err)
+			}
+		}
+		got, err := repo.FindByHash(ctx, graceSession.TokenHash)
+		if err != nil {
+			t.Fatalf("FindByHash: %v", err)
+		}
+		assertSessionEqual(t, got, graceSession)
+	})
+}
+
+// assertSessionEqual compares the expiry with Equal so adapters may
+// round-trip through formats that drop the monotonic clock or change the
+// location.
+func assertSessionEqual(t *testing.T, got, want domain.Session) {
+	t.Helper()
+	if got.TokenHash != want.TokenHash || got.AccountID != want.AccountID || !got.ExpiresAt.Equal(want.ExpiresAt) {
+		t.Errorf("got %+v, want %+v", got, want)
+	}
 }

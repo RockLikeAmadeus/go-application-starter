@@ -102,7 +102,10 @@ Storage:
   - Red: `TestSessionRepositoryContract/FindByHash_with_no_saved_session_returns_ErrNotFound` failed: `err = <nil>, want ErrNotFound`.
   - Green: the new `memory.SessionRepository`'s `FindByHash` always returns `ErrNotFound`; `Save` and `Delete` are stubs until 8b–8e.
   - Refactor: nothing worth changing; the stubs are left for 8b–8e to drive.
-- [ ] 8b. Session contract: `FindByHash` returns the saved session with the hash.
+- [x] 8b. Session contract: `FindByHash` returns the saved session with the hash.
+  - Red: `TestSessionRepositoryContract/FindByHash_returns_the_saved_session_with_the_hash` failed: `FindByHash: The requested record could not be found.`
+  - Green: `memory.SessionRepository` keeps sessions in a map by token hash (`Save`), and `FindByHash` returns the one kept under the hash.
+  - Refactor: the session comparison is now `assertSessionEqual` (expiry compared with `Equal`, like `assertItemEqual`), ready for 8c.
 - [ ] 8c. Session contract: `Save` replaces the session with the same token hash.
 - [ ] 8d. Session contract: `Delete` removes the session, so `FindByHash` then returns `ErrNotFound`.
 - [ ] 8e. Session contract: `Delete` of a missing session is `ErrNotFound` (set in task 6b).
