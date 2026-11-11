@@ -145,7 +145,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	a.Entitlements = app.NewEntitlementsService(entitlementsProvider, workspace.Local{})
+	a.Entitlements = app.NewEntitlementsService(entitlementsProvider, workspacesFor(cfg))
 	// Build each use case on its repository and the local edition's driven
 	// ports: workspace.Local{} (the one local workspace, ADR 5), the local
 	// plan's entitlements, system.Clock{} and system.UUIDs{}. See
@@ -154,6 +154,17 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	a.Items = app.NewItemService(itemRepo, workspace.Local{}, entitlementsProvider, system.Clock{}, system.UUIDs{})
 	// sample:end
 	return a, nil
+}
+
+// workspacesFor picks how use cases find the current workspace: with sign-in
+// on (the hosted edition), the one the session middleware put in the request's
+// context, so a request signed out has none; otherwise the local edition's one
+// workspace (ADR 5).
+func workspacesFor(cfg config.Config) ports.WorkspaceResolver {
+	if cfg.SignIn.IsOn() {
+		return workspace.FromContext{}
+	}
+	return workspace.Local{}
 }
 
 // NewEntitlementsService returns the entitlements service alone: the server's when

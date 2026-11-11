@@ -257,7 +257,17 @@ Settings and wiring:
   - Red: `TestTheServerServesTheDevSignInFormWhenItIsOn` (`cmd/server`) failed, `GET /auth/dev` served the SPA's hint page, not the form.
   - Green: `handlerOptions` passes `application.IsDevSignInOn` to `httpapi.Options`.
   - Refactor: nothing worth changing; `SignIn` is passed in task 20, once the App has it.
-- [ ] 20. With sign-in on, `bootstrap` wires the hosted server: the `FromContext` resolver, the session middleware, the account and session repositories from its storage, stored plans (`plans.StoredPlanOf` with `newWorkspacePlan`, hints on), and the real `bootstrap.NewBilling`.
+- [x] 20. With sign-in on, the App's entitlements take the workspace from the context (`workspace.FromContext`), so with none they fail with `ErrNoWorkspace`.
+  - Red: `TestNewEmbedded_WithSignInOnHasNoWorkspaceWithoutOneInTheContext` (`hosted_edition_test.go`, `//go:build devsignin`) failed, `CurrentEntitlements error = <nil>`, want `ErrNoWorkspace`.
+  - Green: `NewEmbedded` builds the entitlements service on `workspace.FromContext{}` when `cfg.SignIn.IsOn()`, else `workspace.Local{}`.
+  - Refactor: the choice is `workspacesFor(cfg)`, with a comment, ready for 20b. Left: the comment above the item service still names `workspace.Local{}`, which is true until 20b.
+- [ ] 20b. With sign-in on, the App's items take the workspace from the context too. Sample: its test is in a sample file; `task test:init`.
+- [ ] 20c. `system.Tokens`, the `crypto/rand` `ports.TokenGenerator`: 32 random bytes, different each time.
+- [ ] 20d. With sign-in on, `App.SignIn` signs in on the storage's account and session repositories (memory), and finds the session's account.
+- [ ] 20e. On SQLite and Postgres, a session outlives the App that made it (the `sqlstore` repositories).
+- [ ] 20f. The server passes the App's `SignIn` to its handler, so a session cookie signs a request in.
+- [ ] 20g. With sign-in on, a workspace's entitlements are its stored plan, else the plans file's `newWorkspacePlan`, with hints on.
+- [ ] 20h. With sign-in on, `bootstrap.NewBilling` returns the real service on the configured storage, so a changed plan shows in the App's entitlements.
 
 Acceptance:
 - [ ] 21. The `@sign-in` steps on memory, sqlite, postgres, and http, and the driver tags that leave it out of jsonfile, desktop, mobile, and server. The sign-in scenarios pass. Sample: `task test:init`.
@@ -290,3 +300,4 @@ The web app:
 - 2026-11-11, task 17: split into 17 (`off` by default, or `dev`, and listed in the settings) and 17b (any other value is refused, with an agreed message), as each needs its own test. `sign_in` goes in the default settings file test's `serverOnly` list beside `database_url`: an operator's admin command sets it in the environment too, so the default file gets no line for it.
 - 2026-11-11, task 19: split into 19 (refused without the `devsignin` tag, with the agreed message) and 19b (accepted and wired with it), as each needs its own test. The tag goes in `.air.toml` (`task dev`) and `task run:server`, `run:cli`, and `run:tui` (agreed with the user), as `bootstrap.NewEmbedded`, which the CLI and TUI share, does the check.
 - 2026-11-11, task 19b: added 19c (the server passes the App's `IsDevSignInOn` to its handler), as `cmd/server` needs its own test. The App's `SignIn` service comes in task 20, with the repositories it needs.
+- 2026-11-11, task 20: split into 20 (entitlements from the context), 20b (items from the context, sample), 20c (the `crypto/rand` token generator, which task 3 named but no task built), 20d (`App.SignIn` on memory), 20e (on SQLite and Postgres), 20f (the server passes it to its handler), 20g (stored plans), and 20h (the real `NewBilling`), as each needs its own test. Their tests need sign-in on, which only a `devsignin` build accepts, so they carry that tag.
