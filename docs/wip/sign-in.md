@@ -47,7 +47,11 @@ The core:
   - Red: `TestSignIn_WithANewIdentityCreatesAnAccountWorkspaceAndThirtyDaySession` failed: empty token, no account, and no session stored.
   - Green: `SignIn` saves an account (ID, then workspace ID, from `IDGenerator`) and a session keyed by the token's hex SHA-256, expiring 30 days from now. Ports hold only the methods a test uses so far.
   - Refactor: the lifetime and hashing moved into `domain` (`SessionLifetime`, `NewSession`, `HashSessionToken`); save errors are wrapped. The test keeps its own SHA-256 so it pins the hash independently.
-- [ ] 4. `SignIn` with a known identity reuses its account and workspace, even when the name has changed.
+- [x] 4. `SignIn` with a known identity reuses its account and workspace, even when the name has changed.
+  - Red: `TestSignIn_WithAKnownIdentityReusesItsAccountEvenWhenTheNameHasChanged` failed: a second account `id-1` was saved, and the session pointed to it, not `account-1`.
+  - Green: `SignIn` finds the account by identity (new `AccountRepository.FindByIdentity`, issuer and subject only) and creates one only on `ErrNotFound`; other find errors are returned, wrapped.
+  - Red (review fix): `TestSignIn_WhenTheAccountCantBeLookedUpIsRefusedAndSavesNothing`, checked against the code without the find-error branch, failed: nil error, want the lookup's error. Green: the branch already in place.
+  - Refactor: the find-or-create moved into `accountFor`, so `SignIn` reads as account, then session. Whether a changed name is stored is left open: no task asks for it.
 - [ ] 5. `CurrentAccount(ctx, token)` returns the session's account, and `ErrNoWorkspace` for an unknown or expired token (deleting an expired session).
 - [ ] 6. `SignOut(ctx, token)` deletes the session, so `CurrentAccount` then fails. Signing out of an unknown session isn't an error.
 

@@ -111,6 +111,9 @@ type SignInService interface {
 // AccountRepository is the driven port for storing accounts. Accounts aren't
 // workspace-scoped: an account is what picks the workspace.
 type AccountRepository interface {
+	// FindByIdentity returns the account with the identity's issuer and
+	// subject (never matched by name), or domain.ErrNotFound.
+	FindByIdentity(ctx context.Context, identity domain.Identity) (domain.Account, error)
 	// Save inserts or replaces the account with the same ID.
 	Save(ctx context.Context, account domain.Account) error
 }

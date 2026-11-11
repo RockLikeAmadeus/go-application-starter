@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
 
@@ -42,5 +44,53 @@ func TestSignIn_WithANewIdentityCreatesAnAccountWorkspaceAndThirtyDaySession(t *
 	}
 	if !reflect.DeepEqual(sessions, wantSessions) {
 		t.Errorf("sessions = %v, want %v", sessions, wantSessions)
+	}
+}
+
+func TestSignIn_WithAKnownIdentityReusesItsAccountEvenWhenTheNameHasChanged(t *testing.T) {
+	known := domain.Account{ID: "account-1", Identity: domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}, WorkspaceID: "workspace-1"}
+	accounts := testsupport.StoredAccounts{known.ID: known}
+	sessions := testsupport.StoredSessions{}
+	svc := app.NewSignInService(accounts, sessions, testsupport.FixedToken("token-1"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
+
+	_, err := svc.SignIn(context.Background(), domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada Lovelace"})
+	if err != nil {
+		t.Fatalf("SignIn: %v", err)
+	}
+
+	if len(accounts) != 1 || accounts[known.ID].WorkspaceID != known.WorkspaceID {
+		t.Errorf("accounts = %v, want only %q with workspace %q", accounts, known.ID, known.WorkspaceID)
+	}
+	session := sessions[domain.HashSessionToken("token-1")]
+	if session.AccountID != known.ID {
+		t.Errorf("session's account = %q, want %q", session.AccountID, known.ID)
+	}
+}
+
+// errAccounts is the error unfindableAccounts' FindByIdentity fails with.
+var errAccounts = errors.New("accounts unavailable")
+
+// unfindableAccounts is an AccountRepository whose FindByIdentity always
+// fails; its other calls go to the repository it wraps.
+type unfindableAccounts struct{ ports.AccountRepository }
+
+func (unfindableAccounts) FindByIdentity(context.Context, domain.Identity) (domain.Account, error) {
+	return domain.Account{}, errAccounts
+}
+
+func TestSignIn_WhenTheAccountCantBeLookedUpIsRefusedAndSavesNothing(t *testing.T) {
+	accounts := testsupport.StoredAccounts{}
+	sessions := testsupport.StoredSessions{}
+	svc := app.NewSignInService(unfindableAccounts{accounts}, sessions, testsupport.FixedToken("token-1"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
+
+	_, err := svc.SignIn(context.Background(), domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"})
+
+	if !errors.Is(err, errAccounts) {
+		t.Fatalf("err = %v, want %v", err, errAccounts)
+	}
+	if len(accounts) != 0 || len(sessions) != 0 {
+		t.Errorf("accounts = %v, sessions = %v, want none saved", accounts, sessions)
 	}
 }

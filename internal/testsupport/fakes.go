@@ -98,6 +98,15 @@ func (p KnownPlans) HasPlan(_ context.Context, plan string) (bool, error) {
 // ID.
 type StoredAccounts map[string]domain.Account
 
+func (a StoredAccounts) FindByIdentity(_ context.Context, identity domain.Identity) (domain.Account, error) {
+	for _, account := range a {
+		if account.Identity.Issuer == identity.Issuer && account.Identity.Subject == identity.Subject {
+			return account, nil
+		}
+	}
+	return domain.Account{}, domain.ErrNotFound
+}
+
 func (a StoredAccounts) Save(_ context.Context, account domain.Account) error {
 	a[account.ID] = account
 	return nil

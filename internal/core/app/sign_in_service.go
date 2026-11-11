@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -26,14 +27,32 @@ func NewSignInService(accounts ports.AccountRepository, sessions ports.SessionRe
 
 // SignIn returns a new session's token for the identity's account.
 func (s *SignInService) SignIn(ctx context.Context, identity domain.Identity) (string, error) {
-	account := domain.Account{ID: s.ids.NewID(), Identity: identity}
-	account.WorkspaceID = domain.WorkspaceID(s.ids.NewID())
-	if err := s.accounts.Save(ctx, account); err != nil {
-		return "", fmt.Errorf("save account: %w", err)
+	account, err := s.accountFor(ctx, identity)
+	if err != nil {
+		return "", err
 	}
 	token := s.tokens.NewToken()
 	if err := s.sessions.Save(ctx, domain.NewSession(token, account.ID, s.clock.Now())); err != nil {
 		return "", fmt.Errorf("save session: %w", err)
 	}
 	return token, nil
+}
+
+// accountFor returns the identity's account, creating it and its personal
+// workspace the first time the identity signs in. The name isn't used to find
+// it, so a changed name still finds the same account.
+func (s *SignInService) accountFor(ctx context.Context, identity domain.Identity) (domain.Account, error) {
+	account, err := s.accounts.FindByIdentity(ctx, identity)
+	if err == nil {
+		return account, nil
+	}
+	if !errors.Is(err, domain.ErrNotFound) {
+		return domain.Account{}, fmt.Errorf("find account: %w", err)
+	}
+	account = domain.Account{ID: s.ids.NewID(), Identity: identity}
+	account.WorkspaceID = domain.WorkspaceID(s.ids.NewID())
+	if err := s.accounts.Save(ctx, account); err != nil {
+		return domain.Account{}, fmt.Errorf("save account: %w", err)
+	}
+	return account, nil
 }
