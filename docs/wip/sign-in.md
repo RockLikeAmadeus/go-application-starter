@@ -98,7 +98,14 @@ Storage:
   - Red: none. `TestAccountRepositoryContract/Save_replaces_the_account_with_the_same_ID` passed at once, as the memory map is keyed by ID; kept as a guard (it fails on a `Save` that keeps the first account).
   - Green: skipped, as no production code was demanded.
   - Refactor: nothing worth changing; two contract cases now save a list of accounts in a loop, but a helper for two isn't clearer yet.
-- [ ] 8. `memory.NewSessionRepository` passes a new `storagetest` session contract (find by hash, delete; deleting a missing session is `ErrNotFound`, set in task 6b).
+- [x] 8. `memory.NewSessionRepository` passes a new `storagetest` session contract: `FindByHash` with no saved session is `ErrNotFound`.
+  - Red: `TestSessionRepositoryContract/FindByHash_with_no_saved_session_returns_ErrNotFound` failed: `err = <nil>, want ErrNotFound`.
+  - Green: the new `memory.SessionRepository`'s `FindByHash` always returns `ErrNotFound`; `Save` and `Delete` are stubs until 8b–8e.
+  - Refactor: nothing worth changing; the stubs are left for 8b–8e to drive.
+- [ ] 8b. Session contract: `FindByHash` returns the saved session with the hash.
+- [ ] 8c. Session contract: `Save` replaces the session with the same token hash.
+- [ ] 8d. Session contract: `Delete` removes the session, so `FindByHash` then returns `ErrNotFound`.
+- [ ] 8e. Session contract: `Delete` of a missing session is `ErrNotFound` (set in task 6b).
 - [ ] 9. Migration `00004_accounts_and_sessions.sql` and `sqlstore.NewAccountRepository` pass the account contract on SQLite and Postgres.
 - [ ] 10. `sqlstore.NewSessionRepository` passes the session contract on SQLite and Postgres.
 
@@ -134,3 +141,4 @@ The web app:
 - 2026-11-10, task 5: split into 5 (a valid token's account), 5b (an unknown token), and 5c (an expired token, deleted), as each needs its own test.
 - 2026-11-10, task 6: split into 6 (signing out deletes the session) and 6b (signing out of an unknown session isn't an error), as each needs its own test.
 - 2026-11-10, task 7: split into 7 (no saved account is `ErrNotFound`), 7b (found by issuer and subject, whatever the name), 7c (not matched by name), 7d (`Find` by ID), 7e (`Find` of an unknown ID), and 7f (`Save` replaces), as each needs its own test.
+- 2026-11-10, task 8: split into 8 (no saved session is `ErrNotFound`), 8b (found by hash), 8c (`Save` replaces), 8d (`Delete` removes), and 8e (`Delete` of a missing session is `ErrNotFound`), as each needs its own test.
