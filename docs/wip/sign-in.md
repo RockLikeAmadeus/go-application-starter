@@ -68,11 +68,14 @@ The core:
   - Red: `TestSignOut_DeletesTheSessionSoItsTokenIsSignedOut` failed: the session was still stored, and `CurrentAccount` returned no error, want `ErrNoWorkspace`.
   - Green: `SignOut` (new on `ports.SignInService`) deletes the session by the token's hash.
   - Refactor: the delete's error is wrapped, as the other calls' are. The repeated Ada setup in three tests is left, as each test reads on its own.
-- [ ] 6b. Signing out of an unknown session isn't an error.
+- [x] 6b. Signing out of an unknown session isn't an error.
+  - Red: `TestSignOut_OfAnUnknownSessionIsNotAnError` failed: `delete session: The requested record could not be found.` (`SessionRepository.Delete` now documents `ErrNotFound` for a missing session, as `ItemRepository` does, and `testsupport.StoredSessions` returns it.)
+  - Green: `SignOut` treats `ErrNotFound` from the delete as already signed out.
+  - Refactor: nothing worth changing; the guard clause and the test are already minimal.
 
 Storage:
 - [ ] 7. `memory.NewAccountRepository` passes a new `storagetest` account contract (find by issuer and subject, not by name; a missing one is `ErrNotFound`).
-- [ ] 8. `memory.NewSessionRepository` passes a new `storagetest` session contract (find by hash, delete).
+- [ ] 8. `memory.NewSessionRepository` passes a new `storagetest` session contract (find by hash, delete; deleting a missing session is `ErrNotFound`, set in task 6b).
 - [ ] 9. Migration `00004_accounts_and_sessions.sql` and `sqlstore.NewAccountRepository` pass the account contract on SQLite and Postgres.
 - [ ] 10. `sqlstore.NewSessionRepository` passes the session contract on SQLite and Postgres.
 

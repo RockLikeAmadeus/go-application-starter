@@ -138,6 +138,9 @@ func (s StoredSessions) Save(_ context.Context, session domain.Session) error {
 }
 
 func (s StoredSessions) Delete(_ context.Context, tokenHash string) error {
+	if _, ok := s[tokenHash]; !ok {
+		return domain.ErrNotFound
+	}
 	delete(s, tokenHash)
 	return nil
 }

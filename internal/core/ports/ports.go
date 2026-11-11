@@ -133,7 +133,8 @@ type SessionRepository interface {
 	FindByHash(ctx context.Context, tokenHash string) (domain.Session, error)
 	// Save inserts or replaces the session with the same token hash.
 	Save(ctx context.Context, session domain.Session) error
-	// Delete removes the session kept by the token hash.
+	// Delete removes the session kept by the token hash, or returns
+	// domain.ErrNotFound when there is none.
 	Delete(ctx context.Context, tokenHash string) error
 }
 

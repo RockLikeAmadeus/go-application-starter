@@ -62,9 +62,11 @@ func (s *SignInService) CurrentAccount(ctx context.Context, token string) (domai
 	return account, nil
 }
 
-// SignOut ends the token's session.
+// SignOut ends the token's session. A token with no session is already signed
+// out, so it isn't an error.
 func (s *SignInService) SignOut(ctx context.Context, token string) error {
-	if err := s.sessions.Delete(ctx, domain.HashSessionToken(token)); err != nil {
+	err := s.sessions.Delete(ctx, domain.HashSessionToken(token))
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		return fmt.Errorf("delete session: %w", err)
 	}
 	return nil

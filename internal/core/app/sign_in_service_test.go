@@ -166,3 +166,12 @@ func TestSignOut_DeletesTheSessionSoItsTokenIsSignedOut(t *testing.T) {
 		t.Errorf("CurrentAccount after SignOut: err = %v, want %v", err, domain.ErrNoWorkspace)
 	}
 }
+
+func TestSignOut_OfAnUnknownSessionIsNotAnError(t *testing.T) {
+	svc := app.NewSignInService(testsupport.StoredAccounts{}, testsupport.StoredSessions{}, testsupport.FixedToken("unused"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
+
+	if err := svc.SignOut(context.Background(), "token-unknown"); err != nil {
+		t.Errorf("SignOut: %v, want no error", err)
+	}
+}
