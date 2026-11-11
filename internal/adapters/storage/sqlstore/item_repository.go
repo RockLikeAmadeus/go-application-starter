@@ -4,14 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
-
-// timeFormat keeps full precision and a fixed width, so stored times sort in
-// time order as text.
-const timeFormat = "2006-01-02T15:04:05.000000000Z"
 
 const itemColumns = `workspace_id, id, name, created_at, updated_at`
 
@@ -85,15 +80,11 @@ func scanItem(row interface{ Scan(...any) error }) (domain.Item, error) {
 		return domain.Item{}, err
 	}
 	var err error
-	if item.CreatedAt, err = time.Parse(timeFormat, created); err != nil {
+	if item.CreatedAt, err = parseTime(created); err != nil {
 		return domain.Item{}, err
 	}
-	if item.UpdatedAt, err = time.Parse(timeFormat, updated); err != nil {
+	if item.UpdatedAt, err = parseTime(updated); err != nil {
 		return domain.Item{}, err
 	}
 	return item, nil
-}
-
-func formatTime(t time.Time) string {
-	return t.UTC().Format(timeFormat)
 }

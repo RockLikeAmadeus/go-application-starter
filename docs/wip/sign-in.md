@@ -126,7 +126,11 @@ Storage:
   - Red: none. `TestAccountRepositoryContractOnPostgres` passed at once, as task 9's SQL and migration are shared; kept as a guard (it fails on a broken `Save`).
   - Green: skipped, as no production code was demanded.
   - Refactor: nothing worth changing; the test matches `TestWorkspacePlanRepositoryContractOnPostgres`.
-- [ ] 10. `sqlstore.NewSessionRepository` passes the session contract on SQLite and Postgres.
+- [x] 10. The migration adds `sessions`, and `sqlstore.NewSessionRepository` passes the session contract on SQLite.
+  - Red: `TestSessionRepositoryContractOnSQLite` failed in all five cases, as the stub returns zero values and no errors (e.g. `err = <nil>, want ErrNotFound`).
+  - Green: `00004_accounts_and_sessions.sql` adds `sessions` (keyed by token hash, expiry as UTC text), and `sqlstore.SessionRepository` selects by hash, upserts on hash, and deletes with `ErrNotFound` when no row goes.
+  - Refactor: `timeFormat`, `formatTime`, and a new `parseTime` moved from the sample `item_repository.go` to the template `times.go`, as the session repository needs them after `task init`. `task test:init` also found the session contract (since 8b) using the sample contract's `baseTime`, now in the template `storagetest/times.go`.
+- [ ] 10b. `sqlstore.NewSessionRepository` passes the session contract on Postgres.
 
 Plans:
 - [ ] 11. The plans file's `newWorkspacePlan` names the starting plan for new workspaces. A missing field, or a plan the file doesn't have, fails at start. The built-in file and the test plans start on `free`.
@@ -162,3 +166,4 @@ The web app:
 - 2026-11-10, task 7: split into 7 (no saved account is `ErrNotFound`), 7b (found by issuer and subject, whatever the name), 7c (not matched by name), 7d (`Find` by ID), 7e (`Find` of an unknown ID), and 7f (`Save` replaces), as each needs its own test.
 - 2026-11-10, task 8: split into 8 (no saved session is `ErrNotFound`), 8b (found by hash), 8c (`Save` replaces), 8d (`Delete` removes), and 8e (`Delete` of a missing session is `ErrNotFound`), as each needs its own test.
 - 2026-11-10, task 9: split into 9 (the account contract on SQLite) and 9b (on Postgres), as each needs its own test.
+- 2026-11-10, task 10: split into 10 (the session contract on SQLite) and 10b (on Postgres), as each needs its own test.

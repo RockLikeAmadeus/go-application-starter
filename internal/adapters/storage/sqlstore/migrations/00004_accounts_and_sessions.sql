@@ -10,5 +10,14 @@ CREATE TABLE accounts (
 );
 CREATE INDEX accounts_by_identity ON accounts (issuer, subject);
 
+-- Sessions: an account's signed-in session, kept by its token's SHA-256 hash
+-- only. The expiry is UTC text at full precision, fixed width.
+CREATE TABLE sessions (
+    token_hash TEXT PRIMARY KEY NOT NULL,
+    account_id TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+
 -- +goose Down
+DROP TABLE sessions;
 DROP TABLE accounts;

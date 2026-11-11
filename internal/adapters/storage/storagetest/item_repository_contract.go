@@ -13,8 +13,6 @@ import (
 // Factory returns a fresh, empty repository for each subtest.
 type Factory func(t *testing.T) ports.ItemRepository
 
-var baseTime = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-
 // workspace is the workspace the contract's items belong to. Keeping
 // workspaces apart is checked by RunWorkspaceIsolation.
 const workspace domain.WorkspaceID = "ws-a"
