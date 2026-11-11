@@ -39,7 +39,10 @@ The core:
   - Red: `TestNewIdentity_RefusesABlankIssuerOrSubject` (empty or whitespace issuer or subject) failed: nil error, want a `*ValidationError`.
   - Green: `NewIdentity` refuses a whitespace-only issuer or subject with the agreed messages ("The sign-in issuer cannot be empty.", "The sign-in subject cannot be empty."), and stores both untrimmed, as subjects are opaque.
   - Refactor: nothing worth changing. The code is two guard clauses.
-- [ ] 2. `domain.Session` knows when it's expired: `IsExpiredAt(now)` is true at or after its `ExpiresAt`.
+- [x] 2. `domain.Session` knows when it's expired: `IsExpiredAt(now)` is true at or after its `ExpiresAt`.
+  - Red: `TestSession_IsExpiredAtOrAfterItsExpiry` (before, at, and after) failed: `IsExpiredAt` = false at and after `ExpiresAt`, want true.
+  - Green: `domain.Session` (only `ExpiresAt` for now; task 3 adds the rest) and `IsExpiredAt(now)` = `!now.Before(ExpiresAt)`.
+  - Refactor: nothing worth changing. The method is one comparison; the session's other fields wait for task 3, which needs them.
 - [ ] 3. `ports.SignInService`, `AccountRepository`, `SessionRepository`, and `TokenGenerator`, with `testsupport` fakes where needed. `app.SignInService.SignIn` with a new identity creates an account and a personal workspace, and returns a token whose session (stored by hash only) expires 30 days later.
 - [ ] 4. `SignIn` with a known identity reuses its account and workspace, even when the name has changed.
 - [ ] 5. `CurrentAccount(ctx, token)` returns the session's account, and `ErrNoWorkspace` for an unknown or expired token (deleting an expired session).
