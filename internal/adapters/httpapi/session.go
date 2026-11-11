@@ -40,3 +40,9 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string) {
 		Secure:   r.TLS != nil,
 	})
 }
+
+// clearSessionCookie tells the browser to forget the session cookie at once
+// (Max-Age < 0).
+func clearSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{Name: SessionCookie, Path: "/", MaxAge: -1})
+}

@@ -85,6 +85,9 @@ func NewHandler(opts Options) http.Handler {
 		mux.HandleFunc("GET /auth/dev", devSignInForm)
 		mux.Handle("POST /auth/dev", devSignIn(opts.SignIn))
 	}
+	if opts.SignIn != nil {
+		mux.Handle("POST /auth/sign-out", signOut(opts.SignIn))
+	}
 
 	mux.Handle("/", spaHandler(opts.WebAssets))
 

@@ -194,7 +194,11 @@ The server:
   - Red: `TestSignInGoesToTheDevSignInWhenItIsOn` failed: `GET /auth/sign-in` answered 200 (the SPA's hint page), want 302 to `/auth/dev`.
   - Green: with `IsDevSignInOn`, `GET /auth/sign-in` redirects (302) to `/auth/dev`; `/auth/` is in `navigateFallbackDenylist`.
   - Refactor: the redirect is `signInGoesTo(adapterPath)` in `sign_in.go`, the route for any sign-in adapter, ready for OIDC in 8b.
-- [ ] 14f. `POST /auth/sign-out` ends the session, clears the cookie, and goes to `/`.
+- [x] 14f. `POST /auth/sign-out` ends the session, clears the cookie, and goes to `/`.
+  - Red: `TestSigningOutEndsTheSessionClearsTheCookieAndGoesToTheWebApp` failed with status 200 (the SPA's hint page), want 303 to `/`.
+  - Green: with `SignIn` set (any adapter), `POST /auth/sign-out` signs out the cookie's token, clears the cookie (Max-Age < 0), and redirects (303) to `/`; a failed sign-out is a problem (`problemFor`), pinned by 14h.
+  - Refactor: clearing the cookie is `clearSessionCookie` in `session.go`, beside `setSessionCookie`; `signOut` sits in `sign_in.go`, as it serves every adapter.
+- [ ] 14h. A sign-out that fails (storage can't be reached) is a problem, and keeps the cookie.
 - [ ] 14g. A refused dev sign-in (a blank name) is a 400 problem, and sets no cookie.
 - [ ] 15. With a session cookie, a request that changes something from another site is refused (403).
 - [ ] 16. `GET /api/v1/session` in `api/openapi.yaml` (`task gen`), served from `CurrentAccount`, and `httpclient` reads it.
@@ -229,3 +233,4 @@ The web app:
 - 2026-11-10, task 12b: split into 12b (no cookie leaves no workspace) and 12c (an unknown cookie leaves none), as each needs its own test.
 - 2026-11-11, task 13: split into 13 (the server's 401 problem) and 13b (`httpclient` maps it back), as each needs its own test. The user agreed `ErrNoWorkspace`'s message, "Please sign in to continue.", which is also the problem's detail.
 - 2026-11-11, task 14: split into 14 (`POST /auth/dev` signs in and sets the cookie), 14b (the cookie lasts as long as the session), 14c (`Secure` over HTTPS), 14d (`GET /auth/dev` shows the form), 14e (`GET /auth/sign-in` goes to it, and the denylist), 14f (signing out), and 14g (a refused dev sign-in, added at green, where the code needed an error path), as each needs its own test.
+- 2026-11-11, task 14f: added 14h (a failed sign-out is a problem and keeps the cookie), at green, where the code needed an error path, as task 14 did for 14g.

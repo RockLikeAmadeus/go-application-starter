@@ -12,11 +12,13 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
-// signInRecorder is a ports.SignInService that records the identity it signs
-// in and answers the same token for every sign-in.
+// signInRecorder is a ports.SignInService that records the identities it
+// signs in and the tokens it signs out, and answers the same token for every
+// sign-in.
 type signInRecorder struct {
 	token      string
 	identities []domain.Identity
+	signedOut  []string
 }
 
 func (s *signInRecorder) SignIn(_ context.Context, identity domain.Identity) (string, error) {
@@ -28,7 +30,8 @@ func (s *signInRecorder) CurrentAccount(context.Context, string) (domain.Account
 	return domain.Account{}, domain.ErrNoWorkspace
 }
 
-func (s *signInRecorder) SignOut(context.Context, string) error {
+func (s *signInRecorder) SignOut(_ context.Context, token string) error {
+	s.signedOut = append(s.signedOut, token)
 	return nil
 }
 

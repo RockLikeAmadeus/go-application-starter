@@ -17,3 +17,23 @@ func TestSignInGoesToTheDevSignInWhenItIsOn(t *testing.T) {
 		t.Errorf("status = %d, Location = %q; want %d to %q", rec.Code, rec.Header().Get("Location"), http.StatusFound, "/auth/dev")
 	}
 }
+
+func TestSigningOutEndsTheSessionClearsTheCookieAndGoesToTheWebApp(t *testing.T) {
+	signIn := &signInRecorder{}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: signIn})
+	req := httptest.NewRequest(http.MethodPost, "/auth/sign-out", nil)
+	req.AddCookie(&http.Cookie{Name: httpapi.SessionCookie, Value: "token-ada"})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/" {
+		t.Fatalf("status = %d, Location = %q; want %d to %q", rec.Code, rec.Header().Get("Location"), http.StatusSeeOther, "/")
+	}
+	if len(signIn.signedOut) != 1 || signIn.signedOut[0] != "token-ada" {
+		t.Errorf("signed out %q, want [token-ada]", signIn.signedOut)
+	}
+	cookie := sessionCookieOf(t, rec)
+	if cookie.Value != "" || cookie.MaxAge >= 0 || cookie.Path != "/" {
+		t.Errorf("cookie = %+v, want an empty value on path / that has expired (Max-Age < 0)", cookie)
+	}
+}
