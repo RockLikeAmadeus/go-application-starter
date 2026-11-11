@@ -77,3 +77,13 @@ func TestASessionCookiePutsItsAccountsWorkspaceInTheRequest(t *testing.T) {
 		t.Errorf("workspace = %q, want %q", got, "ws-a")
 	}
 }
+
+func TestNoSessionCookieLeavesNoWorkspaceInTheRequest(t *testing.T) {
+	signIn := sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}}
+
+	got := requestWorkspace(t, signIn)
+
+	if got != "none" {
+		t.Errorf("workspace = %q, want none", got)
+	}
+}
