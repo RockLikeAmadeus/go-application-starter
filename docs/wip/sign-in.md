@@ -253,7 +253,10 @@ Settings and wiring:
   - Red: `TestNewEmbedded_TurnsOnTheDevSignInInTheDevSignInBuild` (`//go:build devsignin`) failed, `IsDevSignInOn = false, want true`. To compile: `App.IsDevSignInOn`.
   - Green: `NewEmbedded` sets `IsDevSignInOn` when `sign_in` is `dev` (only reached in a `devsignin` build); `task test:go` also runs `./internal/bootstrap/` with `-tags devsignin`.
   - Refactor: a doc comment on `App.IsDevSignInOn`. Left: `golangci-lint` builds without the tag, so `devsignin_on*.go` isn't linted, as adding the tag would skip the `_off` files instead.
-- [ ] 19c. The server passes the App's `IsDevSignInOn` to its handler, so `GET /auth/dev` shows the form.
+- [x] 19c. The server passes the App's `IsDevSignInOn` to its handler, so `GET /auth/dev` shows the form.
+  - Red: `TestTheServerServesTheDevSignInFormWhenItIsOn` (`cmd/server`) failed, `GET /auth/dev` served the SPA's hint page, not the form.
+  - Green: `handlerOptions` passes `application.IsDevSignInOn` to `httpapi.Options`.
+  - Refactor: nothing worth changing; `SignIn` is passed in task 20, once the App has it.
 - [ ] 20. With sign-in on, `bootstrap` wires the hosted server: the `FromContext` resolver, the session middleware, the account and session repositories from its storage, stored plans (`plans.StoredPlanOf` with `newWorkspacePlan`, hints on), and the real `bootstrap.NewBilling`.
 
 Acceptance:

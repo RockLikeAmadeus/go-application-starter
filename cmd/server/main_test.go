@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
@@ -80,6 +81,18 @@ func TestTheServerServesTheAppsWarnings(t *testing.T) {
 
 	if !slices.Equal(got, want) {
 		t.Errorf("warnings = %q, want %q", got, want)
+	}
+}
+
+// With the dev sign-in on, the server's handler serves its form.
+func TestTheServerServesTheDevSignInFormWhenItIsOn(t *testing.T) {
+	handler := httpapi.NewHandler(handlerOptions(&bootstrap.App{IsDevSignInOn: true}, nil))
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/dev", nil))
+
+	if !strings.Contains(rec.Body.String(), `action="/auth/dev"`) {
+		t.Errorf("GET /auth/dev = %d %q, want the dev sign-in form", rec.Code, rec.Body.String())
 	}
 }
 
