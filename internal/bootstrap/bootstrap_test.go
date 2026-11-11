@@ -129,7 +129,7 @@ func TestNewEmbedded_RefusesPostgresWithNoDatabaseURL(t *testing.T) {
 
 func TestNewEmbedded_WithAPlansFile(t *testing.T) {
 	t.Run("uses it instead of the shipped one", func(t *testing.T) {
-		path := writePlansFile(t, `{"plans": {"local": {"limits": {"items": {"max": 5, "whenOver": "read-only"}}}}}`)
+		path := writePlansFile(t, `{"newWorkspacePlan": "local", "plans": {"local": {"limits": {"items": {"max": 5, "whenOver": "read-only"}}}}}`)
 		a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageMemory, PlansFile: path})
 		if err != nil {
 			t.Fatalf("NewEmbedded: %v", err)
@@ -164,6 +164,7 @@ func TestNewEmbedded_WithAPlansFile(t *testing.T) {
 // plan.
 func TestNewEntitlements_ReadsTheLocalPlanWithoutStorageOrHints(t *testing.T) {
 	path := writePlansFile(t, `{
+		"newWorkspacePlan": "local",
 		"features": {"export": {"name": "Export", "whenOff": "show-locked"}},
 		"plans": {"local": {"limits": {}}, "pro": {"limits": {}, "features": ["export"]}}
 	}`)

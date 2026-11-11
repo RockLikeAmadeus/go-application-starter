@@ -134,6 +134,7 @@ func (j *journey) theExportListsAndThen(first, second string) error {
 func (j *journey) aPlansFileWithoutItemExport(shown string) error {
 	whenOff := map[string]string{"shown locked": "show-locked", "hidden": "hide"}[shown]
 	plans := `{
+	"newWorkspacePlan": "local",
 	"features": {"item-export": {"name": "Item export", "whenOff": "` + whenOff + `"}},
 	"plans": {"local": {"limits": {}, "features": []}}
 }`

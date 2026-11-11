@@ -140,7 +140,10 @@ Plans:
   - Red: `TestParse_ReadsTheNewWorkspacePlan` failed with `unknown field "newWorkspacePlan"`. To compile, `Parse` now returns a `plans.File` (`Catalog`, `NewWorkspacePlan`); `Default` and `Load` still return its `Catalog`.
   - Green: the plans document reads `newWorkspacePlan` into `File.NewWorkspacePlan`.
   - Refactor: `Parse`'s doc comment shows and explains the field. Left: `Default` and `Load` keep returning a `Catalog` until a test needs the field from them (11d, task 20).
-- [ ] 11b. A plans file without `newWorkspacePlan` is refused, so it fails at start. The test plans start on `free`.
+- [x] 11b. A plans file without `newWorkspacePlan` is refused, so it fails at start. The test plans start on `free`.
+  - Red: `TestParse_RefusesABadPlansFile/no_newWorkspacePlan` failed with "Parse succeeded, want an error". The valid fixtures in the plans, bootstrap, cli, and terminal tests now name a plan they have (`free`, or `local`).
+  - Green: `Parse` refuses a file without `newWorkspacePlan` (checked after the plans, so other refusals keep their messages); `plans.jsonc` starts new workspaces on `free`, so the acceptance test plans do too.
+  - Refactor: `Parse`'s doc comment says the field is required. Left: the `docs/features.md` example is a fragment, so it needs no field; task 26 documents it.
 - [ ] 11c. A `newWorkspacePlan` that isn't one of the file's plans is refused.
 - [ ] 11d. The built-in file starts new workspaces on `free`.
 

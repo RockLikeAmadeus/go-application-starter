@@ -62,11 +62,12 @@ type limitRecord struct {
 //	}
 //
 // and returns each plan's entitlements, in File's Catalog, and the plan a new
-// workspace starts on, in NewWorkspacePlan. Every plan gets every feature in
-// "features", on when the plan lists it and off otherwise; a plan listing a
-// feature that isn't there is refused. Lines whose first non-blank characters
-// are // are comments, so the file can explain itself and carry the template's
-// sample markers. Comments at the end of a line aren't supported.
+// workspace starts on, in NewWorkspacePlan. A file without newWorkspacePlan is
+// refused. Every plan gets every feature in "features", on when the plan lists
+// it and off otherwise; a plan listing a feature that isn't there is refused.
+// Lines whose first non-blank characters are // are comments, so the file can
+// explain itself and carry the template's sample markers. Comments at the end
+// of a line aren't supported.
 func Parse(data []byte) (File, error) {
 	var doc document
 	dec := json.NewDecoder(bytes.NewReader(stripComments(data)))
@@ -85,6 +86,9 @@ func Parse(data []byte) (File, error) {
 			return File{}, fmt.Errorf("plans file: plan %q, %w", name, err)
 		}
 		catalog[name] = entitlements
+	}
+	if doc.NewWorkspacePlan == "" {
+		return File{}, errors.New("plans file: no newWorkspacePlan")
 	}
 	return File{Catalog: catalog, NewWorkspacePlan: doc.NewWorkspacePlan}, nil
 }

@@ -14,6 +14,7 @@ import (
 
 func TestParse_GivesEachPlansEntitlements(t *testing.T) {
 	doc := `{
+		"newWorkspacePlan": "free",
 		"plans": {
 			"free": {"limits": {"items": {"max": 3, "whenOver": "read-only"}}},
 			"pro": {"limits": {}}
@@ -52,6 +53,7 @@ func TestParse_ReadsTheNewWorkspacePlan(t *testing.T) {
 func TestParse_IgnoresFullLineComments(t *testing.T) {
 	doc := `// The product's plans.
 	{
+		"newWorkspacePlan": "free",
 		"plans": {
 			// The free plan.
 			"free": {
@@ -84,7 +86,7 @@ func TestParse_ReadsFeatures(t *testing.T) {
 		"audit": {"name": "Audit log", "whenOff": "hide"}
 	}`
 	t.Run("gives every plan every feature, on when it lists it", func(t *testing.T) {
-		doc := `{` + features + `, "plans": {
+		doc := `{"newWorkspacePlan": "free", ` + features + `, "plans": {
 			"free": {"limits": {}},
 			"pro": {"limits": {}, "features": ["export", "audit"]}
 		}}`
@@ -157,6 +159,10 @@ func TestParse_RefusesABadPlansFile(t *testing.T) {
 		"an unknown field": {
 			`{"plans": {"free": {"limits": {"items": {"maximum": 3, "whenOver": "block-new"}}}}}`,
 			[]string{`unknown field "maximum"`},
+		},
+		"no newWorkspacePlan": {
+			`{"plans": {"free": {"limits": {}}}}`,
+			[]string{"plans file", "newWorkspacePlan"},
 		},
 	}
 	for name, tc := range cases {
