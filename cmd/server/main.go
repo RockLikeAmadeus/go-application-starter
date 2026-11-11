@@ -95,6 +95,7 @@ func handlerOptions(application *bootstrap.App, log *slog.Logger) httpapi.Option
 		Items: application.Items,
 		// sample:end
 		Entitlements:  application.Entitlements,
+		SignIn:        application.SignIn,
 		IsDevSignInOn: application.IsDevSignInOn,
 		Ready:         application.Ready,
 		Warnings:      application.Warnings,

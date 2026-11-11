@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 // The server's readiness probe asks its storage, so a server whose data
@@ -96,6 +98,29 @@ func TestTheServerServesTheDevSignInFormWhenItIsOn(t *testing.T) {
 	}
 }
 
+// With sign-in on, the server's handler knows each session's account, so a
+// request with a session cookie is signed in.
+func TestTheServerSignsInARequestWithASessionCookie(t *testing.T) {
+	ada := domain.Account{ID: "account-a", Identity: domain.Identity{Issuer: "dev", Subject: "Ada", Name: "Ada"}, WorkspaceID: "ws-a"}
+	handler := httpapi.NewHandler(handlerOptions(&bootstrap.App{SignIn: oneSession{token: "token-a", account: ada}}, nil))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/session", nil)
+	req.AddCookie(&http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	var got struct {
+		IsSignInOn bool   `json:"isSignInOn"`
+		Name       string `json:"name"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.IsSignInOn || got.Name != "Ada" {
+		t.Errorf("GET /api/v1/session = %+v, want sign-in on and signed in as Ada", got)
+	}
+}
+
 // Whoever runs the server reads its log, so it logs each warning at start.
 func TestTheServerLogsEachWarning(t *testing.T) {
 	var out bytes.Buffer
@@ -120,6 +145,26 @@ func TestTheServerLogsEachWarning(t *testing.T) {
 		t.Errorf("logged %q, want %q", got, want)
 	}
 }
+
+// oneSession is a sign-in service that knows one session: token's, for
+// account.
+type oneSession struct {
+	token   string
+	account domain.Account
+}
+
+func (s oneSession) SignIn(context.Context, domain.Identity) (string, error) {
+	return s.token, nil
+}
+
+func (s oneSession) CurrentAccount(_ context.Context, token string) (domain.Account, error) {
+	if token != s.token {
+		return domain.Account{}, domain.ErrNoWorkspace
+	}
+	return s.account, nil
+}
+
+func (oneSession) SignOut(context.Context, string) error { return nil }
 
 // servedWarnings asks the REST API for the warnings' messages, as the web
 // app does.
