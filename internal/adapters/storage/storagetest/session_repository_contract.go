@@ -68,6 +68,13 @@ func RunSessionRepositoryContract(t *testing.T, newRepo func(*testing.T) ports.S
 			t.Fatalf("FindByHash after Delete: err = %v, want ErrNotFound", err)
 		}
 	})
+
+	t.Run("Delete of a missing session returns ErrNotFound", func(t *testing.T) {
+		repo := newRepo(t)
+		if err := repo.Delete(ctx, domain.HashSessionToken("token-1")); !errors.Is(err, domain.ErrNotFound) {
+			t.Fatalf("err = %v, want ErrNotFound", err)
+		}
+	})
 }
 
 // assertSessionEqual compares the expiry with Equal so adapters may

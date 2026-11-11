@@ -40,10 +40,14 @@ func (r *SessionRepository) Save(_ context.Context, session domain.Session) erro
 	return nil
 }
 
-// Delete removes the session kept by the token hash.
+// Delete removes the session kept by the token hash, or returns
+// domain.ErrNotFound when there is none.
 func (r *SessionRepository) Delete(_ context.Context, tokenHash string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if _, ok := r.sessions[tokenHash]; !ok {
+		return domain.ErrNotFound
+	}
 	delete(r.sessions, tokenHash)
 	return nil
 }

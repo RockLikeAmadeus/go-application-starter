@@ -114,7 +114,10 @@ Storage:
   - Red: `TestSessionRepositoryContract/Delete_removes_the_session,_so_FindByHash_returns_ErrNotFound` failed: `FindByHash after Delete: err = <nil>, want ErrNotFound`.
   - Green: `memory.SessionRepository.Delete` removes the session kept under the hash.
   - Refactor: nothing worth changing; `Delete` matches `memory.ItemRepository.Delete`, less its missing-record check, which 8e drives.
-- [ ] 8e. Session contract: `Delete` of a missing session is `ErrNotFound` (set in task 6b).
+- [x] 8e. Session contract: `Delete` of a missing session is `ErrNotFound` (set in task 6b).
+  - Red: `TestSessionRepositoryContract/Delete_of_a_missing_session_returns_ErrNotFound` failed: `err = <nil>, want ErrNotFound`.
+  - Green: `memory.SessionRepository.Delete` returns `ErrNotFound` when no session is kept under the hash.
+  - Refactor: nothing worth changing; `Delete` now matches `memory.ItemRepository.Delete`.
 - [ ] 9. Migration `00004_accounts_and_sessions.sql` and `sqlstore.NewAccountRepository` pass the account contract on SQLite and Postgres.
 - [ ] 10. `sqlstore.NewSessionRepository` passes the session contract on SQLite and Postgres.
 
