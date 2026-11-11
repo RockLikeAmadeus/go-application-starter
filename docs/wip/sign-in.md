@@ -118,7 +118,11 @@ Storage:
   - Red: `TestSessionRepositoryContract/Delete_of_a_missing_session_returns_ErrNotFound` failed: `err = <nil>, want ErrNotFound`.
   - Green: `memory.SessionRepository.Delete` returns `ErrNotFound` when no session is kept under the hash.
   - Refactor: nothing worth changing; `Delete` now matches `memory.ItemRepository.Delete`.
-- [ ] 9. Migration `00004_accounts_and_sessions.sql` and `sqlstore.NewAccountRepository` pass the account contract on SQLite and Postgres.
+- [x] 9. Migration `00004_accounts_and_sessions.sql` and `sqlstore.NewAccountRepository` pass the account contract on SQLite.
+  - Red: `TestAccountRepositoryContractOnSQLite` failed in all six cases, as the stub returns zero values and no errors (e.g. `err = <nil>, want ErrNotFound`).
+  - Green: `00004_accounts_and_sessions.sql` creates `accounts` (only; task 10 adds `sessions` to the same unreleased file), and `sqlstore.AccountRepository` selects by issuer and subject or by ID and upserts on ID.
+  - Refactor: `accountColumns` and a `findOne` helper share the select and scan; an index on `(issuer, subject)` for sign-in's lookup, left non-unique as no test demands refusing a second account with one identity.
+- [ ] 9b. `sqlstore.NewAccountRepository` passes the account contract on Postgres.
 - [ ] 10. `sqlstore.NewSessionRepository` passes the session contract on SQLite and Postgres.
 
 Plans:
@@ -154,3 +158,4 @@ The web app:
 - 2026-11-10, task 6: split into 6 (signing out deletes the session) and 6b (signing out of an unknown session isn't an error), as each needs its own test.
 - 2026-11-10, task 7: split into 7 (no saved account is `ErrNotFound`), 7b (found by issuer and subject, whatever the name), 7c (not matched by name), 7d (`Find` by ID), 7e (`Find` of an unknown ID), and 7f (`Save` replaces), as each needs its own test.
 - 2026-11-10, task 8: split into 8 (no saved session is `ErrNotFound`), 8b (found by hash), 8c (`Save` replaces), 8d (`Delete` removes), and 8e (`Delete` of a missing session is `ErrNotFound`), as each needs its own test.
+- 2026-11-10, task 9: split into 9 (the account contract on SQLite) and 9b (on Postgres), as each needs its own test.
