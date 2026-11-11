@@ -98,8 +98,9 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - Tests read `STARTER_TEST_DATABASE_URL` (`task db:up` locally, a service container in CI) and skip without it; each test and scenario gets its own database. A new `postgres` acceptance driver runs every business scenario, and the server driver covers readiness, an outage and recovery, and two servers sharing a database.
 - ADR 5, ADR 7, `docs/workspaces.md`, `docs/configuration.md`, `docs/data-locations.md`, `.claude/rules/`, and README are updated. `task test:init` passes.
 
-### 8. Authentication — not started
+### 8. Authentication — in progress
 - This is the existing "Authentication behind a port" TODO item.
+- Split in two features (2026-11-10). **8a, sign-in with the dev sign-in** ([`docs/wip/sign-in.md`](../wip/sign-in.md), in progress): everything below except the OIDC adapter, proved with the dev sign-in. Sessions use a server-side cookie, kept in storage, and sign-in works on memory, SQLite, and Postgres only. **8b, the OIDC adapter** (not started): OIDC behind the same seam, tested against a fake OIDC provider inside the tests, the guide's provider and email-and-password notes, and removing "Authentication" from SPEC.md §6.
 - The OIDC adapter and the dev-only fake login.
 - The guide for template users explains that email and password sign-up comes from choosing a provider that keeps its own accounts (see Decisions, "Authentication"), so products offer it without building it.
 - Auth middleware that sets the workspace, and a personal workspace created at first login.
@@ -118,6 +119,7 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - Synced folders on Android (Storage Access Framework).
 - Teams: workspace members and roles.
 - A paid local licence key, behind the entitlements port.
+- Sweeping expired sessions that nobody looks up again (step 8a deletes one only when it's found expired).
 
 ## Verification after every step
 - `task check`, plus `task accept` with the step's `@wip` scenarios passing on every relevant driver.
@@ -160,3 +162,4 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - 2026-11-09: step 7 started. Agreed: one source for the SQL, shared by SQLite and Postgres (`sqlstore`), rather than a second copy per engine, so a new entity is written once. The test database is a URL plus compose (`task db:up`), and the desktop and mobile apps refuse `postgres`, as they will reach hosted data through a server (step 10).
 - 2026-11-10: step 7 finished, recorded in ADR 8. Its task list split most tasks into one test each, and added a migration lock (servers starting together on an unmigrated database raced), hiding `database_url` in `starter info` (a URL usually holds a password), `starter info` naming the database rather than a folder, and a readiness retry on a dead pooled connection (the first probe after an outage answered 503).
 - 2026-11-10: before step 8, agreed that the app never builds its own email and password sign-in. Users who'd rather not sign in with Google get a dedicated account from the provider (Auth0, Clerk, Keycloak, and others keep their own accounts), which reaches the app through the same OIDC adapter. Step 8's guide for template users says so.
+- 2026-11-10: step 8 started, split into 8a (sign-in with the dev sign-in) and 8b (the OIDC adapter). Agreed: a session cookie rather than tokens in the browser (the backend-for-frontend pattern, which current IETF guidance ranks most secure), sessions and accounts kept in storage, and sign-in only on memory, SQLite, and Postgres, so jsonfile with sign-in is refused at start. Decided: the dev sign-in exists only in builds with the `devsignin` tag. A sweep for expired sessions is a follow-up.

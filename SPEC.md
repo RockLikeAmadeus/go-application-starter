@@ -41,6 +41,10 @@ Use these terms consistently in code, Gherkin, and UI copy.
 | **Ready** | A server is ready when it can reach its data, so it can serve requests. |
 | **Conflict copy** | A second copy of a file that a file-sync service leaves in a synced folder when the same file changed in two places. |
 | **Device** | A computer that uses a data folder, known by its name. |
+| **Account** | A person who signs in to the hosted edition. A sign-in provider vouches for who they are, and each account has its own personal workspace. |
+| **Sign-in provider** | The service that checks who someone is when they sign in, such as Auth0, Clerk, or Keycloak. The product never sees or stores a password. |
+| **Dev sign-in** | A stand-in for a sign-in provider, for developers and tests only: it signs in whoever names themselves. Release builds don't include it. |
+| **Session** | The time between signing in and signing out, in one browser or program. A session ends when its owner signs out, or when it expires. |
 
 <!-- sample:start -->
 The sample capability (§4.1) adds one term:
@@ -419,6 +423,33 @@ A server can keep its data in a Postgres database, so that several copies of it,
 - The desktop app's settings file says `storage = "postgres"` → it doesn't open the data, and says that it keeps local data only.
 
 **Specification:** [`features/postgres-storage.feature`](features/postgres-storage.feature), on the server driver. Every other feature's business scenarios also run on Postgres storage. Refusing a newer layout, a missing `database_url`, and the desktop app refusing Postgres are checked by unit tests. These tests need a Postgres database (`task db:up`). Without one they are skipped locally, and CI always runs them.
+
+### 4.18 Sign in to the hosted edition
+
+In the hosted edition, each person signs in to their own **account**, and works in that account's personal workspace (§4.8), on that workspace's plan (§4.9). This is part 8a of step 8 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). It builds everything sign-in needs, and proves it with the **dev sign-in**. Part 8b adds a real sign-in provider, through OpenID Connect (OIDC), behind the same seam. Accounts with an email address and a password come from the provider, not from the product (ADR 5).
+
+**Rules**
+- Sign-in is a server setting, and it is off by default. With it off, the server is a self-hosted local edition with one workspace, as it is today. The desktop and mobile apps, and the command line and the terminal app on their own, are always the local edition.
+- With sign-in on, the server keeps accounts and sessions in its storage, so its storage must be memory, SQLite, or Postgres. Plain-text storage with sign-in on is refused when the server starts.
+- The first time someone signs in, the product creates their account and a personal workspace for it. The workspace starts on the plan that the plans file names for new workspaces.
+- Signing in again brings the person back to the same account and workspace, with its data and its plan.
+- Each account sees and changes only its own workspace's data. Someone who hasn't signed in can't see or change any data, and is told to sign in.
+- Signing out ends the session at once: the same browser or program then has to sign in again. A session also expires after a while, which unit tests check.
+- An admin can move a hosted workspace to another plan (§4.15), and the change takes effect for that account at once.
+- The dev sign-in is for developers and tests only. Release builds don't include it, so a public server can't switch it on by mistake.
+- The web app shows a way to sign in while signed out, and a way to sign out while signed in. With sign-in off, it shows neither.
+
+**Examples**
+- Ada signs in for the first time, on a server whose plans file starts new workspaces on the free plan → Ada has an account, and Ada's workspace is on the free plan.
+- An admin moves Ada's workspace to the pro plan, and Ada signs out and in again → Ada's workspace is still on the pro plan.
+- Ada and Grace both sign in → each has their own workspace, and moving Ada's to the pro plan leaves Grace's on the free plan.
+<!-- sample:start -->
+- Ada adds "Widget", and Grace signs in → Grace has no items.
+<!-- sample:end -->
+- Someone opens the web app without signing in → they're asked to sign in, and see no data.
+- A server with `storage = "jsonfile"` and sign-in on → it doesn't start, and says sign-in needs memory, SQLite, or Postgres storage.
+
+**Specification:** [`features/sign-in.feature`](features/sign-in.feature), on the memory, sqlite, postgres, and http drivers, whose storage keeps accounts. The workspace scenarios in [`features/workspaces.feature`](features/workspaces.feature) also run on the http driver, each workspace being a signed-in account's. The web app's sign-in and sign-out are a browser journey ([`web/e2e/features/sign-in.feature`](web/e2e/features/sign-in.feature)). Refusing plain-text storage, expiring sessions, and leaving the dev sign-in out of release builds are checked by unit tests.
 
 ## 5. Non-functional requirements
 
