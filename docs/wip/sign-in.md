@@ -170,7 +170,10 @@ The server:
   - Red: `TestNoWorkspaceIsAnUnauthorizedProblemAskingToSignIn` failed with status 500, want 401.
   - Green: `problemFor` maps `ErrNoWorkspace` to 401 `no_workspace` (`ProblemNoWorkspace`) with `err.Error()`, and `ErrNoWorkspace`'s message is "Please sign in to continue."
   - Refactor: nothing worth changing; the new case follows `ErrNotFound`'s, and the test follows the limit test's shape. `workspaces-and-plans.md` still says it isn't mapped: task 26 updates it, after 13b.
-- [ ] 13b. `httpclient` maps the `no_workspace` problem back to `ErrNoWorkspace`.
+- [x] 13b. `httpclient` maps the `no_workspace` problem back to `ErrNoWorkspace`.
+  - Red: `TestNoWorkspaceComesBackAsErrNoWorkspace` failed: the error read as "The server returned an error (401): …", not `ErrNoWorkspace`.
+  - Green: `toError` maps `no_workspace` to `domain.ErrNoWorkspace`.
+  - Refactor: nothing worth changing; the case and test follow their neighbours. `workspaces-and-plans.md` still says it isn't mapped: task 26 updates it.
 - [ ] 14. The dev sign-in routes: `GET /auth/sign-in` and `GET /auth/dev` show the form, `POST /auth/dev` signs in as the given name (issuer `dev`) and sets the cookie, and `POST /auth/sign-out` ends the session and clears it. Add them to `navigateFallbackDenylist`.
 - [ ] 15. With a session cookie, a request that changes something from another site is refused (403).
 - [ ] 16. `GET /api/v1/session` in `api/openapi.yaml` (`task gen`), served from `CurrentAccount`, and `httpclient` reads it.

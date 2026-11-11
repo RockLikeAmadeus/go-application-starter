@@ -130,6 +130,16 @@ func TestAFeatureErrorComesBackAsAFeatureError(t *testing.T) {
 	}
 }
 
+// No workspace on the server, as when signed out, comes back as
+// domain.ErrNoWorkspace, so callers can tell the person to sign in whichever
+// way they reach the core.
+func TestNoWorkspaceComesBackAsErrNoWorkspace(t *testing.T) {
+	err := errorOverHTTP(t, domain.ErrNoWorkspace)
+	if !errors.Is(err, domain.ErrNoWorkspace) {
+		t.Fatalf("err = %v, want %v", err, domain.ErrNoWorkspace)
+	}
+}
+
 // An error the client has no domain error for reads as a sentence, with the
 // status and what the server said.
 func TestAnyOtherServerErrorReadsAsASentence(t *testing.T) {

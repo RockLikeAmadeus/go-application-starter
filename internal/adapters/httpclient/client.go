@@ -33,6 +33,8 @@ func toError(status int, p *apiclient.Problem) error {
 	switch problemType {
 	case "not_found":
 		return domain.ErrNotFound
+	case "no_workspace":
+		return domain.ErrNoWorkspace
 	case "validation":
 		return &domain.ValidationError{Field: field, Message: detail}
 	case "limit":
