@@ -164,6 +164,10 @@ func TestParse_RefusesABadPlansFile(t *testing.T) {
 			`{"plans": {"free": {"limits": {}}}}`,
 			[]string{"plans file", "newWorkspacePlan"},
 		},
+		"a newWorkspacePlan that isn't a plan": {
+			`{"newWorkspacePlan": "starter", "plans": {"free": {"limits": {}}}}`,
+			[]string{"plans file", "newWorkspacePlan", `"starter"`},
+		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

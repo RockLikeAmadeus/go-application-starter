@@ -144,7 +144,10 @@ Plans:
   - Red: `TestParse_RefusesABadPlansFile/no_newWorkspacePlan` failed with "Parse succeeded, want an error". The valid fixtures in the plans, bootstrap, cli, and terminal tests now name a plan they have (`free`, or `local`).
   - Green: `Parse` refuses a file without `newWorkspacePlan` (checked after the plans, so other refusals keep their messages); `plans.jsonc` starts new workspaces on `free`, so the acceptance test plans do too.
   - Refactor: `Parse`'s doc comment says the field is required. Left: the `docs/features.md` example is a fragment, so it needs no field; task 26 documents it.
-- [ ] 11c. A `newWorkspacePlan` that isn't one of the file's plans is refused.
+- [x] 11c. A `newWorkspacePlan` that isn't one of the file's plans is refused.
+  - Red: `TestParse_RefusesABadPlansFile/a_newWorkspacePlan_that_isn't_a_plan` failed with "Parse succeeded, want an error".
+  - Green: `Parse` refuses a `newWorkspacePlan` missing from the catalog, naming it.
+  - Refactor: `Parse`'s doc comment says the plan must be one of the file's. Nothing else worth changing.
 - [ ] 11d. The built-in file starts new workspaces on `free`.
 
 The server:
