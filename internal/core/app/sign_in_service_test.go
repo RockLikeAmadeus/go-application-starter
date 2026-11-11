@@ -95,6 +95,53 @@ func TestSignIn_WhenTheAccountCantBeLookedUpIsRefusedAndSavesNothing(t *testing.
 	}
 }
 
+// raceLostAccounts is a StoredAccounts where another sign-in of the same
+// identity saves its account, the rival, just after this one's first
+// FindByIdentity finds none. Like the real repositories, its Save refuses
+// another account with the same issuer and subject.
+type raceLostAccounts struct {
+	testsupport.StoredAccounts
+	rival         domain.Account
+	hasRivalSaved bool
+}
+
+func (a *raceLostAccounts) FindByIdentity(ctx context.Context, identity domain.Identity) (domain.Account, error) {
+	account, err := a.StoredAccounts.FindByIdentity(ctx, identity)
+	if !a.hasRivalSaved {
+		a.hasRivalSaved = true
+		a.StoredAccounts[a.rival.ID] = a.rival
+	}
+	return account, err
+}
+
+func (a *raceLostAccounts) Save(ctx context.Context, account domain.Account) error {
+	if stored, err := a.StoredAccounts.FindByIdentity(ctx, account.Identity); err == nil && stored.ID != account.ID {
+		return errors.New("another account has the same issuer and subject")
+	}
+	return a.StoredAccounts.Save(ctx, account)
+}
+
+func TestSignIn_WhenAnotherSignInSavesTheIdentitysAccountFirstSharesThatAccount(t *testing.T) {
+	identity := domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}
+	rival := domain.Account{ID: "account-rival", Identity: identity, WorkspaceID: "workspace-rival"}
+	accounts := &raceLostAccounts{StoredAccounts: testsupport.StoredAccounts{}, rival: rival}
+	sessions := testsupport.StoredSessions{}
+	svc := app.NewSignInService(accounts, sessions, testsupport.FixedToken("token-1"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
+
+	token, err := svc.SignIn(context.Background(), identity)
+	if err != nil {
+		t.Fatalf("SignIn: %v", err)
+	}
+
+	if want := (testsupport.StoredAccounts{rival.ID: rival}); !reflect.DeepEqual(accounts.StoredAccounts, want) {
+		t.Errorf("accounts = %v, want only the rival %v", accounts.StoredAccounts, want)
+	}
+	if got := sessions[domain.HashSessionToken(token)].AccountID; got != rival.ID {
+		t.Errorf("session's account = %q, want the rival %q", got, rival.ID)
+	}
+}
+
 func TestCurrentAccount_WithASignedInTokenReturnsTheSessionsAccount(t *testing.T) {
 	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
 	ada := domain.Account{ID: "account-1", Identity: domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}, WorkspaceID: "workspace-1"}

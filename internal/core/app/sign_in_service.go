@@ -86,6 +86,11 @@ func (s *SignInService) accountFor(ctx context.Context, identity domain.Identity
 	account = domain.Account{ID: s.ids.NewID(), Identity: identity}
 	account.WorkspaceID = domain.WorkspaceID(s.ids.NewID())
 	if err := s.accounts.Save(ctx, account); err != nil {
+		// Another sign-in of the same identity may have saved its account
+		// since the lookup above, and Save refuses a second one, so share it.
+		if existing, findErr := s.accounts.FindByIdentity(ctx, identity); findErr == nil {
+			return existing, nil
+		}
 		return domain.Account{}, fmt.Errorf("save account: %w", err)
 	}
 	return account, nil
