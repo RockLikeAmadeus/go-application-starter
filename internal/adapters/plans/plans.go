@@ -240,17 +240,14 @@ func Default() (File, error) {
 	return Parse(shipped)
 }
 
-// Load returns the plans in the file at path, or Default's when path is
-// empty.
-func Load(path string) (Catalog, error) {
+// Load returns the plans file at path, or Default's when path is empty.
+func Load(path string) (File, error) {
 	if path == "" {
-		file, err := Default()
-		return file.Catalog, err
+		return Default()
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return File{}, err
 	}
-	file, err := Parse(data)
-	return file.Catalog, err
+	return Parse(data)
 }

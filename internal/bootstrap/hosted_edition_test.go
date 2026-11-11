@@ -9,9 +9,13 @@ package bootstrap_test
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -28,6 +32,42 @@ func TestNewEmbedded_WithSignInOnHasNoWorkspaceWithoutOneInTheContext(t *testing
 
 	if !errors.Is(err, domain.ErrNoWorkspace) {
 		t.Errorf("CurrentEntitlements error = %v, want ErrNoWorkspace", err)
+	}
+}
+
+// A workspace with no stored plan is on the plans file's newWorkspacePlan, and
+// its locked features name the plans that have them.
+func TestNewEmbedded_WithSignInOnAWorkspaceWithNoStoredPlanIsOnTheNewWorkspacePlanWithHints(t *testing.T) {
+	plansFile := filepath.Join(t.TempDir(), "plans.jsonc")
+	const plansText = `{
+		"newWorkspacePlan": "starter",
+		"features": {"reports": {"name": "Reports", "whenOff": "show-locked"}},
+		"plans": {
+			"local": {"limits": {}, "features": ["reports"]},
+			"starter": {"limits": {}, "features": []},
+			"team": {"limits": {}, "features": ["reports"]}
+		}
+	}`
+	if err := os.WriteFile(plansFile, []byte(plansText), 0o600); err != nil {
+		t.Fatalf("write plans file: %v", err)
+	}
+	a, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageMemory, SignIn: config.SignInDev, PlansFile: plansFile})
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	ctx := workspace.WithID(context.Background(), "alpha")
+
+	entitlements, err := a.Entitlements.CurrentEntitlements(ctx)
+
+	if err != nil {
+		t.Fatalf("CurrentEntitlements: %v", err)
+	}
+	if entitlements.Plan != "starter" {
+		t.Errorf("plan = %q, want the newWorkspacePlan, %q", entitlements.Plan, "starter")
+	}
+	if got, want := entitlements.Features["reports"].AvailableOn, []string{"team"}; !slices.Equal(got, want) {
+		t.Errorf("reports' upgrade hint = %v, want %v", got, want)
 	}
 }
 

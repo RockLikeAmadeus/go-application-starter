@@ -285,8 +285,11 @@ Settings and wiring:
   - Red: `TestTheServerSignsInARequestWithASessionCookie` (`cmd/server`) failed, `GET /api/v1/session` = `{IsSignInOn:false Name:}`, want sign-in on and Ada.
   - Green: `handlerOptions` passes `application.SignIn` to `httpapi.Options`.
   - Refactor: nothing worth changing; the test's `oneSession` fake stays in `cmd/server`, as only its one test needs a sign-in service.
-- [ ] 20g. With sign-in on, a workspace's entitlements are its stored plan, else the plans file's `newWorkspacePlan`, with hints on.
-- [ ] 20h. With sign-in on, `bootstrap.NewBilling` returns the real service on the configured storage, so a changed plan shows in the App's entitlements.
+- [x] 20g. With sign-in on, a workspace is on the plans file's `newWorkspacePlan`, with hints on.
+  - Red: `TestNewEmbedded_WithSignInOnAWorkspaceWithNoStoredPlanIsOnTheNewWorkspacePlanWithHints` (`hosted_edition_test.go`, `devsignin`, its own plans file) failed, plan `local`, want `starter`, and no upgrade hint, want `[team]`.
+  - Green: with sign-in on, `NewEmbedded` answers every workspace the plans file's `newWorkspacePlan`, with hints on (not `LocalPlan`); `plans.Load` returns the `File`.
+  - Refactor: `entitlementsProviderFor(cfg)` loads the plans file once (`loadPlansFile`, still refusing one without `LocalPlan`) and picks `hostedEntitlementsProvider` or `localEntitlementsProvider`; `NewEntitlementsService` shares `loadPlansFile`.
+- [ ] 20h. With sign-in on, `bootstrap.NewBilling` returns the real service on the configured storage, and the App's entitlements read the workspace's stored plan (`plans.StoredPlanOf`), falling back to `newWorkspacePlan`, so a changed plan shows in them.
 
 Acceptance:
 - [ ] 21. The `@sign-in` steps on memory, sqlite, postgres, and http, and the driver tags that leave it out of jsonfile, desktop, mobile, and server. The sign-in scenarios pass. Sample: `task test:init`.
@@ -321,3 +324,4 @@ The web app:
 - 2026-11-11, task 19b: added 19c (the server passes the App's `IsDevSignInOn` to its handler), as `cmd/server` needs its own test. The App's `SignIn` service comes in task 20, with the repositories it needs.
 - 2026-11-11, task 20: split into 20 (entitlements from the context), 20b (items from the context, sample), 20c (the `crypto/rand` token generator, which task 3 named but no task built), 20d (`App.SignIn` on memory), 20e (on SQLite and Postgres), 20f (the server passes it to its handler), 20g (stored plans), and 20h (the real `NewBilling`), as each needs its own test. Their tests need sign-in on, which only a `devsignin` build accepts, so they carry that tag.
 - 2026-11-11, task 20e: split into 20e (SQLite) and 20e2 (Postgres), as each needs its own test, as for tasks 9 and 10. 20e2 is numbered so, as 20f is taken.
+- 2026-11-11, task 20g: reworded to what it built (a workspace is on `newWorkspacePlan`, with hints on). Reading the stored plan through `plans.StoredPlanOf` moved to 20h, whose test (a changed plan shows) is the first to demand it.

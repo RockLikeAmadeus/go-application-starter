@@ -152,7 +152,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	default:
 		return nil, config.UnrecognizedStorageError(cfg.Storage)
 	}
-	entitlementsProvider, err := localEntitlementsProvider(cfg.PlansFile)
+	entitlementsProvider, err := entitlementsProviderFor(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	}
 	// Build each use case on its repository and the driven ports:
 	// workspacesFor(cfg) (the session's workspace with sign-in on, else the
-	// one local workspace, ADR 5), the local plan's entitlements,
+	// one local workspace, ADR 5), entitlementsProviderFor(cfg),
 	// system.Clock{}, and system.UUIDs{}. See docs/workspaces.md.
 	// sample:start
 	a.Items = app.NewItemService(itemRepo, workspacesFor(cfg), entitlementsProvider, system.Clock{}, system.UUIDs{})
@@ -190,11 +190,11 @@ func NewEntitlementsService(cfg config.Config) (ports.EntitlementsService, error
 	if cfg.ServerURL != "" {
 		return httpclient.NewEntitlementsService(cfg.ServerURL)
 	}
-	entitlementsProvider, err := localEntitlementsProvider(cfg.PlansFile)
+	file, err := loadPlansFile(cfg.PlansFile)
 	if err != nil {
 		return nil, err
 	}
-	return app.NewEntitlementsService(entitlementsProvider, workspace.Local{}), nil
+	return app.NewEntitlementsService(localEntitlementsProvider(file), workspace.Local{}), nil
 }
 
 // ErrLocalPlanIsFixed is the refusal to change a plan in the local edition,
@@ -321,24 +321,57 @@ func deviceList(devices []string) string {
 	return strings.Join(devices[:last], ", ") + ", and " + devices[last]
 }
 
-// localEntitlementsProvider answers LocalPlan, from plansFile or else the plans file
-// built into the binary, for every workspace: the local edition has only
-// one. It gives no upgrade hints, since a local copy can't change plan. It
-// refuses a LocalPlan the file doesn't have.
-func localEntitlementsProvider(plansFile string) (plans.Provider, error) {
-	catalog, err := plans.Load(plansFile)
+// entitlementsProviderFor picks the plans each workspace is on: with sign-in on
+// (the hosted edition), hostedEntitlementsProvider's; otherwise the local
+// edition's one plan, localEntitlementsProvider's.
+func entitlementsProviderFor(cfg config.Config) (plans.Provider, error) {
+	file, err := loadPlansFile(cfg.PlansFile)
 	if err != nil {
 		return plans.Provider{}, err
 	}
-	if _, ok := catalog[LocalPlan]; !ok {
-		return plans.Provider{}, fmt.Errorf("local plan %q isn't in the plans file", LocalPlan)
+	if cfg.SignIn.IsOn() {
+		return hostedEntitlementsProvider(file), nil
 	}
+	return localEntitlementsProvider(file), nil
+}
+
+// loadPlansFile returns the plans file at plansFile, or else the one built into
+// the binary. It refuses a file without LocalPlan.
+func loadPlansFile(plansFile string) (plans.File, error) {
+	file, err := plans.Load(plansFile)
+	if err != nil {
+		return plans.File{}, err
+	}
+	if _, ok := file.Catalog[LocalPlan]; !ok {
+		return plans.File{}, fmt.Errorf("local plan %q isn't in the plans file", LocalPlan)
+	}
+	return file, nil
+}
+
+// localEntitlementsProvider answers LocalPlan for every workspace: the local
+// edition has only one. It gives no upgrade hints, since a local copy can't
+// change plan.
+func localEntitlementsProvider(file plans.File) plans.Provider {
 	return plans.Provider{
-		Catalog: catalog,
+		Catalog: file.Catalog,
 		PlanOf: func(context.Context, domain.WorkspaceID) (string, error) {
 			return LocalPlan, nil
 		},
-	}, nil
+	}
+}
+
+// hostedEntitlementsProvider answers the file's NewWorkspacePlan for every
+// workspace, with upgrade hints that never name LocalPlan, which the hosted
+// edition doesn't offer.
+func hostedEntitlementsProvider(file plans.File) plans.Provider {
+	return plans.Provider{
+		Catalog: file.Catalog,
+		PlanOf: func(context.Context, domain.WorkspaceID) (string, error) {
+			return file.NewWorkspacePlan, nil
+		},
+		ShouldGiveHints: true,
+		LocalPlan:       LocalPlan,
+	}
 }
 
 // NewRemote returns an App whose driving ports talk to a server over HTTP.
