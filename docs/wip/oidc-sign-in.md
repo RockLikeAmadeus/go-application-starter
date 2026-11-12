@@ -16,7 +16,7 @@ Agreed with the user (2026-11-11):
 
 Decided in planning:
 - **Flow:** authorization code with PKCE (S256), `state`, and `nonce`. Scopes `openid profile email`. The client secret is sent too (a confidential client).
-- **Packages:** `internal/adapters/oidc` does the protocol, with no routes or cookies: `New(ctx, Settings)` discovers the provider, `Start()` gives the authorization URL and an `Attempt` (state, nonce, verifier, each fresh from `crypto/rand`), and `Finish(ctx, attempt, code)` returns a `domain.Identity`. `httpapi` defines a small interface for it (`SignInProvider`) and owns the routes and cookies, so its tests use a fake. `internal/adapters/oidc/oidctest` is the fake provider, an `httptest` server with its own RSA key, signing with go-jose (go-oidc's own dependency). Only tests import `oidctest`: add a depguard rule when it's created.
+- **Packages:** `internal/adapters/oidc` does the protocol, with no routes or cookies: `New(ctx, Settings)` discovers the provider, `Start()` gives the authorization URL, the `state`, and the attempt (nonce and verifier, each fresh from `crypto/rand`) as one opaque string that only `oidc` can read, and `Finish(ctx, attempt, code)` takes that string and returns a `domain.Identity`. `httpapi` defines a small interface for it (`SignInProvider`, standard types only, never importing `oidc`) and owns the routes and cookies, so its tests use a fake. `internal/adapters/oidc/oidctest` is the fake provider, an `httptest` server with its own RSA key, signing with go-jose (go-oidc's own dependency). Only tests import `oidctest`: add a depguard rule when it's created.
 - **The identity:** issuer `iss`, subject `sub`, and the name from the `name` claim, else `preferred_username`, else `email`, else the subject. No email is stored.
 - **Routes:** `GET /auth/sign-in` goes to `GET /auth/oidc`, which sets the attempt cookie and redirects to the provider. The provider returns to `GET /auth/oidc/callback`. `sign_in` is `off`, `dev`, or `oidc`, never two at once.
 - **The attempt cookie** `oidc_sign_in`: `HttpOnly`, `SameSite=Lax` (the provider's redirect back is a top-level `GET`, which Lax still sends it with), `Path=/auth/oidc`, 10 minutes, `Secure` by the same rule as the session cookie. Cleared at the callback, whatever the outcome. It holds the attempt as is: another site can't read or set it.
@@ -34,7 +34,7 @@ The OIDC adapter (`internal/adapters/oidc`):
 - [x] 1. `oidc.New` discovers the provider from its issuer. Adds go-oidc and x/oauth2 to the main `go.mod`, and starts `oidctest.Provider` with discovery and keys.
   - Red: `TestNewDiscoversTheProviderFromItsIssuer` failed with "New returned no provider". Green: `New` calls go-oidc's `NewProvider`. Refactor: nothing to change. Added the `oidctest-tests-only` depguard rule.
 - [x] 1b. `oidc.New` fails for an unreachable issuer. No red: go-oidc discovery already errors, so `TestNewFailsForAnUnreachableIssuer` is kept as a guard (the fake gained `Close`).
-- [x] 2. `Start` returns the provider's authorization URL with the client ID, redirect URL, scopes, `state`, `nonce`, and an S256 PKCE challenge, and an `Attempt` holding them. Two starts share nothing.
+- [x] 2. `Start` returns the provider's authorization URL with the client ID, redirect URL, scopes, `state`, `nonce`, and an S256 PKCE challenge, and an opaque attempt string (later notes call it the attempt). Two starts share nothing.
   - Red: `TestStartGivesTheAuthorizationURLAndAnAttemptHoldingItsSecrets` and `TestTwoStartsShareNothing` (empty URL and attempt). Green: `Start` uses `oauth2.Config.AuthCodeURL` with `rand.Text`, `GenerateVerifier`; `Settings` gained the client ID, secret, and redirect URL. Refactor: nothing worth changing.
 - [x] 3. `Finish` swaps the code, sending the PKCE verifier and client secret, checks the ID token, and returns the identity (issuer, subject, `name`). The fake gains its authorize and token endpoints, with a person to sign in.
   - Red: `TestFinishSwapsTheCodeAndReturnsTheIdentity` (empty identity). Green: `Finish` does `Exchange` with `VerifierOption`, then verifies the ID token and reads `name`; the fake has `/authorize`, `/token` (checks client and PKCE), `SetPerson`, `ClientID`/`ClientSecret`. Refactor: nothing worth changing. The nonce isn't checked yet (task 5).
@@ -60,7 +60,9 @@ Settings (`internal/config`):
   - Red: `TestPublicURLThatIsNotAnHTTPAddressIsRefused` (five bad values; `Load` returned no error). Green: `Validate` parses it and checks scheme and host. Refactor: nothing worth changing.
 
 The server (`internal/adapters/httpapi`):
-- [ ] 11. With a `SignInProvider`, `GET /auth/oidc` sets the attempt cookie and redirects to `Start`'s URL, and `GET /auth/sign-in` goes to `/auth/oidc`.
+- [x] 11. With a `SignInProvider`, `GET /auth/oidc` sets the attempt cookie and redirects to `Start`'s URL.
+  - Red: `TestStartingAnOIDCSignInKeepsTheAttemptInACookieAndGoesToTheProvider` (status 200, not 302). Green: `oidcStart` in `oidc_sign_in.go`, the cookie holding `<state>.<attempt>`. Reworked after review: `httpapi` no longer imports `oidc`; `oidc.Start` now returns the URL, the state, and an opaque attempt string (unexported `attempt`, base64 JSON of nonce and verifier) that `Finish` takes. Refactor: nothing worth changing.
+- [ ] 11b. With a `SignInProvider`, `GET /auth/sign-in` goes to `/auth/oidc`.
 - [ ] 12. `GET /auth/oidc/callback` with the attempt's `state` calls `Finish`, signs in, sets the session cookie, clears the attempt cookie, and redirects to `/`.
 - [ ] 13. A callback with the provider's `error` parameter answers the "signing in didn't work" page, 400, and clears the attempt cookie (wording to agree).
 - [ ] 14. The same page for no attempt cookie, a `state` that doesn't match, and `Finish` failing (table test), with the cause logged.
@@ -91,3 +93,5 @@ The web app:
 ## Changes to the plan
 - 2026-11-12: added "Create an account" (SPEC.md §4.18's new rule and example, 2 scenarios, and tasks 6b, 14b, 20b, 21, and 22). The user found that nothing covered someone new, and wants a link that goes straight to the provider's sign-up page. The browser journey is written by task 22, not here: playwright-bdd stops the whole suite while a step is undefined, so `task e2e` would fail on the branch until then (8a did the same). Docs and finish became task 23.
 - 2026-11-12: split task 1 (discovery, then the unreachable issuer), as each needs its own test.
+- 2026-11-12: split task 11 (the attempt cookie and redirect, then `/auth/sign-in` going to `/auth/oidc`), one test each.
+- 2026-11-12: after review, `oidc.Start`, `StartSignUp` and `Finish` use an opaque attempt string, so `httpapi` imports nothing from `oidc`. The attempt cookie holds `<state>.<attempt>`; tasks 12 and 14 split it and compare the state.

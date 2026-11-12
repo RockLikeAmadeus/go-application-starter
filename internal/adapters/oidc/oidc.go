@@ -4,6 +4,8 @@ import (
 	"cmp"
 	"context"
 	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -58,37 +60,56 @@ func New(ctx context.Context, s Settings) (*Provider, error) {
 	}, nil
 }
 
-// Attempt is the secrets of one sign-in in progress, kept until the provider
-// sends the person back.
-type Attempt struct {
-	State    string
-	Nonce    string
-	Verifier string
+// attempt is the secrets of one sign-in in progress, kept until the provider
+// sends the person back. Callers hold it as an opaque string (see encode), so
+// they need no knowledge of what a sign-in needs to remember.
+type attempt struct {
+	Nonce    string `json:"nonce"`
+	Verifier string `json:"verifier"`
 }
 
-// Start begins a sign-in: the URL to send the person to, and the attempt to
-// keep until they return.
-func (p *Provider) Start() (string, Attempt) { return p.start() }
+// encode turns the attempt into a string that is safe in a cookie.
+func (a attempt) encode() string {
+	raw, _ := json.Marshal(a) // two strings always marshal
+	return base64.RawURLEncoding.EncodeToString(raw)
+}
+
+func decodeAttempt(s string) (attempt, error) {
+	raw, err := base64.RawURLEncoding.DecodeString(s)
+	if err != nil {
+		return attempt{}, fmt.Errorf("reading the attempt: %w", err)
+	}
+	var a attempt
+	if err := json.Unmarshal(raw, &a); err != nil {
+		return attempt{}, fmt.Errorf("reading the attempt: %w", err)
+	}
+	return a, nil
+}
+
+// Start begins a sign-in: the URL to send the person to, the state the
+// provider sends back with them, and the attempt to keep until they return
+// and give to Finish.
+func (p *Provider) Start() (authURL, state, attempt string) { return p.start() }
 
 // start builds the authorization URL, with any extra parameters.
-func (p *Provider) start(extra ...oauth2.AuthCodeOption) (string, Attempt) {
-	attempt := Attempt{
-		State:    rand.Text(),
-		Nonce:    rand.Text(),
-		Verifier: oauth2.GenerateVerifier(),
-	}
+func (p *Provider) start(extra ...oauth2.AuthCodeOption) (authURL, state, encodedAttempt string) {
+	a := attempt{Nonce: rand.Text(), Verifier: oauth2.GenerateVerifier()}
+	state = rand.Text()
 	opts := append([]oauth2.AuthCodeOption{
-		gooidc.Nonce(attempt.Nonce),
-		oauth2.S256ChallengeOption(attempt.Verifier),
+		gooidc.Nonce(a.Nonce),
+		oauth2.S256ChallengeOption(a.Verifier),
 	}, extra...)
-	authURL := p.config.AuthCodeURL(attempt.State, opts...)
-	return authURL, attempt
+	return p.config.AuthCodeURL(state, opts...), state, a.encode()
 }
 
 // Finish completes a sign-in: it swaps the code for tokens, sending the
 // attempt's PKCE verifier, checks the ID token, and returns who the provider
 // says signed in.
-func (p *Provider) Finish(ctx context.Context, attempt Attempt, code string) (domain.Identity, error) {
+func (p *Provider) Finish(ctx context.Context, encodedAttempt, code string) (domain.Identity, error) {
+	attempt, err := decodeAttempt(encodedAttempt)
+	if err != nil {
+		return domain.Identity{}, err
+	}
 	token, err := p.config.Exchange(ctx, code, oauth2.VerifierOption(attempt.Verifier))
 	if err != nil {
 		return domain.Identity{}, fmt.Errorf("swapping the code: %w", err)
@@ -124,7 +145,7 @@ func (p *Provider) Finish(ctx context.Context, attempt Attempt, code string) (do
 
 // StartSignUp begins a sign-in that opens at the provider's sign-up page, when
 // the provider says it has one (prompt=create). Otherwise it is Start.
-func (p *Provider) StartSignUp() (string, Attempt) {
+func (p *Provider) StartSignUp() (authURL, state, attempt string) {
 	if !p.canPromptCreate {
 		return p.start()
 	}

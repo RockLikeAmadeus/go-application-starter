@@ -39,6 +39,8 @@ type Options struct {
 	SignIn ports.SignInService
 	// IsDevSignInOn serves the dev sign-in under /auth/dev. It needs SignIn.
 	IsDevSignInOn bool
+	// SignInProvider serves the OIDC sign-in under /auth/oidc. It needs SignIn.
+	SignInProvider SignInProvider
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and
@@ -84,6 +86,9 @@ func NewHandler(opts Options) http.Handler {
 		mux.HandleFunc("GET /auth/sign-in", signInGoesTo("/auth/dev"))
 		mux.HandleFunc("GET /auth/dev", devSignInForm)
 		mux.Handle("POST /auth/dev", devSignIn(opts.SignIn))
+	}
+	if opts.SignInProvider != nil {
+		mux.HandleFunc("GET /auth/oidc", oidcStart(opts.SignInProvider))
 	}
 	if opts.SignIn != nil {
 		mux.Handle("POST /auth/sign-out", signOut(opts.SignIn))

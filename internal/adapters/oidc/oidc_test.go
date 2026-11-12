@@ -2,8 +2,6 @@ package oidc_test
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/base64"
 	"net/http"
 	"net/url"
 	"testing"
@@ -60,7 +58,7 @@ func startedProvider(t *testing.T) (*oidc.Provider, *oidctest.Provider) {
 func TestStartGivesTheAuthorizationURLAndAnAttemptHoldingItsSecrets(t *testing.T) {
 	p, fake := startedProvider(t)
 
-	rawURL, attempt := p.Start()
+	rawURL, state, attempt := p.Start()
 
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -75,33 +73,43 @@ func TestStartGivesTheAuthorizationURLAndAnAttemptHoldingItsSecrets(t *testing.T
 		"client_id":             oidctest.ClientID,
 		"redirect_uri":          "https://app.example.com/auth/oidc/callback",
 		"scope":                 "openid profile email",
-		"state":                 attempt.State,
-		"nonce":                 attempt.Nonce,
+		"state":                 state,
 		"code_challenge_method": "S256",
 	} {
 		if got := q.Get(key); got != want {
 			t.Errorf("%s = %q, want %q", key, got, want)
 		}
 	}
-	for name, v := range map[string]string{"state": attempt.State, "nonce": attempt.Nonce, "verifier": attempt.Verifier} {
-		if v == "" {
-			t.Errorf("attempt has no %s", name)
+	// What the attempt holds is checked by Finish's tests: the nonce and the
+	// PKCE verifier have to come back right for it to sign anyone in.
+	for _, key := range []string{"state", "nonce", "code_challenge"} {
+		if q.Get(key) == "" {
+			t.Errorf("the URL has no %s", key)
 		}
 	}
-	sum := sha256.Sum256([]byte(attempt.Verifier))
-	if got, want := q.Get("code_challenge"), base64.RawURLEncoding.EncodeToString(sum[:]); got != want {
-		t.Errorf("code_challenge = %q, want the S256 of the verifier, %q", got, want)
+	if attempt == "" {
+		t.Error("Start gave no attempt")
 	}
+}
+
+func queryOf(t *testing.T, rawURL string) url.Values {
+	t.Helper()
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		t.Fatalf("parsing %q: %v", rawURL, err)
+	}
+	return u.Query()
 }
 
 func TestTwoStartsShareNothing(t *testing.T) {
 	p, _ := startedProvider(t)
 
-	_, a := p.Start()
-	_, b := p.Start()
+	urlA, stateA, a := p.Start()
+	urlB, stateB, b := p.Start()
 
-	if a.State == b.State || a.Nonce == b.Nonce || a.Verifier == b.Verifier {
-		t.Errorf("two attempts share a secret: %+v and %+v", a, b)
+	qA, qB := queryOf(t, urlA), queryOf(t, urlB)
+	if stateA == stateB || a == b || qA.Get("nonce") == qB.Get("nonce") || qA.Get("code_challenge") == qB.Get("code_challenge") {
+		t.Errorf("two starts share a secret: %q and %q", urlA, urlB)
 	}
 }
 
@@ -127,7 +135,7 @@ func authorize(t *testing.T, authURL string) url.Values {
 func TestFinishSwapsTheCodeAndReturnsTheIdentity(t *testing.T) {
 	p, fake := startedProvider(t)
 	fake.SetPerson(oidctest.Person{Subject: "ada-123", Name: "Ada Lovelace"})
-	authURL, attempt := p.Start()
+	authURL, _, attempt := p.Start()
 	back := authorize(t, authURL)
 
 	identity, err := p.Finish(context.Background(), attempt, back.Get("code"))
@@ -155,7 +163,7 @@ func TestFinishNamesThePersonByTheBestClaimTheProviderSent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			p, fake := startedProvider(t)
 			fake.SetPerson(tc.person)
-			authURL, attempt := p.Start()
+			authURL, _, attempt := p.Start()
 			back := authorize(t, authURL)
 
 			identity, err := p.Finish(context.Background(), attempt, back.Get("code"))
@@ -185,7 +193,7 @@ func TestFinishRefusesAnIDTokenThatCannotBeTrusted(t *testing.T) {
 			p, fake := startedProvider(t)
 			fake.SetPerson(oidctest.Person{Subject: "ada-123", Name: "Ada Lovelace"})
 			fake.SetFault(tc.fault)
-			authURL, attempt := p.Start()
+			authURL, _, attempt := p.Start()
 			back := authorize(t, authURL)
 
 			identity, err := p.Finish(context.Background(), attempt, back.Get("code"))
@@ -204,9 +212,9 @@ func TestFinishRefusesWhenTheProviderRejectsTheCode(t *testing.T) {
 	t.Run("a wrong PKCE verifier", func(t *testing.T) {
 		p, fake := startedProvider(t)
 		fake.SetPerson(oidctest.Person{Subject: "ada-123", Name: "Ada Lovelace"})
-		authURL, attempt := p.Start()
+		authURL, _, _ := p.Start()
 		back := authorize(t, authURL)
-		attempt.Verifier = "not-the-verifier-this-attempt-started-with"
+		_, _, attempt := p.Start() // another attempt, so another verifier
 
 		identity, err := p.Finish(context.Background(), attempt, back.Get("code"))
 
@@ -220,7 +228,7 @@ func TestFinishRefusesWhenTheProviderRejectsTheCode(t *testing.T) {
 	t.Run("a code used twice", func(t *testing.T) {
 		p, fake := startedProvider(t)
 		fake.SetPerson(oidctest.Person{Subject: "ada-123", Name: "Ada Lovelace"})
-		authURL, attempt := p.Start()
+		authURL, _, attempt := p.Start()
 		code := authorize(t, authURL).Get("code")
 		if _, err := p.Finish(context.Background(), attempt, code); err != nil {
 			t.Fatalf("first Finish: %v", err)
@@ -252,7 +260,7 @@ func TestStartSignUpAsksForTheProvidersSignUpPageOnlyWhenItListsPromptCreate(t *
 				t.Fatalf("New: %v", err)
 			}
 
-			rawURL, _ := p.StartSignUp()
+			rawURL, _, _ := p.StartSignUp()
 
 			client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 			resp, err := client.Get(rawURL)
