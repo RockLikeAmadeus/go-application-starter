@@ -3,7 +3,7 @@
 Step 8b of [the editions plan](../plans/editions-and-accounts.md).
 
 - Spec: [SPEC.md §4.18](../../SPEC.md#418-sign-in-to-the-hosted-edition), plus §5 (Security) and §6
-- Scenarios: [`features/sign-in-provider.feature`](../../features/sign-in-provider.feature) (`@sign-in-provider`, 4 scenarios, each tagged `@wip`). [`features/sign-in.feature`](../../features/sign-in.feature) must also pass on the new oidc driver.
+- Scenarios: [`features/sign-in-provider.feature`](../../features/sign-in-provider.feature) (`@sign-in-provider`, 6 scenarios, each tagged `@wip`). A browser journey for "Create an account" is added in task 22, in [`web/e2e/features/sign-in.feature`](../../web/e2e/features/sign-in.feature). [`features/sign-in.feature`](../../features/sign-in.feature) must also pass on the new oidc driver.
 - Decisions: [ADR 9](../adr/0009-sign-in-and-sessions.md) (to update), [`docs/sign-in.md`](../sign-in.md) (to update)
 
 ## Decisions
@@ -11,6 +11,7 @@ Step 8b of [the editions plan](../plans/editions-and-accounts.md).
 Agreed with the user (2026-11-11):
 - **Library:** [`github.com/coreos/go-oidc/v3`](https://pkg.go.dev/github.com/coreos/go-oidc/v3/oidc) checks ID tokens, and [`golang.org/x/oauth2`](https://pkg.go.dev/golang.org/x/oauth2) swaps the code, with its PKCE helpers (`GenerateVerifier`, `S256ChallengeOption`, `VerifierOption`). Not zitadel/oidc: its own cookies and routes would fight ours.
 - **One `public_url` setting** (`STARTER_PUBLIC_URL`), such as `https://app.example.com`. The redirect URL is `<public_url>/auth/oidc/callback`. Required with `sign_in = "oidc"`, optional otherwise. An `https://` public URL marks the session cookie `Secure` even over plain HTTP, which settles the TODO.md item "Mark the session cookie `Secure` behind an HTTPS proxy". Without one, today's rule (`r.TLS != nil`) stays.
+- **"Create an account"** (added 2026-11-12): the sign-in screen has a "Create an account" link beside "Sign in" (the user chose that wording), to `GET /auth/sign-up`. With OIDC, that goes to `GET /auth/oidc/sign-up`, which starts like `/auth/oidc` but asks the provider for its sign-up page with [`prompt=create`](https://openid.net/specs/openid-connect-prompt-create-1_0.html). The parameter is sent only when the provider's discovery lists `create` in `prompt_values_supported`, as a provider that doesn't know it may refuse the request. Otherwise the person gets the sign-in page, which links to the provider's sign-up. The link always shows while signed out with sign-in on: the web app doesn't learn what the provider supports. With the dev sign-in, `/auth/sign-up` goes to `/auth/dev`, so the browser journey can prove the link with the dev sign-in.
 - **The name follows the provider** (the 8a loose end "A changed name isn't saved"): `SignIn` saves the identity's name on an existing account when it differs. `AccountRepository.Save` already replaces by ID, with a contract test, so no storage change.
 
 Decided in planning:
@@ -36,6 +37,7 @@ The OIDC adapter (`internal/adapters/oidc`):
 - [ ] 4. The name falls back to `preferred_username`, then `email`, then the subject (table test).
 - [ ] 5. `Finish` refuses an ID token signed with another key, meant for another client, expired, from another issuer, or with another nonce (table test; the fake's misbehaviour switches).
 - [ ] 6. `Finish` refuses when the provider rejects the code: a wrong PKCE verifier, or a code used twice.
+- [ ] 6b. `StartSignUp` adds `prompt=create` when the provider's discovery lists `create` in `prompt_values_supported`, and leaves it out otherwise (the fake gets a switch for it, and records the prompt it was sent).
 
 The core:
 - [ ] 7. `SignIn` for a known identity whose name changed saves the new name, so `CurrentAccount` shows it. (Ticks the 8a loose end.)
@@ -50,6 +52,7 @@ The server (`internal/adapters/httpapi`):
 - [ ] 12. `GET /auth/oidc/callback` with the attempt's `state` calls `Finish`, signs in, sets the session cookie, clears the attempt cookie, and redirects to `/`.
 - [ ] 13. A callback with the provider's `error` parameter answers the "signing in didn't work" page, 400, and clears the attempt cookie (wording to agree).
 - [ ] 14. The same page for no attempt cookie, a `state` that doesn't match, and `Finish` failing (table test), with the cause logged.
+- [ ] 14b. `GET /auth/sign-up` goes to the adapter's sign-up: `/auth/oidc/sign-up` with OIDC, which sets the attempt cookie and redirects to `StartSignUp`'s URL, or `/auth/dev` with the dev sign-in. `/auth/` is already in the service worker's `navigateFallbackDenylist`, so nothing changes there.
 - [ ] 15. With an `https://` public URL, the session and attempt cookies are `Secure` over plain HTTP. (Ticks the TODO.md item.)
 
 Wiring:
@@ -60,12 +63,18 @@ Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample 
 - [ ] 18. The `oidc` driver, running `@sign-in` and `@sign-in-provider`, with the other drivers leaving out `@sign-in-provider`. The admin step finds the account by the driver's identity for a name. `sign-in.feature` passes on it.
 - [ ] 19. Steps for a name changed at the provider, and for another person with the same name.
 - [ ] 20. Steps for cancelling at the provider, coming back without starting, being told signing in didn't work, and not being signed in.
+- [ ] 20b. Steps for creating an account at the provider, which page the provider showed first, and a provider that can't start at sign-up.
 
-- [ ] 21. **Docs and finish.**
-  - `docs/sign-in.md`: setting up a provider (registering the app, the redirect URL, the settings, the client secret as a secret), a sequence diagram of the redirects, the provider and email-and-password notes (including the cost of moving password accounts between providers), local-only sign-out, and how it's tested.
+The web app:
+- [ ] 21. `SignInScreen` shows a "Create an account" link to `/auth/sign-up` beside "Sign in" (Vitest, by role). Agree with the user whether "Please sign in to continue." should change, now that the screen also serves new people.
+- [ ] 22. A browser journey in `web/e2e/features/sign-in.feature`: signed out, create an account as "Browser Grace" (the dev sign-in's form), see the items page, signed in as "Browser Grace".
+
+- [ ] 23. **Docs and finish.**
+  - `docs/sign-in.md`: setting up a provider (registering the app, the redirect URL, the settings, the client secret as a secret, and turning on its sign-up), a sequence diagram of the redirects, the journey of someone new (create an account → the provider's sign-up page → back, with the product's account made at the first sign-in), `prompt=create` and what happens with a provider that doesn't support it, the provider and email-and-password notes (including the cost of moving password accounts between providers), local-only sign-out, and how it's tested.
   - `docs/configuration.md` (the four settings), ADR 9 (status, the name rule, `public_url` and `Secure`), `.claude/rules/server.md` (the `/auth/oidc` routes), CLAUDE.md's editions paragraph, and README if it mentions sign-in.
   - Template users' steps in TODO.md (choose a provider, register the app, set the settings), and tick the `Secure` TODO item.
   - Ask the user to check `.env.example` for the new settings (Claude can't read it).
   - Remove the `@wip` tags, mark step 8b done in the plan, tick the "changed name" loose end, and delete this file.
 
 ## Changes to the plan
+- 2026-11-12: added "Create an account" (SPEC.md §4.18's new rule and example, 2 scenarios, and tasks 6b, 14b, 20b, 21, and 22). The user found that nothing covered someone new, and wants a link that goes straight to the provider's sign-up page. The browser journey is written by task 22, not here: playwright-bdd stops the whole suite while a step is undefined, so `task e2e` would fail on the branch until then (8a did the same). Docs and finish became task 23.
