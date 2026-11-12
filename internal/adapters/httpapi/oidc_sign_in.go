@@ -49,6 +49,11 @@ func oidcStart(provider SignInProvider) http.HandlerFunc {
 // app.
 func oidcCallback(provider SignInProvider, signIn ports.SignInService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Has("error") {
+			clearAttemptCookie(w)
+			signInFailed(w)
+			return
+		}
 		cookie, err := r.Cookie(AttemptCookie)
 		if err != nil {
 			writeProblem(w, problemFor(err))
@@ -81,4 +86,28 @@ func clearAttemptCookie(w http.ResponseWriter) {
 // neither holds a dot, and the callback can split them again.
 func attemptCookieValue(state, attempt string) string {
 	return state + "." + attempt
+}
+
+// signInFailedPage is what a person sees when signing in through the provider
+// did not work. It never says why: the log holds the cause.
+const signInFailedPage = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign-in failed</title>
+</head>
+<body>
+<h1>Sign-in failed</h1>
+<p>Something went wrong while attempting to sign in. This can happen if the sign-in attempt was cancelled at the provider, or due to bad credentials, a timeout, or other problem. Please try again.</p>
+<p><a href="/auth/sign-in">Try signing in again</a></p>
+</body>
+</html>
+`
+
+// signInFailed answers the sign-in failed page with status 400.
+func signInFailed(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusBadRequest)
+	_, _ = w.Write([]byte(signInFailedPage))
 }

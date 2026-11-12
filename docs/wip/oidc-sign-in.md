@@ -65,7 +65,7 @@ The server (`internal/adapters/httpapi`):
 - [x] 11b. With a `SignInProvider`, `GET /auth/sign-in` goes to `/auth/oidc`. Red: TestSigningInWithAnOIDCProviderGoesToTheOIDCStart got 200. Green: route added. No refactor needed.
 - [x] 12. `GET /auth/oidc/callback` with the attempt's `state` calls `Finish`, signs in, sets the session cookie, clears the attempt cookie, and redirects to `/`.
   - Red: `TestTheProviderSendingTheBrowserBackSignsInSetsTheSessionCookieAndGoesToTheWebApp` got the SPA's 200, not 303. Green: `oidcCallback` splits the cookie, calls `Finish` and `SignIn`, clears the attempt cookie. It does not compare `state` yet (task 14). Refactor: nothing worth changing.
-- [ ] 13. A callback with the provider's `error` parameter answers the "signing in didn't work" page, 400, and clears the attempt cookie (wording to agree).
+- [x] 13. A callback with the provider's `error` parameter answers the "Sign-in failed" page, 400, and clears the attempt cookie (wording agreed with the user: title and heading "Sign-in failed", link "Try signing in again"). Red: `TestTheProviderSendingAnErrorAnswersTheSignInFailedPageAndClearsTheAttemptCookie` got 500 problem+json. Green: `oidcCallback` checks `error` first and `signInFailed` answers the page. Refactor: nothing worth changing.
 - [ ] 14. The same page for no attempt cookie, a `state` that doesn't match, and `Finish` failing (table test), with the cause logged.
 - [ ] 14b. `GET /auth/sign-up` goes to the adapter's sign-up: `/auth/oidc/sign-up` with OIDC, which sets the attempt cookie and redirects to `StartSignUp`'s URL, or `/auth/dev` with the dev sign-in. `/auth/` is already in the service worker's `navigateFallbackDenylist`, so nothing changes there.
 - [ ] 15. With an `https://` public URL, the session and attempt cookies are `Secure` over plain HTTP. (Ticks the TODO.md item.)
@@ -77,7 +77,7 @@ Wiring:
 Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample block):
 - [ ] 18. The `oidc` driver, running `@sign-in` and `@sign-in-provider`, with the other drivers leaving out `@sign-in-provider`. The admin step finds the account by the driver's identity for a name. `sign-in.feature` passes on it.
 - [ ] 19. Steps for a name changed at the provider, and for another person with the same name.
-- [ ] 20. Steps for cancelling at the provider, coming back without starting, being told signing in didn't work, and not being signed in.
+- [ ] 20. Steps for cancelling at the provider, coming back without starting, being told signing in didn't work, and not being signed in. The "told" step recognises the page by its heading "Sign-in failed".
 - [ ] 20b. Steps for creating an account at the provider, which page the provider showed first, and a provider that can't start at sign-up.
 
 The web app:

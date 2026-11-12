@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -94,5 +95,38 @@ func TestTheProviderSendingTheBrowserBackSignsInSetsTheSessionCookieAndGoesToThe
 	}
 	if attempt == nil || attempt.MaxAge >= 0 || attempt.Path != "/auth/oidc" {
 		t.Errorf("attempt cookie = %+v, want cleared (Max-Age < 0) on /auth/oidc", attempt)
+	}
+}
+
+func TestTheProviderSendingAnErrorAnswersTheSignInFailedPageAndClearsTheAttemptCookie(t *testing.T) {
+	signIn := &signInRecorder{token: "token-ada"}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: signIn, SignInProvider: fakeSignInProvider{state: "s1", attempt: "opaque-attempt"}})
+	req := httptest.NewRequest(http.MethodGet, "/auth/oidc/callback?error=access_denied&state=s1", nil)
+	req.AddCookie(&http.Cookie{Name: httpapi.AttemptCookie, Value: "s1.opaque-attempt"})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest || rec.Header().Get("Content-Type") != "text/html; charset=utf-8" {
+		t.Fatalf("status = %d, Content-Type = %q; want 400 and text/html", rec.Code, rec.Header().Get("Content-Type"))
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"<title>Sign-in failed</title>",
+		"<h1>Sign-in failed</h1>",
+		"Something went wrong while attempting to sign in. This can happen if the sign-in attempt was cancelled at the provider, or due to bad credentials, a timeout, or other problem. Please try again.",
+		`<a href="/auth/sign-in">Try signing in again</a>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body lacks %q:\n%s", want, body)
+		}
+	}
+	if strings.Contains(body, "access_denied") {
+		t.Errorf("body shows the cause: %s", body)
+	}
+	if len(signIn.identities) != 0 || len(rec.Result().Cookies()) != 1 {
+		t.Errorf("signed in %v, cookies %v; want no sign-in and only the cleared attempt cookie", signIn.identities, rec.Result().Cookies())
+	}
+	if c := rec.Result().Cookies()[0]; c.Name != httpapi.AttemptCookie || c.MaxAge >= 0 {
+		t.Errorf("cookie = %+v, want the attempt cookie cleared", c)
 	}
 }
