@@ -49,7 +49,8 @@ A product built from this template may be sold as a hosted service: many users, 
 ### Authentication
 
 - Hosted edition only: an OIDC adapter behind a port, plus a dev-only fake login. We store no passwords.
-- Built in step 8a: the port (`ports.SignInService`), accounts, sessions in a cookie and in storage, and the dev sign-in, in dev builds only. ADR 9 records how. The OIDC adapter is step 8b.
+- Built in step 8a: the port (`ports.SignInService`), accounts, sessions in a cookie and in storage, and the dev sign-in, in dev builds only. ADR 9 records how.
+- Built in step 8b: the OIDC adapter, which signs people in through any OIDC provider. ADR 9 and `docs/sign-in.md` cover it.
 - The CLI and TUI are local by default, and can log in to a hosted server.
 
 ### Synced data folders: one device at a time

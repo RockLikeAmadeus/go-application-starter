@@ -10,7 +10,7 @@ _One paragraph: who the users are, what problem this solves, and what success lo
 
 | Persona | Front-end | Editions (§3) | Notes |
 |---|---|---|---|
-| _e.g. End user_ | Web (React SPA) | Hosted, with sign-in (§4.18, through the dev sign-in until a real sign-in provider arrives). Or local: a self-hosted server for one user, with no sign-in | Installable (§4.5) |
+| _e.g. End user_ | Web (React SPA) | Hosted, with sign-in through a sign-in provider (§4.18). Or local: a self-hosted server for one user, with no sign-in | Installable (§4.5) |
 | _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in the desktop app's data folder (§4.11). Hosted, after `starter login --server …` (planned) | Today `--server` reaches only a server without sign-in, as the command line can't sign in yet |
 | _e.g. Integrations_ | REST API (`api/openapi.yaml`) | Whichever edition the server runs | |
 | _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | Local, with its data on the computer (§4.6). Hosted, in remote mode (planned) | The web app in its own window |
@@ -426,7 +426,7 @@ A server can keep its data in a Postgres database, so that several copies of it,
 
 ### 4.18 Sign in to the hosted edition
 
-In the hosted edition, each person signs in to their own **account**, and works in that account's personal workspace (§4.8), on that workspace's plan (§4.9). This is step 8 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). Part 8a built everything sign-in needs, and proved it with the **dev sign-in**. Part 8b adds a real **sign-in provider**, through OpenID Connect (OIDC), behind the same seam. Any provider that speaks OIDC works, such as Auth0, Clerk, Keycloak, Zitadel, or Google. Accounts with an email address and a password come from the provider, not from the product (ADR 5).
+In the hosted edition, each person signs in to their own **account**, and works in that account's personal workspace (§4.8), on that workspace's plan (§4.9). This is step 8 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). People sign in through a **sign-in provider**, through OpenID Connect (OIDC). Developers and tests use the **dev sign-in** in its place, behind the same seam. Any provider that speaks OIDC works, such as Auth0, Clerk, Keycloak, Zitadel, or Google. Accounts with an email address and a password come from the provider, not from the product (ADR 5).
 
 **Rules**
 - Sign-in is a server setting, and it is off by default. With it off, the server is a self-hosted local edition with one workspace, as it is today. The desktop and mobile apps, and the command line and the terminal app on their own, are always the local edition.
