@@ -363,3 +363,18 @@ func TestOIDCSignInRefusesAMissingSettingNamingIt(t *testing.T) {
 		})
 	}
 }
+
+func TestPublicURLThatIsNotAnHTTPAddressIsRefused(t *testing.T) {
+	want := `The public_url setting must be a full address starting with http:// or https://. Please set it to the address people reach this server at, such as https://app.example.com.`
+	for _, value := range []string{"app.example.com", "ftp://app.example.com", "/path", "https://", "http:///path"} {
+		t.Run(value, func(t *testing.T) {
+			env := map[string]string{"STARTER_PUBLIC_URL": value}
+
+			_, err := config.Load(config.Env{Getenv: envOf(env)}, "")
+
+			if err == nil || err.Error() != want {
+				t.Errorf("error = %v, want %q", err, want)
+			}
+		})
+	}
+}

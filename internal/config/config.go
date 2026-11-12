@@ -4,7 +4,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/knadh/koanf/parsers/toml/v2"
@@ -209,6 +211,12 @@ func (c Config) Validate() error {
 			if setting.value == "" {
 				return fmt.Errorf("The %s setting is required when the sign-in setting is %q. Please set it to %s.", setting.key, SignInOIDC, setting.hint)
 			}
+		}
+	}
+	if c.PublicURL != "" {
+		u, err := url.Parse(c.PublicURL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return errors.New("The public_url setting must be a full address starting with http:// or https://. Please set it to the address people reach this server at, such as https://app.example.com.")
 		}
 	}
 	return nil

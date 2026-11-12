@@ -56,7 +56,8 @@ Settings (`internal/config`):
   - Red: `TestOIDCSignInAndItsSettingsComeFromTheEnvironment` ("oidc" not recognized). Green: `SignInOIDC` and four fields, listed in `Settings()` (secret hidden), in `envVars`, `serverOnly`, and the docs table. The unknown-sign-in message now lists "oidc" too. Refactor: nothing worth changing.
 - [x] 9. With `oidc`, a missing `public_url`, `oidc_issuer`, `oidc_client_id`, or `oidc_client_secret` is refused, naming the setting (wording agreed: the key plus a hint).
   - Red: `TestOIDCSignInRefusesAMissingSettingNamingIt` (table, four exact messages; `Load` returned no error). Green: `Validate` checks the four in order. Refactor: nothing worth changing.
-- [ ] 10. A `public_url` that isn't an absolute `http://` or `https://` address is refused (wording to agree).
+- [x] 10. A `public_url` that isn't an absolute `http://` or `https://` address is refused (wording agreed).
+  - Red: `TestPublicURLThatIsNotAnHTTPAddressIsRefused` (five bad values; `Load` returned no error). Green: `Validate` parses it and checks scheme and host. Refactor: nothing worth changing.
 
 The server (`internal/adapters/httpapi`):
 - [ ] 11. With a `SignInProvider`, `GET /auth/oidc` sets the attempt cookie and redirects to `Start`'s URL, and `GET /auth/sign-in` goes to `/auth/oidc`.
