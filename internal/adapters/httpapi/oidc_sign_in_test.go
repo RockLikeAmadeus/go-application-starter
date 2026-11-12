@@ -1,8 +1,10 @@
 package httpapi_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -128,5 +130,54 @@ func TestTheProviderSendingAnErrorAnswersTheSignInFailedPageAndClearsTheAttemptC
 	}
 	if c := rec.Result().Cookies()[0]; c.Name != httpapi.AttemptCookie || c.MaxAge >= 0 {
 		t.Errorf("cookie = %+v, want the attempt cookie cleared", c)
+	}
+}
+
+func TestACallbackThatCannotBeTrustedAnswersTheSignInFailedPageAndLogsTheCause(t *testing.T) {
+	tests := []struct {
+		name   string
+		cookie string // empty means no attempt cookie
+		query  string
+		cause  string
+	}{
+		{"no attempt cookie", "", "state=s1&code=the-code", "no attempt cookie"},
+		{"state that does not match", "s1.opaque-attempt", "state=other&code=the-code", "state does not match"},
+		{"no state", "s1.opaque-attempt", "code=the-code", "state does not match"},
+		{"finishing fails", "s1.wrong-attempt", "state=s1&code=the-code", "unexpected attempt or code"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			signIn := &signInRecorder{token: "token-ada"}
+			var logs bytes.Buffer
+			handler := httpapi.NewHandler(httpapi.Options{
+				SignIn:         signIn,
+				SignInProvider: fakeSignInProvider{state: "s1", attempt: "opaque-attempt"},
+				Logger:         slog.New(slog.NewTextHandler(&logs, nil)),
+			})
+			req := httptest.NewRequest(http.MethodGet, "/auth/oidc/callback?"+tt.query, nil)
+			if tt.cookie != "" {
+				req.AddCookie(&http.Cookie{Name: httpapi.AttemptCookie, Value: tt.cookie})
+			}
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "<h1>Sign-in failed</h1>") {
+				t.Errorf("status = %d, body = %s; want 400 and the Sign-in failed page", rec.Code, rec.Body.String())
+			}
+			if strings.Contains(rec.Body.String(), tt.cause) {
+				t.Errorf("body shows the cause %q", tt.cause)
+			}
+			if len(signIn.identities) != 0 {
+				t.Errorf("signed in %v, want nobody", signIn.identities)
+			}
+			if !strings.Contains(logs.String(), tt.cause) {
+				t.Errorf("log lacks %q:\n%s", tt.cause, logs.String())
+			}
+			for _, c := range rec.Result().Cookies() {
+				if c.Name == httpapi.SessionCookie {
+					t.Errorf("session cookie set: %+v", c)
+				}
+			}
+		})
 	}
 }

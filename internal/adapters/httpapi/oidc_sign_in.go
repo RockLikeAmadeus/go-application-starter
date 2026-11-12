@@ -2,6 +2,8 @@ package httpapi
 
 import (
 	"context"
+	"crypto/subtle"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -47,22 +49,31 @@ func oidcStart(provider SignInProvider) http.HandlerFunc {
 // oidcCallback answers GET /auth/oidc/callback: it finishes the attempt kept in
 // the cookie with the provider's code, signs the person in, and goes to the web
 // app.
-func oidcCallback(provider SignInProvider, signIn ports.SignInService) http.HandlerFunc {
+func oidcCallback(log *slog.Logger, provider SignInProvider, signIn ports.SignInService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Query().Has("error") {
-			clearAttemptCookie(w)
+		// Whatever the outcome, the attempt is over.
+		clearAttemptCookie(w)
+		fail := func(cause string) {
+			log.Warn("oidc sign-in failed", "cause", cause)
 			signInFailed(w)
+		}
+		if providerError := r.URL.Query().Get("error"); providerError != "" {
+			fail("the provider answered an error: " + providerError)
 			return
 		}
 		cookie, err := r.Cookie(AttemptCookie)
 		if err != nil {
-			writeProblem(w, problemFor(err))
+			fail("no attempt cookie")
 			return
 		}
-		_, attempt, _ := strings.Cut(cookie.Value, ".")
+		state, attempt, _ := strings.Cut(cookie.Value, ".")
+		if subtle.ConstantTimeCompare([]byte(state), []byte(r.URL.Query().Get("state"))) != 1 {
+			fail("state does not match")
+			return
+		}
 		identity, err := provider.Finish(r.Context(), attempt, r.URL.Query().Get("code"))
 		if err != nil {
-			writeProblem(w, problemFor(err))
+			fail("finishing the attempt failed: " + err.Error())
 			return
 		}
 		token, err := signIn.SignIn(r.Context(), identity)
@@ -70,7 +81,6 @@ func oidcCallback(provider SignInProvider, signIn ports.SignInService) http.Hand
 			writeProblem(w, problemFor(err))
 			return
 		}
-		clearAttemptCookie(w)
 		setSessionCookie(w, r, token)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
