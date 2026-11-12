@@ -89,7 +89,8 @@ Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample 
 
 The web app:
 - [x] 21. `SignInScreen` shows a "Create an account" link to `/auth/sign-up` beside "Sign in" (Vitest, by role).
-- [ ] 22. A browser journey in `web/e2e/features/sign-in.feature`: signed out, create an account as "Browser Grace" (the dev sign-in's form), see the items page, signed in as "Browser Grace".
+- [x] 22. A browser journey in `web/e2e/features/sign-in.feature`: signed out, create an account as "Browser Grace" (the dev sign-in's form), see the items page, signed in as "Browser Grace".
+  - Red: the scenario and its step passed straight away (the link and `/auth/sign-up` already exist), so it stays as a guard, with no green. Refactor: one `submitDevSignIn` helper shared by both sign-in steps.
 
 - [ ] 23. **Docs and finish.**
   - `docs/sign-in.md`: setting up a provider (registering the app, the redirect URL, the settings, the client secret as a secret, and turning on its sign-up), a sequence diagram of the redirects, the journey of someone new (create an account → the provider's sign-up page → back, with the product's account made at the first sign-in), `prompt=create` and what happens with a provider that doesn't support it, the provider and email-and-password notes (including the cost of moving password accounts between providers), local-only sign-out, and how it's tested.

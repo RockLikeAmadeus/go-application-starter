@@ -17,11 +17,21 @@ Given("I am signed out", async ({ page }) => {
   await expectSignInScreen(page);
 });
 
-When("I sign in as {string}", async ({ page }, name: string) => {
-  await page.getByRole("link", { name: "Sign in" }).click();
-  // The dev sign-in's form, which stands in for a real sign-in provider.
+// The dev sign-in's form, which stands in for a real sign-in provider.
+// Creating an account goes to the same form as signing in.
+async function submitDevSignIn(page: Page, name: string) {
   await page.getByLabel("Name").fill(name);
   await page.getByRole("button", { name: "Sign in" }).click();
+}
+
+When("I sign in as {string}", async ({ page }, name: string) => {
+  await page.getByRole("link", { name: "Sign in" }).click();
+  await submitDevSignIn(page, name);
+});
+
+When("I create an account as {string}", async ({ page }, name: string) => {
+  await page.getByRole("link", { name: "Create an account" }).click();
+  await submitDevSignIn(page, name);
 });
 
 Then("I see the items page", async ({ page }) => {
