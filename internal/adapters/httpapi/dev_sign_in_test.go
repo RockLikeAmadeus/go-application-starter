@@ -137,3 +137,13 @@ func TestABlankDevSignInNameIsAValidationProblemAndSetsNoCookie(t *testing.T) {
 		t.Errorf("signed in as %+v, want no sign-in", signIn.identities)
 	}
 }
+
+func TestSigningUpWithTheDevSignInGoesToTheDevSignIn(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/sign-up", nil))
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/dev" {
+		t.Errorf("status = %d, Location = %q; want %d to /auth/dev", rec.Code, rec.Header().Get("Location"), http.StatusFound)
+	}
+}

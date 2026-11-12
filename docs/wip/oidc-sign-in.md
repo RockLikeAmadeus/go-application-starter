@@ -69,7 +69,7 @@ The server (`internal/adapters/httpapi`):
 - [x] 14. The same page for no attempt cookie, a `state` that doesn't match, and `Finish` failing (table test), with the cause logged.
   - Red: `TestACallbackThatCannotBeTrustedAnswersTheSignInFailedPageAndLogsTheCause` got 500 or a 303 sign-in. Green: `oidcCallback` takes the logger, compares the state with `crypto/subtle`, and fails with the page and a logged cause. Refactor: nothing worth changing.
 - [x] 14b. With OIDC, `GET /auth/sign-up` goes to `/auth/oidc/sign-up`, which sets the attempt cookie and redirects to `StartSignUp`'s URL. Red: both tests got 200 (no routes); green: `StartSignUp` on `SignInProvider`, `oidcStart` takes the start func. Refactor: nothing more worth changing.
-- [ ] 14c. With the dev sign-in, `GET /auth/sign-up` goes to `/auth/dev`. `/auth/` is already in the service worker's `navigateFallbackDenylist`, so nothing changes there.
+- [x] 14c. With the dev sign-in, `GET /auth/sign-up` goes to `/auth/dev`. `/auth/` is already in the service worker's `navigateFallbackDenylist`, so nothing changes there. Red: status 200, no redirect; green: one route in the dev block. Refactor: nothing worth changing.
 - [ ] 15. With an `https://` public URL, the session and attempt cookies are `Secure` over plain HTTP. (Ticks the TODO.md item.)
 
 Wiring:
