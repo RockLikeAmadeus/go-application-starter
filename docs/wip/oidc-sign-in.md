@@ -68,7 +68,8 @@ The server (`internal/adapters/httpapi`):
 - [x] 13. A callback with the provider's `error` parameter answers the "Sign-in failed" page, 400, and clears the attempt cookie (wording agreed with the user: title and heading "Sign-in failed", link "Try signing in again"). Red: `TestTheProviderSendingAnErrorAnswersTheSignInFailedPageAndClearsTheAttemptCookie` got 500 problem+json. Green: `oidcCallback` checks `error` first and `signInFailed` answers the page. Refactor: nothing worth changing.
 - [x] 14. The same page for no attempt cookie, a `state` that doesn't match, and `Finish` failing (table test), with the cause logged.
   - Red: `TestACallbackThatCannotBeTrustedAnswersTheSignInFailedPageAndLogsTheCause` got 500 or a 303 sign-in. Green: `oidcCallback` takes the logger, compares the state with `crypto/subtle`, and fails with the page and a logged cause. Refactor: nothing worth changing.
-- [ ] 14b. `GET /auth/sign-up` goes to the adapter's sign-up: `/auth/oidc/sign-up` with OIDC, which sets the attempt cookie and redirects to `StartSignUp`'s URL, or `/auth/dev` with the dev sign-in. `/auth/` is already in the service worker's `navigateFallbackDenylist`, so nothing changes there.
+- [x] 14b. With OIDC, `GET /auth/sign-up` goes to `/auth/oidc/sign-up`, which sets the attempt cookie and redirects to `StartSignUp`'s URL. Red: both tests got 200 (no routes); green: `StartSignUp` on `SignInProvider`, `oidcStart` takes the start func. Refactor: nothing more worth changing.
+- [ ] 14c. With the dev sign-in, `GET /auth/sign-up` goes to `/auth/dev`. `/auth/` is already in the service worker's `navigateFallbackDenylist`, so nothing changes there.
 - [ ] 15. With an `https://` public URL, the session and attempt cookies are `Secure` over plain HTTP. (Ticks the TODO.md item.)
 
 Wiring:

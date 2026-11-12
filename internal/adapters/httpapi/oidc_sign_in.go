@@ -25,14 +25,18 @@ const attemptLifetime = 10 * time.Minute
 // provider understands that it gets back in Finish.
 type SignInProvider interface {
 	Start() (authURL, state, attempt string)
+	// StartSignUp is Start for someone who is new: it opens at the provider's
+	// sign-up page when the provider has one.
+	StartSignUp() (authURL, state, attempt string)
 	Finish(ctx context.Context, attempt, code string) (domain.Identity, error)
 }
 
-// oidcStart answers GET /auth/oidc: it keeps the attempt in a cookie and sends
-// the browser to the provider.
-func oidcStart(provider SignInProvider) http.HandlerFunc {
+// oidcStart answers GET /auth/oidc and GET /auth/oidc/sign-up: it begins an
+// attempt with start (the provider's Start or StartSignUp), keeps it in a
+// cookie, and sends the browser to the provider.
+func oidcStart(start func() (authURL, state, attempt string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authURL, state, attempt := provider.Start()
+		authURL, state, attempt := start()
 		// Lax still sends the cookie on the provider's top-level redirect back.
 		http.SetCookie(w, &http.Cookie{
 			Name:     AttemptCookie,

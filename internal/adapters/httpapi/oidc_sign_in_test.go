@@ -21,6 +21,7 @@ import (
 type fakeSignInProvider struct {
 	url, state, attempt string
 	identity            domain.Identity
+	signUpURL           string
 }
 
 func (f fakeSignInProvider) Finish(_ context.Context, attempt, code string) (domain.Identity, error) {
@@ -31,6 +32,45 @@ func (f fakeSignInProvider) Finish(_ context.Context, attempt, code string) (dom
 }
 
 func (f fakeSignInProvider) Start() (string, string, string) { return f.url, f.state, f.attempt }
+
+func (f fakeSignInProvider) StartSignUp() (string, string, string) {
+	return f.signUpURL, f.state, f.attempt
+}
+
+func TestSigningUpWithAnOIDCProviderGoesToTheOIDCSignUp(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, SignInProvider: fakeSignInProvider{}})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/sign-up", nil))
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/oidc/sign-up" {
+		t.Errorf("status = %d, Location = %q; want %d to /auth/oidc/sign-up", rec.Code, rec.Header().Get("Location"), http.StatusFound)
+	}
+}
+
+func TestStartingAnOIDCSignUpKeepsTheAttemptInACookieAndGoesToTheProvidersSignUpPage(t *testing.T) {
+	provider := fakeSignInProvider{
+		url:       "https://provider.example/authorize?state=s1",
+		signUpURL: "https://provider.example/authorize?state=s1&prompt=create",
+		state:     "s1",
+		attempt:   "opaque-attempt",
+	}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, SignInProvider: provider})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/oidc/sign-up", nil))
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != provider.signUpURL {
+		t.Fatalf("status = %d, Location = %q; want %d to %q", rec.Code, rec.Header().Get("Location"), http.StatusFound, provider.signUpURL)
+	}
+	var cookie *http.Cookie
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == httpapi.AttemptCookie {
+			cookie = c
+		}
+	}
+	if cookie == nil || cookie.Value != "s1.opaque-attempt" || cookie.Path != "/auth/oidc" {
+		t.Errorf("cookie = %+v, want %s at /auth/oidc holding s1.opaque-attempt", cookie, httpapi.AttemptCookie)
+	}
+}
 
 func TestStartingAnOIDCSignInKeepsTheAttemptInACookieAndGoesToTheProvider(t *testing.T) {
 	provider := fakeSignInProvider{
