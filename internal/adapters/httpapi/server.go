@@ -90,6 +90,7 @@ func NewHandler(opts Options) http.Handler {
 	if opts.SignInProvider != nil {
 		mux.HandleFunc("GET /auth/sign-in", signInGoesTo("/auth/oidc"))
 		mux.HandleFunc("GET /auth/oidc", oidcStart(opts.SignInProvider))
+		mux.HandleFunc("GET /auth/oidc/callback", oidcCallback(opts.SignInProvider, opts.SignIn))
 	}
 	if opts.SignIn != nil {
 		mux.Handle("POST /auth/sign-out", signOut(opts.SignIn))

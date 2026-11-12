@@ -63,7 +63,8 @@ The server (`internal/adapters/httpapi`):
 - [x] 11. With a `SignInProvider`, `GET /auth/oidc` sets the attempt cookie and redirects to `Start`'s URL.
   - Red: `TestStartingAnOIDCSignInKeepsTheAttemptInACookieAndGoesToTheProvider` (status 200, not 302). Green: `oidcStart` in `oidc_sign_in.go`, the cookie holding `<state>.<attempt>`. Reworked after review: `httpapi` no longer imports `oidc`; `oidc.Start` now returns the URL, the state, and an opaque attempt string (unexported `attempt`, base64 JSON of nonce and verifier) that `Finish` takes. Refactor: nothing worth changing.
 - [x] 11b. With a `SignInProvider`, `GET /auth/sign-in` goes to `/auth/oidc`. Red: TestSigningInWithAnOIDCProviderGoesToTheOIDCStart got 200. Green: route added. No refactor needed.
-- [ ] 12. `GET /auth/oidc/callback` with the attempt's `state` calls `Finish`, signs in, sets the session cookie, clears the attempt cookie, and redirects to `/`.
+- [x] 12. `GET /auth/oidc/callback` with the attempt's `state` calls `Finish`, signs in, sets the session cookie, clears the attempt cookie, and redirects to `/`.
+  - Red: `TestTheProviderSendingTheBrowserBackSignsInSetsTheSessionCookieAndGoesToTheWebApp` got the SPA's 200, not 303. Green: `oidcCallback` splits the cookie, calls `Finish` and `SignIn`, clears the attempt cookie. It does not compare `state` yet (task 14). Refactor: nothing worth changing.
 - [ ] 13. A callback with the provider's `error` parameter answers the "signing in didn't work" page, 400, and clears the attempt cookie (wording to agree).
 - [ ] 14. The same page for no attempt cookie, a `state` that doesn't match, and `Finish` failing (table test), with the cause logged.
 - [ ] 14b. `GET /auth/sign-up` goes to the adapter's sign-up: `/auth/oidc/sign-up` with OIDC, which sets the attempt cookie and redirects to `StartSignUp`'s URL, or `/auth/dev` with the dev sign-in. `/auth/` is already in the service worker's `navigateFallbackDenylist`, so nothing changes there.
