@@ -31,7 +31,9 @@ Decided in planning:
 Each is one `/red` → `/green` → `/refactor` cycle.
 
 The OIDC adapter (`internal/adapters/oidc`):
-- [ ] 1. `oidc.New` discovers the provider from its issuer, and fails for an unreachable issuer. Adds go-oidc and x/oauth2 to the main `go.mod`, and starts `oidctest.Provider` with discovery and keys.
+- [x] 1. `oidc.New` discovers the provider from its issuer. Adds go-oidc and x/oauth2 to the main `go.mod`, and starts `oidctest.Provider` with discovery and keys.
+  - Red: `TestNewDiscoversTheProviderFromItsIssuer` failed with "New returned no provider". Green: `New` calls go-oidc's `NewProvider`. Refactor: nothing to change. Added the `oidctest-tests-only` depguard rule.
+- [ ] 1b. `oidc.New` fails for an unreachable issuer.
 - [ ] 2. `Start` returns the provider's authorization URL with the client ID, redirect URL, scopes, `state`, `nonce`, and an S256 PKCE challenge, and an `Attempt` holding them. Two starts share nothing.
 - [ ] 3. `Finish` swaps the code, sending the PKCE verifier and client secret, checks the ID token, and returns the identity (issuer, subject, `name`). The fake gains its authorize and token endpoints, with a person to sign in.
 - [ ] 4. The name falls back to `preferred_username`, then `email`, then the subject (table test).
@@ -78,3 +80,4 @@ The web app:
 
 ## Changes to the plan
 - 2026-11-12: added "Create an account" (SPEC.md §4.18's new rule and example, 2 scenarios, and tasks 6b, 14b, 20b, 21, and 22). The user found that nothing covered someone new, and wants a link that goes straight to the provider's sign-up page. The browser journey is written by task 22, not here: playwright-bdd stops the whole suite while a step is undefined, so `task e2e` would fail on the branch until then (8a did the same). Docs and finish became task 23.
+- 2026-11-12: split task 1 (discovery, then the unreachable issuer), as each needs its own test.

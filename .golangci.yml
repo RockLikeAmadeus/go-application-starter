@@ -45,6 +45,14 @@ linters:
               desc: domain must not depend on ports
             - pkg: github.com/RockLikeAmadeus/go-application-starter/internal/core/app
               desc: domain must not depend on use cases
+        # The fake sign-in provider is for tests only.
+        oidctest-tests-only:
+          files:
+            - $all
+            - "!$test"
+          deny:
+            - pkg: github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc/oidctest
+              desc: the fake sign-in provider is only for tests
         # The core's tests are unit tests: no database, network, or files.
         # Strict mode refuses any import not allowed here, so they can use
         # the standard library, the core, memory storage, and the testsupport
