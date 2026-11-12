@@ -88,7 +88,7 @@ Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample 
 - [x] 20b. Steps for creating an account at the provider, which page the provider showed first, and a provider that can't start at sign-up. Red: four steps undefined. Green: four steps; the oidc driver starts with `prompt=create` supported and swaps its handler behind an `atomic.Pointer` so the Given can make the server discover the provider again. Refactor: nothing worth changing.
 
 The web app:
-- [ ] 21. `SignInScreen` shows a "Create an account" link to `/auth/sign-up` beside "Sign in" (Vitest, by role). Agree with the user whether "Please sign in to continue." should change, now that the screen also serves new people.
+- [x] 21. `SignInScreen` shows a "Create an account" link to `/auth/sign-up` beside "Sign in" (Vitest, by role).
 - [ ] 22. A browser journey in `web/e2e/features/sign-in.feature`: signed out, create an account as "Browser Grace" (the dev sign-in's form), see the items page, signed in as "Browser Grace".
 
 - [ ] 23. **Docs and finish.**
