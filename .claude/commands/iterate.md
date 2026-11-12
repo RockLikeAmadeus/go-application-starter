@@ -20,7 +20,7 @@ Run the three steps below in order, each exactly as its own command would (`.cla
 **When to stop and ask me.** Ask only when the decision is genuinely mine, then carry on with my answer. Ask with the AskUserQuestion tool, and make each question stand on its own. Stop to ask when:
 - the task is ambiguous, or the decisions in the `docs/wip/` file don't settle how to do it;
 - making it pass needs more than the task describes, or changes the plan (a new port, a changed API contract, a dropped or reordered task);
-- an existing test has a bug, or something is red that this cycle didn't break;
+- an existing test has a bug, or something is red that this cycle didn't break. Never set a red check aside as "pre-existing" and carry on: find why it fails, and ask with the fix you propose. A red check hides any new failure in the same check, so it has to be settled before the cycle can finish;
 - a refactoring would change behaviour or a public contract;
 - the cycle adds or changes user-facing text (`.claude/rules/user-facing-text.md`): always, before the test that pins it. This is never a conventional answer.
 
@@ -30,7 +30,7 @@ Anything with a conventional answer, or that the code, CLAUDE.md or the `docs/wi
 
 **When the new test passes straight away.** If it passes because the behaviour already exists (not because the test is wrong: check it can fail, e.g. that it waits for or asserts the right thing), don't ask me: keep it as a guard. Skip green, since no production code is demanded, and still run refactor. Record in the `docs/wip/` file that there was no red, and why. Commit it as `test:` (or `feat:` if refactor changed production code). A test that passes only sometimes is not this case: make it fail reliably for the right reason, as `red.md` says.
 
-**Finish.** `task lint`, `task test`, and the acceptance run above, all green.
+**Finish.** `task lint`, `task test`, and the acceptance run above, all green, and so is every slow check the cycle ran (below). Run the full `task test`, not only `task test:go`. Every check you ran counts, whoever broke it: if one is red, the cycle hasn't finished.
 
 **Run each check once per state of the code.** While working, run the narrowest test that covers the change. Run `task test` and the acceptance run once after green: refactor's opening check reuses those results instead of running them again. Refactor's small steps re-run only the tests they touch. At the finish, run only what the refactor could have affected since green: if it changed nothing, that's `task lint`; if it changed only one package's tests, that package's tests and `task lint`. Otherwise run the full finishing checks. Slow, separate checks (`task test:init`, `task e2e:terminal`) run once, when the cycle touched what they cover.
 

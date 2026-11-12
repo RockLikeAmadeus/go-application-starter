@@ -9,7 +9,7 @@ Rules:
 
 0. Run `task wip:next` first. If a feature is in progress, it prints the open tasks and the decisions behind them. Start from the **For refactor:** note that `/green` left under the current item.
 1. Run `task test` and `task accept` first. If anything is red, STOP and tell me: refactoring only happens on green. While the feature's scenarios are still `@wip`, "`task accept` green" means every scenario outside them: `task accept -- --godog.tags='~@wip'`. The `@wip` ones are expected to fail until the feature is done.
-2. Improve the code touched in the current red/green cycle (and the tests themselves if useful). Look for duplication, naming, long functions, misplaced responsibilities, and violations of the hexagonal dependency rule in CLAUDE.md.
+2. Improve the code touched in the current red/green cycle (and the tests themselves if useful). Look for duplication, naming, long functions, misplaced responsibilities, and violations of the hexagonal dependency rule in CLAUDE.md. Check the comments too: each should say why, or what a caller must know (who owns or closes something, an order that matters, a constraint the code doesn't show), never restate what the code or its signature already says.
 3. **No behaviour changes**: no new features, no new tests asserting new behaviour, no changes to user-facing text or to public API contracts (`api/openapi.yaml`) unless I asked.
 4. Make small steps, re-running the relevant tests after each one. If a step turns a test red, revert that step.
 5. Finish with `task lint`, `task test`, and `task accept` (outside `@wip`, as in step 1), all green. Report how far the `@wip` scenarios got (`task accept -- --godog.tags=@wip`), without chasing them.

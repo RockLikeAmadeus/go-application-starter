@@ -89,7 +89,7 @@ Settings come from an optional TOML settings file, overridden by environment var
 | Green | `/green` | the minimum code to pass, then stop |
 | Refactor | `/refactor` | cleaner code, all tests still green |
 | One cycle | `/iterate [behaviour]` | red, green, and refactor for the next open task, stopping only for questions; then commits and pushes it, if all went cleanly; after the last task, opens the pull request |
-| Every open task | `/iterate-all [feature]` | `/iterate` in a loop through a feature's open tasks, each in a fresh subagent with one commit after a short review, pausing only for questions; stops when the tasks are done (opening the pull request) or a cycle can't finish cleanly |
+| Every open task | `/iterate-all [feature]` | Runs `/iterate` in a loop through a feature's open tasks. Each cycle runs in a fresh subagent, a separate Claude session with an empty context. The cycles run on the cheaper Sonnet model, and the final docs-and-finish task runs on Opus, because writing docs takes more judgement than code that tests check. After each cycle, the session you started reviews the work, runs the checks again itself, and makes one commit. It pauses only for questions. It stops when the tasks are done, and then opens the pull request, or when a cycle can't finish cleanly. Start it from an Opus session, since that session does the reviewing. |
 
 Repeat red → green → refactor until `task accept` is green. The last task drops the `@wip` tags and the `docs/wip/` file. See `CLAUDE.md` for the architecture rules Claude follows, `.claude/rules/` for its topic-specific rules (loaded when it works on matching files), and `.claude/settings.json` for permissions and the auto-format hook.
 

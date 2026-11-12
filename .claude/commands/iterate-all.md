@@ -8,7 +8,13 @@ Run an `/iterate` cycle for each open task of one `docs/wip/` file, without stop
 
 > $ARGUMENTS
 
-You coordinate. Each cycle runs in its own subagent, so it starts from a clean context, as it would after `/clear`. Stay small: don't read the code, the plan, or test output yourself. Rely on what each subagent reports, apart from the review and the sweep below, which read only the lines their searches find.
+You coordinate. Each cycle runs in its own subagent, so it starts from a clean context, as it would after `/clear`. Stay small: don't read the code, the plan, or test output yourself. Rely on what each subagent reports, apart from the review, its checks, and the sweep below, which read only the lines their searches find and the names of failing tests.
+
+**Models.** You run on the model of the session I start you in, which should be Opus: you review every cycle. The cycles run on cheaper models, set here, in one place:
+- `sonnet` for every task except the last;
+- `opus` for the last task when it's the docs-and-finish task that `/feature` writes (updating the docs, removing the `@wip` tags, and deleting the `docs/wip/` file), because writing for developers takes more judgement than code that tests check.
+
+A trial on 2026-11-11 found Sonnet's code as good as Opus's but its reports less reliable, so the review below runs the checks itself rather than trusting the report.
 
 **Pick the file.** If the arguments name a feature, use `docs/wip/<slug>.md`. Otherwise use the only file in `docs/wip/`, or, when there are several, the one with open tasks (`- [ ]`) that was committed to most recently:
 
@@ -23,7 +29,7 @@ Say which file you picked before the first cycle, and stay on it. If it has no o
 **Loop.** Repeat for as long as the file has an open task:
 
 1. When only one open task is left, run the sweep below first.
-2. Start a `general-purpose` subagent with the Agent tool, with the prompt below, and wait for its report.
+2. Start a `general-purpose` subagent with the Agent tool, on the model "Models" above gives this task, with the prompt below, and wait for its report.
 3. Act on the report's first word:
    - `QUESTION`: ask me with the AskUserQuestion tool. Send my answer to the same subagent with SendMessage (load it with ToolSearch if it's deferred), and wait again.
    - `BLOCKED`: STOP the loop, leaving its changes unstaged and uncommitted.
@@ -33,11 +39,13 @@ Say which file you picked before the first cycle, and stay on it. If it has no o
 5. Check with `grep` that the task is ticked. Write the message to a file in the scratchpad, ending it with the attribution lines this session gives for commits. Then commit and push as `/iterate` says: `git add -A`; `git commit -F <file>`; `git push` (`git push -u origin HEAD` when the branch has no upstream yet), as three separate, plain commands.
 6. Print one line: the task, the commit's short hash, and how far the `@wip` scenarios got. Go straight on to the next task. Don't end your turn between cycles.
 
-**Review each cycle before committing it.** A `DONE` report can be wrong, so check four things. Don't read the whole diff: search it, and read only the hunks the searches point at. Search the changes to tracked files with `git diff -U0 HEAD`, and new files by passing `git ls-files -o --exclude-standard` to `grep`.
+**Review each cycle before committing it.** A `DONE` report can be wrong, so check six things. Don't read the whole diff: search it, and read only the hunks the searches point at. Search the changes to tracked files with `git diff -U0 HEAD`, and new files by passing `git ls-files -o --exclude-standard` to `grep`.
+- **Checks:** run them yourself: `task lint`, `task test`, `task accept -- --godog.tags='~@wip'` (or `task accept` once no scenario is `@wip`), and `task test:init`. Send each one's output to a file in the scratchpad and read only its exit status and, when it fails, the names of the failing tests (`grep -m20 -E -- '--- FAIL|^FAIL'`). A red check fails the review even if the cycle didn't break it: never commit on top of one.
 - **Paths:** `git status --short` lists the same paths as the report.
 - **Imports:** for each new import of one of this module's packages (`go list -m` gives the module path), check it against the architecture in `CLAUDE.md`. depguard only guards the core, so look for an adapter importing another adapter, a package outside `internal/bootstrap` choosing a storage adapter, and template code importing sample code.
 - **Deferred work:** search the added lines for `until`, `for now`, `temporary`, `later`, and `task [0-9]`. Each note that leaves something for later must name an open task in the file that does it.
 - **Commit message:** for everything the message says this cycle removes, renames, or replaces, `grep` that the old form is gone.
+- **Style:** read only the comments and the long lines the cycle added to Go code: `git diff -U0 HEAD -- '*.go' | grep -E '^\+\s*//|^\+.{121,}'`, and the same `grep` over new `.go` files. Send back a comment that only restates the code or its signature, and a line packed so long it's hard to read (a long SQL string, for example). Leave anything smaller alone: this catches glaring issues, not taste.
 
 If something is wrong, send it to the same subagent with SendMessage, to fix it, run the finishing checks again, and report again. If it needs a decision from me rather than a fix, ask me with AskUserQuestion, as for `QUESTION`. Commit only once the review is clean.
 
@@ -63,7 +71,7 @@ Prompt for each subagent, with `<file>` filled in:
 > - Don't stage, commit, or push. Stop after the finishing checks, leaving everything unstaged. The coordinator commits.
 > - If the coordinator names changes that aren't part of this cycle, leave them alone and don't ask about them.
 >
-> End with a report. Its first word is `DONE` if the cycle ran to the end and the finishing checks are green, or `BLOCKED` if it can't finish, whatever the reason, including anything red that you can't fix. For `BLOCKED`, say why and what state the tree is in. For `DONE`, keep it short: the task; how far the `@wip` scenarios got; any decision you took without asking; every path you changed; and the full commit message `iterate.md` describes, without attribution lines.
+> End with a report. Its first word is `DONE` if the cycle ran to the end and every check you ran is green, including any you didn't break (a red one you didn't break is a `QUESTION`, with its cause and the fix you propose), or `BLOCKED` if it can't finish, whatever the reason, including anything red that you can't fix. For `BLOCKED`, say why and what state the tree is in. For `DONE`, keep it short: the task; how far the `@wip` scenarios got; any decision you took without asking; every path you changed; and the full commit message `iterate.md` describes, without attribution lines.
 
 The `docs/wip/` file and the git history hold the loop's state, not this conversation. If the context has been compacted, carry on from the file: the next task is its first unticked one.
 
