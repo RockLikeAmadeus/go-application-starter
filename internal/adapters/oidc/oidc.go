@@ -86,6 +86,10 @@ func (p *Provider) Finish(ctx context.Context, attempt Attempt, code string) (do
 	if err != nil {
 		return domain.Identity{}, fmt.Errorf("checking the ID token: %w", err)
 	}
+	// go-oidc leaves the nonce to the caller: it ties this token to this attempt.
+	if idToken.Nonce != attempt.Nonce {
+		return domain.Identity{}, errors.New("the ID token's nonce does not match the attempt")
+	}
 	var claims struct {
 		Name              string `json:"name"`
 		PreferredUsername string `json:"preferred_username"`

@@ -35,6 +35,19 @@ type Person struct {
 	Email             string
 }
 
+// Fault is a way the fake provider can misbehave when it issues an ID token.
+type Fault int
+
+// The faults the fake provider can be told to commit.
+const (
+	NoFault Fault = iota
+	SignedWithAnotherKey
+	MeantForAnotherClient
+	Expired
+	FromAnotherIssuer
+	WithAnotherNonce
+)
+
 // Provider is a running fake provider with its own signing key.
 type Provider struct {
 	server    *httptest.Server
@@ -43,6 +56,7 @@ type Provider struct {
 
 	mu     sync.Mutex
 	person Person
+	fault  Fault
 	grants map[string]grant
 }
 
@@ -81,6 +95,13 @@ func (p *Provider) SetPerson(person Person) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.person = person
+}
+
+// SetFault makes the provider misbehave in every ID token it issues from now on.
+func (p *Provider) SetFault(fault Fault) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.fault = fault
 }
 
 // DiscoveryRequests counts the discovery documents the provider has served.
@@ -136,14 +157,14 @@ func (p *Provider) serveToken(w http.ResponseWriter, r *http.Request) {
 	}
 	p.mu.Lock()
 	g, found := p.grants[r.PostFormValue("code")]
-	person := p.person
+	person, fault := p.person, p.fault
 	p.mu.Unlock()
 	sum := sha256.Sum256([]byte(r.PostFormValue("code_verifier")))
 	if !found || base64.RawURLEncoding.EncodeToString(sum[:]) != g.challenge {
 		writeError(w, "invalid_grant")
 		return
 	}
-	idToken, err := p.signIDToken(map[string]any{
+	claims := map[string]any{
 		"iss":                p.Issuer(),
 		"sub":                person.Subject,
 		"aud":                ClientID,
@@ -153,7 +174,21 @@ func (p *Provider) serveToken(w http.ResponseWriter, r *http.Request) {
 		"name":               person.Name,
 		"preferred_username": person.PreferredUsername,
 		"email":              person.Email,
-	})
+	}
+	signingKey := p.key
+	switch fault {
+	case SignedWithAnotherKey:
+		signingKey, _ = rsa.GenerateKey(rand.Reader, 2048)
+	case MeantForAnotherClient:
+		claims["aud"] = "another-client"
+	case Expired:
+		claims["exp"] = time.Now().Add(-time.Hour).Unix()
+	case FromAnotherIssuer:
+		claims["iss"] = "https://another-issuer.example.com"
+	case WithAnotherNonce:
+		claims["nonce"] = "another-nonce"
+	}
+	idToken, err := signIDToken(signingKey, claims)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -165,9 +200,9 @@ func (p *Provider) serveToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (p *Provider) signIDToken(claims map[string]any) (string, error) {
+func signIDToken(key *rsa.PrivateKey, claims map[string]any) (string, error) {
 	signer, err := jose.NewSigner(
-		jose.SigningKey{Algorithm: jose.RS256, Key: p.key},
+		jose.SigningKey{Algorithm: jose.RS256, Key: key},
 		(&jose.SignerOptions{}).WithType("JWT").WithHeader("kid", "fake-key"),
 	)
 	if err != nil {

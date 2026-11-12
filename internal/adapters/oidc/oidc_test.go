@@ -169,3 +169,33 @@ func TestFinishNamesThePersonByTheBestClaimTheProviderSent(t *testing.T) {
 		})
 	}
 }
+
+func TestFinishRefusesAnIDTokenThatCannotBeTrusted(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		fault oidctest.Fault
+	}{
+		{"signed with another key", oidctest.SignedWithAnotherKey},
+		{"meant for another client", oidctest.MeantForAnotherClient},
+		{"expired", oidctest.Expired},
+		{"from another issuer", oidctest.FromAnotherIssuer},
+		{"with another nonce", oidctest.WithAnotherNonce},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p, fake := startedProvider(t)
+			fake.SetPerson(oidctest.Person{Subject: "ada-123", Name: "Ada Lovelace"})
+			fake.SetFault(tc.fault)
+			authURL, attempt := p.Start()
+			back := authorize(t, authURL)
+
+			identity, err := p.Finish(context.Background(), attempt, back.Get("code"))
+
+			if err == nil {
+				t.Fatalf("Finish succeeded with %+v", identity)
+			}
+			if identity != (domain.Identity{}) {
+				t.Errorf("Finish returned %+v along with its error", identity)
+			}
+		})
+	}
+}

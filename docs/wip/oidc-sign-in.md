@@ -40,7 +40,8 @@ The OIDC adapter (`internal/adapters/oidc`):
   - Red: `TestFinishSwapsTheCodeAndReturnsTheIdentity` (empty identity). Green: `Finish` does `Exchange` with `VerifierOption`, then verifies the ID token and reads `name`; the fake has `/authorize`, `/token` (checks client and PKCE), `SetPerson`, `ClientID`/`ClientSecret`. Refactor: nothing worth changing. The nonce isn't checked yet (task 5).
 - [x] 4. The name falls back to `preferred_username`, then `email`, then the subject (table test).
   - Red: `TestFinishNamesThePersonByTheBestClaimTheProviderSent` failed with empty names (fake `Person` gained `PreferredUsername`, `Email`). Green: `cmp.Or` over the claims and subject. Refactor: used `cmp.Or` instead of a helper.
-- [ ] 5. `Finish` refuses an ID token signed with another key, meant for another client, expired, from another issuer, or with another nonce (table test; the fake's misbehaviour switches).
+- [x] 5. `Finish` refuses an ID token signed with another key, meant for another client, expired, from another issuer, or with another nonce (table test; the fake's misbehaviour switches).
+  - Red: `TestFinishRefusesAnIDTokenThatCannotBeTrusted` (fake gained `SetFault`); only the nonce case failed, as go-oidc leaves the nonce to the caller. Green: `Finish` compares the nonce. Refactor: nothing worth changing.
 - [ ] 6. `Finish` refuses when the provider rejects the code: a wrong PKCE verifier, or a code used twice.
 - [ ] 6b. `StartSignUp` adds `prompt=create` when the provider's discovery lists `create` in `prompt_values_supported`, and leaves it out otherwise (the fake gets a switch for it, and records the prompt it was sent).
 
