@@ -12,7 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/plans"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
@@ -49,6 +51,9 @@ type App struct {
 	// IsDevSignInOn says whether the server serves the dev sign-in under
 	// /auth/dev: sign_in is "dev", which only a devsignin build accepts.
 	IsDevSignInOn bool
+	// SignInProvider is the OIDC sign-in provider, discovered at start. It's
+	// nil unless sign_in is "oidc".
+	SignInProvider httpapi.SignInProvider
 	// Warnings are messages every front end shows the user as given, such
 	// as SQLite's data folder looking synced, or a conflict copy in plain text.
 	Warnings []string
@@ -90,6 +95,18 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 			cfg.SignIn, config.SignInOff, devSignInBuildTag)
 	}
 	a := &App{IsDevSignInOn: cfg.SignIn == config.SignInDev}
+	if cfg.SignIn == config.SignInOIDC {
+		provider, err := oidc.New(context.Background(), oidc.Settings{
+			Issuer:       cfg.OIDCIssuer,
+			ClientID:     cfg.OIDCClientID,
+			ClientSecret: cfg.OIDCClientSecret,
+			RedirectURL:  strings.TrimRight(cfg.PublicURL, "/") + "/auth/oidc/callback",
+		})
+		if err != nil {
+			return nil, err
+		}
+		a.SignInProvider = provider
+	}
 	// sample:start
 	var itemRepo ports.ItemRepository
 	// sample:end

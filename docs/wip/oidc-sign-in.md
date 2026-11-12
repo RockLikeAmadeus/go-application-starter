@@ -74,7 +74,8 @@ The server (`internal/adapters/httpapi`):
 - [x] 15b. The same for the attempt cookie (`oidcStart` should use `isSecure` too). (Ticks the TODO.md item.) Red: `TestTheAttemptCookieIsSecureOverPlainHTTPWithAnHTTPSPublicURL` (cookie not Secure). Green: `oidcStart` takes the public URL and sets `Secure` with `isSecure`. Refactor: nothing more worth changing.
 
 Wiring:
-- [ ] 16. `bootstrap` with `sign_in = "oidc"` builds the OIDC adapter from the settings, against `oidctest.Provider`, and an unreachable issuer fails at start (wording to agree).
+- [x] 16. `bootstrap` with `sign_in = "oidc"` builds the OIDC adapter from the settings, against `oidctest.Provider`. Red: `TestNewEmbedded_WithOIDCSignInBuildsTheProviderFromTheSettings` (`App.SignInProvider` nil). Green: `NewEmbedded` calls `oidc.New`, exposing it as `App.SignInProvider` (an `httpapi.SignInProvider`). Refactor: nothing more worth changing.
+- [ ] 16b. An unreachable issuer fails at start, with a clear message (wording to agree).
 - [ ] 17. `cmd/server`'s `handlerOptions` passes the provider and the public URL to `httpapi.Options`.
 
 Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample block):
@@ -95,6 +96,7 @@ The web app:
   - Remove the `@wip` tags, mark step 8b done in the plan, tick the "changed name" loose end, and delete this file.
 
 ## Changes to the plan
+- 2026-11-12: split task 16 (building the adapter, then the unreachable issuer's message), as the message is user-facing text to agree first.
 - 2026-11-12: split task 15 (the session cookie, then the attempt cookie), one test each.
 - 2026-11-12: added "Create an account" (SPEC.md §4.18's new rule and example, 2 scenarios, and tasks 6b, 14b, 20b, 21, and 22). The user found that nothing covered someone new, and wants a link that goes straight to the provider's sign-up page. The browser journey is written by task 22, not here: playwright-bdd stops the whole suite while a step is undefined, so `task e2e` would fail on the branch until then (8a did the same). Docs and finish became task 23.
 - 2026-11-12: split task 1 (discovery, then the unreachable issuer), as each needs its own test.
