@@ -84,7 +84,7 @@ Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample 
   - Red: `TestSignInProviderScenariosRunOnlyOnTheOIDCDriver` failed with no `oidc` driver. Green: the driver (`startHostedOIDC`, `oidcSignInOverHTTP`), `signInDriver.identity`, and `joinTags` splitting a driver's comma alternatives (godog's `,` binds looser than `&&`). `sign-in.feature` passes on it (6 scenarios).
   - Refactor: the cookie-jar browsers shared by the dev and OIDC sign-ins moved into `browsersOverHTTP`.
 - [x] 19. Steps for a name changed at the provider, and for another person with the same name. Red: both scenarios undefined. Green: two steps on the oidc driver (`signInAs` with a chosen person). Refactor: nothing worth changing.
-- [ ] 20. Steps for cancelling at the provider, coming back without starting, being told signing in didn't work, and not being signed in. The "told" step recognises the page by its heading "Sign-in failed".
+- [x] 20. Steps for cancelling at the provider, coming back without starting, being told signing in didn't work, and not being signed in. The "told" step recognises the page by its heading "Sign-in failed". Red: four scenario steps undefined. Green: four steps and an oidc driver `cancel`/`comeBackWithoutStarting`, which keep the last page. Refactor: `followRedirects` returns the page.
 - [ ] 20b. Steps for creating an account at the provider, which page the provider showed first, and a provider that can't start at sign-up.
 
 The web app:

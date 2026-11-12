@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/cucumber/godog"
 
@@ -29,6 +31,10 @@ func (w *world) registerSignInSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^(?:I am|they are) told to sign in$`, w.iAmToldToSignIn)
 	sc.Step(`^"([^"]*)" changes their name at the sign-in provider to "([^"]*)" and signs in again$`, w.changesTheirNameAtTheProvider)
 	sc.Step(`^another person named "([^"]*)" signs in$`, w.anotherPersonNamedSignsIn)
+	sc.Step(`^I cancel signing in at the sign-in provider$`, w.iCancelSigningIn)
+	sc.Step(`^someone comes back from the sign-in provider without having started to sign in on this server$`, w.someoneComesBackWithoutStarting)
+	sc.Step(`^(?:I am|they are) told that signing in didn't work$`, w.iAmToldSigningInDidntWork)
+	sc.Step(`^(?:I am|they are) not signed in$`, w.iAmNotSignedIn)
 	// sample:start
 	sc.Step(`^"([^"]*)" has signed in before and added an item named "([^"]*)"$`, w.hasSignedInBeforeAndAddedAnItem)
 	// sample:end
@@ -92,6 +98,50 @@ func (w *world) anotherPersonNamedSignsIn(ctx context.Context, name string) (con
 	person := personNamed(name)
 	person.Subject += "-another"
 	return o.signInAs(ctx, "another "+name, person)
+}
+
+func (w *world) iCancelSigningIn(ctx context.Context) (context.Context, error) {
+	o, err := w.oidcSignIn()
+	if err != nil {
+		return ctx, err
+	}
+	return o.cancel(ctx)
+}
+
+func (w *world) someoneComesBackWithoutStarting(ctx context.Context) (context.Context, error) {
+	o, err := w.oidcSignIn()
+	if err != nil {
+		return ctx, err
+	}
+	return o.comeBackWithoutStarting(ctx)
+}
+
+// signInFailedHeading is the heading of the page a refused sign-in answers.
+const signInFailedHeading = "<h1>Sign-in failed</h1>"
+
+func (w *world) iAmToldSigningInDidntWork() error {
+	o, err := w.oidcSignIn()
+	if err != nil {
+		return err
+	}
+	if o.lastAnswer.status != http.StatusBadRequest || !strings.Contains(o.lastAnswer.body, signInFailedHeading) {
+		return fmt.Errorf("expected the sign-in failed page, got status %d: %.80q", o.lastAnswer.status, o.lastAnswer.body)
+	}
+	return nil
+}
+
+func (w *world) iAmNotSignedIn(ctx context.Context) error {
+	if w.signIn == nil {
+		return errNoSignIn
+	}
+	name, err := w.signIn.signedInName(ctx)
+	if err != nil {
+		return nil
+	}
+	if name != "" {
+		return fmt.Errorf("signed in as %q, want no one", name)
+	}
+	return nil
 }
 
 func (w *world) anAdminHasMovedTheAccountsWorkspace(ctx context.Context, name, plan string) error {

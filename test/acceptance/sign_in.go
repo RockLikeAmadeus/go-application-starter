@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strings"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
@@ -215,6 +217,8 @@ func (d *devSignInOverHTTP) signIn(ctx context.Context, name string) (context.Co
 type oidcSignInOverHTTP struct {
 	browsersOverHTTP
 	provider *oidctest.Provider
+	// lastAnswer is the page the latest arrival at the server ended on.
+	lastAnswer answer
 }
 
 func newOIDCSignInOverHTTP(h *harness, baseURL string, provider *oidctest.Provider) *oidcSignInOverHTTP {
@@ -242,30 +246,92 @@ func (o *oidcSignInOverHTTP) signInAs(ctx context.Context, browserName string, p
 		return ctx, err
 	}
 	o.provider.SetPerson(person)
-	if err := followRedirects(browser, o.baseURL+"/auth/sign-in"); err != nil {
-		return ctx, err
-	}
-	return ctx, o.use(browser)
+	return ctx, o.arrive(browser, o.baseURL+"/auth/sign-in")
 }
 
 // followRedirects gets address with browser and goes wherever the server and
 // the provider send it, until an answer that isn't a redirect.
-func followRedirects(browser *http.Client, address string) error {
+func followRedirects(browser *http.Client, address string) (answer, error) {
+	return followRedirectsUntil(browser, address, func(*url.URL) bool { return false })
+}
+
+// answer is the last page a browser was given.
+type answer struct {
+	status int
+	body   string
+}
+
+// followRedirectsUntil is followRedirects, but it stops without asking for an
+// address stop is true for, which it returns as the answer's Location.
+func followRedirectsUntil(browser *http.Client, address string, stop func(*url.URL) bool) (answer, error) {
 	const maxHops = 10
 	for range maxHops {
 		resp, err := browser.Get(address)
 		if err != nil {
-			return err
+			return answer{}, err
 		}
+		body, err := io.ReadAll(resp.Body)
 		resp.Body.Close()
+		if err != nil {
+			return answer{}, err
+		}
 		if resp.StatusCode < 300 || resp.StatusCode >= 400 {
-			return nil
+			return answer{status: resp.StatusCode, body: string(body)}, nil
 		}
 		next, err := resp.Location()
 		if err != nil {
-			return err
+			return answer{}, err
+		}
+		if stop(next) {
+			return answer{status: resp.StatusCode, body: next.String()}, nil
 		}
 		address = next.String()
 	}
-	return fmt.Errorf("GET %s: more than %d redirects", address, maxHops)
+	return answer{}, fmt.Errorf("GET %s: more than %d redirects", address, maxHops)
+}
+
+// cancel starts signing in, and at the provider, cancels: the provider sends
+// the browser back to the server with an error instead of a code.
+func (o *oidcSignInOverHTTP) cancel(ctx context.Context) (context.Context, error) {
+	browser, err := o.browserFor("someone who cancels")
+	if err != nil {
+		return ctx, err
+	}
+	atProvider, err := followRedirectsUntil(browser, o.baseURL+"/auth/sign-in", func(next *url.URL) bool {
+		return strings.HasPrefix(next.String(), o.provider.Issuer())
+	})
+	if err != nil {
+		return ctx, err
+	}
+	authorize, err := url.Parse(atProvider.body)
+	if err != nil {
+		return ctx, err
+	}
+	back, err := url.Parse(authorize.Query().Get("redirect_uri"))
+	if err != nil {
+		return ctx, err
+	}
+	back.RawQuery = url.Values{"error": {"access_denied"}, "state": {authorize.Query().Get("state")}}.Encode()
+	return ctx, o.arrive(browser, back.String())
+}
+
+// comeBackWithoutStarting sends a browser that never started signing in here
+// to the callback, as a provider's redirect would.
+func (o *oidcSignInOverHTTP) comeBackWithoutStarting(ctx context.Context) (context.Context, error) {
+	browser, err := o.browserFor("someone who never started")
+	if err != nil {
+		return ctx, err
+	}
+	back := o.baseURL + "/auth/oidc/callback?" + url.Values{"code": {"a-code"}, "state": {"a-state"}}.Encode()
+	return ctx, o.arrive(browser, back)
+}
+
+// arrive gets address with browser, keeps the answer, and makes browser the
+// one the harness drives the server through.
+func (o *oidcSignInOverHTTP) arrive(browser *http.Client, address string) error {
+	var err error
+	if o.lastAnswer, err = followRedirects(browser, address); err != nil {
+		return err
+	}
+	return o.use(browser)
 }
