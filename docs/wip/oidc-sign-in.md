@@ -77,7 +77,7 @@ Wiring:
 - [x] 16. `bootstrap` with `sign_in = "oidc"` builds the OIDC adapter from the settings, against `oidctest.Provider`. Red: `TestNewEmbedded_WithOIDCSignInBuildsTheProviderFromTheSettings` (`App.SignInProvider` nil). Green: `NewEmbedded` calls `oidc.New`, exposing it as `App.SignInProvider` (an `httpapi.SignInProvider`). Refactor: nothing more worth changing.
 - [x] 16b. An unreachable issuer fails at start, with the agreed message. Red: `TestNewEmbedded_WithOIDCSignInAndAnUnreachableIssuerFailsWithAClearMessage` (raw error). Green: `NewEmbedded` wraps the `oidc.New` error (`%w`) in the agreed text. Refactor: nothing worth changing.
 - [x] 17. `cmd/server`'s `handlerOptions` passes the provider and the public URL to `httpapi.Options`. Red: `TestTheServerServesTheSignInProviderBehindAnHTTPSPublicURL` (no redirect, no cookie; `App.PublicURL` added so it compiles). Green: `handlerOptions` copies `SignInProvider` and `PublicURL`. Refactor: nothing worth changing.
-- [ ] 17b. `NewEmbedded` sets `App.PublicURL` from the `public_url` setting.
+- [x] 17b. `NewEmbedded` sets `App.PublicURL` from the `public_url` setting. Red: `TestNewEmbedded_KeepsThePublicURLFromTheSettings` (got empty). Green: `NewEmbedded` copies `cfg.PublicURL`. Refactor: nothing worth changing.
 
 Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample block):
 - [ ] 18. The `oidc` driver, running `@sign-in` and `@sign-in-provider`, with the other drivers leaving out `@sign-in-provider`. The admin step finds the account by the driver's identity for a name. `sign-in.feature` passes on it.

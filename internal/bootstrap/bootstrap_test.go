@@ -687,3 +687,20 @@ func TestNewEmbedded_WithOIDCSignInAndAnUnreachableIssuerFailsWithAClearMessage(
 		t.Error("error wraps nothing, want the underlying error wrapped")
 	}
 }
+
+// The app keeps the public_url setting, for the HTTP handler to mark cookies
+// Secure behind an https address.
+func TestNewEmbedded_KeepsThePublicURLFromTheSettings(t *testing.T) {
+	a, err := bootstrap.NewEmbedded(config.Config{
+		Storage:   config.StorageMemory,
+		PublicURL: "https://app.example.com",
+	})
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	if a.PublicURL != "https://app.example.com" {
+		t.Errorf("PublicURL = %q, want %q", a.PublicURL, "https://app.example.com")
+	}
+}
