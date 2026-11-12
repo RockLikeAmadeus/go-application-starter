@@ -232,11 +232,16 @@ func (o *oidcSignInOverHTTP) identity(name string) (domain.Identity, error) {
 }
 
 func (o *oidcSignInOverHTTP) signIn(ctx context.Context, name string) (context.Context, error) {
-	browser, err := o.browserFor(name)
+	return o.signInAs(ctx, name, personNamed(name))
+}
+
+// signInAs signs in person in the browser kept for browserName.
+func (o *oidcSignInOverHTTP) signInAs(ctx context.Context, browserName string, person oidctest.Person) (context.Context, error) {
+	browser, err := o.browserFor(browserName)
 	if err != nil {
 		return ctx, err
 	}
-	o.provider.SetPerson(personNamed(name))
+	o.provider.SetPerson(person)
 	if err := followRedirects(browser, o.baseURL+"/auth/sign-in"); err != nil {
 		return ctx, err
 	}

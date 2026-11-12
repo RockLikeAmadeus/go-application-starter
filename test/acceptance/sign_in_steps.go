@@ -27,6 +27,8 @@ func (w *world) registerSignInSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^I sign out$`, w.iSignOut)
 	sc.Step(`^I try to see my workspace's plan$`, w.iTryToSeeMyWorkspacesPlan)
 	sc.Step(`^(?:I am|they are) told to sign in$`, w.iAmToldToSignIn)
+	sc.Step(`^"([^"]*)" changes their name at the sign-in provider to "([^"]*)" and signs in again$`, w.changesTheirNameAtTheProvider)
+	sc.Step(`^another person named "([^"]*)" signs in$`, w.anotherPersonNamedSignsIn)
 	// sample:start
 	sc.Step(`^"([^"]*)" has signed in before and added an item named "([^"]*)"$`, w.hasSignedInBeforeAndAddedAnItem)
 	// sample:end
@@ -58,6 +60,38 @@ func (w *world) iAmSignedInAs(ctx context.Context, name string) (context.Context
 		return ctx, fmt.Errorf("signed in as %q, want %q", got, name)
 	}
 	return ctx, nil
+}
+
+// errNoProvider is returned by the sign-in provider steps on a driver
+// without a fake sign-in provider.
+var errNoProvider = errors.New("this driver has no sign-in provider: tag the scenario @sign-in-provider")
+
+func (w *world) oidcSignIn() (*oidcSignInOverHTTP, error) {
+	o, ok := w.signIn.(*oidcSignInOverHTTP)
+	if !ok {
+		return nil, errNoProvider
+	}
+	return o, nil
+}
+
+func (w *world) changesTheirNameAtTheProvider(ctx context.Context, name, newName string) (context.Context, error) {
+	o, err := w.oidcSignIn()
+	if err != nil {
+		return ctx, err
+	}
+	person := personNamed(name)
+	person.Name = newName
+	return o.signInAs(ctx, name, person)
+}
+
+func (w *world) anotherPersonNamedSignsIn(ctx context.Context, name string) (context.Context, error) {
+	o, err := w.oidcSignIn()
+	if err != nil {
+		return ctx, err
+	}
+	person := personNamed(name)
+	person.Subject += "-another"
+	return o.signInAs(ctx, "another "+name, person)
 }
 
 func (w *world) anAdminHasMovedTheAccountsWorkspace(ctx context.Context, name, plan string) error {
