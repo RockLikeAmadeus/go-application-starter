@@ -42,7 +42,8 @@ The OIDC adapter (`internal/adapters/oidc`):
   - Red: `TestFinishNamesThePersonByTheBestClaimTheProviderSent` failed with empty names (fake `Person` gained `PreferredUsername`, `Email`). Green: `cmp.Or` over the claims and subject. Refactor: used `cmp.Or` instead of a helper.
 - [x] 5. `Finish` refuses an ID token signed with another key, meant for another client, expired, from another issuer, or with another nonce (table test; the fake's misbehaviour switches).
   - Red: `TestFinishRefusesAnIDTokenThatCannotBeTrusted` (fake gained `SetFault`); only the nonce case failed, as go-oidc leaves the nonce to the caller. Green: `Finish` compares the nonce. Refactor: nothing worth changing.
-- [ ] 6. `Finish` refuses when the provider rejects the code: a wrong PKCE verifier, or a code used twice.
+- [x] 6. `Finish` refuses when the provider rejects the code: a wrong PKCE verifier, or a code used twice.
+  - Test `TestFinishRefusesWhenTheProviderRejectsTheCode`: wrong verifier passed straight away (the fake already checked PKCE); reused code failed (second Finish succeeded). Fix is in the fake: `oidctest` deletes a code when it is used. No production change; nothing to refactor.
 - [ ] 6b. `StartSignUp` adds `prompt=create` when the provider's discovery lists `create` in `prompt_values_supported`, and leaves it out otherwise (the fake gets a switch for it, and records the prompt it was sent).
 
 The core:

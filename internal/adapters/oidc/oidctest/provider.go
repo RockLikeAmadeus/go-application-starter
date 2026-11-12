@@ -145,7 +145,8 @@ func (p *Provider) serveAuthorize(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, back.String(), http.StatusFound)
 }
 
-// serveToken swaps a code for an ID token, if the client and PKCE verifier are right.
+// serveToken swaps a code for an ID token, if the client and PKCE verifier are
+// right and the code has not been used before.
 func (p *Provider) serveToken(w http.ResponseWriter, r *http.Request) {
 	id, secret, ok := r.BasicAuth()
 	if !ok {
@@ -156,7 +157,9 @@ func (p *Provider) serveToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p.mu.Lock()
-	g, found := p.grants[r.PostFormValue("code")]
+	code := r.PostFormValue("code")
+	g, found := p.grants[code]
+	delete(p.grants, code) // a code works once, even when the verifier is wrong
 	person, fault := p.person, p.fault
 	p.mu.Unlock()
 	sum := sha256.Sum256([]byte(r.PostFormValue("code_verifier")))

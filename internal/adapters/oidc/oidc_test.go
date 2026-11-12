@@ -199,3 +199,40 @@ func TestFinishRefusesAnIDTokenThatCannotBeTrusted(t *testing.T) {
 		})
 	}
 }
+
+func TestFinishRefusesWhenTheProviderRejectsTheCode(t *testing.T) {
+	t.Run("a wrong PKCE verifier", func(t *testing.T) {
+		p, fake := startedProvider(t)
+		fake.SetPerson(oidctest.Person{Subject: "ada-123", Name: "Ada Lovelace"})
+		authURL, attempt := p.Start()
+		back := authorize(t, authURL)
+		attempt.Verifier = "not-the-verifier-this-attempt-started-with"
+
+		identity, err := p.Finish(context.Background(), attempt, back.Get("code"))
+
+		if err == nil {
+			t.Fatalf("Finish succeeded with %+v", identity)
+		}
+		if identity != (domain.Identity{}) {
+			t.Errorf("Finish returned %+v along with its error", identity)
+		}
+	})
+	t.Run("a code used twice", func(t *testing.T) {
+		p, fake := startedProvider(t)
+		fake.SetPerson(oidctest.Person{Subject: "ada-123", Name: "Ada Lovelace"})
+		authURL, attempt := p.Start()
+		code := authorize(t, authURL).Get("code")
+		if _, err := p.Finish(context.Background(), attempt, code); err != nil {
+			t.Fatalf("first Finish: %v", err)
+		}
+
+		identity, err := p.Finish(context.Background(), attempt, code)
+
+		if err == nil {
+			t.Fatalf("second Finish succeeded with %+v", identity)
+		}
+		if identity != (domain.Identity{}) {
+			t.Errorf("second Finish returned %+v along with its error", identity)
+		}
+	})
+}
