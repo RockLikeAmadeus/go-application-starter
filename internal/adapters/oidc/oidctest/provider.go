@@ -54,10 +54,12 @@ type Provider struct {
 	key       *rsa.PrivateKey
 	discovery atomic.Int64
 
-	mu     sync.Mutex
-	person Person
-	fault  Fault
-	grants map[string]grant
+	mu           sync.Mutex
+	person       Person
+	fault        Fault
+	promptCreate bool
+	lastPrompt   string
+	grants       map[string]grant
 }
 
 // grant is what the provider remembers about an issued code.
@@ -104,12 +106,30 @@ func (p *Provider) SetFault(fault Fault) {
 	p.fault = fault
 }
 
+// SetPromptCreateSupported makes the discovery document list "create" in
+// prompt_values_supported, or not. Set it before the adapter discovers the provider.
+func (p *Provider) SetPromptCreateSupported(supported bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.promptCreate = supported
+}
+
+// LastPrompt is the prompt parameter of the latest authorization request, empty when it had none.
+func (p *Provider) LastPrompt() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.lastPrompt
+}
+
 // DiscoveryRequests counts the discovery documents the provider has served.
 func (p *Provider) DiscoveryRequests() int { return int(p.discovery.Load()) }
 
 func (p *Provider) serveDiscovery(w http.ResponseWriter, _ *http.Request) {
 	p.discovery.Add(1)
-	writeJSON(w, map[string]any{
+	p.mu.Lock()
+	promptCreate := p.promptCreate
+	p.mu.Unlock()
+	doc := map[string]any{
 		"issuer":                                p.Issuer(),
 		"authorization_endpoint":                p.Issuer() + "/authorize",
 		"token_endpoint":                        p.Issuer() + "/token",
@@ -117,7 +137,11 @@ func (p *Provider) serveDiscovery(w http.ResponseWriter, _ *http.Request) {
 		"response_types_supported":              []string{"code"},
 		"subject_types_supported":               []string{"public"},
 		"id_token_signing_alg_values_supported": []string{"RS256"},
-	})
+	}
+	if promptCreate {
+		doc["prompt_values_supported"] = []string{"none", "login", "create"}
+	}
+	writeJSON(w, doc)
 }
 
 func (p *Provider) serveKeys(w http.ResponseWriter, _ *http.Request) {
@@ -131,6 +155,7 @@ func (p *Provider) serveAuthorize(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	code := rand.Text()
 	p.mu.Lock()
+	p.lastPrompt = q.Get("prompt")
 	p.grants[code] = grant{nonce: q.Get("nonce"), challenge: q.Get("code_challenge")}
 	p.mu.Unlock()
 	back, err := url.Parse(q.Get("redirect_uri"))

@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"slices"
 
 	gooidc "github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
@@ -26,6 +27,9 @@ type Provider struct {
 	provider *gooidc.Provider
 	config   oauth2.Config
 	verifier *gooidc.IDTokenVerifier
+	// canPromptCreate is whether discovery lists the "create" prompt, which
+	// a provider that doesn't know it may refuse.
+	canPromptCreate bool
 }
 
 // New discovers the provider from its issuer.
@@ -34,8 +38,15 @@ func New(ctx context.Context, s Settings) (*Provider, error) {
 	if err != nil {
 		return nil, err
 	}
+	var discovered struct {
+		PromptValuesSupported []string `json:"prompt_values_supported"`
+	}
+	if err := p.Claims(&discovered); err != nil {
+		return nil, fmt.Errorf("reading the provider's discovery document: %w", err)
+	}
 	return &Provider{
-		provider: p,
+		canPromptCreate: slices.Contains(discovered.PromptValuesSupported, "create"),
+		provider:        p,
 		config: oauth2.Config{
 			ClientID:     s.ClientID,
 			ClientSecret: s.ClientSecret,
@@ -57,16 +68,20 @@ type Attempt struct {
 
 // Start begins a sign-in: the URL to send the person to, and the attempt to
 // keep until they return.
-func (p *Provider) Start() (string, Attempt) {
+func (p *Provider) Start() (string, Attempt) { return p.start() }
+
+// start builds the authorization URL, with any extra parameters.
+func (p *Provider) start(extra ...oauth2.AuthCodeOption) (string, Attempt) {
 	attempt := Attempt{
 		State:    rand.Text(),
 		Nonce:    rand.Text(),
 		Verifier: oauth2.GenerateVerifier(),
 	}
-	authURL := p.config.AuthCodeURL(attempt.State,
+	opts := append([]oauth2.AuthCodeOption{
 		gooidc.Nonce(attempt.Nonce),
 		oauth2.S256ChallengeOption(attempt.Verifier),
-	)
+	}, extra...)
+	authURL := p.config.AuthCodeURL(attempt.State, opts...)
 	return authURL, attempt
 }
 
@@ -105,4 +120,13 @@ func (p *Provider) Finish(ctx context.Context, attempt Attempt, code string) (do
 		Subject: idToken.Subject,
 		Name:    name,
 	}, nil
+}
+
+// StartSignUp begins a sign-in that opens at the provider's sign-up page, when
+// the provider says it has one (prompt=create). Otherwise it is Start.
+func (p *Provider) StartSignUp() (string, Attempt) {
+	if !p.canPromptCreate {
+		return p.start()
+	}
+	return p.start(oauth2.SetAuthURLParam("prompt", "create"))
 }
