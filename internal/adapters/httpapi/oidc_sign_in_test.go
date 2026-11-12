@@ -44,3 +44,13 @@ func TestStartingAnOIDCSignInKeepsTheAttemptInACookieAndGoesToTheProvider(t *tes
 		t.Errorf("cookie = %+v, want HttpOnly, SameSite=Lax, Path /auth/oidc, Max-Age 600, and the state and attempt as s1.opaque-attempt", cookie)
 	}
 }
+
+func TestSigningInWithAnOIDCProviderGoesToTheOIDCStart(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, SignInProvider: fakeSignInProvider{}})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/sign-in", nil))
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/oidc" {
+		t.Errorf("status = %d, Location = %q; want %d to /auth/oidc", rec.Code, rec.Header().Get("Location"), http.StatusFound)
+	}
+}
