@@ -75,7 +75,7 @@ The server (`internal/adapters/httpapi`):
 
 Wiring:
 - [x] 16. `bootstrap` with `sign_in = "oidc"` builds the OIDC adapter from the settings, against `oidctest.Provider`. Red: `TestNewEmbedded_WithOIDCSignInBuildsTheProviderFromTheSettings` (`App.SignInProvider` nil). Green: `NewEmbedded` calls `oidc.New`, exposing it as `App.SignInProvider` (an `httpapi.SignInProvider`). Refactor: nothing more worth changing.
-- [ ] 16b. An unreachable issuer fails at start, with a clear message (wording to agree).
+- [x] 16b. An unreachable issuer fails at start, with the agreed message. Red: `TestNewEmbedded_WithOIDCSignInAndAnUnreachableIssuerFailsWithAClearMessage` (raw error). Green: `NewEmbedded` wraps the `oidc.New` error (`%w`) in the agreed text. Refactor: nothing worth changing.
 - [ ] 17. `cmd/server`'s `handlerOptions` passes the provider and the public URL to `httpapi.Options`.
 
 Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample block):

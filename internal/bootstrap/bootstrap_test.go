@@ -658,3 +658,32 @@ func TestNewEmbedded_WithOIDCSignInBuildsTheProviderFromTheSettings(t *testing.T
 		t.Errorf("authorization URL = %q, want it to contain %q", authURL, want)
 	}
 }
+
+// With sign-in "oidc" and an issuer that cannot be reached, the app does not
+// start, and says which setting to check.
+func TestNewEmbedded_WithOIDCSignInAndAnUnreachableIssuerFailsWithAClearMessage(t *testing.T) {
+	closed := httptest.NewServer(nil)
+	issuer := closed.URL
+	closed.Close()
+
+	a, err := bootstrap.NewEmbedded(config.Config{
+		Storage:          config.StorageMemory,
+		SignIn:           config.SignInOIDC,
+		PublicURL:        "https://app.example.com",
+		OIDCIssuer:       issuer,
+		OIDCClientID:     "starter",
+		OIDCClientSecret: "secret",
+	})
+	if err == nil {
+		_ = a.Close()
+		t.Fatal("NewEmbedded error = nil, want one for the unreachable issuer")
+	}
+
+	want := fmt.Sprintf("The sign-in provider at %q could not be reached, or did not answer as an OpenID Connect provider. Please check that the oidc_issuer setting is the address of the sign-in provider, and that the provider is running. The error was: ", issuer)
+	if !strings.HasPrefix(err.Error(), want) {
+		t.Errorf("error = %q, want it to start with %q", err, want)
+	}
+	if errors.Unwrap(err) == nil {
+		t.Error("error wraps nothing, want the underlying error wrapped")
+	}
+}

@@ -103,7 +103,9 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 			RedirectURL:  strings.TrimRight(cfg.PublicURL, "/") + "/auth/oidc/callback",
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf(
+				"The sign-in provider at %q could not be reached, or did not answer as an OpenID Connect provider. Please check that the oidc_issuer setting is the address of the sign-in provider, and that the provider is running. The error was: %w",
+				cfg.OIDCIssuer, err)
 		}
 		a.SignInProvider = provider
 	}
