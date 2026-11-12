@@ -33,7 +33,7 @@ Each is one `/red` → `/green` → `/refactor` cycle.
 The OIDC adapter (`internal/adapters/oidc`):
 - [x] 1. `oidc.New` discovers the provider from its issuer. Adds go-oidc and x/oauth2 to the main `go.mod`, and starts `oidctest.Provider` with discovery and keys.
   - Red: `TestNewDiscoversTheProviderFromItsIssuer` failed with "New returned no provider". Green: `New` calls go-oidc's `NewProvider`. Refactor: nothing to change. Added the `oidctest-tests-only` depguard rule.
-- [ ] 1b. `oidc.New` fails for an unreachable issuer.
+- [x] 1b. `oidc.New` fails for an unreachable issuer. No red: go-oidc discovery already errors, so `TestNewFailsForAnUnreachableIssuer` is kept as a guard (the fake gained `Close`).
 - [ ] 2. `Start` returns the provider's authorization URL with the client ID, redirect URL, scopes, `state`, `nonce`, and an S256 PKCE challenge, and an `Attempt` holding them. Two starts share nothing.
 - [ ] 3. `Finish` swaps the code, sending the PKCE verifier and client secret, checks the ID token, and returns the identity (issuer, subject, `name`). The fake gains its authorize and token endpoints, with a person to sign in.
 - [ ] 4. The name falls back to `preferred_username`, then `email`, then the subject (table test).

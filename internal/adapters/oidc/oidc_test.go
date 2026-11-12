@@ -22,3 +22,17 @@ func TestNewDiscoversTheProviderFromItsIssuer(t *testing.T) {
 		t.Error("the provider's discovery document was never requested")
 	}
 }
+
+func TestNewFailsForAnUnreachableIssuer(t *testing.T) {
+	fake := oidctest.New(t)
+	issuer := fake.Issuer()
+	fake.Close()
+
+	p, err := oidc.New(context.Background(), oidc.Settings{Issuer: issuer})
+	if err == nil {
+		t.Fatal("New succeeded for an issuer that is down")
+	}
+	if p != nil {
+		t.Errorf("New returned a provider along with its error: %v", p)
+	}
+}

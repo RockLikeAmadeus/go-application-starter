@@ -41,6 +41,9 @@ func New(t testing.TB) *Provider {
 // Issuer is the provider's issuer URL.
 func (p *Provider) Issuer() string { return p.server.URL }
 
+// Close stops the provider before the test ends, to play a provider that is down.
+func (p *Provider) Close() { p.server.Close() }
+
 // DiscoveryRequests counts the discovery documents the provider has served.
 func (p *Provider) DiscoveryRequests() int { return int(p.discovery.Load()) }
 
