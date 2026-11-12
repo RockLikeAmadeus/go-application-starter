@@ -328,3 +328,38 @@ func listsSetting(settings []config.Setting, want config.Setting) bool {
 	}
 	return false
 }
+
+func TestOIDCSignInRefusesAMissingSettingNamingIt(t *testing.T) {
+	complete := map[string]string{
+		"STARTER_SIGN_IN":            "oidc",
+		"STARTER_PUBLIC_URL":         "https://app.example.com",
+		"STARTER_OIDC_ISSUER":        "https://accounts.example.com",
+		"STARTER_OIDC_CLIENT_ID":     "client-1",
+		"STARTER_OIDC_CLIENT_SECRET": "s3cret",
+	}
+	tests := []struct {
+		missing string
+		want    string
+	}{
+		{"STARTER_PUBLIC_URL", `The public_url setting is required when the sign-in setting is "oidc". Please set it to the address people reach this server at, such as https://app.example.com.`},
+		{"STARTER_OIDC_ISSUER", `The oidc_issuer setting is required when the sign-in setting is "oidc". Please set it to the address of the sign-in provider.`},
+		{"STARTER_OIDC_CLIENT_ID", `The oidc_client_id setting is required when the sign-in setting is "oidc". Please set it to the client ID the sign-in provider gave this server.`},
+		{"STARTER_OIDC_CLIENT_SECRET", `The oidc_client_secret setting is required when the sign-in setting is "oidc". Please set it to the client secret the sign-in provider gave this server.`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.missing, func(t *testing.T) {
+			env := map[string]string{}
+			for k, v := range complete {
+				if k != tc.missing {
+					env[k] = v
+				}
+			}
+
+			_, err := config.Load(config.Env{Getenv: envOf(env)}, "")
+
+			if err == nil || err.Error() != tc.want {
+				t.Errorf("error = %v, want %q", err, tc.want)
+			}
+		})
+	}
+}

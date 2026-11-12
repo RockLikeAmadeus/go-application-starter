@@ -198,6 +198,19 @@ func (c Config) Validate() error {
 	if c.SignIn != SignInOff && c.SignIn != SignInDev && c.SignIn != SignInOIDC {
 		return fmt.Errorf("The sign-in setting %q is not recognized. Please use %q, %q, or %q.", c.SignIn, SignInOff, SignInDev, SignInOIDC)
 	}
+	if c.SignIn == SignInOIDC {
+		required := []struct{ key, value, hint string }{
+			{"public_url", c.PublicURL, "the address people reach this server at, such as https://app.example.com"},
+			{"oidc_issuer", c.OIDCIssuer, "the address of the sign-in provider"},
+			{"oidc_client_id", c.OIDCClientID, "the client ID the sign-in provider gave this server"},
+			{"oidc_client_secret", c.OIDCClientSecret, "the client secret the sign-in provider gave this server"},
+		}
+		for _, setting := range required {
+			if setting.value == "" {
+				return fmt.Errorf("The %s setting is required when the sign-in setting is %q. Please set it to %s.", setting.key, SignInOIDC, setting.hint)
+			}
+		}
+	}
 	return nil
 }
 
