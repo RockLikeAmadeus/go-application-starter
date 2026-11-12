@@ -52,7 +52,8 @@ The core:
   - Red: `TestSignIn_WithAKnownIdentityWhoseNameChangedSavesTheNewName` showed the old name. Green: `accountFor` saves the identity's name when it differs. Refactor: nothing worth changing.
 
 Settings (`internal/config`):
-- [ ] 8. `sign_in = "oidc"` is accepted, with `public_url`, `oidc_issuer`, `oidc_client_id`, and `oidc_client_secret` (`STARTER_…`), left out of the settings file like `sign_in`.
+- [x] 8. `sign_in = "oidc"` is accepted, with `public_url`, `oidc_issuer`, `oidc_client_id`, and `oidc_client_secret` (`STARTER_…`), left out of the settings file like `sign_in`.
+  - Red: `TestOIDCSignInAndItsSettingsComeFromTheEnvironment` ("oidc" not recognized). Green: `SignInOIDC` and four fields, listed in `Settings()` (secret hidden), in `envVars`, `serverOnly`, and the docs table. The unknown-sign-in message now lists "oidc" too. Refactor: nothing worth changing.
 - [ ] 9. With `oidc`, a missing `public_url`, `oidc_issuer`, `oidc_client_id`, or `oidc_client_secret` is refused, naming the setting (wording to agree).
 - [ ] 10. A `public_url` that isn't an absolute `http://` or `https://` address is refused (wording to agree).
 

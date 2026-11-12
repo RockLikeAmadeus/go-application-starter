@@ -203,7 +203,7 @@ func TestAnUnknownLogFormatErrorReadsAsASentence(t *testing.T) {
 func TestAnUnknownSignInErrorReadsAsASentence(t *testing.T) {
 	_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_SIGN_IN": "google"})}, "")
 
-	want := `The sign-in setting "google" is not recognized. Please use "off" or "dev".`
+	want := `The sign-in setting "google" is not recognized. Please use "off", "dev", or "oidc".`
 	if err == nil || err.Error() != want {
 		t.Errorf("error = %v, want %q", err, want)
 	}
@@ -280,6 +280,42 @@ func TestSignInIsOffByDefaultOrDevFromTheSettingsFileOrEnvironment(t *testing.T)
 				t.Errorf("Settings() = %v, want sign_in = %q from %q", cfg.Settings(), c.want, c.wantFrom)
 			}
 		})
+	}
+}
+
+func TestOIDCSignInAndItsSettingsComeFromTheEnvironment(t *testing.T) {
+	cfg, err := config.Load(config.Env{Getenv: envOf(map[string]string{
+		"STARTER_SIGN_IN":            "oidc",
+		"STARTER_PUBLIC_URL":         "https://app.example.com",
+		"STARTER_OIDC_ISSUER":        "https://accounts.example.com",
+		"STARTER_OIDC_CLIENT_ID":     "client-1",
+		"STARTER_OIDC_CLIENT_SECRET": "s3cret",
+	})}, "")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	if cfg.SignIn != config.SignInOIDC {
+		t.Errorf("SignIn = %q, want %q", cfg.SignIn, config.SignInOIDC)
+	}
+	if cfg.PublicURL != "https://app.example.com" || cfg.OIDCIssuer != "https://accounts.example.com" ||
+		cfg.OIDCClientID != "client-1" || cfg.OIDCClientSecret != "s3cret" {
+		t.Errorf("settings = %q, %q, %q, %q", cfg.PublicURL, cfg.OIDCIssuer, cfg.OIDCClientID, cfg.OIDCClientSecret)
+	}
+	listed := map[string]any{}
+	for _, s := range cfg.Settings() {
+		listed[s.Key] = s.Value
+	}
+	want := map[string]any{
+		"public_url":         "https://app.example.com",
+		"oidc_issuer":        "https://accounts.example.com",
+		"oidc_client_id":     "client-1",
+		"oidc_client_secret": "(hidden)",
+	}
+	for key, value := range want {
+		if listed[key] != value {
+			t.Errorf("Settings() lists %s = %v, want %v", key, listed[key], value)
+		}
 	}
 }
 

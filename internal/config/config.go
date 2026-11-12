@@ -30,6 +30,8 @@ const (
 	// SignInDev signs people in by name alone, for development and tests
 	// (builds with the devsignin tag).
 	SignInDev SignInMode = "dev"
+	// SignInOIDC signs people in through an OpenID Connect provider.
+	SignInOIDC SignInMode = "oidc"
 )
 
 // IsOn says whether people sign in, which makes this the hosted edition. An
@@ -60,6 +62,18 @@ type Config struct {
 	// SignIn says how people sign in to this server, which makes it the
 	// hosted edition, or that they don't (sign_in; STARTER_SIGN_IN).
 	SignIn SignInMode
+	// PublicURL is the address people reach the server at, such as
+	// https://app.example.com (public_url; STARTER_PUBLIC_URL).
+	PublicURL string
+	// OIDCIssuer is the sign-in provider's address (oidc_issuer;
+	// STARTER_OIDC_ISSUER).
+	OIDCIssuer string
+	// OIDCClientID identifies this server to the provider (oidc_client_id;
+	// STARTER_OIDC_CLIENT_ID).
+	OIDCClientID string
+	// OIDCClientSecret proves it to the provider (oidc_client_secret;
+	// STARTER_OIDC_CLIENT_SECRET).
+	OIDCClientSecret string
 	// ShouldIgnoreSyncedFolder silences the warning that SQLite's data folder
 	// looks synced (ignore_synced_folder; STARTER_IGNORE_SYNCED_FOLDER).
 	ShouldIgnoreSyncedFolder bool
@@ -101,15 +115,19 @@ func Load(env Env, settingsFile string) (Config, error) {
 		return fallback
 	}
 	cfg := Config{
-		SettingsFile: settingsFile,
-		Sources:      sources,
-		Storage:      StorageBackend(setting("storage", string(StorageJSONFile))),
-		DataDir:      setting("data_dir", "./data"),
-		DatabaseURL:  setting("database_url", ""),
-		ServerURL:    setting("server_url", ""),
-		LogFormat:    setting("log_format", "text"),
-		PlansFile:    setting("plans_file", ""),
-		SignIn:       SignInMode(setting("sign_in", string(SignInOff))),
+		SettingsFile:     settingsFile,
+		Sources:          sources,
+		Storage:          StorageBackend(setting("storage", string(StorageJSONFile))),
+		DataDir:          setting("data_dir", "./data"),
+		DatabaseURL:      setting("database_url", ""),
+		ServerURL:        setting("server_url", ""),
+		LogFormat:        setting("log_format", "text"),
+		PlansFile:        setting("plans_file", ""),
+		SignIn:           SignInMode(setting("sign_in", string(SignInOff))),
+		PublicURL:        setting("public_url", ""),
+		OIDCIssuer:       setting("oidc_issuer", ""),
+		OIDCClientID:     setting("oidc_client_id", ""),
+		OIDCClientSecret: setting("oidc_client_secret", ""),
 	}
 	port, err := strconv.Atoi(setting("port", "8080"))
 	if err != nil {
@@ -146,6 +164,10 @@ func (c Config) Settings() []Setting {
 		{"log_format", c.LogFormat},
 		{"plans_file", c.PlansFile},
 		{"sign_in", string(c.SignIn)},
+		{"public_url", c.PublicURL},
+		{"oidc_issuer", c.OIDCIssuer},
+		{"oidc_client_id", c.OIDCClientID},
+		{"oidc_client_secret", hiddenIfSet(c.OIDCClientSecret)},
 		{"ignore_synced_folder", c.ShouldIgnoreSyncedFolder},
 	}
 	settings := make([]Setting, len(values))
@@ -173,8 +195,8 @@ func (c Config) Validate() error {
 	if c.LogFormat != "json" && c.LogFormat != "text" {
 		return fmt.Errorf("The log format setting %q is not recognized. Please use \"text\" or \"json\".", c.LogFormat)
 	}
-	if c.SignIn != SignInOff && c.SignIn != SignInDev {
-		return fmt.Errorf("The sign-in setting %q is not recognized. Please use %q or %q.", c.SignIn, SignInOff, SignInDev)
+	if c.SignIn != SignInOff && c.SignIn != SignInDev && c.SignIn != SignInOIDC {
+		return fmt.Errorf("The sign-in setting %q is not recognized. Please use %q, %q, or %q.", c.SignIn, SignInOff, SignInDev, SignInOIDC)
 	}
 	return nil
 }
@@ -196,6 +218,10 @@ var envVars = map[string]string{
 	"log_format":           "STARTER_LOG_FORMAT",
 	"plans_file":           "STARTER_PLANS_FILE",
 	"sign_in":              "STARTER_SIGN_IN",
+	"public_url":           "STARTER_PUBLIC_URL",
+	"oidc_issuer":          "STARTER_OIDC_ISSUER",
+	"oidc_client_id":       "STARTER_OIDC_CLIENT_ID",
+	"oidc_client_secret":   "STARTER_OIDC_CLIENT_SECRET",
 	"ignore_synced_folder": "STARTER_IGNORE_SYNCED_FOLDER",
 }
 
