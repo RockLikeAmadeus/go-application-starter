@@ -1,6 +1,7 @@
 package oidc
 
 import (
+	"cmp"
 	"context"
 	"crypto/rand"
 	"errors"
@@ -86,10 +87,18 @@ func (p *Provider) Finish(ctx context.Context, attempt Attempt, code string) (do
 		return domain.Identity{}, fmt.Errorf("checking the ID token: %w", err)
 	}
 	var claims struct {
-		Name string `json:"name"`
+		Name              string `json:"name"`
+		PreferredUsername string `json:"preferred_username"`
+		Email             string `json:"email"`
 	}
 	if err := idToken.Claims(&claims); err != nil {
 		return domain.Identity{}, fmt.Errorf("reading the ID token's claims: %w", err)
 	}
-	return domain.Identity{Issuer: idToken.Issuer, Subject: idToken.Subject, Name: claims.Name}, nil
+	// A provider that sends no name claim still gives the person something to be called.
+	name := cmp.Or(claims.Name, claims.PreferredUsername, claims.Email, idToken.Subject)
+	return domain.Identity{
+		Issuer:  idToken.Issuer,
+		Subject: idToken.Subject,
+		Name:    name,
+	}, nil
 }

@@ -140,3 +140,32 @@ func TestFinishSwapsTheCodeAndReturnsTheIdentity(t *testing.T) {
 		t.Errorf("identity = %+v, want %+v", identity, want)
 	}
 }
+
+func TestFinishNamesThePersonByTheBestClaimTheProviderSent(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		person oidctest.Person
+		want   string
+	}{
+		{"the name claim", oidctest.Person{Subject: "s1", Name: "Ada Lovelace", PreferredUsername: "ada", Email: "ada@example.com"}, "Ada Lovelace"},
+		{"the preferred username", oidctest.Person{Subject: "s1", PreferredUsername: "ada", Email: "ada@example.com"}, "ada"},
+		{"the email", oidctest.Person{Subject: "s1", Email: "ada@example.com"}, "ada@example.com"},
+		{"the subject", oidctest.Person{Subject: "s1"}, "s1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p, fake := startedProvider(t)
+			fake.SetPerson(tc.person)
+			authURL, attempt := p.Start()
+			back := authorize(t, authURL)
+
+			identity, err := p.Finish(context.Background(), attempt, back.Get("code"))
+
+			if err != nil {
+				t.Fatalf("Finish: %v", err)
+			}
+			if identity.Name != tc.want {
+				t.Errorf("name = %q, want %q", identity.Name, tc.want)
+			}
+		})
+	}
+}

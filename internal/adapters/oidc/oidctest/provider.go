@@ -29,8 +29,10 @@ const (
 
 // Person is who signs in at the fake provider.
 type Person struct {
-	Subject string
-	Name    string
+	Subject           string
+	Name              string
+	PreferredUsername string
+	Email             string
 }
 
 // Provider is a running fake provider with its own signing key.
@@ -142,13 +144,15 @@ func (p *Provider) serveToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	idToken, err := p.signIDToken(map[string]any{
-		"iss":   p.Issuer(),
-		"sub":   person.Subject,
-		"aud":   ClientID,
-		"exp":   time.Now().Add(time.Hour).Unix(),
-		"iat":   time.Now().Unix(),
-		"nonce": g.nonce,
-		"name":  person.Name,
+		"iss":                p.Issuer(),
+		"sub":                person.Subject,
+		"aud":                ClientID,
+		"exp":                time.Now().Add(time.Hour).Unix(),
+		"iat":                time.Now().Unix(),
+		"nonce":              g.nonce,
+		"name":               person.Name,
+		"preferred_username": person.PreferredUsername,
+		"email":              person.Email,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
