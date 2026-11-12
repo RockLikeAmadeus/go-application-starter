@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -386,32 +387,49 @@ func startHostedOIDC(t testing.TB) (*harness, error) {
 	srv := httptest.NewUnstartedServer(nil)
 	publicURL := "http://" + srv.Listener.Addr().String()
 	provider := oidctest.New(t)
-	signInProvider, err := oidc.New(context.Background(), oidc.Settings{
-		Issuer:       provider.Issuer(),
-		ClientID:     oidctest.ClientID,
-		ClientSecret: oidctest.ClientSecret,
-		RedirectURL:  publicURL + "/auth/oidc/callback",
-	})
-	if err != nil {
-		srv.Close()
-		return nil, err
-	}
+	provider.SetPromptCreateSupported(true)
+	sessions := memory.NewSessionRepository()
 	opts := httpapi.Options{
-		Entitlements:   h.entitlements,
-		SignIn:         h.newSignInService(h.accounts, memory.NewSessionRepository()),
-		SignInProvider: signInProvider,
-		PublicURL:      publicURL,
+		Entitlements: h.entitlements,
+		SignIn:       h.newSignInService(h.accounts, sessions),
+		PublicURL:    publicURL,
 	}
 	// sample:start
 	opts.Items = h.newItemService(memory.NewItemRepository(), workspace.FromContext{})
 	// sample:end
-	srv.Config.Handler = httpapi.NewHandler(opts)
+	// The server discovers the provider when it starts, so a scenario that
+	// changes the provider starts the handler again.
+	var handler atomic.Pointer[http.Handler]
+	useProvider := func() error {
+		signInProvider, err := oidc.New(context.Background(), oidc.Settings{
+			Issuer:       provider.Issuer(),
+			ClientID:     oidctest.ClientID,
+			ClientSecret: oidctest.ClientSecret,
+			RedirectURL:  publicURL + "/auth/oidc/callback",
+		})
+		if err != nil {
+			return err
+		}
+		opts.SignInProvider = signInProvider
+		next := httpapi.NewHandler(opts)
+		handler.Store(&next)
+		return nil
+	}
+	if err := useProvider(); err != nil {
+		srv.Close()
+		return nil, err
+	}
+	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		(*handler.Load()).ServeHTTP(w, r)
+	})
 	srv.Start()
 	h.cleanup = func() {
 		srv.Close()
 		provider.Close()
 	}
-	h.signIn = newOIDCSignInOverHTTP(h, srv.URL, provider)
+	signIn := newOIDCSignInOverHTTP(h, srv.URL, provider)
+	signIn.useProvider = useProvider
+	h.signIn = signIn
 	if err := h.driveOverHTTP(srv.URL); err != nil {
 		h.cleanup()
 		return nil, err

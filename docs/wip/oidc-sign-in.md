@@ -85,7 +85,7 @@ Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample 
   - Refactor: the cookie-jar browsers shared by the dev and OIDC sign-ins moved into `browsersOverHTTP`.
 - [x] 19. Steps for a name changed at the provider, and for another person with the same name. Red: both scenarios undefined. Green: two steps on the oidc driver (`signInAs` with a chosen person). Refactor: nothing worth changing.
 - [x] 20. Steps for cancelling at the provider, coming back without starting, being told signing in didn't work, and not being signed in. The "told" step recognises the page by its heading "Sign-in failed". Red: four scenario steps undefined. Green: four steps and an oidc driver `cancel`/`comeBackWithoutStarting`, which keep the last page. Refactor: `followRedirects` returns the page.
-- [ ] 20b. Steps for creating an account at the provider, which page the provider showed first, and a provider that can't start at sign-up.
+- [x] 20b. Steps for creating an account at the provider, which page the provider showed first, and a provider that can't start at sign-up. Red: four steps undefined. Green: four steps; the oidc driver starts with `prompt=create` supported and swaps its handler behind an `atomic.Pointer` so the Given can make the server discover the provider again. Refactor: nothing worth changing.
 
 The web app:
 - [ ] 21. `SignInScreen` shows a "Create an account" link to `/auth/sign-up` beside "Sign in" (Vitest, by role). Agree with the user whether "Please sign in to continue." should change, now that the screen also serves new people.

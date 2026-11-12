@@ -219,6 +219,9 @@ type oidcSignInOverHTTP struct {
 	provider *oidctest.Provider
 	// lastAnswer is the page the latest arrival at the server ended on.
 	lastAnswer answer
+	// useProvider makes the server talk to the provider as it now is, by
+	// discovering it again.
+	useProvider func() error
 }
 
 func newOIDCSignInOverHTTP(h *harness, baseURL string, provider *oidctest.Provider) *oidcSignInOverHTTP {
@@ -247,6 +250,32 @@ func (o *oidcSignInOverHTTP) signInAs(ctx context.Context, browserName string, p
 	}
 	o.provider.SetPerson(person)
 	return ctx, o.arrive(browser, o.baseURL+"/auth/sign-in")
+}
+
+// createAccount signs in person named name, by the server's sign-up route.
+func (o *oidcSignInOverHTTP) createAccount(ctx context.Context, name string) (context.Context, error) {
+	browser, err := o.browserFor(name)
+	if err != nil {
+		return ctx, err
+	}
+	o.provider.SetPerson(personNamed(name))
+	return ctx, o.arrive(browser, o.baseURL+"/auth/sign-up")
+}
+
+// cantStartAtSignUp makes the provider stop listing the sign-up prompt, and
+// the server discover it again, as it does when it starts.
+func (o *oidcSignInOverHTTP) cantStartAtSignUp() error {
+	o.provider.SetPromptCreateSupported(false)
+	return o.useProvider()
+}
+
+// showedFirst checks that the latest request the provider got asked for
+// prompt ("create" for its sign-up page, none for its sign-in page).
+func (o *oidcSignInOverHTTP) showedFirst(prompt string) error {
+	if got := o.provider.LastPrompt(); got != prompt {
+		return fmt.Errorf("the provider was asked with prompt %q, want %q", got, prompt)
+	}
+	return nil
 }
 
 // followRedirects gets address with browser and goes wherever the server and

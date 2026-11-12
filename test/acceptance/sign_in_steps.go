@@ -33,6 +33,10 @@ func (w *world) registerSignInSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^another person named "([^"]*)" signs in$`, w.anotherPersonNamedSignsIn)
 	sc.Step(`^I cancel signing in at the sign-in provider$`, w.iCancelSigningIn)
 	sc.Step(`^someone comes back from the sign-in provider without having started to sign in on this server$`, w.someoneComesBackWithoutStarting)
+	sc.Step(`^the sign-in provider can't start at its sign-up page$`, w.theProviderCantStartAtSignUp)
+	sc.Step(`^I create an account at the sign-in provider as "([^"]*)"$`, w.iCreateAnAccountAtTheProviderAs)
+	sc.Step(`^the sign-in provider showed me its sign-up page first$`, w.theProviderShowedMeItsSignUpPageFirst)
+	sc.Step(`^the sign-in provider showed me its sign-in page first$`, w.theProviderShowedMeItsSignInPageFirst)
 	sc.Step(`^(?:I am|they are) told that signing in didn't work$`, w.iAmToldSigningInDidntWork)
 	sc.Step(`^(?:I am|they are) not signed in$`, w.iAmNotSignedIn)
 	// sample:start
@@ -114,6 +118,38 @@ func (w *world) someoneComesBackWithoutStarting(ctx context.Context) (context.Co
 		return ctx, err
 	}
 	return o.comeBackWithoutStarting(ctx)
+}
+
+func (w *world) theProviderCantStartAtSignUp() error {
+	o, err := w.oidcSignIn()
+	if err != nil {
+		return err
+	}
+	return o.cantStartAtSignUp()
+}
+
+func (w *world) iCreateAnAccountAtTheProviderAs(ctx context.Context, name string) (context.Context, error) {
+	o, err := w.oidcSignIn()
+	if err != nil {
+		return ctx, err
+	}
+	return o.createAccount(ctx, name)
+}
+
+func (w *world) theProviderShowedMeItsSignUpPageFirst() error {
+	o, err := w.oidcSignIn()
+	if err != nil {
+		return err
+	}
+	return o.showedFirst("create")
+}
+
+func (w *world) theProviderShowedMeItsSignInPageFirst() error {
+	o, err := w.oidcSignIn()
+	if err != nil {
+		return err
+	}
+	return o.showedFirst("")
 }
 
 // signInFailedHeading is the heading of the page a refused sign-in answers.
