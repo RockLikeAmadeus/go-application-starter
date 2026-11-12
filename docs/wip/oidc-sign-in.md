@@ -48,7 +48,8 @@ The OIDC adapter (`internal/adapters/oidc`):
   - Red: `TestStartSignUpAsksForTheProvidersSignUpPageOnlyWhenItListsPromptCreate` (listed case sent no prompt). Green: `StartSignUp` and discovery's `prompt_values_supported`. Refactor: `Start` and `StartSignUp` share `start`; nothing else worth changing.
 
 The core:
-- [ ] 7. `SignIn` for a known identity whose name changed saves the new name, so `CurrentAccount` shows it. (Ticks the 8a loose end.)
+- [x] 7. `SignIn` for a known identity whose name changed saves the new name, so `CurrentAccount` shows it. (Ticks the 8a loose end.)
+  - Red: `TestSignIn_WithAKnownIdentityWhoseNameChangedSavesTheNewName` showed the old name. Green: `accountFor` saves the identity's name when it differs. Refactor: nothing worth changing.
 
 Settings (`internal/config`):
 - [ ] 8. `sign_in = "oidc"` is accepted, with `public_url`, `oidc_issuer`, `oidc_client_id`, and `oidc_client_secret` (`STARTER_…`), left out of the settings file like `sign_in`.

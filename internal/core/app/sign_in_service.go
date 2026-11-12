@@ -74,10 +74,17 @@ func (s *SignInService) SignOut(ctx context.Context, token string) error {
 
 // accountFor returns the identity's account, creating it and its personal
 // workspace the first time the identity signs in. The name isn't used to find
-// it, so a changed name still finds the same account.
+// it, so a changed name still finds the same account, and the provider's
+// current name is saved on it.
 func (s *SignInService) accountFor(ctx context.Context, identity domain.Identity) (domain.Account, error) {
 	account, err := s.accounts.FindByIdentity(ctx, identity)
 	if err == nil {
+		if account.Identity.Name != identity.Name {
+			account.Identity.Name = identity.Name
+			if err := s.accounts.Save(ctx, account); err != nil {
+				return domain.Account{}, fmt.Errorf("save account's new name: %w", err)
+			}
+		}
 		return account, nil
 	}
 	if !errors.Is(err, domain.ErrNotFound) {
