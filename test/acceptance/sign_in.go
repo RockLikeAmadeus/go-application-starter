@@ -11,6 +11,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient/apiclient"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc/oidctest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/system"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
@@ -30,6 +31,8 @@ type signInDriver interface {
 	signedInName(ctx context.Context) (string, error)
 	// signedOut returns ctx working as someone who hasn't signed in.
 	signedOut(ctx context.Context) (context.Context, error)
+	// identity is the identity that signing in as name gives the account.
+	identity(name string) (domain.Identity, error)
 }
 
 // devIdentity is the identity the dev sign-in gives name.
@@ -57,6 +60,8 @@ type directSignIn struct {
 	service ports.SignInService
 	token   string
 }
+
+func (d *directSignIn) identity(name string) (domain.Identity, error) { return devIdentity(name) }
 
 func (d *directSignIn) signIn(ctx context.Context, name string) (context.Context, error) {
 	identity, err := devIdentity(name)
@@ -102,10 +107,11 @@ func (d *directSignIn) inSessionsWorkspace(ctx context.Context) (context.Context
 	return workspace.WithID(ctx, account.WorkspaceID), nil
 }
 
-// devSignInOverHTTP signs in through the server's dev sign-in form, as a
-// browser does, keeping each account's session cookie in its own cookie
-// jar. The harness's driving ports send the current account's cookie.
-type devSignInOverHTTP struct {
+// browsersOverHTTP keeps each account's session cookie in its own cookie
+// jar, as separate browsers do, and points the harness's driving ports at
+// the server through the current one. A way of signing in over HTTP embeds
+// it and adds signIn and identity.
+type browsersOverHTTP struct {
 	h       *harness
 	baseURL string
 	// browsers holds a client, with its own cookie jar, for each name
@@ -114,8 +120,8 @@ type devSignInOverHTTP struct {
 	current  *http.Client
 }
 
-func newDevSignInOverHTTP(h *harness, baseURL string) *devSignInOverHTTP {
-	return &devSignInOverHTTP{h: h, baseURL: baseURL, browsers: map[string]*http.Client{}, current: newBrowser(nil)}
+func newBrowsersOverHTTP(h *harness, baseURL string) browsersOverHTTP {
+	return browsersOverHTTP{h: h, baseURL: baseURL, browsers: map[string]*http.Client{}, current: newBrowser(nil)}
 }
 
 // newBrowser returns a client keeping cookies in jar, or none when jar is
@@ -127,28 +133,35 @@ func newBrowser(jar http.CookieJar) *http.Client {
 	}
 }
 
-func (d *devSignInOverHTTP) signIn(ctx context.Context, name string) (context.Context, error) {
-	browser, ok := d.browsers[name]
+// browserFor returns the browser that signs in as name, with a new cookie
+// jar the first time.
+func (b *browsersOverHTTP) browserFor(name string) (*http.Client, error) {
+	browser, ok := b.browsers[name]
 	if !ok {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
-			return ctx, err
+			return nil, err
 		}
 		browser = newBrowser(jar)
-		d.browsers[name] = browser
+		b.browsers[name] = browser
 	}
-	if err := d.post(browser, "/auth/dev", url.Values{"name": {name}}); err != nil {
+	return browser, nil
+}
+
+func (b *browsersOverHTTP) signOut(ctx context.Context) (context.Context, error) {
+	resp, err := b.current.Post(b.baseURL+"/auth/sign-out", "", nil)
+	if err != nil {
 		return ctx, err
 	}
-	return ctx, d.use(browser)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		return ctx, fmt.Errorf("POST /auth/sign-out: status %d, want %d", resp.StatusCode, http.StatusSeeOther)
+	}
+	return ctx, nil
 }
 
-func (d *devSignInOverHTTP) signOut(ctx context.Context) (context.Context, error) {
-	return ctx, d.post(d.current, "/auth/sign-out", nil)
-}
-
-func (d *devSignInOverHTTP) signedInName(ctx context.Context) (string, error) {
-	sessions, err := httpclient.NewSessionService(d.baseURL, apiclient.WithHTTPClient(d.current))
+func (b *browsersOverHTTP) signedInName(ctx context.Context) (string, error) {
+	sessions, err := httpclient.NewSessionService(b.baseURL, apiclient.WithHTTPClient(b.current))
 	if err != nil {
 		return "", err
 	}
@@ -159,26 +172,95 @@ func (d *devSignInOverHTTP) signedInName(ctx context.Context) (string, error) {
 	return session.Name, nil
 }
 
-func (d *devSignInOverHTTP) signedOut(ctx context.Context) (context.Context, error) {
-	return ctx, d.use(newBrowser(nil))
-}
-
-// post posts form to path with browser, which the server answers by sending
-// it on to the web app.
-func (d *devSignInOverHTTP) post(browser *http.Client, path string, form url.Values) error {
-	resp, err := browser.PostForm(d.baseURL+path, form)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusSeeOther {
-		return fmt.Errorf("POST %s: status %d, want %d", path, resp.StatusCode, http.StatusSeeOther)
-	}
-	return nil
+func (b *browsersOverHTTP) signedOut(ctx context.Context) (context.Context, error) {
+	return ctx, b.use(newBrowser(nil))
 }
 
 // use points the harness's driving ports at the server through browser.
-func (d *devSignInOverHTTP) use(browser *http.Client) error {
-	d.current = browser
-	return d.h.driveOverHTTP(d.baseURL, apiclient.WithHTTPClient(browser))
+func (b *browsersOverHTTP) use(browser *http.Client) error {
+	b.current = browser
+	return b.h.driveOverHTTP(b.baseURL, apiclient.WithHTTPClient(browser))
+}
+
+// devSignInOverHTTP signs in through the server's dev sign-in form, as a
+// browser does.
+type devSignInOverHTTP struct {
+	browsersOverHTTP
+}
+
+func newDevSignInOverHTTP(h *harness, baseURL string) *devSignInOverHTTP {
+	return &devSignInOverHTTP{newBrowsersOverHTTP(h, baseURL)}
+}
+
+func (d *devSignInOverHTTP) identity(name string) (domain.Identity, error) { return devIdentity(name) }
+
+func (d *devSignInOverHTTP) signIn(ctx context.Context, name string) (context.Context, error) {
+	browser, err := d.browserFor(name)
+	if err != nil {
+		return ctx, err
+	}
+	resp, err := browser.PostForm(d.baseURL+"/auth/dev", url.Values{"name": {name}})
+	if err != nil {
+		return ctx, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		return ctx, fmt.Errorf("POST /auth/dev: status %d, want %d", resp.StatusCode, http.StatusSeeOther)
+	}
+	return ctx, d.use(browser)
+}
+
+// oidcSignInOverHTTP signs in through the server's OIDC sign-in, as a
+// browser does, at a fake sign-in provider that knows a person for each name.
+type oidcSignInOverHTTP struct {
+	browsersOverHTTP
+	provider *oidctest.Provider
+}
+
+func newOIDCSignInOverHTTP(h *harness, baseURL string, provider *oidctest.Provider) *oidcSignInOverHTTP {
+	return &oidcSignInOverHTTP{browsersOverHTTP: newBrowsersOverHTTP(h, baseURL), provider: provider}
+}
+
+// personNamed is who the fake provider signs in for name.
+func personNamed(name string) oidctest.Person {
+	return oidctest.Person{Subject: "subject-" + name, Name: name}
+}
+
+func (o *oidcSignInOverHTTP) identity(name string) (domain.Identity, error) {
+	person := personNamed(name)
+	return domain.NewIdentity(o.provider.Issuer(), person.Subject, person.Name)
+}
+
+func (o *oidcSignInOverHTTP) signIn(ctx context.Context, name string) (context.Context, error) {
+	browser, err := o.browserFor(name)
+	if err != nil {
+		return ctx, err
+	}
+	o.provider.SetPerson(personNamed(name))
+	if err := followRedirects(browser, o.baseURL+"/auth/sign-in"); err != nil {
+		return ctx, err
+	}
+	return ctx, o.use(browser)
+}
+
+// followRedirects gets address with browser and goes wherever the server and
+// the provider send it, until an answer that isn't a redirect.
+func followRedirects(browser *http.Client, address string) error {
+	const maxHops = 10
+	for range maxHops {
+		resp, err := browser.Get(address)
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
+		if resp.StatusCode < 300 || resp.StatusCode >= 400 {
+			return nil
+		}
+		next, err := resp.Location()
+		if err != nil {
+			return err
+		}
+		address = next.String()
+	}
+	return fmt.Errorf("GET %s: more than %d redirects", address, maxHops)
 }

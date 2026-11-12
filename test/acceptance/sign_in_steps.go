@@ -64,7 +64,7 @@ func (w *world) anAdminHasMovedTheAccountsWorkspace(ctx context.Context, name, p
 	if w.accounts == nil {
 		return errNoSignIn
 	}
-	identity, err := devIdentity(name)
+	identity, err := w.signIn.identity(name)
 	if err != nil {
 		return err
 	}

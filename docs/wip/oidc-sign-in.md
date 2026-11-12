@@ -80,7 +80,9 @@ Wiring:
 - [x] 17b. `NewEmbedded` sets `App.PublicURL` from the `public_url` setting. Red: `TestNewEmbedded_KeepsThePublicURLFromTheSettings` (got empty). Green: `NewEmbedded` copies `cfg.PublicURL`. Refactor: nothing worth changing.
 
 Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample block):
-- [ ] 18. The `oidc` driver, running `@sign-in` and `@sign-in-provider`, with the other drivers leaving out `@sign-in-provider`. The admin step finds the account by the driver's identity for a name. `sign-in.feature` passes on it.
+- [x] 18. The `oidc` driver, running `@sign-in` and `@sign-in-provider`, with the other drivers leaving out `@sign-in-provider`. The admin step finds the account by the driver's identity for a name. `sign-in.feature` passes on it.
+  - Red: `TestSignInProviderScenariosRunOnlyOnTheOIDCDriver` failed with no `oidc` driver. Green: the driver (`startHostedOIDC`, `oidcSignInOverHTTP`), `signInDriver.identity`, and `joinTags` splitting a driver's comma alternatives (godog's `,` binds looser than `&&`). `sign-in.feature` passes on it (6 scenarios).
+  - Refactor: the cookie-jar browsers shared by the dev and OIDC sign-ins moved into `browsersOverHTTP`.
 - [ ] 19. Steps for a name changed at the provider, and for another person with the same name.
 - [ ] 20. Steps for cancelling at the provider, coming back without starting, being told signing in didn't work, and not being signed in. The "told" step recognises the page by its heading "Sign-in failed".
 - [ ] 20b. Steps for creating an account at the provider, which page the provider showed first, and a provider that can't start at sign-up.

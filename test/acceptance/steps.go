@@ -100,7 +100,7 @@ func (w *world) iAmToldTheFieldIsInvalid(field string) error {
 
 // isSignInScenario is whether the scenario signs in (@sign-in).
 func isSignInScenario(scenario *godog.Scenario) bool {
-	return hasTag(scenario, "@sign-in")
+	return hasTag(scenario, "@sign-in") || hasTag(scenario, "@sign-in-provider")
 }
 
 // hasTag is whether the scenario, or its feature, has the tag.
@@ -133,7 +133,7 @@ func (w *world) workspaceNamed(name string) (domain.WorkspaceID, error) {
 	if _, err := w.signIn.signIn(context.Background(), name); err != nil {
 		return "", err
 	}
-	identity, err := devIdentity(name)
+	identity, err := w.signIn.identity(name)
 	if err != nil {
 		return "", err
 	}
