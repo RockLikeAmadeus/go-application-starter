@@ -54,6 +54,9 @@ type App struct {
 	// SignInProvider is the OIDC sign-in provider, discovered at start. It's
 	// nil unless sign_in is "oidc".
 	SignInProvider httpapi.SignInProvider
+	// PublicURL is the address people reach the server at (the public_url
+	// setting), for the server's handler.
+	PublicURL string
 	// Warnings are messages every front end shows the user as given, such
 	// as SQLite's data folder looking synced, or a conflict copy in plain text.
 	Warnings []string

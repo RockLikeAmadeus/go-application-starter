@@ -76,7 +76,8 @@ The server (`internal/adapters/httpapi`):
 Wiring:
 - [x] 16. `bootstrap` with `sign_in = "oidc"` builds the OIDC adapter from the settings, against `oidctest.Provider`. Red: `TestNewEmbedded_WithOIDCSignInBuildsTheProviderFromTheSettings` (`App.SignInProvider` nil). Green: `NewEmbedded` calls `oidc.New`, exposing it as `App.SignInProvider` (an `httpapi.SignInProvider`). Refactor: nothing more worth changing.
 - [x] 16b. An unreachable issuer fails at start, with the agreed message. Red: `TestNewEmbedded_WithOIDCSignInAndAnUnreachableIssuerFailsWithAClearMessage` (raw error). Green: `NewEmbedded` wraps the `oidc.New` error (`%w`) in the agreed text. Refactor: nothing worth changing.
-- [ ] 17. `cmd/server`'s `handlerOptions` passes the provider and the public URL to `httpapi.Options`.
+- [x] 17. `cmd/server`'s `handlerOptions` passes the provider and the public URL to `httpapi.Options`. Red: `TestTheServerServesTheSignInProviderBehindAnHTTPSPublicURL` (no redirect, no cookie; `App.PublicURL` added so it compiles). Green: `handlerOptions` copies `SignInProvider` and `PublicURL`. Refactor: nothing worth changing.
+- [ ] 17b. `NewEmbedded` sets `App.PublicURL` from the `public_url` setting.
 
 Acceptance (`test/acceptance`; run `task test:init`, as the driver has a sample block):
 - [ ] 18. The `oidc` driver, running `@sign-in` and `@sign-in-provider`, with the other drivers leaving out `@sign-in-provider`. The admin step finds the account by the driver's identity for a name. `sign-in.feature` passes on it.
@@ -96,6 +97,7 @@ The web app:
   - Remove the `@wip` tags, mark step 8b done in the plan, tick the "changed name" loose end, and delete this file.
 
 ## Changes to the plan
+- 2026-11-12: split task 17 (`handlerOptions` passing the provider and public URL, then `NewEmbedded` setting `App.PublicURL`), one test each.
 - 2026-11-12: split task 16 (building the adapter, then the unreachable issuer's message), as the message is user-facing text to agree first.
 - 2026-11-12: split task 15 (the session cookie, then the attempt cookie), one test each.
 - 2026-11-12: added "Create an account" (SPEC.md §4.18's new rule and example, 2 scenarios, and tasks 6b, 14b, 20b, 21, and 22). The user found that nothing covered someone new, and wants a link that goes straight to the provider's sign-up page. The browser journey is written by task 22, not here: playwright-bdd stops the whole suite while a step is undefined, so `task e2e` would fail on the branch until then (8a did the same). Docs and finish became task 23.
