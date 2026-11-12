@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi/openapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
@@ -31,7 +32,7 @@ func sessionMiddleware(signIn ports.SignInService, next http.Handler) http.Handl
 // setSessionCookie gives the browser the session's token in a cookie that
 // page scripts can't read (HttpOnly) and other sites' links and forms don't
 // send, except top-level navigation (SameSite=Lax).
-func setSessionCookie(w http.ResponseWriter, r *http.Request, token string) {
+func setSessionCookie(w http.ResponseWriter, r *http.Request, publicURL, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionCookie,
 		Value:    token,
@@ -39,8 +40,14 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(domain.SessionLifetime.Seconds()),
-		Secure:   r.TLS != nil,
+		Secure:   isSecure(r, publicURL),
 	})
+}
+
+// isSecure says whether cookies should be marked Secure: the request came over
+// TLS, or the public URL is https:// (a proxy may end TLS before the server).
+func isSecure(r *http.Request, publicURL string) bool {
+	return r.TLS != nil || strings.HasPrefix(publicURL, "https://")
 }
 
 // clearSessionCookie tells the browser to forget the session cookie at once

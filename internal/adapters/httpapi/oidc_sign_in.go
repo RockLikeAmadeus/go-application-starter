@@ -53,7 +53,7 @@ func oidcStart(start func() (authURL, state, attempt string)) http.HandlerFunc {
 // oidcCallback answers GET /auth/oidc/callback: it finishes the attempt kept in
 // the cookie with the provider's code, signs the person in, and goes to the web
 // app.
-func oidcCallback(log *slog.Logger, provider SignInProvider, signIn ports.SignInService) http.HandlerFunc {
+func oidcCallback(log *slog.Logger, provider SignInProvider, signIn ports.SignInService, publicURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Whatever the outcome, the attempt is over.
 		clearAttemptCookie(w)
@@ -85,7 +85,7 @@ func oidcCallback(log *slog.Logger, provider SignInProvider, signIn ports.SignIn
 			writeProblem(w, problemFor(err))
 			return
 		}
-		setSessionCookie(w, r, token)
+		setSessionCookie(w, r, publicURL, token)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }

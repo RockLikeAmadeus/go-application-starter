@@ -103,6 +103,15 @@ func TestTheSessionCookieIsSecureOnlyOverHTTPS(t *testing.T) {
 	}
 }
 
+func TestTheSessionCookieIsSecureOverPlainHTTPWithAnHTTPSPublicURL(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{token: "token-ada"}, IsDevSignInOn: true, PublicURL: "https://app.example.com"})
+	rec := postDevSignInTo(handler, "http://example.com/auth/dev", "Ada")
+
+	if cookie := sessionCookieOf(t, rec); !cookie.Secure {
+		t.Errorf("cookie = %+v, want Secure behind an https:// public URL", cookie)
+	}
+}
+
 func TestTheDevSignInFormAsksForANameAndPostsToTheDevSignIn(t *testing.T) {
 	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
 	rec := httptest.NewRecorder()

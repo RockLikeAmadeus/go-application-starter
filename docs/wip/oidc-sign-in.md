@@ -70,7 +70,8 @@ The server (`internal/adapters/httpapi`):
   - Red: `TestACallbackThatCannotBeTrustedAnswersTheSignInFailedPageAndLogsTheCause` got 500 or a 303 sign-in. Green: `oidcCallback` takes the logger, compares the state with `crypto/subtle`, and fails with the page and a logged cause. Refactor: nothing worth changing.
 - [x] 14b. With OIDC, `GET /auth/sign-up` goes to `/auth/oidc/sign-up`, which sets the attempt cookie and redirects to `StartSignUp`'s URL. Red: both tests got 200 (no routes); green: `StartSignUp` on `SignInProvider`, `oidcStart` takes the start func. Refactor: nothing more worth changing.
 - [x] 14c. With the dev sign-in, `GET /auth/sign-up` goes to `/auth/dev`. `/auth/` is already in the service worker's `navigateFallbackDenylist`, so nothing changes there. Red: status 200, no redirect; green: one route in the dev block. Refactor: nothing worth changing.
-- [ ] 15. With an `https://` public URL, the session and attempt cookies are `Secure` over plain HTTP. (Ticks the TODO.md item.)
+- [x] 15. With an `https://` public URL, the session cookie is `Secure` over plain HTTP. Red: `TestTheSessionCookieIsSecureOverPlainHTTPWithAnHTTPSPublicURL` (cookie not Secure). Green: `Options.PublicURL` and `isSecure`. Refactor: nothing more worth changing.
+- [ ] 15b. The same for the attempt cookie (`oidcStart` should use `isSecure` too). (Ticks the TODO.md item.)
 
 Wiring:
 - [ ] 16. `bootstrap` with `sign_in = "oidc"` builds the OIDC adapter from the settings, against `oidctest.Provider`, and an unreachable issuer fails at start (wording to agree).
@@ -94,6 +95,7 @@ The web app:
   - Remove the `@wip` tags, mark step 8b done in the plan, tick the "changed name" loose end, and delete this file.
 
 ## Changes to the plan
+- 2026-11-12: split task 15 (the session cookie, then the attempt cookie), one test each.
 - 2026-11-12: added "Create an account" (SPEC.md §4.18's new rule and example, 2 scenarios, and tasks 6b, 14b, 20b, 21, and 22). The user found that nothing covered someone new, and wants a link that goes straight to the provider's sign-up page. The browser journey is written by task 22, not here: playwright-bdd stops the whole suite while a step is undefined, so `task e2e` would fail on the branch until then (8a did the same). Docs and finish became task 23.
 - 2026-11-12: split task 1 (discovery, then the unreachable issuer), as each needs its own test.
 - 2026-11-12: split task 11 (the attempt cookie and redirect, then `/auth/sign-in` going to `/auth/oidc`), one test each.

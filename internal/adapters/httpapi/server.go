@@ -41,6 +41,9 @@ type Options struct {
 	IsDevSignInOn bool
 	// SignInProvider serves the OIDC sign-in under /auth/oidc. It needs SignIn.
 	SignInProvider SignInProvider
+	// PublicURL is the address people reach the server at. When it starts with
+	// https://, cookies are Secure even over plain HTTP (a proxy ended TLS).
+	PublicURL string
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and
@@ -86,14 +89,14 @@ func NewHandler(opts Options) http.Handler {
 		mux.HandleFunc("GET /auth/sign-in", signInGoesTo("/auth/dev"))
 		mux.HandleFunc("GET /auth/sign-up", signInGoesTo("/auth/dev"))
 		mux.HandleFunc("GET /auth/dev", devSignInForm)
-		mux.Handle("POST /auth/dev", devSignIn(opts.SignIn))
+		mux.Handle("POST /auth/dev", devSignIn(opts.SignIn, opts.PublicURL))
 	}
 	if opts.SignInProvider != nil {
 		mux.HandleFunc("GET /auth/sign-in", signInGoesTo("/auth/oidc"))
 		mux.HandleFunc("GET /auth/sign-up", signInGoesTo("/auth/oidc/sign-up"))
 		mux.HandleFunc("GET /auth/oidc", oidcStart(opts.SignInProvider.Start))
 		mux.HandleFunc("GET /auth/oidc/sign-up", oidcStart(opts.SignInProvider.StartSignUp))
-		mux.HandleFunc("GET /auth/oidc/callback", oidcCallback(log, opts.SignInProvider, opts.SignIn))
+		mux.HandleFunc("GET /auth/oidc/callback", oidcCallback(log, opts.SignInProvider, opts.SignIn, opts.PublicURL))
 	}
 	if opts.SignIn != nil {
 		mux.Handle("POST /auth/sign-out", signOut(opts.SignIn))
