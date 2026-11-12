@@ -6,10 +6,17 @@ Every piece of data belongs to a **workspace**, and a request only ever sees or 
 
 ## How it works
 
-```
-driving adapter ──► use case ──► WorkspaceResolver.CurrentWorkspace(ctx) ──► workspace
- (HTTP, CLI, …)        │                                                       │
-                       └──────────► repository.FindAll(ctx, workspace) ◄───────┘
+```mermaid
+sequenceDiagram
+    participant A as Driving adapter (HTTP, CLI, …)
+    participant U as Use case
+    participant W as WorkspaceResolver
+    participant R as Repository
+    A->>U: call the use case
+    U->>W: CurrentWorkspace(ctx)
+    W-->>U: workspace
+    U->>R: FindAll(ctx, workspace)
+    R-->>U: that workspace's records only
 ```
 
 1. **A use case asks for the current workspace** through a driven port, `ports.WorkspaceResolver`. It never reads the context itself, and a driving adapter never passes a workspace as a parameter. The one exception is `ChangePlan` ([`docs/billing.md`](billing.md)), where an admin or a payment provider acts on someone else's workspace.

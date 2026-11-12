@@ -10,22 +10,20 @@ The app comes in two editions, from the same core ([ADR 5](docs/adr/0005-hosted-
 It ships as a working *walking skeleton*: one tiny `Item` domain wired end to end through every layer, tested at every level, and deployable from CI.
 <!-- sample:end -->
 
+```mermaid
+flowchart TD
+    spa["React SPA"] -->|HTTP| api["httpapi adapter"]
+    remote["CLI / TUI<br>(--server mode)"] -->|HTTP| api
+    native["Desktop / Android"] -->|"in-process, no port"| api
+    api --> driving["driving ports"]
+    embedded["CLI / TUI<br>(embedded mode)"] --> driving
+    driving --> core["core (domain + app)"]
+    core --> driven["driven ports"]
+    driven --> memory & jsonfile & sqlite & postgres
 ```
- React SPA ──HTTP──┐
- CLI / TUI ──HTTP──┤ (--server mode)
-                   ▼
-            httpapi adapter ──► driving ports ◄── CLI / TUI (embedded mode)
-                   ▲                   │
- Desktop / Android ┘              core (domain + app)
- (in-process, no port)                 │
-                               driven ports
-                           ┌──────────┼──────────┬──────────┐
-                        memory    jsonfile    sqlite     postgres
 
- Local edition:  CLI / TUI embedded, desktop and Android apps, a self-hosted server
- Hosted edition: the web app on a hosted server with sign-in (the dev sign-in today),
-                 plus the CLI / TUI and the desktop and Android apps connected to it (planned)
-```
+- **Local edition:** the CLI and TUI in embedded mode, the desktop and Android apps, and a self-hosted server.
+- **Hosted edition:** the web app on a hosted server with sign-in, which is the dev sign-in today. Connecting the CLI, the TUI, and the desktop and Android apps to it is planned.
 
 ## Prerequisites
 

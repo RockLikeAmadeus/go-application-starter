@@ -14,13 +14,15 @@ With sign-in off, every copy is the local edition. Then `bootstrap.NewBilling` r
 
 ## The concepts
 
-```
-Stripe webhook ─────┐
-Paddle webhook ─────┼──► ports.BillingService.ChangePlan(workspace, plan) ──► WorkspacePlanRepository
-starter admin ──────┘             │                                                     │
-                                  └── ports.PlanCatalog: does the plan exist?           │
-                                                                                        ▼
-use cases ◄── EntitlementsProvider ◄── plans.Provider ◄── plans.StoredPlanOf ◄── the stored plan
+```mermaid
+flowchart TD
+    stripe["Stripe webhook"] --> change
+    paddle["Paddle webhook"] --> change
+    admin["starter admin"] --> change
+    change["ports.BillingService.ChangePlan(workspace, plan)"] -->|"does the plan exist?"| catalog["ports.PlanCatalog"]
+    change --> repo["WorkspacePlanRepository"] --> stored["the stored plan"]
+    stored --> storedOf["plans.StoredPlanOf"] --> provider["plans.Provider"]
+    provider --> entitlements["EntitlementsProvider"] --> usecases["use cases"]
 ```
 
 - **A plan is a name in the plans file** (`internal/adapters/plans/plans.jsonc`). It sets a workspace's limits and features. It knows nothing about prices. `docs/features.md` covers features, and `.claude/rules/workspaces-and-plans.md` covers limits.
