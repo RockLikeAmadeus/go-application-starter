@@ -34,7 +34,7 @@ type SignInProvider interface {
 // oidcStart answers GET /auth/oidc and GET /auth/oidc/sign-up: it begins an
 // attempt with start (the provider's Start or StartSignUp), keeps it in a
 // cookie, and sends the browser to the provider.
-func oidcStart(start func() (authURL, state, attempt string)) http.HandlerFunc {
+func oidcStart(start func() (authURL, state, attempt string), publicURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authURL, state, attempt := start()
 		// Lax still sends the cookie on the provider's top-level redirect back.
@@ -45,6 +45,7 @@ func oidcStart(start func() (authURL, state, attempt string)) http.HandlerFunc {
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   int(attemptLifetime.Seconds()),
+			Secure:   isSecure(r, publicURL),
 		})
 		http.Redirect(w, r, authURL, http.StatusFound)
 	}

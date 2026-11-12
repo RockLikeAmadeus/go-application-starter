@@ -221,3 +221,20 @@ func TestACallbackThatCannotBeTrustedAnswersTheSignInFailedPageAndLogsTheCause(t
 		})
 	}
 }
+
+func TestTheAttemptCookieIsSecureOverPlainHTTPWithAnHTTPSPublicURL(t *testing.T) {
+	provider := fakeSignInProvider{url: "https://provider.example/authorize", state: "s1", attempt: "opaque-attempt"}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, SignInProvider: provider, PublicURL: "https://app.example.com"})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "http://example.com/auth/oidc", nil))
+
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == httpapi.AttemptCookie {
+			if !c.Secure {
+				t.Errorf("cookie = %+v, want Secure behind an https:// public URL", c)
+			}
+			return
+		}
+	}
+	t.Fatalf("no %q cookie in %v", httpapi.AttemptCookie, rec.Result().Header.Values("Set-Cookie"))
+}

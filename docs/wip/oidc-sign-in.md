@@ -71,7 +71,7 @@ The server (`internal/adapters/httpapi`):
 - [x] 14b. With OIDC, `GET /auth/sign-up` goes to `/auth/oidc/sign-up`, which sets the attempt cookie and redirects to `StartSignUp`'s URL. Red: both tests got 200 (no routes); green: `StartSignUp` on `SignInProvider`, `oidcStart` takes the start func. Refactor: nothing more worth changing.
 - [x] 14c. With the dev sign-in, `GET /auth/sign-up` goes to `/auth/dev`. `/auth/` is already in the service worker's `navigateFallbackDenylist`, so nothing changes there. Red: status 200, no redirect; green: one route in the dev block. Refactor: nothing worth changing.
 - [x] 15. With an `https://` public URL, the session cookie is `Secure` over plain HTTP. Red: `TestTheSessionCookieIsSecureOverPlainHTTPWithAnHTTPSPublicURL` (cookie not Secure). Green: `Options.PublicURL` and `isSecure`. Refactor: nothing more worth changing.
-- [ ] 15b. The same for the attempt cookie (`oidcStart` should use `isSecure` too). (Ticks the TODO.md item.)
+- [x] 15b. The same for the attempt cookie (`oidcStart` should use `isSecure` too). (Ticks the TODO.md item.) Red: `TestTheAttemptCookieIsSecureOverPlainHTTPWithAnHTTPSPublicURL` (cookie not Secure). Green: `oidcStart` takes the public URL and sets `Secure` with `isSecure`. Refactor: nothing more worth changing.
 
 Wiring:
 - [ ] 16. `bootstrap` with `sign_in = "oidc"` builds the OIDC adapter from the settings, against `oidctest.Provider`, and an unreachable issuer fails at start (wording to agree).
