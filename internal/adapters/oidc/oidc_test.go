@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"net/http"
 	"net/url"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc/oidctest"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 func TestNewDiscoversTheProviderFromItsIssuer(t *testing.T) {
@@ -45,8 +47,8 @@ func startedProvider(t *testing.T) (*oidc.Provider, *oidctest.Provider) {
 	fake := oidctest.New(t)
 	p, err := oidc.New(context.Background(), oidc.Settings{
 		Issuer:       fake.Issuer(),
-		ClientID:     "the-client",
-		ClientSecret: "the-secret",
+		ClientID:     oidctest.ClientID,
+		ClientSecret: oidctest.ClientSecret,
 		RedirectURL:  "https://app.example.com/auth/oidc/callback",
 	})
 	if err != nil {
@@ -70,7 +72,7 @@ func TestStartGivesTheAuthorizationURLAndAnAttemptHoldingItsSecrets(t *testing.T
 	q := u.Query()
 	for key, want := range map[string]string{
 		"response_type":         "code",
-		"client_id":             "the-client",
+		"client_id":             oidctest.ClientID,
 		"redirect_uri":          "https://app.example.com/auth/oidc/callback",
 		"scope":                 "openid profile email",
 		"state":                 attempt.State,
@@ -100,5 +102,41 @@ func TestTwoStartsShareNothing(t *testing.T) {
 
 	if a.State == b.State || a.Nonce == b.Nonce || a.Verifier == b.Verifier {
 		t.Errorf("two attempts share a secret: %+v and %+v", a, b)
+	}
+}
+
+// authorize plays the browser: it opens the authorization URL at the fake
+// provider and returns the code (and state) it sends the person back with.
+func authorize(t *testing.T, authURL string) url.Values {
+	t.Helper()
+	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	resp, err := client.Get(authURL)
+	if err != nil {
+		t.Fatalf("opening the authorization URL: %v", err)
+	}
+	defer resp.Body.Close()
+	back, err := url.Parse(resp.Header.Get("Location"))
+	if err != nil || back.Query().Get("code") == "" {
+		t.Fatalf("the provider sent no code back: status %d, Location %q", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	return back.Query()
+}
+
+func TestFinishSwapsTheCodeAndReturnsTheIdentity(t *testing.T) {
+	p, fake := startedProvider(t)
+	fake.SetPerson(oidctest.Person{Subject: "ada-123", Name: "Ada Lovelace"})
+	authURL, attempt := p.Start()
+	back := authorize(t, authURL)
+
+	identity, err := p.Finish(context.Background(), attempt, back.Get("code"))
+
+	if err != nil {
+		t.Fatalf("Finish: %v", err)
+	}
+	want := domain.Identity{Issuer: fake.Issuer(), Subject: "ada-123", Name: "Ada Lovelace"}
+	if identity != want {
+		t.Errorf("identity = %+v, want %+v", identity, want)
 	}
 }

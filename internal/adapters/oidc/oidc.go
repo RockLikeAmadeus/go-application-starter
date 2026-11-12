@@ -3,9 +3,13 @@ package oidc
 import (
 	"context"
 	"crypto/rand"
+	"errors"
+	"fmt"
 
 	gooidc "github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 // Settings says which provider to sign in through, and as which client.
@@ -20,6 +24,7 @@ type Settings struct {
 type Provider struct {
 	provider *gooidc.Provider
 	config   oauth2.Config
+	verifier *gooidc.IDTokenVerifier
 }
 
 // New discovers the provider from its issuer.
@@ -37,6 +42,7 @@ func New(ctx context.Context, s Settings) (*Provider, error) {
 			Endpoint:     p.Endpoint(),
 			Scopes:       []string{gooidc.ScopeOpenID, "profile", "email"},
 		},
+		verifier: p.Verifier(&gooidc.Config{ClientID: s.ClientID}),
 	}, nil
 }
 
@@ -61,4 +67,29 @@ func (p *Provider) Start() (string, Attempt) {
 		oauth2.S256ChallengeOption(attempt.Verifier),
 	)
 	return authURL, attempt
+}
+
+// Finish completes a sign-in: it swaps the code for tokens, sending the
+// attempt's PKCE verifier, checks the ID token, and returns who the provider
+// says signed in.
+func (p *Provider) Finish(ctx context.Context, attempt Attempt, code string) (domain.Identity, error) {
+	token, err := p.config.Exchange(ctx, code, oauth2.VerifierOption(attempt.Verifier))
+	if err != nil {
+		return domain.Identity{}, fmt.Errorf("swapping the code: %w", err)
+	}
+	raw, ok := token.Extra("id_token").(string)
+	if !ok {
+		return domain.Identity{}, errors.New("the provider sent no ID token")
+	}
+	idToken, err := p.verifier.Verify(ctx, raw)
+	if err != nil {
+		return domain.Identity{}, fmt.Errorf("checking the ID token: %w", err)
+	}
+	var claims struct {
+		Name string `json:"name"`
+	}
+	if err := idToken.Claims(&claims); err != nil {
+		return domain.Identity{}, fmt.Errorf("reading the ID token's claims: %w", err)
+	}
+	return domain.Identity{Issuer: idToken.Issuer, Subject: idToken.Subject, Name: claims.Name}, nil
 }

@@ -36,7 +36,8 @@ The OIDC adapter (`internal/adapters/oidc`):
 - [x] 1b. `oidc.New` fails for an unreachable issuer. No red: go-oidc discovery already errors, so `TestNewFailsForAnUnreachableIssuer` is kept as a guard (the fake gained `Close`).
 - [x] 2. `Start` returns the provider's authorization URL with the client ID, redirect URL, scopes, `state`, `nonce`, and an S256 PKCE challenge, and an `Attempt` holding them. Two starts share nothing.
   - Red: `TestStartGivesTheAuthorizationURLAndAnAttemptHoldingItsSecrets` and `TestTwoStartsShareNothing` (empty URL and attempt). Green: `Start` uses `oauth2.Config.AuthCodeURL` with `rand.Text`, `GenerateVerifier`; `Settings` gained the client ID, secret, and redirect URL. Refactor: nothing worth changing.
-- [ ] 3. `Finish` swaps the code, sending the PKCE verifier and client secret, checks the ID token, and returns the identity (issuer, subject, `name`). The fake gains its authorize and token endpoints, with a person to sign in.
+- [x] 3. `Finish` swaps the code, sending the PKCE verifier and client secret, checks the ID token, and returns the identity (issuer, subject, `name`). The fake gains its authorize and token endpoints, with a person to sign in.
+  - Red: `TestFinishSwapsTheCodeAndReturnsTheIdentity` (empty identity). Green: `Finish` does `Exchange` with `VerifierOption`, then verifies the ID token and reads `name`; the fake has `/authorize`, `/token` (checks client and PKCE), `SetPerson`, `ClientID`/`ClientSecret`. Refactor: nothing worth changing. The nonce isn't checked yet (task 5).
 - [ ] 4. The name falls back to `preferred_username`, then `email`, then the subject (table test).
 - [ ] 5. `Finish` refuses an ID token signed with another key, meant for another client, expired, from another issuer, or with another nonce (table test; the fake's misbehaviour switches).
 - [ ] 6. `Finish` refuses when the provider rejects the code: a wrong PKCE verifier, or a code used twice.
