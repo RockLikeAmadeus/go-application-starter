@@ -279,3 +279,39 @@ func TestIssueSignInCode_KeepsTheCodesHashForTheSessionsAccountAndReturnsTheCode
 		t.Errorf("kept code = %v, want %v", got, want)
 	}
 }
+
+func TestIssueSignInCode_RefusesAnUnknownOrExpiredSessionAndKeepsNoCode(t *testing.T) {
+	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
+	ada := domain.Account{
+		ID:          "account-1",
+		Identity:    domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"},
+		WorkspaceID: "workspace-1",
+	}
+	expired := domain.NewSession("token-ada", ada.ID, now.Add(-domain.SessionLifetime))
+	tests := []struct {
+		name     string
+		sessions testsupport.StoredSessions
+	}{
+		{"unknown session", testsupport.StoredSessions{}},
+		{"expired session", testsupport.StoredSessions{expired.TokenHash: expired}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			codes := memory.NewSignInCodeRepository()
+			svc := app.NewSignInService(testsupport.StoredAccounts{ada.ID: ada}, tt.sessions, codes, testsupport.FixedToken("code-1"),
+				testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(now))
+
+			code, err := svc.IssueSignInCode(context.Background(), "token-ada", "challenge-1")
+
+			if !errors.Is(err, domain.ErrNoWorkspace) {
+				t.Errorf("err = %v, want %v", err, domain.ErrNoWorkspace)
+			}
+			if code != "" {
+				t.Errorf("code = %q, want none", code)
+			}
+			if _, err := codes.Take(context.Background(), domain.HashSignInCode("code-1")); !errors.Is(err, domain.ErrNotFound) {
+				t.Errorf("Take: err = %v, want %v (no code kept)", err, domain.ErrNotFound)
+			}
+		})
+	}
+}

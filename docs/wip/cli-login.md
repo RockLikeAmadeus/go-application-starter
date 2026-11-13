@@ -30,7 +30,8 @@
    - Red: `RunSignInCodeRepositoryContract` on memory failed (stub's Take found nothing). Green: `ports.SignInCodeRepository` (Save, Take), `memory.SignInCodeRepository`, `SignInCode.CodeHash` and `HashSignInCode` in `domain`. Refactor: nothing worth changing. Task 4 sets `CodeHash` when issuing.
 4. [x] App: `SignInService.IssueSignInCode(ctx, sessionToken, challenge)` stores the code's hash for the session's account and returns the code.
    - Red: `TestIssueSignInCode_KeepsTheCodesHashForTheSessionsAccountAndReturnsTheCode` failed (stub returned no code, nothing kept). Green: `IssueSignInCode` in `app/sign_in_service.go`, via `CurrentAccount`; `NewSignInService` takes a `SignInCodeRepository` (nil in callers that don't issue codes; bootstrap wires it in task 7). Not on `ports.SignInService` yet: the httpapi tasks add it. Refactor: nothing worth changing.
-4b. [ ] App: `IssueSignInCode` refuses an unknown or expired session (`ErrNoWorkspace`) and keeps no code.
+4b. [x] App: `IssueSignInCode` refuses an unknown or expired session (`ErrNoWorkspace`) and keeps no code.
+   - No red: `TestIssueSignInCode_RefusesAnUnknownOrExpiredSessionAndKeepsNoCode` passed at once, as task 4's `CurrentAccount` call already refuses both; kept as a guard (it fails when that check is removed). No green. Refactor: nothing worth changing.
 5. [ ] App: `RedeemSignInCode(ctx, code, verifier)` returns a new session token for the code's account.
 6. [ ] App: redeeming refuses a code used before, a wrong verifier, and an expired code (one test each, table if natural).
 7. [ ] sqlstore: migration and repository for sign-in codes; the contract suite passes on SQLite and Postgres; bootstrap wires the repository with the hosted storage.
