@@ -34,7 +34,7 @@ func devSignInForm(w http.ResponseWriter, _ *http.Request) {
 
 // devSignIn answers POST /auth/dev: it signs in as the form's name (the name
 // is also the subject, so one name is one account), sets the session cookie,
-// and goes to the web app.
+// and goes to the "return" path, else the web app.
 func devSignIn(signIn ports.SignInService, publicURL string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
@@ -49,6 +49,6 @@ func devSignIn(signIn ports.SignInService, publicURL string) http.Handler {
 			return
 		}
 		setSessionCookie(w, r, publicURL, token)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, returnPath(r), http.StatusSeeOther)
 	})
 }

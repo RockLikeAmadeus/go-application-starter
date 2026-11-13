@@ -2,6 +2,8 @@ package httpapi
 
 import (
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
@@ -28,4 +30,20 @@ func signOut(signIn ports.SignInService) http.Handler {
 		clearSessionCookie(w)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
+}
+
+// returnPath is where to send the browser after it signs in: the request's
+// "return" value when it is a path on this server, else the web app. Anything
+// else (another site's address, a protocol-relative "//host", a backslash
+// that browsers read as a slash, or a control character such as a tab, which
+// browsers drop from addresses and url.Parse refuses) would let a link make the sign-in an open
+// redirect.
+func returnPath(r *http.Request) string {
+	path := r.FormValue("return")
+	parsed, err := url.Parse(path)
+	if err != nil || parsed.Scheme != "" || parsed.Host != "" ||
+		!strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.HasPrefix(path, `/\`) {
+		return "/"
+	}
+	return path
 }

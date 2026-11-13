@@ -156,3 +156,22 @@ func TestSigningUpWithTheDevSignInGoesToTheDevSignIn(t *testing.T) {
 		t.Errorf("status = %d, Location = %q; want %d to /auth/dev", rec.Code, rec.Header().Get("Location"), http.StatusFound)
 	}
 }
+
+func TestTheDevSignInReturnsToALocalReturnPathAndIgnoresAnyOther(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{token: "token-ada"}, IsDevSignInOn: true})
+	for returnTo, want := range map[string]string{
+		"/auth/native/finish?x=1": "/auth/native/finish?x=1",
+		"https://evil.example/":   "/",
+		"//evil.example/":         "/",
+		`/\evil.example/`:         "/",
+		"relative":                "/",
+		"/\t/evil.example":        "/",
+		"/\n/evil.example":        "/",
+		"":                        "/",
+	} {
+		rec := postDevSignInTo(handler, "/auth/dev?return="+url.QueryEscape(returnTo), "Ada")
+		if got := rec.Header().Get("Location"); rec.Code != http.StatusSeeOther || got != want {
+			t.Errorf("return=%q: status = %d, Location = %q; want %d to %q", returnTo, rec.Code, got, http.StatusSeeOther, want)
+		}
+	}
+}

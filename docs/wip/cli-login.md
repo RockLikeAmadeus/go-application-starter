@@ -42,7 +42,10 @@
    - Red: `TestABearerTokenPutsItsAccountsWorkspaceInTheRequestAheadOfTheCookie` failed (the cookie won: ws-b). Green: `sessionToken` in `httpapi/session.go` reads the bearer, else the cookie; an invalid bearer is not replaced by the cookie. Refactor: nothing worth changing.
 9. [x] httpapi: `POST /auth/sign-out` ends a bearer session (no cookie involved), and passes the cross-origin check without `Origin`.
    - Red: `TestSigningOutWithABearerTokenEndsThatSessionWithNoCookieOrOrigin` failed (nothing signed out; the cross-origin half already held). Green: `signOut` reads `sessionToken`. Refactor: nothing worth changing.
-10. [ ] httpapi: the sign-in routes (dev and OIDC) return to a `return` path after signing in; anything but a local path is ignored.
+10. [x] httpapi: `POST /auth/dev` returns to a `return` path after signing in; anything but a local path is ignored.
+   - Red: `TestTheDevSignInReturnsToALocalReturnPathAndIgnoresAnyOther` failed (always `/`). Green: `returnPath` in `httpapi/sign_in.go`, used by `devSignIn`. Refactor: nothing worth changing. Task 10 was split (see "Changes to the plan"). Task 10c will reuse `returnPath`.
+10b. [ ] httpapi: `GET /auth/sign-in` and the dev sign-in form pass `return` on to the dev sign-in (a hidden field).
+10c. [ ] httpapi: the OIDC sign-in keeps `return` through the provider trip and the callback goes there.
 11. [ ] httpapi: `GET /auth/native` checks the loopback port, `state`, and challenge, keeps them in a short-lived cookie, and sends the browser to sign in, returning to `/auth/native/finish` (straight there when already signed in). Bad parameters answer 400.
 12. [ ] httpapi: `GET /auth/native/finish` issues a code for the browser's session and redirects to `http://127.0.0.1:<port>/callback?code=…&state=…`; no attempt cookie or no session is refused.
 13. [ ] httpapi: `POST /auth/native/token` swaps a code and verifier for a session token (JSON); a refused swap answers 400 without saying why.
@@ -75,3 +78,4 @@
 ## Changes to the plan
 - 2026-11-13: the terminal app signs in and out by itself (the user's request), rather than sending people to `starter login`. Signing in and out moved out of the CLI into a shared client-side package, `httpclient` asks a token source per request, and tasks 30–35 and two terminal journeys were added. No server picker in the TUI (agreed).
 - 2026-11-13: task 4 split: 4 issues a code, 4b refuses an unknown or expired session (one test each).
+- 2026-11-13: task 10 split: 10 `POST /auth/dev` honours `return`, 10b the dev form and `/auth/sign-in` carry it, 10c OIDC does.
