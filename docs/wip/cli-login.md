@@ -67,7 +67,8 @@
    - Review fix: `TestNativeFinishWhenTheCodeCannotBeIssuedFailsWithoutRedirecting` failed (redirected with an empty code); `nativeFinish` now answers `problemFor(err)` (a 500 for an unexpected error).
 13. [x] httpapi: `POST /auth/native/token` swaps a code and verifier for a session token (JSON); a refused swap answers 400 without saying why.
    - Red: `TestNativeTokenSwapsACodeAndVerifierForASessionTokenAndRefusesAnyOtherWithoutSayingWhy` failed (the SPA fallback answered 200). Green: `nativeToken` in `httpapi/native_sign_in.go`: JSON `{code, verifier}` in, `{token}` out, no cookie; `ErrNotFound` or a bad body is a bare 400 with an empty body (no text to agree), other errors a problem; `RedeemSignInCode` added to `ports.SignInService`. Refactor: nothing worth changing.
-14. [ ] Browser sign-in adapter (named per `naming.md`, no Cobra or Wails import): listens on `127.0.0.1:0`, makes the state and verifier, builds the `/auth/native` URL, and hands it to an opener.
+14. [x] Browser sign-in adapter (named per `naming.md`, no Cobra or Wails import): listens on `127.0.0.1:0`, makes the state and verifier, builds the `/auth/native` URL, and hands it to an opener.
+   - Red: `TestStart_ListensOnALoopbackPortAndHandsTheNativeSignInAddressToTheOpener` failed (the stub opened nothing). Green: package `browsersignin` (`internal/adapters/browsersignin`): `Start(ctx, serverURL, open)` returns an `Attempt` (state and verifier kept for task 15, `Close`). Refactor: nothing worth changing.
 15. [ ] Browser sign-in adapter: the callback with the right state answers a page saying to return to the terminal, and the adapter swaps the code for the token; a wrong state is refused and the wait goes on; the context ends the wait.
 16. [ ] Token store: the file store (JSON in the settings folder, 0600, keyed by the normalised server URL): save, read, delete.
 17. [ ] Token store: the keyring store (go-keyring, `MockInit` in tests), same contract as the file store.
