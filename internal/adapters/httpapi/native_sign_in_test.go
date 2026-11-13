@@ -104,3 +104,20 @@ func TestAGoodNativeSignInRequestWithNoSessionIsKeptInACookieAndSentToSignIn(t *
 		t.Errorf("cookie path = %q, HttpOnly = %v, MaxAge = %d; want /auth/native, HttpOnly, a lifetime", cookie.Path, cookie.HttpOnly, cookie.MaxAge)
 	}
 }
+
+func TestAGoodNativeSignInRequestWithASessionGoesStraightToFinish(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{
+		SignIn:        sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}},
+		IsDevSignInOn: true,
+	})
+	query := url.Values{"port": {"4000"}, "state": {validState}, "challenge": {validChallenge}}
+	req := httptest.NewRequest(http.MethodGet, "/auth/native?"+query.Encode(), nil)
+	req.AddCookie(&http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/native/finish" {
+		t.Errorf("status = %d, location = %q; want %d, /auth/native/finish",
+			rec.Code, rec.Header().Get("Location"), http.StatusFound)
+	}
+}

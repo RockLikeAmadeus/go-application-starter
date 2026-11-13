@@ -54,7 +54,8 @@
    - Red: `TestABadNativeSignInRequestIsRefusedListingEveryFailingValue` failed (no route, status 200). Green: `nativeSignIn` in `httpapi/native_sign_in.go`, registered with sign-in on. A state is 16 to 128 base64url characters; a challenge exactly 43. Wording agreed with the user. Refactor: comment only. Task 11 was split (see "Changes to the plan").
 11b. [x] httpapi: `GET /auth/native` with good parameters, not signed in, keeps them in a short-lived cookie (`native_sign_in`, path `/auth/native`) and redirects to `/auth/sign-in?return=/auth/native/finish`.
    - Red: `TestAGoodNativeSignInRequestWithNoSessionIsKeptInACookieAndSentToSignIn` failed (status 200, no cookie). Green: `nativeSignIn(publicURL)` sets `NativeSignInCookie` (query-encoded port, state, challenge; 10 minutes) and redirects. Refactor: nothing worth changing. 11c adds the session check.
-11c. [ ] httpapi: `GET /auth/native` with good parameters and a session redirects straight to `/auth/native/finish`.
+11c. [x] httpapi: `GET /auth/native` with good parameters and a session redirects straight to `/auth/native/finish`.
+   - Red: `TestAGoodNativeSignInRequestWithASessionGoesStraightToFinish` failed (redirected to sign-in). Green: `startNativeSignIn` redirects to `/auth/native/finish` when `accountFrom` finds a session (the attempt cookie is still set, as finish reads it). Refactor: nothing worth changing.
 12. [ ] httpapi: `GET /auth/native/finish` issues a code for the browser's session and redirects to `http://127.0.0.1:<port>/callback?code=…&state=…`; no attempt cookie or no session is refused.
 13. [ ] httpapi: `POST /auth/native/token` swaps a code and verifier for a session token (JSON); a refused swap answers 400 without saying why.
 14. [ ] Browser sign-in adapter (named per `naming.md`, no Cobra or Wails import): listens on `127.0.0.1:0`, makes the state and verifier, builds the `/auth/native` URL, and hands it to an opener.
