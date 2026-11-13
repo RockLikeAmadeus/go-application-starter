@@ -26,6 +26,15 @@ type SessionReader interface {
 	CurrentSession(ctx context.Context) (Session, error)
 }
 
+// SessionNotEndedError is what SignOut returns when the server did not confirm
+// ending the session but the token was forgotten all the same. Cause is the
+// server's error.
+type SessionNotEndedError struct{ Cause error }
+
+func (e *SessionNotEndedError) Error() string { return e.Cause.Error() }
+
+func (e *SessionNotEndedError) Unwrap() error { return e.Cause }
+
 // Where a token can be kept, as TokenKept and a TokenStore's Save name it.
 const (
 	// KeptInCredentialStore is the operating system's credential store.
@@ -102,8 +111,14 @@ func (c *Client) SignIn(ctx context.Context, open func(address string) error) (R
 }
 
 // SignOut ends the server session and forgets the token. It forgets the token
-// even when the server can't end the session, and returns every error.
+// even when the server can't end the session. When only the server fails, the
+// error is a *SessionNotEndedError; when forgetting fails, it holds that error
+// too, and is not one.
 func (c *Client) SignOut(ctx context.Context) error {
 	endErr := c.ender.EndSession(ctx)
-	return errors.Join(endErr, c.store.Forget())
+	forgetErr := c.store.Forget()
+	if forgetErr == nil && endErr != nil {
+		return &SessionNotEndedError{Cause: endErr}
+	}
+	return errors.Join(endErr, forgetErr)
 }

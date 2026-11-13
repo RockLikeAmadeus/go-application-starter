@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
@@ -33,6 +34,13 @@ func newLogoutCmd(loadConfig func() (config.Config, error), newSignIn SignInFact
 				return err
 			}
 			if err := client.SignOut(cmd.Context()); err != nil {
+				var notEnded *clientsignin.SessionNotEndedError
+				if errors.As(err, &notEnded) {
+					return fmt.Errorf("Signed out of %s on this computer only: the session token was removed from this computer, "+
+						"but the server did not confirm that it ended the session (%w). "+
+						"The session may remain valid on the server until it expires, after a fixed lifetime for security purposes.",
+						cfg.ServerURL, notEnded.Cause)
+				}
 				return err
 			}
 			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Signed out of %s. The server ended the session, "+

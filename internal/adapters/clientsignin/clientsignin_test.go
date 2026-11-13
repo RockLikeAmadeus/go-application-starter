@@ -25,6 +25,7 @@ type fakeServer struct {
 	endError     error
 	wasEnded     bool
 	wasForgotten bool
+	forgetError  error
 }
 
 func (f *fakeServer) EndSession(context.Context) error {
@@ -34,7 +35,7 @@ func (f *fakeServer) EndSession(context.Context) error {
 
 func (f *fakeServer) Forget() error {
 	f.wasForgotten = true
-	return nil
+	return f.forgetError
 }
 
 func (f *fakeServer) CurrentSession(context.Context) (clientsignin.Session, error) {
@@ -114,6 +115,36 @@ func TestSignOut_EndsTheServerSessionAndForgetsTheTokenEvenWhenTheServerFails(t 
 			}
 			if !errors.Is(err, endError) {
 				t.Errorf("SignOut error = %v, want %v", err, endError)
+			}
+		})
+	}
+}
+
+// When the server fails but the token is forgotten, SignOut says so with a
+// named error, so a client can tell it from a token that couldn't be
+// forgotten, which is not that error.
+func TestSignOut_TellsAServerFailureWithTheTokenForgottenFromAForgetFailure(t *testing.T) {
+	serverDown := errors.New("server unreachable")
+	locked := errors.New("credential store locked")
+	for name, tc := range map[string]struct {
+		server  *fakeServer
+		wantNot bool
+	}{
+		"token forgotten":       {&fakeServer{endError: serverDown}, false},
+		"token not forgotten":   {&fakeServer{endError: serverDown, forgetError: locked}, true},
+		"only forgetting fails": {&fakeServer{forgetError: locked}, true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			client := clientsignin.New(tc.server, tc.server, tc.server, tc.server)
+
+			err := client.SignOut(context.Background())
+
+			var notEnded *clientsignin.SessionNotEndedError
+			if got := errors.As(err, &notEnded); got == tc.wantNot {
+				t.Errorf("SignOut error = %v, is SessionNotEndedError = %v, want %v", err, got, !tc.wantNot)
+			}
+			if !tc.wantNot && !errors.Is(err, serverDown) {
+				t.Errorf("SignOut error = %v, want it to wrap the server's error", err)
 			}
 		})
 	}

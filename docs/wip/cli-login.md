@@ -136,9 +136,10 @@
 27c. [x] CLI: `starter logout` signs out and prints the success message.
    - Red: `TestLogoutEndsTheSessionForgetsTheTokenAndSaysSo` failed (no output, nothing ended). Green: `newLogoutCmd` takes the `SignInFactory`, calls `Client.SignOut`, prints the agreed text. Refactor: nothing worth changing. Errors are returned as they are until 27d.
    - Agreed text (stdout): "Signed out of <url>. The server ended the session, and the session token was removed from this computer. Run starter login to sign in again."
-27d. [ ] CLI: `starter logout` where the server failed or could not be reached, but the token was removed, prints a message and exits non-zero.
+27d. [x] CLI: `starter logout` where the server failed or could not be reached, but the token was removed, prints a message and exits non-zero.
    - Agreed text (stderr, non-zero exit): "Signed out of <url> on this computer only: the session token was removed from this computer, but the server did not confirm that it ended the session (<server error>). The session may remain valid on the server until it expires, after a fixed lifetime for security purposes."
    - A token that could not be removed: a plain `starter: <error>`, with no agreed text.
+   - Red: `TestSignOut_TellsAServerFailureWithTheTokenForgottenFromAForgetFailure` failed (plain error), then `TestLogoutSaysWhenOnlyThisComputerWasSignedOutAndReportsATokenThatStaysAsItIs` failed (the server's error as it was). Green: `clientsignin.SessionNotEndedError{Cause}` returned by `SignOut` only when the server failed and the token was forgotten (a forget failure stays a joined plain error); `logout` words it with the agreed text. Refactor: nothing worth changing.
 28. [ ] CLI: `starter info` with a server says who is signed in there, or that no one is.
 29. [ ] CLI: a request refused for want of sign-in tells the user to run `starter login`.
 30. [ ] TUI: on a server with sign-in on and no session, it shows the signed-out screen with the sign-in key; on local data or with sign-in off, no sign-in or sign-out key.

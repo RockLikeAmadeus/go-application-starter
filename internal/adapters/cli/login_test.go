@@ -212,10 +212,12 @@ func TestLoginPrintsTheAddressWhenTheBrowserCannotOpenAndKeepsWaiting(t *testing
 type signOutPieces struct {
 	isSessionEnded bool
 	isTokenGone    bool
+	endError       error
+	forgetError    error
 }
 
-func (p *signOutPieces) EndSession(context.Context) error { p.isSessionEnded = true; return nil }
-func (p *signOutPieces) Forget() error                    { p.isTokenGone = true; return nil }
+func (p *signOutPieces) EndSession(context.Context) error { p.isSessionEnded = true; return p.endError }
+func (p *signOutPieces) Forget() error                    { p.isTokenGone = true; return p.forgetError }
 func (p *signOutPieces) Save(string) (string, error)      { return "", nil }
 
 // Signing out ends the session on the server, forgets the token, and says
@@ -241,5 +243,47 @@ func TestLogoutEndsTheSessionForgetsTheTokenAndSaysSo(t *testing.T) {
 	}
 	if !pieces.isSessionEnded || !pieces.isTokenGone {
 		t.Errorf("session ended = %v, token gone = %v, want both", pieces.isSessionEnded, pieces.isTokenGone)
+	}
+}
+
+// When the server fails or can't be reached, the token is still removed, and
+// logout says that the session may remain valid on the server, ending with a
+// failing status. A token that can't be removed is reported as it is.
+func TestLogoutSaysWhenOnlyThisComputerWasSignedOutAndReportsATokenThatStaysAsItIs(t *testing.T) {
+	for name, tc := range map[string]struct {
+		pieces *signOutPieces
+		want   string
+	}{
+		"server fails": {
+			&signOutPieces{endError: errors.New("connection refused")},
+			"Signed out of https://starter.example.com on this computer only: the session token was removed from this computer, " +
+				"but the server did not confirm that it ended the session (connection refused). " +
+				"The session may remain valid on the server until it expires, after a fixed lifetime for security purposes.",
+		},
+		"token stays": {
+			&signOutPieces{forgetError: errors.New("keyring locked")},
+			"keyring locked",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			newSignIn := func(config.Config) (*clientsignin.Client, func(string) error, error) {
+				return clientsignin.New(nil, tc.pieces, nil, tc.pieces), func(string) error { return nil }, nil
+			}
+			var out bytes.Buffer
+			cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(t.TempDir(), nil), &out)
+			cmd.SetArgs([]string{"--storage", "memory", "--server", "https://starter.example.com", "logout"})
+
+			err := cmd.ExecuteContext(context.Background())
+
+			if err == nil || err.Error() != tc.want {
+				t.Errorf("logout error = %v, want %q", err, tc.want)
+			}
+			if out.Len() != 0 {
+				t.Errorf("logout output = %q, want nothing", out.String())
+			}
+			if !tc.pieces.isTokenGone {
+				t.Error("logout did not forget the token")
+			}
+		})
 	}
 }
