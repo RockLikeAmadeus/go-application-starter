@@ -44,7 +44,9 @@
    - Red: `TestSigningOutWithABearerTokenEndsThatSessionWithNoCookieOrOrigin` failed (nothing signed out; the cross-origin half already held). Green: `signOut` reads `sessionToken`. Refactor: nothing worth changing.
 10. [x] httpapi: `POST /auth/dev` returns to a `return` path after signing in; anything but a local path is ignored.
    - Red: `TestTheDevSignInReturnsToALocalReturnPathAndIgnoresAnyOther` failed (always `/`). Green: `returnPath` in `httpapi/sign_in.go`, used by `devSignIn`. Refactor: nothing worth changing. Task 10 was split (see "Changes to the plan"). Task 10c will reuse `returnPath`.
-10b. [ ] httpapi: `GET /auth/sign-in` and the dev sign-in form pass `return` on to the dev sign-in (a hidden field).
+10b. [x] httpapi: `GET /auth/sign-in` passes a local `return` path on to the dev sign-in.
+   - Red: `TestSignInPassesALocalReturnPathOnToTheDevSignInAndDropsAnyOther` failed (`return` dropped). Green: `signInGoesTo` appends the sanitised `return` (via `returnPath`) to the adapter path; this also covers `/auth/sign-up`'s and OIDC's first hop. Refactor: nothing worth changing. Task 10b was split (see "Changes to the plan").
+10b2. [ ] httpapi: the dev sign-in form carries `return` on as a hidden field (`GET /auth/dev?return=…`).
 10c. [ ] httpapi: the OIDC sign-in keeps `return` through the provider trip and the callback goes there.
 11. [ ] httpapi: `GET /auth/native` checks the loopback port, `state`, and challenge, keeps them in a short-lived cookie, and sends the browser to sign in, returning to `/auth/native/finish` (straight there when already signed in). Bad parameters answer 400.
 12. [ ] httpapi: `GET /auth/native/finish` issues a code for the browser's session and redirects to `http://127.0.0.1:<port>/callback?code=…&state=…`; no attempt cookie or no session is refused.
@@ -79,3 +81,4 @@
 - 2026-11-13: the terminal app signs in and out by itself (the user's request), rather than sending people to `starter login`. Signing in and out moved out of the CLI into a shared client-side package, `httpclient` asks a token source per request, and tasks 30–35 and two terminal journeys were added. No server picker in the TUI (agreed).
 - 2026-11-13: task 4 split: 4 issues a code, 4b refuses an unknown or expired session (one test each).
 - 2026-11-13: task 10 split: 10 `POST /auth/dev` honours `return`, 10b the dev form and `/auth/sign-in` carry it, 10c OIDC does.
+- 2026-11-13: task 10b split: 10b `GET /auth/sign-in` passes `return` on, 10b2 the dev form carries it in a hidden field.

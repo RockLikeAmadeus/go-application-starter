@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
@@ -16,6 +17,22 @@ func TestSignInGoesToTheDevSignInWhenItIsOn(t *testing.T) {
 
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/dev" {
 		t.Errorf("status = %d, Location = %q; want %d to %q", rec.Code, rec.Header().Get("Location"), http.StatusFound, "/auth/dev")
+	}
+}
+
+func TestSignInPassesALocalReturnPathOnToTheDevSignInAndDropsAnyOther(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	for returnTo, want := range map[string]string{
+		"/auth/native/finish?x=1": "/auth/dev?return=" + url.QueryEscape("/auth/native/finish?x=1"),
+		"https://evil.example/":   "/auth/dev",
+		"//evil.example/":         "/auth/dev",
+		"":                        "/auth/dev",
+	} {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/sign-in?return="+url.QueryEscape(returnTo), nil))
+		if got := rec.Header().Get("Location"); rec.Code != http.StatusFound || got != want {
+			t.Errorf("return=%q: status = %d, Location = %q; want %d to %q", returnTo, rec.Code, got, http.StatusFound, want)
+		}
 	}
 }
 

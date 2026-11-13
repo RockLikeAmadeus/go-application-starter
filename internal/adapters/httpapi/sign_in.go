@@ -9,10 +9,17 @@ import (
 )
 
 // signInGoesTo answers GET /auth/sign-in by sending the browser to the
-// configured sign-in adapter's own page, such as the dev sign-in's form.
+// configured sign-in adapter's own page, such as the dev sign-in's form. A
+// local "return" path goes along, so the adapter can return to it afterwards.
 func signInGoesTo(adapterPath string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, adapterPath, http.StatusFound)
+		target := adapterPath
+		if r.FormValue("return") != "" {
+			if path := returnPath(r); path != "/" {
+				target += "?return=" + url.QueryEscape(path)
+			}
+		}
+		http.Redirect(w, r, target, http.StatusFound)
 	}
 }
 
