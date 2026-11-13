@@ -126,7 +126,7 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 
 ## Loose ends (from step 8a)
 Things step 8a left that need a look, to be dealt with one at a time. Tick each one when it's settled, with a line on what was done.
-- [ ] **`.env.example` and `STARTER_SIGN_IN`.** A permission rule stops Claude reading `.env.example`, so nobody checked whether it should list the new `STARTER_SIGN_IN` setting beside the others.
+- [x] **`.env.example` and `STARTER_SIGN_IN`.** A permission rule stops Claude reading `.env.example`, so nobody checked whether it should list the new `STARTER_SIGN_IN` setting beside the others. Done in step 8b: the file now lists `STARTER_SIGN_IN` and the four OIDC settings, and also `STARTER_CONFIG_FILE`, `STARTER_PLANS_FILE`, and `STARTER_DATABASE_URL`, which it was missing, all commented out with placeholders. Its `STARTER_STORAGE` note now names all four storage backends.
 - [ ] **Old SQLite databases on the sign-in branch.** Migration `00004_accounts_and_sessions.sql` was edited in place (task 25b) to make the `(issuer, subject)` index unique. A SQLite database that ran the old `00004` keeps the non-unique index, so delete any made on the branch before that change.
 - [ ] **A brief flash before the sign-in screen.** Until `GET /api/v1/session` answers, the web app shows its usual layout. A signed-out visitor may see the normal page for a moment, possibly with a "Please sign in to continue." error, before the sign-in screen replaces it. The server still refuses them any data.
 - [x] **A changed name isn't saved.** When someone signs in again and their identity's name has changed, `SignIn` finds the existing account and keeps the old name.
