@@ -115,7 +115,7 @@ func NewRootCmd(newApp AppFactory, newBilling BillingFactory, newSignIn SignInFa
 	noteGatedCommands(root, loadConfig)
 
 	root.AddCommand(newTUICmd(openApp))
-	root.AddCommand(newInfoCmd(openApp))
+	root.AddCommand(newInfoCmd(openApp, newSignIn))
 	root.AddCommand(newLoginCmd(loadConfig, newSignIn))
 	root.AddCommand(newLogoutCmd(loadConfig, newSignIn))
 	root.AddCommand(newAdminCmd(loadConfig, newBilling))

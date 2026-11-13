@@ -140,7 +140,13 @@
    - Agreed text (stderr, non-zero exit): "Signed out of <url> on this computer only: the session token was removed from this computer, but the server did not confirm that it ended the session (<server error>). The session may remain valid on the server until it expires, after a fixed lifetime for security purposes."
    - A token that could not be removed: a plain `starter: <error>`, with no agreed text.
    - Red: `TestSignOut_TellsAServerFailureWithTheTokenForgottenFromAForgetFailure` failed (plain error), then `TestLogoutSaysWhenOnlyThisComputerWasSignedOutAndReportsATokenThatStaysAsItIs` failed (the server's error as it was). Green: `clientsignin.SessionNotEndedError{Cause}` returned by `SignOut` only when the server failed and the token was forgotten (a forget failure stays a joined plain error); `logout` words it with the agreed text. Refactor: nothing worth changing.
-28. [ ] CLI: `starter info` with a server says who is signed in there, or that no one is.
+28. [x] CLI: `starter info` with a server says who is signed in there. Task 28 was split (see "Changes to the plan").
+   - Agreed text (a line after `Server:`, the `Plan:` line follows): "Signed in to <url> as <name>."
+   - Red: `TestInfoWithAServerSaysWhoIsSignedInThere` failed (no such line). Green: `Client.CurrentSession`; `newInfoCmd` takes the `SignInFactory` and prints the line when a server is set and the session has a name. Refactor: nothing worth changing.
+28b. [ ] CLI: `starter info` with sign-in on and no session says so, prints no `Plan:` line, and exits 0.
+   - Agreed text (after `Server:`): "Not signed in to <url>. Run starter login to sign in."
+28c. [ ] CLI: `starter info` against a server with sign-in off says so, then the `Plan:` line.
+   - Agreed text (after `Server:`): "The server at <url> does not support sign-in."
 29. [ ] CLI: a request refused for want of sign-in tells the user to run `starter login`.
 30. [ ] TUI: on a server with sign-in on and no session, it shows the signed-out screen with the sign-in key; on local data or with sign-in off, no sign-in or sign-out key.
 31. [ ] TUI: signed in, it shows who is signed in and the sign-out key.
@@ -149,10 +155,11 @@
 34. [ ] TUI: the sign-out key signs out and shows the signed-out screen.
 35. [ ] TUI: a request refused for want of sign-in mid-use shows the signed-out screen.
 36. [ ] Acceptance: route `@command-line-sign-in` to the http and oidc drivers (hosted), and add the command-line client and its steps; the Godog scenarios pass.
-37. [ ] Terminal journeys (note: the sign-in-off message now says "does not support sign-in", so the step for "it fails, saying the server doesn't sign people in" checks that phrase): the server built with `devsignin`, a `BROWSER` helper that completes the dev sign-in, and the steps for the command line and the terminal app; the journeys pass.
+37. [ ] Terminal journeys (note: the step for `signed in as "Ada" on the server` must match "Signed in to <url> as Ada."; and the sign-in-off message now says "does not support sign-in", so the step for "it fails, saying the server doesn't sign people in" checks that phrase): the server built with `devsignin`, a `BROWSER` helper that completes the dev sign-in, and the steps for the command line and the terminal app; the journeys pass.
 38. [ ] Docs and finish: `docs/sign-in.md` (the command line's and the terminal app's sign-in, with a sequence diagram), ADR 9 (bearer tokens, the native routes, codes, the token store), `docs/configuration.md` (`credential_store`), `.claude/rules/server.md` (the `/auth/native` routes), `.claude/rules/tui.md` (the signed-out screen), README and CLAUDE.md (CLI and TUI hosted is no longer planned), `.env.example` if it lists settings; device code over SSH as a follow-up in the plan; remove the `@wip` tags, run `task test:init` and `task check`, mark step 9 done in the plan, and delete this file.
 
 ## Changes to the plan
+- 2026-11-13: task 28 split: 28 signed in, 28b no session (no plan line), 28c sign-in off (each pins user-facing text, agreed with the user).
 - 2026-11-13: task 26 split: 26 no server refused, 26b sign-in off refused, 26c signs in and reports (bootstrap wiring), 26d prints the address when the browser can't open (each pins user-facing text, agreed with the user).
 - 2026-11-13: task 22 split: 22 `BROWSER`, 22b failure and discarded output, 22c the OS default.
 - 2026-11-13: task 16 split: 16 save and read, 16b delete.

@@ -110,6 +110,12 @@ func (c *Client) SignIn(ctx context.Context, open func(address string) error) (R
 	return Result{Name: signedIn.Name, TokenKept: kept}, nil
 }
 
+// CurrentSession reads the server's current session: whether it signs people
+// in, and who is signed in.
+func (c *Client) CurrentSession(ctx context.Context) (Session, error) {
+	return c.session.CurrentSession(ctx)
+}
+
 // SignOut ends the server session and forgets the token. It forgets the token
 // even when the server can't end the session. When only the server fails, the
 // error is a *SessionNotEndedError; when forgetting fails, it holds that error

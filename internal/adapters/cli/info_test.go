@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
@@ -339,4 +340,32 @@ func testServer(t *testing.T) string {
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core.Entitlements}))
 	t.Cleanup(srv.Close)
 	return srv.URL
+}
+
+// sessionIs is a clientsignin.SessionReader that answers with one session.
+type sessionIs clientsignin.Session
+
+func (s sessionIs) CurrentSession(context.Context) (clientsignin.Session, error) {
+	return clientsignin.Session(s), nil
+}
+
+// With a server set, info says who the command line is signed in as there,
+// and the plan follows.
+func TestInfoWithAServerSaysWhoIsSignedInThere(t *testing.T) {
+	srv := testServer(t)
+	newSignIn := func(config.Config) (*clientsignin.Client, func(string) error, error) {
+		reader := sessionIs{IsSignInOn: true, Name: "Ada"}
+		return clientsignin.New(reader, nil, nil, nil), func(string) error { return nil }, nil
+	}
+	var out bytes.Buffer
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(t.TempDir(), nil), &out)
+	cmd.SetArgs([]string{"--server", srv, "info"})
+
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	want := "Server: " + srv + "\nSigned in to " + srv + " as Ada.\nPlan: "
+	if !strings.Contains(out.String(), want) {
+		t.Errorf("info output lacks %q:\n%s", want, out.String())
+	}
 }
