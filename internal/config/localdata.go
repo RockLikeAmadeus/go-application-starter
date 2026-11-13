@@ -26,9 +26,19 @@ func LocalDataDir(env Env, settingsFile string) (string, error) {
 	if dir := fileSettings.String("data_dir"); dir != "" {
 		return dir, nil
 	}
-	configDir, err := env.UserConfigDir()
+	folder, err := AppFolder(env)
 	if err != nil {
 		return "", fmt.Errorf("find the data folder: %w", err)
+	}
+	return folder, nil
+}
+
+// AppFolder is the app's own folder in the user's settings folder. It holds
+// the default settings file, the local data, and the command line's tokens.
+func AppFolder(env Env) (string, error) {
+	configDir, err := env.UserConfigDir()
+	if err != nil {
+		return "", err
 	}
 	return filepath.Join(configDir, appFolder), nil
 }
@@ -91,9 +101,9 @@ func writeNewFile(file, text string) error {
 // defaultSettingsFile is config.toml in the app's folder in the user's
 // settings folder.
 func defaultSettingsFile(env Env) (string, error) {
-	configDir, err := env.UserConfigDir()
+	folder, err := AppFolder(env)
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(configDir, appFolder, "config.toml"), nil
+	return filepath.Join(folder, "config.toml"), nil
 }
