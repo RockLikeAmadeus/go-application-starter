@@ -79,3 +79,39 @@ func TestOpen_ReportsAProgramThatFailsAtOnceOrCannotStart(t *testing.T) {
 		}
 	}
 }
+
+// With BROWSER unset, empty, or only spaces, Open falls back to the operating
+// system's default opener. A fake xdg-open alone on PATH stands in for it, so
+// no real browser opens.
+func TestOpen_FallsBackToTheSystemOpenerWhenBrowserIsUnsetEmptyOrBlank(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("the fake opener is xdg-open, a shell script")
+	}
+	for name, browser := range map[string]string{"unset": "", "empty": "", "blank": "  \t "} {
+		t.Run(name, func(t *testing.T) {
+			folder := t.TempDir()
+			record := filepath.Join(folder, "recorded")
+			body := "#!/bin/sh\necho \"$@\" > \"" + record + "\"\n"
+			if err := os.WriteFile(filepath.Join(folder, "xdg-open"), []byte(body), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("PATH", folder)
+			t.Setenv("BROWSER", browser) // registers the restore, even for "unset"
+			if name == "unset" {
+				os.Unsetenv("BROWSER")
+			}
+
+			if err := browsersignin.Open("https://app.example.com/auth/native?port=1"); err != nil {
+				t.Fatalf("Open: %v", err)
+			}
+
+			recorded, err := os.ReadFile(record)
+			if err != nil {
+				t.Fatalf("the system opener did not run: %v", err)
+			}
+			if got := strings.TrimSpace(string(recorded)); got != "https://app.example.com/auth/native?port=1" {
+				t.Errorf("the system opener got %q, want the address alone", got)
+			}
+		})
+	}
+}
