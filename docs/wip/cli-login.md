@@ -112,7 +112,19 @@
    - Red: `TestSignIn_SavesTheBrowsersTokenAndReportsTheAccountAndWhereItWasKept` failed (nothing saved, empty `Result`). Green: `New(session, browser, store)` with the `BrowserSignIn` and `TokenStore` interfaces; `SignIn` runs the browser sign-in, saves the token, re-reads the session for the name; `Result{Name, TokenKept}`. Bootstrap (task 26) adapts `browsersignin` and `tokenstore` (`Kept` to string, server URL bound) and passes a session reader sending the stored token. Refactor: nothing worth changing.
 25. [x] Client sign-in: signing out ends the server session and forgets the token, even when the server refuses or can't be reached.
    - Red: `TestSignOut_EndsTheServerSessionAndForgetsTheTokenEvenWhenTheServerFails` failed (stub did nothing). Green: `Client.SignOut` calls `SessionEnder.EndSession`, then `TokenStore.Forget`, and returns both errors joined; `New` now takes `(session, ender, browser, store)`. Bootstrap (task 27) adapts `httpclient`'s sign-out (bearer token) and `tokenstore.System.Delete` with the server URL bound. Refactor: nothing worth changing.
-26. [ ] CLI: `starter login` refuses without a server, and otherwise signs in and says who is signed in (and when the file fallback held it), or prints the address when the browser didn't open.
+26. [x] CLI: `starter login` is refused without a server (stderr, non-zero exit). Task 26 was split (see "Changes to the plan").
+   - Agreed text: "starter login needs a server to sign in to, and none is set. Give one with --server <url>, with the STARTER_SERVER_URL environment variable, or with server_url in the settings file. Signing in stores a session token only; it never changes which server or data the command line uses, so the same server must be set whenever you run starter afterwards."
+   - Red: `TestLoginIsRefusedWithoutAServer` failed (unknown command "login"). Green: `cli/login.go` `newLoginCmd(loadConfig)` returns `errLoginNeedsAServer` when `cfg.ServerURL` is empty; registered in `root.go`. Refactor: nothing worth changing. 26c adds the `clientsignin` seam.
+26b. [ ] CLI: `starter login` against a server with sign-in off is refused.
+   - Agreed text (stderr, non-zero exit): "The server at <url> does not support sign-in, so there is nothing to sign in to. No browser was opened, and no session token was stored."
+26c. [ ] CLI: `starter login` signs in and says who is signed in, and where the token is kept. Bootstrap builds the real `clientsignin.Client` (`httpclient` session reader sending the stored token via `WithTokenSource`, `browsersignin`, `tokenstore` with the server URL bound, `Kept` as a string).
+   - Agreed text (stdout), three variants:
+     - Credential store: "Signed in to <url> as <name>. The session token is kept in the operating system's credential store, and has a fixed lifetime for security purposes. Run starter logout to end the session before it expires."
+     - File fallback: "Signed in to <url> as <name>. The session token is kept in a file in the settings folder, readable only by you, because the operating system's credential store is not available here, and has a fixed lifetime for security purposes. Run starter logout to end the session before it expires."
+     - `credential_store = "file"` on purpose: "Signed in to <url> as <name>. The session token is kept in a file in the settings folder, readable only by you, and has a fixed lifetime for security purposes. Run starter logout to end the session before it expires."
+   - Any other failure partway (cancelled, refused swap): `starter: <error>`, as the other commands print.
+26d. [ ] CLI: `starter login` prints the address when the browser can't open, and keeps waiting.
+   - Agreed text (stderr): "Could not open a browser. To sign in, open this address in a browser on this computer: <address>. Waiting for you to finish signing in there. Press Ctrl+C to cancel."
 27. [ ] CLI: `starter logout` refuses without a server, and otherwise signs out.
 28. [ ] CLI: `starter info` with a server says who is signed in there, or that no one is.
 29. [ ] CLI: a request refused for want of sign-in tells the user to run `starter login`.
@@ -123,10 +135,11 @@
 34. [ ] TUI: the sign-out key signs out and shows the signed-out screen.
 35. [ ] TUI: a request refused for want of sign-in mid-use shows the signed-out screen.
 36. [ ] Acceptance: route `@command-line-sign-in` to the http and oidc drivers (hosted), and add the command-line client and its steps; the Godog scenarios pass.
-37. [ ] Terminal journeys: the server built with `devsignin`, a `BROWSER` helper that completes the dev sign-in, and the steps for the command line and the terminal app; the journeys pass.
+37. [ ] Terminal journeys (note: the sign-in-off message now says "does not support sign-in", so the step for "it fails, saying the server doesn't sign people in" checks that phrase): the server built with `devsignin`, a `BROWSER` helper that completes the dev sign-in, and the steps for the command line and the terminal app; the journeys pass.
 38. [ ] Docs and finish: `docs/sign-in.md` (the command line's and the terminal app's sign-in, with a sequence diagram), ADR 9 (bearer tokens, the native routes, codes, the token store), `docs/configuration.md` (`credential_store`), `.claude/rules/server.md` (the `/auth/native` routes), `.claude/rules/tui.md` (the signed-out screen), README and CLAUDE.md (CLI and TUI hosted is no longer planned), `.env.example` if it lists settings; device code over SSH as a follow-up in the plan; remove the `@wip` tags, run `task test:init` and `task check`, mark step 9 done in the plan, and delete this file.
 
 ## Changes to the plan
+- 2026-11-13: task 26 split: 26 no server refused, 26b sign-in off refused, 26c signs in and reports (bootstrap wiring), 26d prints the address when the browser can't open (each pins user-facing text, agreed with the user).
 - 2026-11-13: task 22 split: 22 `BROWSER`, 22b failure and discarded output, 22c the OS default.
 - 2026-11-13: task 16 split: 16 save and read, 16b delete.
 - 2026-11-13: task 15 split: 15 the good callback and swap, 15b wrong state, 15c the context ends the wait, 15d the swap refused. A callback on any other path gets a bare 404.

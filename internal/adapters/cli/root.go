@@ -110,6 +110,7 @@ func NewRootCmd(newApp AppFactory, newBilling BillingFactory, env config.Env, ou
 
 	root.AddCommand(newTUICmd(openApp))
 	root.AddCommand(newInfoCmd(openApp))
+	root.AddCommand(newLoginCmd(loadConfig))
 	root.AddCommand(newAdminCmd(loadConfig, newBilling))
 	// sample:start
 	root.AddCommand(newItemCmd(openApp))
