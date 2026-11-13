@@ -50,7 +50,10 @@
    - Red: `TestTheDevSignInFormCarriesALocalReturnPathOnAndDropsAnyOther` failed (no hidden field). Green: `devSignInForm` adds the sanitised `return` (via `returnPath`) as an escaped hidden input; the POST already honours it. Refactor: nothing worth changing.
 10c. [x] httpapi: the OIDC sign-in keeps `return` through the provider trip and the callback goes there.
    - Red: `TestAnOIDCSignInKeepsALocalReturnPathThroughTheProviderTripAndGoesThereAfterwards` failed (callback went to `/`). Green: `oidcStart` keeps `returnPath` as a third, query-escaped part of the attempt cookie (only when not `/`); `oidcCallback` goes there. Review fix: `TestTheOIDCCallbackIgnoresAForeignReturnAddressInTheAttemptCookie` failed (went to the foreign address); `localPath` (in `sign_in.go`, shared with `returnPath`) now checks the cookie's path too.
-11. [ ] httpapi: `GET /auth/native` checks the loopback port, `state`, and challenge, keeps them in a short-lived cookie, and sends the browser to sign in, returning to `/auth/native/finish` (straight there when already signed in). Bad parameters answer 400.
+11. [x] httpapi: `GET /auth/native` refuses a bad loopback port, `state`, or challenge with a 400 listing every failing value.
+   - Red: `TestABadNativeSignInRequestIsRefusedListingEveryFailingValue` failed (no route, status 200). Green: `nativeSignIn` in `httpapi/native_sign_in.go`, registered with sign-in on. A state is 16 to 128 base64url characters; a challenge exactly 43. Wording agreed with the user. Refactor: comment only. Task 11 was split (see "Changes to the plan").
+11b. [ ] httpapi: `GET /auth/native` with good parameters, not signed in, keeps them in a short-lived cookie (`native_sign_in`, path `/auth/native`) and redirects to `/auth/sign-in?return=/auth/native/finish`.
+11c. [ ] httpapi: `GET /auth/native` with good parameters and a session redirects straight to `/auth/native/finish`.
 12. [ ] httpapi: `GET /auth/native/finish` issues a code for the browser's session and redirects to `http://127.0.0.1:<port>/callback?code=…&state=…`; no attempt cookie or no session is refused.
 13. [ ] httpapi: `POST /auth/native/token` swaps a code and verifier for a session token (JSON); a refused swap answers 400 without saying why.
 14. [ ] Browser sign-in adapter (named per `naming.md`, no Cobra or Wails import): listens on `127.0.0.1:0`, makes the state and verifier, builds the `/auth/native` URL, and hands it to an opener.
@@ -84,3 +87,4 @@
 - 2026-11-13: task 4 split: 4 issues a code, 4b refuses an unknown or expired session (one test each).
 - 2026-11-13: task 10 split: 10 `POST /auth/dev` honours `return`, 10b the dev form and `/auth/sign-in` carry it, 10c OIDC does.
 - 2026-11-13: task 10b split: 10b `GET /auth/sign-in` passes `return` on, 10b2 the dev form carries it in a hidden field.
+- 2026-11-13: task 11 split: 11 refuses bad parameters, 11b redirects to sign-in with the attempt cookie, 11c redirects straight to finish when signed in.
