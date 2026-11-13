@@ -95,7 +95,8 @@
    - Red: `TestSystem_DeletesATokenFromBothStoresAndForgettingAnUnknownOneOrWithNoKeyringIsNotAnError` failed (stub deleted nothing). Green: `System.Delete` ignores the keyring's error and returns the file's. Refactor: nothing worth changing.
 19. [x] Config: the `credential_store` setting (`system` or `file`), with its env variable, in `starter info` and the default settings file's comments.
    - Red: `TestTheCredentialStoreIsSystemByDefaultOrFileFromTheSettingsFileOrEnvironmentAndAnyOtherIsRefused` failed (no setting), with the agreed comment pinned in `defaultsettings_test.go`. Green: `config.CredentialStore` (`system`, `file`), `Load`, `Settings()` (so `starter info` lists it), `Validate`, the default file text, and `docs/configuration.md`. Wording agreed with the user; the token file is in the app's settings folder, not beside the settings file in use. Refactor: nothing worth changing.
-20. [ ] httpclient: every service sends a bearer token from a token source, asked on each request (one client option); no token sends no header.
+20. [x] httpclient: every service sends a bearer token from a token source, asked on each request (one client option); no token sends no header.
+   - Red: `TestWithTokenSource_SendsTheTokenItReturnsOnEachRequestAndNoHeaderForNone` failed (no header sent). Green: `httpclient.WithTokenSource` (`token_source.go`), a request editor option that works with every `New…Service`; the source is `func(ctx) (string, error)`, an error fails the request. Refactor: nothing worth changing.
 21. [ ] bootstrap: `NewRemote` gives `httpclient` a token source reading the server's token from the configured store.
 22. [ ] Client sign-in: the opener honours `BROWSER`, else the OS default, discards the program's output, and reports a failure so the caller shows the address.
 23. [ ] Client sign-in: signing in refuses a server whose sign-in is off (`GET /api/v1/session`).
