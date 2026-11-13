@@ -88,3 +88,29 @@ func TestFile_MakesAnExistingWiderFilePrivateWhenItSavesATokenInIt(t *testing.T)
 		t.Errorf("file mode = %o; want 600", mode)
 	}
 }
+
+func TestFile_DeletesOneServersTokenLeavingTheOthersAndForgettingAnUnknownOneIsNotAnError(t *testing.T) {
+	folder := t.TempDir()
+	store := tokenstore.NewFile(folder)
+	if err := store.Save("https://a.example.com", "token-a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Save("https://b.example.com", "token-b"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := store.Delete("https://A.example.com/"); err != nil {
+		t.Fatalf("Delete a: %v", err)
+	}
+	if err := store.Delete("https://unknown.example.com"); err != nil {
+		t.Errorf("Delete of an unknown server = %v; want nil", err)
+	}
+
+	fresh := tokenstore.NewFile(folder)
+	if _, err := fresh.Read("https://a.example.com"); !errors.Is(err, tokenstore.ErrNoToken) {
+		t.Errorf("Read a after Delete = %v; want ErrNoToken", err)
+	}
+	if got, err := fresh.Read("https://b.example.com"); err != nil || got != "token-b" {
+		t.Errorf("Read b = %q, %v; want token-b", got, err)
+	}
+}

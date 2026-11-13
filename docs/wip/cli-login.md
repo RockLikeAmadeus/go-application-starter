@@ -83,7 +83,8 @@
 16. [x] Token store: the file store (JSON in the settings folder, 0600, keyed by the normalised server URL): save and read. Task 16 was split (see "Changes to the plan").
    - Red: `TestFile_KeepsEachServersTokenApartInAPrivateFileUnderItsNormalisedAddress` failed (stub kept and found nothing). Green: package `tokenstore` (`internal/adapters/tokenstore/file.go`): `File` (`NewFile(folder)`, `Save`, `Read`, `ErrNoToken`), `tokens.json` at 0600. Refactor: nothing worth changing. Later stores (16b, 17, 18) follow `Save`, `Read`, and `Delete`.
    - Review fixes: `TestFile_KeepsServersWhoseAddressesDifferOnlyInTheCaseOfTheirPathsApart` failed (whole address lowercased); `normalise` now parses the address and lowercases only scheme and host. `TestFile_MakesAnExistingWiderFilePrivateWhenItSavesATokenInIt` failed (mode stayed 644); `Save` writes a 0600 temporary file and renames it over `tokens.json`.
-16b. [ ] Token store: the file store deletes a server's token, leaving the others, and deleting an unknown one is not an error.
+16b. [x] Token store: the file store deletes a server's token, leaving the others, and deleting an unknown one is not an error.
+   - Red: `TestFile_DeletesOneServersTokenLeavingTheOthersAndForgettingAnUnknownOneIsNotAnError` failed (stub kept the token). Green: `File.Delete`, sharing `write` with `Save`; an unknown server writes nothing. Refactor: nothing worth changing.
 17. [ ] Token store: the keyring store (go-keyring, `MockInit` in tests), same contract as the file store.
 18. [ ] Token store: the system store uses the keyring and falls back to the file when the keyring is unavailable, reporting which it used.
 19. [ ] Config: the `credential_store` setting (`system` or `file`), with its env variable, in `starter info` and the default settings file's comments.

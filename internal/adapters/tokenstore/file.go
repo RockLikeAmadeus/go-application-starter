@@ -35,6 +35,10 @@ func (f *File) Save(serverURL, token string) error {
 		return err
 	}
 	tokens[normalise(serverURL)] = token
+	return f.write(tokens)
+}
+
+func (f *File) write(tokens map[string]string) error {
 	data, err := json.Marshal(tokens)
 	if err != nil {
 		return err
@@ -99,4 +103,21 @@ func normalise(serverURL string) string {
 	address.Path = strings.TrimRight(address.Path, "/")
 	address.RawPath = ""
 	return address.String()
+}
+
+// Delete forgets the token kept for the server. Forgetting an unknown one is
+// not an error.
+func (f *File) Delete(serverURL string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	tokens, err := f.load()
+	if err != nil {
+		return err
+	}
+	key := normalise(serverURL)
+	if _, ok := tokens[key]; !ok {
+		return nil
+	}
+	delete(tokens, key)
+	return f.write(tokens)
 }
