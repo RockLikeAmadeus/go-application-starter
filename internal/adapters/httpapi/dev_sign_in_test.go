@@ -175,3 +175,22 @@ func TestTheDevSignInReturnsToALocalReturnPathAndIgnoresAnyOther(t *testing.T) {
 		}
 	}
 }
+
+func TestTheDevSignInFormCarriesALocalReturnPathOnAndDropsAnyOther(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	formFor := func(returnTo string) string {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/dev?return="+url.QueryEscape(returnTo), nil))
+		return rec.Body.String()
+	}
+
+	hidden := `<input type="hidden" name="return" value="/auth/native/finish?x=1">`
+	if body := formFor("/auth/native/finish?x=1"); !strings.Contains(body, hidden) {
+		t.Errorf("the page has no %s:\n%s", hidden, body)
+	}
+	for _, foreign := range []string{"https://evil.example/", "//evil.example/", ""} {
+		if body := formFor(foreign); strings.Contains(body, `name="return"`) {
+			t.Errorf("return=%q: the page carries a return field:\n%s", foreign, body)
+		}
+	}
+}

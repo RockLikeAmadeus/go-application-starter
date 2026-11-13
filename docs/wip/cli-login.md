@@ -46,7 +46,8 @@
    - Red: `TestTheDevSignInReturnsToALocalReturnPathAndIgnoresAnyOther` failed (always `/`). Green: `returnPath` in `httpapi/sign_in.go`, used by `devSignIn`. Refactor: nothing worth changing. Task 10 was split (see "Changes to the plan"). Task 10c will reuse `returnPath`.
 10b. [x] httpapi: `GET /auth/sign-in` passes a local `return` path on to the dev sign-in.
    - Red: `TestSignInPassesALocalReturnPathOnToTheDevSignInAndDropsAnyOther` failed (`return` dropped). Green: `signInGoesTo` appends the sanitised `return` (via `returnPath`) to the adapter path; this also covers `/auth/sign-up`'s and OIDC's first hop. Refactor: nothing worth changing. Task 10b was split (see "Changes to the plan").
-10b2. [ ] httpapi: the dev sign-in form carries `return` on as a hidden field (`GET /auth/dev?return=…`).
+10b2. [x] httpapi: the dev sign-in form carries `return` on as a hidden field (`GET /auth/dev?return=…`).
+   - Red: `TestTheDevSignInFormCarriesALocalReturnPathOnAndDropsAnyOther` failed (no hidden field). Green: `devSignInForm` adds the sanitised `return` (via `returnPath`) as an escaped hidden input; the POST already honours it. Refactor: nothing worth changing.
 10c. [ ] httpapi: the OIDC sign-in keeps `return` through the provider trip and the callback goes there.
 11. [ ] httpapi: `GET /auth/native` checks the loopback port, `state`, and challenge, keeps them in a short-lived cookie, and sends the browser to sign in, returning to `/auth/native/finish` (straight there when already signed in). Bad parameters answer 400.
 12. [ ] httpapi: `GET /auth/native/finish` issues a code for the browser's session and redirects to `http://127.0.0.1:<port>/callback?code=…&state=…`; no attempt cookie or no session is refused.

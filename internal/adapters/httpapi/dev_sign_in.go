@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"fmt"
+	"html"
 	"net/http"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -20,16 +22,21 @@ const devSignInPage = `<!doctype html>
 <h1>Dev sign-in</h1>
 <form method="post" action="/auth/dev">
 <label>Name <input name="name" required autofocus></label>
-<button type="submit">Sign in</button>
+%s<button type="submit">Sign in</button>
 </form>
 </body>
 </html>
 `
 
-// devSignInForm answers GET /auth/dev with devSignInPage.
-func devSignInForm(w http.ResponseWriter, _ *http.Request) {
+// devSignInForm answers GET /auth/dev with devSignInPage. A local "return"
+// path is carried on as a hidden field, so the POST goes back to it.
+func devSignInForm(w http.ResponseWriter, r *http.Request) {
+	hiddenReturn := ""
+	if path := returnPath(r); path != "/" {
+		hiddenReturn = `<input type="hidden" name="return" value="` + html.EscapeString(path) + `">` + "\n"
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(devSignInPage))
+	_, _ = fmt.Fprintf(w, devSignInPage, hiddenReturn)
 }
 
 // devSignIn answers POST /auth/dev: it signs in as the form's name (the name
