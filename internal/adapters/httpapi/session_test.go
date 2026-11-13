@@ -33,6 +33,12 @@ func (s sessions) SignOut(context.Context, string) error {
 	panic("not used by the session middleware")
 }
 
+// IssueSignInCode answers a code that spells out the session token and the
+// challenge it was issued for, so a test can see both.
+func (s sessions) IssueSignInCode(_ context.Context, token, challenge string) (string, error) {
+	return "code-for-" + token + "-" + challenge, nil
+}
+
 // workspaceAsPlan is a ports.EntitlementsService that answers the request's
 // workspace (workspace.FromContext) as its plan, or "none" without one, so a
 // test can see which workspace the server put in the request's context.

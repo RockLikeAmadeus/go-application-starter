@@ -111,6 +111,9 @@ type SignInService interface {
 	CurrentAccount(ctx context.Context, token string) (domain.Account, error)
 	// SignOut ends the token's session.
 	SignOut(ctx context.Context, token string) error
+	// IssueSignInCode returns a one-time code, bound to the PKCE challenge,
+	// for the account whose session the token is.
+	IssueSignInCode(ctx context.Context, token, challenge string) (string, error)
 }
 
 // AccountRepository is the driven port for storing accounts. Accounts aren't

@@ -56,7 +56,11 @@
    - Red: `TestAGoodNativeSignInRequestWithNoSessionIsKeptInACookieAndSentToSignIn` failed (status 200, no cookie). Green: `nativeSignIn(publicURL)` sets `NativeSignInCookie` (query-encoded port, state, challenge; 10 minutes) and redirects. Refactor: nothing worth changing. 11c adds the session check.
 11c. [x] httpapi: `GET /auth/native` with good parameters and a session redirects straight to `/auth/native/finish`.
    - Red: `TestAGoodNativeSignInRequestWithASessionGoesStraightToFinish` failed (redirected to sign-in). Green: `startNativeSignIn` redirects to `/auth/native/finish` when `accountFrom` finds a session (the attempt cookie is still set, as finish reads it). Refactor: nothing worth changing.
-12. [ ] httpapi: `GET /auth/native/finish` issues a code for the browser's session and redirects to `http://127.0.0.1:<port>/callback?code=…&state=…`; no attempt cookie or no session is refused.
+12. [x] httpapi: `GET /auth/native/finish` issues a code for the browser's session and redirects to `http://127.0.0.1:<port>/callback?code=…&state=…`.
+   - Red: `TestNativeFinishIssuesACodeForTheBrowsersSessionAndGoesToTheCommandLinesLoopbackPort` failed (status 200, no redirect). Green: `nativeFinish` in `httpapi/native_sign_in.go`, with `IssueSignInCode` added to `ports.SignInService`. Refactor: nothing worth changing. Task 12 was split (see "Changes to the plan"). For 12b and 12c: `nativeFinish` ignores a missing cookie (it would panic on one) and a missing session.
+12b. [ ] httpapi: `GET /auth/native/finish` with a missing or invalid attempt cookie is refused (wording agreed with the user). 12b replaces the plain 400 (no detail) that `nativeFinish` gives meanwhile.
+   - Security fix in task 12: `TestNativeFinishNeverRedirectsToAnyHostButLoopbackWhateverTheAttemptCookieHolds` failed (a cookie port of `1@evil.example` redirected off 127.0.0.1); `nativeFinish` now re-checks the cookie with `checkNativeAttempt`, shared with `startNativeSignIn`, and builds the host from the parsed port.
+12c. [ ] httpapi: `GET /auth/native/finish` with no session is refused, issuing no code (wording agreed with the user).
 13. [ ] httpapi: `POST /auth/native/token` swaps a code and verifier for a session token (JSON); a refused swap answers 400 without saying why.
 14. [ ] Browser sign-in adapter (named per `naming.md`, no Cobra or Wails import): listens on `127.0.0.1:0`, makes the state and verifier, builds the `/auth/native` URL, and hands it to an opener.
 15. [ ] Browser sign-in adapter: the callback with the right state answers a page saying to return to the terminal, and the adapter swaps the code for the token; a wrong state is refused and the wait goes on; the context ends the wait.
@@ -85,6 +89,7 @@
 38. [ ] Docs and finish: `docs/sign-in.md` (the command line's and the terminal app's sign-in, with a sequence diagram), ADR 9 (bearer tokens, the native routes, codes, the token store), `docs/configuration.md` (`credential_store`), `.claude/rules/server.md` (the `/auth/native` routes), `.claude/rules/tui.md` (the signed-out screen), README and CLAUDE.md (CLI and TUI hosted is no longer planned), `.env.example` if it lists settings; device code over SSH as a follow-up in the plan; remove the `@wip` tags, run `task test:init` and `task check`, mark step 9 done in the plan, and delete this file.
 
 ## Changes to the plan
+- 2026-11-13: task 12 split: 12 the good path, 12b no attempt cookie, 12c no session (the refusals pin user-facing text, so each is agreed first).
 - 2026-11-13: the terminal app signs in and out by itself (the user's request), rather than sending people to `starter login`. Signing in and out moved out of the CLI into a shared client-side package, `httpclient` asks a token source per request, and tasks 30–35 and two terminal journeys were added. No server picker in the TUI (agreed).
 - 2026-11-13: task 4 split: 4 issues a code, 4b refuses an unknown or expired session (one test each).
 - 2026-11-13: task 10 split: 10 `POST /auth/dev` honours `return`, 10b the dev form and `/auth/sign-in` carry it, 10c OIDC does.

@@ -121,3 +121,47 @@ func TestAGoodNativeSignInRequestWithASessionGoesStraightToFinish(t *testing.T) 
 			rec.Code, rec.Header().Get("Location"), http.StatusFound)
 	}
 }
+
+func TestNativeFinishIssuesACodeForTheBrowsersSessionAndGoesToTheCommandLinesLoopbackPort(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{
+		SignIn:        sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}},
+		IsDevSignInOn: true,
+	})
+	attempt := url.Values{"port": {"4000"}, "state": {validState}, "challenge": {validChallenge}}
+	req := httptest.NewRequest(http.MethodGet, "/auth/native/finish", nil)
+	req.AddCookie(&http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+	req.AddCookie(&http.Cookie{Name: httpapi.NativeSignInCookie, Value: attempt.Encode()})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	location, err := url.Parse(rec.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("parse location: %v", err)
+	}
+	wantCode := "code-for-token-a-" + validChallenge
+	if rec.Code != http.StatusFound || location.Scheme != "http" || location.Host != "127.0.0.1:4000" ||
+		location.Path != "/callback" || location.Query().Get("code") != wantCode || location.Query().Get("state") != validState {
+		t.Errorf("status = %d, location = %q; want %d, http://127.0.0.1:4000/callback?code=%s&state=%s",
+			rec.Code, rec.Header().Get("Location"), http.StatusFound, wantCode, validState)
+	}
+}
+
+func TestNativeFinishNeverRedirectsToAnyHostButLoopbackWhateverTheAttemptCookieHolds(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{
+		SignIn:        sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}},
+		IsDevSignInOn: true,
+	})
+	attempt := url.Values{"port": {"1@evil.example"}, "state": {validState}, "challenge": {validChallenge}}
+	req := httptest.NewRequest(http.MethodGet, "/auth/native/finish", nil)
+	req.AddCookie(&http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+	req.AddCookie(&http.Cookie{Name: httpapi.NativeSignInCookie, Value: attempt.Encode()})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if location := rec.Header().Get("Location"); location != "" || rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, location = %q; want %d and no redirect", rec.Code, location, http.StatusBadRequest)
+	}
+	if strings.Contains(rec.Body.String(), "code-for-") {
+		t.Errorf("body = %q, want no code issued", rec.Body.String())
+	}
+}

@@ -36,6 +36,10 @@ func (s *signInRecorder) SignOut(_ context.Context, token string) error {
 	return s.signOutErr
 }
 
+func (s *signInRecorder) IssueSignInCode(context.Context, string, string) (string, error) {
+	panic("not used by these tests")
+}
+
 // sessionCookieOf returns the response's session cookie, failing the test
 // without one.
 func sessionCookieOf(t *testing.T, rec *httptest.ResponseRecorder) *http.Cookie {
