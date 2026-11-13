@@ -5,6 +5,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
@@ -122,7 +124,41 @@ func NewRootCmd(newApp AppFactory, newBilling BillingFactory, newSignIn SignInFa
 	// sample:start
 	root.AddCommand(newItemCmd(openApp))
 	// sample:end
+	adviseLoginWhenSignedOut(root, loadConfig)
 	return root
+}
+
+// wordsSignInErrorsItself is the annotation of a command, such as login and
+// logout, whose own errors may hold ErrNoWorkspace without the user needing
+// the advice to run starter login.
+const wordsSignInErrorsItself = "wordsSignInErrorsItself"
+
+// adviseLoginWhenSignedOut makes every command that a server refuses for want
+// of a session (domain.ErrNoWorkspace) say which server, and tell the user to
+// run starter login, except the commands annotated wordsSignInErrorsItself.
+func adviseLoginWhenSignedOut(root *cobra.Command, loadConfig func() (config.Config, error)) {
+	var wrap func(cmd *cobra.Command)
+	wrap = func(cmd *cobra.Command) {
+		if run := cmd.RunE; run != nil && cmd.Annotations[wordsSignInErrorsItself] == "" {
+			cmd.RunE = func(cmd *cobra.Command, args []string) error {
+				err := run(cmd, args)
+				if !errors.Is(err, domain.ErrNoWorkspace) {
+					return err
+				}
+				cfg, loadErr := loadConfig()
+				if loadErr != nil || cfg.ServerURL == "" {
+					return err
+				}
+				return fmt.Errorf("The server at %s refused this request, because there is no valid session for it: "+
+					"you are not signed in, or the session token has expired or been ended. "+
+					"Please run starter login to sign in, then run this command again.", cfg.ServerURL)
+			}
+		}
+		for _, child := range cmd.Commands() {
+			wrap(child)
+		}
+	}
+	wrap(root)
 }
 
 // chosenByOption records that the option --flag chose cfg's setting key.

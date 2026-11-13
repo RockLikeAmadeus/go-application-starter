@@ -19,6 +19,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 // Signing in stores a token only: it never picks the server, so with none set
@@ -260,6 +261,12 @@ func TestLogoutSaysWhenOnlyThisComputerWasSignedOutAndReportsATokenThatStaysAsIt
 				"but the server did not confirm that it ended the session (connection refused). " +
 				"The session may remain valid on the server until it expires, after a fixed lifetime for security purposes.",
 		},
+		"server refuses the session": {
+			&signOutPieces{endError: domain.ErrNoWorkspace},
+			"Signed out of https://starter.example.com on this computer only: the session token was removed from this computer, " +
+				"but the server did not confirm that it ended the session (Please sign in to continue.). " +
+				"The session may remain valid on the server until it expires, after a fixed lifetime for security purposes.",
+		},
 		"token stays": {
 			&signOutPieces{forgetError: errors.New("keyring locked")},
 			"keyring locked",
@@ -285,5 +292,44 @@ func TestLogoutSaysWhenOnlyThisComputerWasSignedOutAndReportsATokenThatStaysAsIt
 				t.Error("logout did not forget the token")
 			}
 		})
+	}
+}
+
+// refusedAfterSavingSession reads a session that signs people in, then, once
+// the token is saved, is refused for want of a session.
+type refusedAfterSavingSession struct{ reads int }
+
+func (s *refusedAfterSavingSession) CurrentSession(context.Context) (clientsignin.Session, error) {
+	s.reads++
+	if s.reads > 1 {
+		return clientsignin.Session{}, domain.ErrNoWorkspace
+	}
+	return clientsignin.Session{IsSignInOn: true}, nil
+}
+
+// browserGivingToken signs in at once, with a token.
+type browserGivingToken struct{}
+
+func (browserGivingToken) BrowserSignIn(context.Context, func(string) error) (string, error) {
+	return "the-token", nil
+}
+
+// A login whose own steps are refused for want of a session reports that
+// error as it is, without the advice to run starter login, which the user is
+// already doing.
+func TestLoginReportsASessionRefusalAsItIsWithoutAdvisingLogin(t *testing.T) {
+	session := &refusedAfterSavingSession{}
+	pieces := &signOutPieces{}
+	newSignIn := func(config.Config) (*clientsignin.Client, func(string) error, error) {
+		return clientsignin.New(session, nil, browserGivingToken{}, pieces), func(string) error { return nil }, nil
+	}
+	var out bytes.Buffer
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(t.TempDir(), nil), &out)
+	cmd.SetArgs([]string{"--storage", "memory", "--server", "https://starter.example.com", "login"})
+
+	err := cmd.ExecuteContext(context.Background())
+
+	if !errors.Is(err, domain.ErrNoWorkspace) || err.Error() != domain.ErrNoWorkspace.Error() {
+		t.Errorf("login error = %v, want %q as it is", err, domain.ErrNoWorkspace)
 	}
 }

@@ -149,7 +149,10 @@
 28c. [x] CLI: `starter info` against a server with sign-in off says so, then the `Plan:` line.
    - Agreed text (after `Server:`): "The server at <url> does not support sign-in."
    - Red: `TestInfoWithAServerThatHasSignInOffSaysSoAndKeepsThePlan` failed (no such line). Green: `newInfoCmd` prints the line in the default case. Refactor: nothing worth changing.
-29. [ ] CLI: a request refused for want of sign-in tells the user to run `starter login`.
+29. [x] CLI: a request refused for want of sign-in tells the user to run `starter login`.
+   - Agreed text (stderr, after `Error: `, non-zero exit; any command, while a server is set): "The server at <url> refused this request, because there is no valid session for it: you are not signed in, or the session token has expired or been ended. Please run starter login to sign in, then run this command again."
+   - Review fix (login test: `TestLoginReportsASessionRefusalAsItIsWithoutAdvisingLogin`, red with the annotation removed): `login` and `logout` carry the `wordsSignInErrorsItself` annotation and are left out of the wrapping; the "server refuses the session" case of the logout test failed first (logout gave the login advice).
+   - Red: `TestARequestRefusedForWantOfASessionTellsTheUserToRunLogin` failed (plain "Please sign in to continue."). Green: `adviseLoginWhenSignedOut` in `cli/root.go` wraps every command's `RunE`, replacing `ErrNoWorkspace` with the text when `cfg.ServerURL` is set. Refactor: nothing worth changing.
 30. [ ] TUI: on a server with sign-in on and no session, it shows the signed-out screen with the sign-in key; on local data or with sign-in off, no sign-in or sign-out key.
 31. [ ] TUI: signed in, it shows who is signed in and the sign-out key.
 32. [ ] TUI: the sign-in key starts the browser sign-in and shows the waiting screen with the address; Esc cancels and returns to the signed-out screen.

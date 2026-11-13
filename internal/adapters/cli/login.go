@@ -21,9 +21,10 @@ var errLoginNeedsAServer = errors.New("starter login needs a server to sign in t
 // newLoginCmd signs in to the server the settings name.
 func newLoginCmd(loadConfig func() (config.Config, error), newSignIn SignInFactory) *cobra.Command {
 	return &cobra.Command{
-		Use:   "login",
-		Short: "Sign in to the server in your browser",
-		Args:  cobra.NoArgs,
+		Use:         "login",
+		Short:       "Sign in to the server in your browser",
+		Args:        cobra.NoArgs,
+		Annotations: map[string]string{wordsSignInErrorsItself: "yes"},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := loadConfig()
 			if err != nil {

@@ -18,9 +18,10 @@ var errLogoutNeedsAServer = errors.New("starter logout needs a server to sign ou
 // newLogoutCmd signs out of the server the settings name.
 func newLogoutCmd(loadConfig func() (config.Config, error), newSignIn SignInFactory) *cobra.Command {
 	return &cobra.Command{
-		Use:   "logout",
-		Short: "Sign out of the server",
-		Args:  cobra.NoArgs,
+		Use:         "logout",
+		Annotations: map[string]string{wordsSignInErrorsItself: "yes"},
+		Short:       "Sign out of the server",
+		Args:        cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := loadConfig()
 			if err != nil {
