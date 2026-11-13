@@ -215,6 +215,52 @@ func TestWait_ReturnsTheContextsErrorWhenTheContextEndsBeforeAnyCallback(t *test
 	}
 }
 
+func TestWait_AnswersTheFailurePageAndEndsWithErrCodeRefusedWhenTheServerRefusesTheSwap(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "", http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	var opened string
+	attempt, err := browsersignin.Start(context.Background(), server.URL, func(address string) error {
+		opened = address
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer attempt.Close()
+	query := mustParse(t, opened).Query()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		_, err := attempt.Wait(ctx)
+		done <- err
+	}()
+
+	callback := "http://127.0.0.1:" + query.Get("port") + "/callback?" +
+		url.Values{"code": {"the-code"}, "state": {query.Get("state")}}.Encode()
+	response, err := (&http.Client{Timeout: 2 * time.Second}).Get(callback)
+	if err != nil {
+		t.Fatalf("callback: %v", err)
+	}
+	defer response.Body.Close()
+	body, _ := io.ReadAll(response.Body)
+
+	const want = "Sign-in failed. The server refused to exchange the sign-in code for a session token. The code may have expired (codes last 5 minutes), may already have been used, or may not match the application that requested it. Please start signing in again from the application that initiated the sign-in."
+	if response.StatusCode != http.StatusBadRequest {
+		t.Errorf("callback status %d, want 400", response.StatusCode)
+	}
+	if !strings.Contains(string(body), want) {
+		t.Errorf("callback page %q does not contain %q", body, want)
+	}
+	if err := <-done; !errors.Is(err, browsersignin.ErrCodeRefused) {
+		t.Errorf("Wait ended with %v, want ErrCodeRefused", err)
+	}
+}
+
 func mustParse(t *testing.T, address string) *url.URL {
 	t.Helper()
 	parsed, err := url.Parse(address)

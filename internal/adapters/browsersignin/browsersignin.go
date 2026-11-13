@@ -13,6 +13,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -20,6 +21,10 @@ import (
 	"strconv"
 	"strings"
 )
+
+// ErrCodeRefused is what Wait returns when the server refuses to swap the
+// browser's code for a session token.
+var ErrCodeRefused = errors.New("the server refused the sign-in code")
 
 // Attempt is a sign-in in progress. Close it when done, to free the port.
 type Attempt struct {
@@ -78,6 +83,7 @@ func randomToken() (string, error) {
 // the session token the server swapped for its code.
 func (a *Attempt) Wait(ctx context.Context) (string, error) {
 	tokens := make(chan string, 1)
+	failures := make(chan error, 1)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /callback", func(w http.ResponseWriter, r *http.Request) {
 		// Compared in constant time, so the wait leaks nothing about the state.
@@ -87,6 +93,11 @@ func (a *Attempt) Wait(ctx context.Context) (string, error) {
 		}
 		token, err := a.swap(r.Context(), r.URL.Query().Get("code"))
 		if err != nil {
+			writePage(w, http.StatusBadRequest, "Sign-in failed", swapRefusedPage)
+			select {
+			case failures <- err:
+			default:
+			}
 			return
 		}
 		writePage(w, http.StatusOK, "Sign-in complete", signedInPage)
@@ -97,6 +108,8 @@ func (a *Attempt) Wait(ctx context.Context) (string, error) {
 	select {
 	case token := <-tokens:
 		return token, nil
+	case err := <-failures:
+		return "", err
 	case <-ctx.Done():
 		return "", ctx.Err()
 	}
@@ -110,6 +123,8 @@ func writePage(w http.ResponseWriter, status int, title, text string) {
 }
 
 const wrongStatePage = "This sign-in request was refused, because its state value did not match the sign-in that the application started. No session token was issued. If you started a sign-in from the application, please start signing in again from there. Otherwise, you may close this window."
+
+const swapRefusedPage = "Sign-in failed. The server refused to exchange the sign-in code for a session token. The code may have expired (codes last 5 minutes), may already have been used, or may not match the application that requested it. Please start signing in again from the application that initiated the sign-in."
 
 const signedInPage = "Sign-in complete. Please close this window and return to the application that initiated the sign-in."
 
@@ -129,6 +144,9 @@ func (a *Attempt) swap(ctx context.Context, code string) (string, error) {
 		return "", err
 	}
 	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return "", ErrCodeRefused
+	}
 	var token struct {
 		Token string `json:"token"`
 	}

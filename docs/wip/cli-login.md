@@ -77,8 +77,9 @@
    - Agreed text, status 400: "This sign-in request was refused, because its state value did not match the sign-in that the application started. No session token was issued. If you started a sign-in from the application, please start signing in again from there. Otherwise, you may close this window."
 15c. [x] Browser sign-in adapter: the context ending the wait makes `Wait` return `ctx.Err()`.
    - Red: `TestWait_ReturnsTheContextsErrorWhenTheContextEndsBeforeAnyCallback` failed (Wait never returned). Green: `Wait` selects on the token channel and `ctx.Done()`. Refactor: nothing worth changing.
-15d. [ ] Browser sign-in adapter: a callback with the right state whose swap the server refuses answers the failure page (400) and `Wait` ends with an error.
+15d. [x] Browser sign-in adapter: a callback with the right state whose swap the server refuses answers the failure page (400) and `Wait` ends with an error.
    - Agreed text, status 400: "Sign-in failed. The server refused to exchange the sign-in code for a session token. The code may have expired (codes last 5 minutes), may already have been used, or may not match the application that requested it. Please start signing in again from the application that initiated the sign-in."
+   - Red: `TestWait_AnswersTheFailurePageAndEndsWithErrCodeRefusedWhenTheServerRefusesTheSwap` failed (200, empty page, Wait ran to its deadline). Green: `swap` returns `ErrCodeRefused` on a non-200 answer; `Wait` answers the failure page and returns the error (a transport error also ends Wait, with that error). Refactor: nothing worth changing.
 16. [ ] Token store: the file store (JSON in the settings folder, 0600, keyed by the normalised server URL): save, read, delete.
 17. [ ] Token store: the keyring store (go-keyring, `MockInit` in tests), same contract as the file store.
 18. [ ] Token store: the system store uses the keyring and falls back to the file when the keyring is unavailable, reporting which it used.
