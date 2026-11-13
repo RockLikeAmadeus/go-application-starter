@@ -14,7 +14,10 @@
 - **Login stores a token only** (agreed). It never changes which data the CLI uses: the server still comes from `--server`, `STARTER_SERVER_URL`, or `server_url`, and the settings file is never written (§4.12). `starter login` and `starter logout` without a server are refused. Login to a server whose `GET /api/v1/session` says sign-in is off is refused.
 - **`starter logout`** posts sign-out with the bearer token, then deletes the stored token whatever the server answered (unreachable, or session already gone).
 - **The browser opener** honours `BROWSER` (as `gh` and `git` do), else the OS default (`xdg-open`, `open`, `start`), and prints the address when opening fails. The terminal journeys set `BROWSER` to a helper that completes the dev sign-in.
-- **TUI:** no sign-in screen. A 401 (`ErrNoWorkspace` from `httpclient`) shows a message to run `starter login`. The CLI prints the same advice.
+- **TUI: signs in and out by itself** (agreed 2026-11-13), sharing the CLI's stored session. On a server with sign-in on and no session (at start, or on a 401 mid-use) it shows a signed-out screen with a sign-in key; the key runs the same browser sign-in, with a waiting screen showing the address, Esc cancelling. Signed in, it shows the name and a sign-out key. No keys on local data or with sign-in off. Which keys, and all wording, are agreed in the cycles. No server picker (agreed: the server stays a setting).
+- **Signing in and out live outside `cli` and `tui`** (a client-side sign-in package, named per `naming.md`): check the server signs people in, run the browser sign-in, save the token; end the server session and forget the token. The CLI, the TUI, and later the desktop app call it. The browser opener lives there too, with its output discarded so it can't draw over the TUI.
+- **`httpclient` asks a token source on each request,** not a fixed token, so the TUI picks up a new or forgotten session without reconnecting.
+- The CLI prints advice to run `starter login` on a 401 (`ErrNoWorkspace` from `httpclient`).
 - **Acceptance:** `@command-line-sign-in` runs on the http and oidc drivers only, started hosted. The "command line" there is the real browser-sign-in adapter and `httpclient` with a memory token store, with an opener that drives the harness's cookie-jar browser through the dev sign-in or `oidctest`.
 - All user-facing text (CLI output, the loopback page, refusals, the TUI message) is agreed with the user in the cycle that writes it.
 
@@ -38,16 +41,25 @@
 17. [ ] Token store: the keyring store (go-keyring, `MockInit` in tests), same contract as the file store.
 18. [ ] Token store: the system store uses the keyring and falls back to the file when the keyring is unavailable, reporting which it used.
 19. [ ] Config: the `credential_store` setting (`system` or `file`), with its env variable, in `starter info` and the default settings file's comments.
-20. [ ] httpclient: every service sends the bearer token when given one (one client option).
-21. [ ] bootstrap: `NewRemote` reads the server's token from the configured store and passes it to `httpclient`.
-22. [ ] CLI: `starter login` refuses without a server, and refuses a server whose sign-in is off.
-23. [ ] CLI: `starter login` runs the browser sign-in, stores the token, and says who is signed in (and when the file fallback held it).
-24. [ ] CLI: the opener honours `BROWSER`, else the OS default, and prints the address when opening fails.
-25. [ ] CLI: `starter logout` ends the server session and forgets the token, even when the server refuses or can't be reached.
-26. [ ] CLI: `starter info` with a server says who is signed in there, or that no one is.
-27. [ ] CLI and TUI: a request refused for want of sign-in tells the user to run `starter login`.
-28. [ ] Acceptance: route `@command-line-sign-in` to the http and oidc drivers (hosted), and add the command-line client and its steps; the Godog scenarios pass.
-29. [ ] Terminal journeys: the server built with `devsignin`, a `BROWSER` helper that completes the dev sign-in, and the steps; the journeys pass.
-30. [ ] Docs and finish: `docs/sign-in.md` (the command line's sign-in, with a sequence diagram), ADR 9 (bearer tokens, the native routes, codes, the token store), `docs/configuration.md` (`credential_store`), `.claude/rules/server.md` (the `/auth/native` routes), README and CLAUDE.md (CLI and TUI hosted is no longer planned), `.env.example` if it lists settings; device code over SSH as a follow-up in the plan; remove the `@wip` tags, run `task test:init` and `task check`, mark step 9 done in the plan, and delete this file.
+20. [ ] httpclient: every service sends a bearer token from a token source, asked on each request (one client option); no token sends no header.
+21. [ ] bootstrap: `NewRemote` gives `httpclient` a token source reading the server's token from the configured store.
+22. [ ] Client sign-in: the opener honours `BROWSER`, else the OS default, discards the program's output, and reports a failure so the caller shows the address.
+23. [ ] Client sign-in: signing in refuses a server whose sign-in is off (`GET /api/v1/session`).
+24. [ ] Client sign-in: signing in runs the browser sign-in, saves the token, and returns the account's name and which store held it.
+25. [ ] Client sign-in: signing out ends the server session and forgets the token, even when the server refuses or can't be reached.
+26. [ ] CLI: `starter login` refuses without a server, and otherwise signs in and says who is signed in (and when the file fallback held it), or prints the address when the browser didn't open.
+27. [ ] CLI: `starter logout` refuses without a server, and otherwise signs out.
+28. [ ] CLI: `starter info` with a server says who is signed in there, or that no one is.
+29. [ ] CLI: a request refused for want of sign-in tells the user to run `starter login`.
+30. [ ] TUI: on a server with sign-in on and no session, it shows the signed-out screen with the sign-in key; on local data or with sign-in off, no sign-in or sign-out key.
+31. [ ] TUI: signed in, it shows who is signed in and the sign-out key.
+32. [ ] TUI: the sign-in key starts the browser sign-in and shows the waiting screen with the address; Esc cancels and returns to the signed-out screen.
+33. [ ] TUI: a finished sign-in loads the workspace's screen on the new session, with no restart; a failed one shows the error on the signed-out screen.
+34. [ ] TUI: the sign-out key signs out and shows the signed-out screen.
+35. [ ] TUI: a request refused for want of sign-in mid-use shows the signed-out screen.
+36. [ ] Acceptance: route `@command-line-sign-in` to the http and oidc drivers (hosted), and add the command-line client and its steps; the Godog scenarios pass.
+37. [ ] Terminal journeys: the server built with `devsignin`, a `BROWSER` helper that completes the dev sign-in, and the steps for the command line and the terminal app; the journeys pass.
+38. [ ] Docs and finish: `docs/sign-in.md` (the command line's and the terminal app's sign-in, with a sequence diagram), ADR 9 (bearer tokens, the native routes, codes, the token store), `docs/configuration.md` (`credential_store`), `.claude/rules/server.md` (the `/auth/native` routes), `.claude/rules/tui.md` (the signed-out screen), README and CLAUDE.md (CLI and TUI hosted is no longer planned), `.env.example` if it lists settings; device code over SSH as a follow-up in the plan; remove the `@wip` tags, run `task test:init` and `task check`, mark step 9 done in the plan, and delete this file.
 
 ## Changes to the plan
+- 2026-11-13: the terminal app signs in and out by itself (the user's request), rather than sending people to `starter login`. Signing in and out moved out of the CLI into a shared client-side package, `httpclient` asks a token source per request, and tasks 30–35 and two terminal journeys were added. No server picker in the TUI (agreed).

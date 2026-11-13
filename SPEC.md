@@ -474,9 +474,14 @@ Someone with an account on a hosted server can sign in from the command line, so
 - The command line gets its own session, apart from the browser's, and keeps it on the computer: in the operating system's credential store (the macOS Keychain, the Windows Credential Manager, or the Secret Service on Linux). Where there isn't one, it keeps it in a file in the settings folder that only the user can read, and says so when signing in.
 - Signing in doesn't change which data the command line uses. It still works on local data unless a server is set (§4.11). When one is, every command, and the terminal app, sends that server's session, if it has one. The command line can be signed in to several servers at once, one session each.
 - `starter info`, with a server set, says who the command line is signed in as there, or that it isn't signed in.
-- A hosted server refuses the command line without a session: never signed in, signed out, or expired (§4.18). The command line and the terminal app then say to sign in with `starter login`.
+- A hosted server refuses the command line without a session: never signed in, signed out, or expired (§4.18). The command line then says to sign in with `starter login`.
 - `starter logout` ends the command line's session on the server, and forgets it on the computer. The person's browsers, and other computers, stay signed in. Even when the server can't be reached, or has already ended the session, the computer forgets it.
-- The terminal app has no sign-in screen of its own: it uses the session from `starter login`.
+- The terminal app can sign in and out by itself, so its users needn't know the commands. It shares the command line's session: signing in or out in one does so in the other.
+  - Connected to a server that signs people in, without a session, it says so and offers a key to sign in. Signing in opens the browser as `starter login` does, and the app shows the address to open while it waits. The person can cancel the wait. Once they've signed in, the app carries on with their workspace, with no restart.
+  - While signed in, it shows who is signed in, and offers a key to sign out, which does what `starter logout` does.
+  - A session that ends while the app is open (it expired, or the person signed out with `starter logout`) brings back the offer to sign in.
+  - On local data, or on a server with sign-in off, it offers neither key.
+- Choosing the server stays a setting: the terminal app has no way to choose one.
 
 **Examples**
 - Ada runs `starter --server https://app.example.com login` → Ada's browser opens at the server's sign-in page. Once Ada signs in, the command line says Ada is signed in.
@@ -487,8 +492,10 @@ Someone with an account on a hosted server can sign in from the command line, so
 - Ada runs `starter --server https://app.example.com logout`, then lists the items there → the command line says to sign in with `starter login`. Ada's browser is still signed in.
 - Grace runs `starter --server http://localhost:8080 login` against a server with sign-in off → it's refused, saying the server doesn't sign people in.
 - Ada runs `starter login` with no server set → it's refused, saying which server to sign in to is missing.
+- Grace opens the terminal app on the hosted server, never having signed in → it offers to sign in. Grace presses the key, signs in in the browser, and the app shows Grace's workspace.
+- Grace signs out from the terminal app, then runs `starter --server https://app.example.com info` → it says Grace isn't signed in.
 
-**Specification:** [`features/command-line-sign-in.feature`](features/command-line-sign-in.feature), on the http and oidc drivers, whose servers sign people in. A command-line client in the tests signs in through a browser the tests drive. Opening the browser, the terminal app's message, and the command's output and exit status are terminal journeys ([`test/terminal/features/command-line-sign-in.feature`](test/terminal/features/command-line-sign-in.feature)). The credential store and its file fallback, one-time codes expiring, and sessions kept per server are checked by unit tests.
+**Specification:** [`features/command-line-sign-in.feature`](features/command-line-sign-in.feature), on the http and oidc drivers, whose servers sign people in. A command-line client in the tests signs in through a browser the tests drive. Opening the browser, the terminal app's sign-in and sign-out, and the commands' output and exit status are terminal journeys ([`test/terminal/features/command-line-sign-in.feature`](test/terminal/features/command-line-sign-in.feature)). The credential store and its file fallback, one-time codes expiring, sessions kept per server, cancelling the terminal app's wait, and the terminal app offering neither key on local data are checked by unit tests.
 
 ## 5. Non-functional requirements
 

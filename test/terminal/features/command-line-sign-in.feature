@@ -18,7 +18,22 @@ Feature: Signing in from the command line, in a terminal
     Then it fails, saying the server doesn't sign people in
 
   @wip
-  Scenario: The terminal app tells me to sign in
+  Scenario: The terminal app offers to sign me in
     Given a server with the dev sign-in is running
     When I open the terminal app, connected to the server, without signing in
-    Then it tells me to sign in from the command line
+    Then the terminal app offers to sign me in
+
+  @wip
+  Scenario: Signing in from the terminal app
+    Given a server with the dev sign-in is running
+    And I have opened the terminal app, connected to the server, without signing in
+    When I sign in from the terminal app as "Ada"
+    Then the terminal app says I am signed in as "Ada"
+
+  @wip
+  Scenario: Signing out from the terminal app
+    Given a server with the dev sign-in is running
+    And I have signed in from the terminal app as "Ada"
+    When I sign out from the terminal app
+    Then the terminal app offers to sign me in
+    And the command line says I am not signed in on the server

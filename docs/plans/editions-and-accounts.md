@@ -125,6 +125,7 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - Teams: workspace members and roles.
 - A paid local licence key, behind the entitlements port.
 - Sweeping expired sessions that nobody looks up again (step 8a deletes one only when it's found expired).
+- A server address built into the program, like `bootstrap.LocalPlan` (`-ldflags -X`), so a hosted-only product's CLI, TUI, and desktop app reach its server without anyone setting `server_url`. The desktop app then opens in remote mode (step 10) with no local mode to choose. The Android app would follow, as `mobile.Open` builds on `desktop.Open`. Raised in step 9 instead of a server picker in the TUI, which would need a second place deciding local or hosted, since the app never writes an existing settings file (SPEC §4.12).
 
 ## Loose ends (from step 8a)
 Things step 8a left that need a look, to be dealt with one at a time. Tick each one when it's settled, with a line on what was done.
