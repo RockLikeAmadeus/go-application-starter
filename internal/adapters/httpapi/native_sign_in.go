@@ -46,14 +46,14 @@ func nativeFinish(signIn ports.SignInService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(NativeSignInCookie)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			writeNativeAttemptGone(w)
 			return
 		}
 		// The cookie can be planted by another site, so it is checked again.
 		attempt, _ := url.ParseQuery(cookie.Value)
 		port, failures := checkNativeAttempt(attempt)
 		if len(failures) > 0 {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			writeNativeAttemptGone(w)
 			return
 		}
 		token, _ := sessionToken(r)
@@ -67,6 +67,15 @@ func nativeFinish(signIn ports.SignInService) http.HandlerFunc {
 		http.Redirect(w, r, callback.String(), http.StatusFound)
 	}
 }
+
+func writeNativeAttemptGone(w http.ResponseWriter) {
+	writeProblem(w, problem(http.StatusBadRequest, ProblemBadRequest, nativeAttemptGoneDetail, nil))
+}
+
+const nativeAttemptGoneDetail = "The sign-in request from the application that initiated it could not be found or is no longer valid. " +
+	"The browser did not send the saved sign-in attempt (the `native_sign_in` cookie), or it has expired after 10 minutes, " +
+	"or it does not hold a valid `port`, `state`, and `challenge`. Please start signing in again from that application. " +
+	"If this keeps happening, check that your browser accepts cookies from this server, and that the application and the server are the same version."
 
 // checkNativeAttempt checks a command-line sign-in's "port", "state", and
 // "challenge", and returns the port as a number with a sentence for each
@@ -89,8 +98,8 @@ func startNativeSignIn(w http.ResponseWriter, r *http.Request, publicURL string)
 	_ = r.ParseForm()
 	_, failures := checkNativeAttempt(r.Form)
 	if len(failures) > 0 {
-		detail := "The sign-in request from the command line is not valid. " + strings.Join(failures, " ") +
-			" Please run the login command again. If this keeps happening, check that the command-line application and the server are the same version."
+		detail := "The sign-in request from the application that initiated it is not valid. " + strings.Join(failures, " ") +
+			" Please start signing in again from that application. If this keeps happening, check that the application and the server are the same version."
 		writeProblem(w, problem(http.StatusBadRequest, ProblemBadRequest, detail, nil))
 		return
 	}

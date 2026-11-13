@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	nativeIntro     = "The sign-in request from the command line is not valid."
+	nativeIntro     = "The sign-in request from the application that initiated it is not valid."
 	nativePortText  = "`port` is missing or is not a port number from 1 to 65535."
 	nativeStateText = "`state` is missing or malformed."
 	nativeChalText  = "`challenge` is missing or is not a PKCE S256 challenge (43 base64url characters)."
-	nativeOutro     = "Please run the login command again. If this keeps happening, check that the command-line application and the server are the same version."
+	nativeOutro     = "Please start signing in again from that application. If this keeps happening, check that the application and the server are the same version."
 
 	// The RFC 7636 example challenge: 43 base64url characters.
 	validChallenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
@@ -163,5 +163,42 @@ func TestNativeFinishNeverRedirectsToAnyHostButLoopbackWhateverTheAttemptCookieH
 	}
 	if strings.Contains(rec.Body.String(), "code-for-") {
 		t.Errorf("body = %q, want no code issued", rec.Body.String())
+	}
+}
+
+const nativeAttemptGoneText = "The sign-in request from the application that initiated it could not be found or is no longer valid. " +
+	"The browser did not send the saved sign-in attempt (the `native_sign_in` cookie), or it has expired after 10 minutes, " +
+	"or it does not hold a valid `port`, `state`, and `challenge`. Please start signing in again from that application. " +
+	"If this keeps happening, check that your browser accepts cookies from this server, and that the application and the server are the same version."
+
+func TestNativeFinishRefusesAMissingOrInvalidAttemptCookieWithOneMessage(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{
+		SignIn:        sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}},
+		IsDevSignInOn: true,
+	})
+	invalid := url.Values{"port": {"0"}, "state": {"bad"}, "challenge": {"bad"}}
+	for name, cookie := range map[string]*http.Cookie{
+		"no attempt cookie":         nil,
+		"an invalid attempt cookie": {Name: httpapi.NativeSignInCookie, Value: invalid.Encode()},
+	} {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/auth/native/finish", nil)
+			req.AddCookie(&http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+			if cookie != nil {
+				req.AddCookie(cookie)
+			}
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			var body struct {
+				Detail string `json:"detail"`
+			}
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+				t.Fatalf("decode %q: %v", rec.Body.String(), err)
+			}
+			if rec.Code != http.StatusBadRequest || body.Detail != nativeAttemptGoneText {
+				t.Errorf("status = %d, detail = %q; want %d, %q", rec.Code, body.Detail, http.StatusBadRequest, nativeAttemptGoneText)
+			}
+		})
 	}
 }
