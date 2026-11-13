@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -26,7 +25,7 @@ func NewClientSignIn(cfg config.Config) (*clientsignin.Client, func(address stri
 	if err != nil {
 		return nil, nil, fmt.Errorf("create API client: %w", err)
 	}
-	return clientsignin.New(sessionReader{session}, sessionEnder{}, browserSignIn{cfg.ServerURL}, newServerTokenStore(cfg, folder)), browsersignin.Open, nil
+	return clientsignin.New(sessionReader{session}, session, browserSignIn{cfg.ServerURL}, newServerTokenStore(cfg, folder)), browsersignin.Open, nil
 }
 
 // sessionReader adapts httpclient's session to clientsignin's.
@@ -35,14 +34,6 @@ type sessionReader struct{ *httpclient.SessionService }
 func (r sessionReader) CurrentSession(ctx context.Context) (clientsignin.Session, error) {
 	session, err := r.SessionService.CurrentSession(ctx)
 	return clientsignin.Session{IsSignInOn: session.IsSignInOn, Name: session.Name}, err
-}
-
-// sessionEnder ends the session through the server. It isn't wired yet:
-// task 27 of docs/wip/cli-login.md adds the sign-out request to httpclient.
-type sessionEnder struct{}
-
-func (sessionEnder) EndSession(context.Context) error {
-	return errors.New("signing out is not available yet")
 }
 
 // browserSignIn signs in to one server through browsersignin.

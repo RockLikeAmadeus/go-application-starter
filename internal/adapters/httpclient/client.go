@@ -15,13 +15,22 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
-// newAPI returns the generated API client for the server at baseURL, with a
+// newClient returns the generated API client for the server at baseURL, with a
 // request timeout that opts can replace.
-func newAPI(baseURL string, opts ...apiclient.ClientOption) (*apiclient.ClientWithResponses, error) {
+func newClient(baseURL string, opts ...apiclient.ClientOption) (*apiclient.Client, error) {
 	opts = append([]apiclient.ClientOption{
 		apiclient.WithHTTPClient(&http.Client{Timeout: 10 * time.Second}),
 	}, opts...)
-	return apiclient.NewClientWithResponses(strings.TrimRight(baseURL, "/"), opts...)
+	return apiclient.NewClient(strings.TrimRight(baseURL, "/"), opts...)
+}
+
+// newAPI returns the client of newClient with its typed responses.
+func newAPI(baseURL string, opts ...apiclient.ClientOption) (*apiclient.ClientWithResponses, error) {
+	client, err := newClient(baseURL, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &apiclient.ClientWithResponses{ClientInterface: client}, nil
 }
 
 // toError maps a problem document back to the domain error the server

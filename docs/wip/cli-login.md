@@ -131,7 +131,8 @@
 27. [x] CLI: `starter logout` is refused without a server (stderr, non-zero exit). Task 27 was split (see "Changes to the plan").
    - Agreed text: "starter logout needs a server to sign out of, and none is set. Give one with --server <url>, with the STARTER_SERVER_URL environment variable, or with server_url in the settings file."
    - Red: `TestLogoutIsRefusedWithoutAServer` failed (unknown command "logout"). Green: `cli/logout.go` `newLogoutCmd(loadConfig)` returns `errLogoutNeedsAServer` when `cfg.ServerURL` is empty (does nothing else yet); registered in `root.go`. Refactor: nothing worth changing.
-27b. [ ] httpclient: a sign-out call, `POST /auth/sign-out` with the bearer token from the token source; bootstrap's `sessionEnder` uses it. No user-facing text.
+27b. [x] httpclient: a sign-out call, `POST /auth/sign-out` with the bearer token from the token source; bootstrap's `sessionEnder` uses it. No user-facing text.
+   - Red: `TestEndSession_EndsTheSessionTheTokenSourceNames` failed (stub did nothing; session still Ada). Green: `SessionService.EndSession` posts `/auth/sign-out` with the token source's bearer (success is the server's redirect, any status under 400; a problem document maps through `toError`); only the sign-out request follows no redirect (`signOutClient`; tests for the redirect and for a refused sign-out mapping to `ErrNoWorkspace` added in review); bootstrap's stub `sessionEnder` is replaced by the `SessionService` itself. Refactor: nothing worth changing.
 27c. [ ] CLI: `starter logout` signs out and prints the success message.
    - Agreed text (stdout): "Signed out of <url>. The server ended the session, and the session token was removed from this computer. Run starter login to sign in again."
 27d. [ ] CLI: `starter logout` where the server failed or could not be reached, but the token was removed, prints a message and exits non-zero.
