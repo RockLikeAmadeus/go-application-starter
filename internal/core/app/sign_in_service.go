@@ -133,11 +133,17 @@ func (s *SignInService) IssueSignInCode(ctx context.Context, token, challenge st
 }
 
 // RedeemSignInCode swaps a code and its PKCE verifier for a new session token
-// for the code's account.
+// for the code's account. A code works once, whatever the outcome.
 func (s *SignInService) RedeemSignInCode(ctx context.Context, code, verifier string) (string, error) {
 	signInCode, err := s.codes.Take(ctx, domain.HashSignInCode(code))
 	if err != nil {
 		return "", fmt.Errorf("take sign-in code: %w", err)
+	}
+	// A wrong verifier and an expired code are refused like a missing code, so
+	// a caller can't tell which one it was. The code is already taken, so none
+	// of them can be tried again.
+	if signInCode.IsExpiredAt(s.clock.Now()) || !signInCode.VerifiedBy(verifier) {
+		return "", fmt.Errorf("sign-in code is expired or the verifier is wrong: %w", domain.ErrNotFound)
 	}
 	return s.startSession(ctx, signInCode.AccountID)
 }

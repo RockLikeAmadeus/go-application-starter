@@ -350,3 +350,54 @@ func TestRedeemSignInCode_GivesANewSessionTokenForTheCodesAccount(t *testing.T) 
 		t.Errorf("sessions = %v, want %v", sessions, wantSessions)
 	}
 }
+
+func TestRedeemSignInCode_RefusesACodeUsedBeforeAWrongVerifierAndAnExpiredCode(t *testing.T) {
+	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
+	// The RFC 7636 appendix B pair.
+	const verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+	const challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+	tests := []struct {
+		name     string
+		issuedAt time.Time
+		verifier string
+		redeems  int
+	}{
+		{"a code used before", now, verifier, 2},
+		{"a wrong verifier", now, "another-verifier", 1},
+		{"an expired code", now.Add(-domain.SignInCodeLifetime), verifier, 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			issued := domain.NewSignInCode("account-1", challenge, tt.issuedAt)
+			issued.CodeHash = domain.HashSignInCode("code-1")
+			codes := memory.NewSignInCodeRepository()
+			if err := codes.Save(context.Background(), issued); err != nil {
+				t.Fatalf("Save: %v", err)
+			}
+			sessions := testsupport.StoredSessions{}
+			svc := app.NewSignInService(testsupport.StoredAccounts{}, sessions, codes, testsupport.FixedToken("token-new"),
+				testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(now))
+
+			var token string
+			var err error
+			for range tt.redeems {
+				token, err = svc.RedeemSignInCode(context.Background(), "code-1", tt.verifier)
+			}
+
+			if err == nil {
+				t.Errorf("err = nil, want a refusal")
+			}
+			if token != "" {
+				t.Errorf("token = %q, want none", token)
+			}
+			if tt.redeems == 2 {
+				// The first redeem started the one session.
+				if len(sessions) != 1 {
+					t.Errorf("sessions = %v, want only the first redeem's", sessions)
+				}
+			} else if len(sessions) != 0 {
+				t.Errorf("sessions = %v, want none", sessions)
+			}
+		})
+	}
+}
