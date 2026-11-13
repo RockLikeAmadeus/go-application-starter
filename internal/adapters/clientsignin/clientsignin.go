@@ -27,16 +27,37 @@ type SessionReader interface {
 }
 
 // Result is what a finished sign-in leaves.
-type Result struct{}
+type Result struct {
+	// Name is the signed-in account's name.
+	Name string
+	// TokenKept says where the token was kept, as the token store names it.
+	TokenKept string
+}
+
+// BrowserSignIn signs in through the browser, handing the address to open, and
+// returns the session token the server gave this client.
+type BrowserSignIn interface {
+	BrowserSignIn(ctx context.Context, open func(address string) error) (token string, err error)
+}
+
+// TokenStore keeps the session token for the server.
+type TokenStore interface {
+	// Save keeps the token and says where it was kept.
+	Save(token string) (kept string, err error)
+}
 
 // Client signs in to, and out of, one server.
 type Client struct {
 	session SessionReader
+	browser BrowserSignIn
+	store   TokenStore
 }
 
-// New returns a Client that asks session about the server.
-func New(session SessionReader) *Client {
-	return &Client{session: session}
+// New returns a Client that asks session about the server, signs in through
+// browser, and keeps the token in store. The session reader must send the
+// token the store keeps, so it names the account once the token is saved.
+func New(session SessionReader, browser BrowserSignIn, store TokenStore) *Client {
+	return &Client{session: session, browser: browser, store: store}
 }
 
 // SignIn signs in to the server, handing the browser's address to open.
@@ -48,5 +69,17 @@ func (c *Client) SignIn(ctx context.Context, open func(address string) error) (R
 	if !session.IsSignInOn {
 		return Result{}, ErrServerDoesNotSignPeopleIn
 	}
-	return Result{}, nil
+	token, err := c.browser.BrowserSignIn(ctx, open)
+	if err != nil {
+		return Result{}, err
+	}
+	kept, err := c.store.Save(token)
+	if err != nil {
+		return Result{}, err
+	}
+	signedIn, err := c.session.CurrentSession(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{Name: signedIn.Name, TokenKept: kept}, nil
 }

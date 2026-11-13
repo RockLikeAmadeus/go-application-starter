@@ -108,7 +108,8 @@
    - Red: `TestOpen_FallsBackToTheSystemOpenerWhenBrowserIsUnsetEmptyOrBlank` (unset, empty, blank) panicked on `fields[0]` (index out of range). Green: `Open` falls back to `systemOpener()` when `BROWSER` has no fields; no panic. Refactor: nothing worth changing.
 23. [x] Client sign-in: signing in refuses a server whose sign-in is off (`GET /api/v1/session`).
    - Red: `TestSignIn_RefusesAServerThatDoesNotSignPeopleIn` failed (stub returned no error). Green: new package `clientsignin`, `New(session).SignIn(ctx, open)` reads the session through the `SessionReader` interface and returns `ErrServerDoesNotSignPeopleIn`, opening no browser. No user-facing text: callers word the named error (tasks 26 and 37). Refactor: nothing worth changing.
-24. [ ] Client sign-in: signing in runs the browser sign-in, saves the token, and returns the account's name and which store held it.
+24. [x] Client sign-in: signing in runs the browser sign-in, saves the token, and returns the account's name and which store held it.
+   - Red: `TestSignIn_SavesTheBrowsersTokenAndReportsTheAccountAndWhereItWasKept` failed (nothing saved, empty `Result`). Green: `New(session, browser, store)` with the `BrowserSignIn` and `TokenStore` interfaces; `SignIn` runs the browser sign-in, saves the token, re-reads the session for the name; `Result{Name, TokenKept}`. Bootstrap (task 26) adapts `browsersignin` and `tokenstore` (`Kept` to string, server URL bound) and passes a session reader sending the stored token. Refactor: nothing worth changing.
 25. [ ] Client sign-in: signing out ends the server session and forgets the token, even when the server refuses or can't be reached.
 26. [ ] CLI: `starter login` refuses without a server, and otherwise signs in and says who is signed in (and when the file fallback held it), or prints the address when the browser didn't open.
 27. [ ] CLI: `starter logout` refuses without a server, and otherwise signs out.
