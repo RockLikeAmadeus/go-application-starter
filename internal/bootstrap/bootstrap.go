@@ -117,11 +117,13 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	// sample:end
 	var accountRepo ports.AccountRepository
 	var sessionRepo ports.SessionRepository
+	var signInCodeRepo ports.SignInCodeRepository
 	var workspacePlanRepo ports.WorkspacePlanRepository
 	switch cfg.Storage {
 	case config.StorageMemory:
 		accountRepo = memory.NewAccountRepository()
 		sessionRepo = memory.NewSessionRepository()
+		signInCodeRepo = memory.NewSignInCodeRepository()
 		workspacePlanRepo = memory.NewWorkspacePlanRepository()
 		// sample:start
 		itemRepo = memory.NewItemRepository()
@@ -158,6 +160,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		}
 		accountRepo = sqlstore.NewAccountRepository(store.DB())
 		sessionRepo = sqlstore.NewSessionRepository(store.DB())
+		signInCodeRepo = sqlstore.NewSignInCodeRepository(store.DB())
 		workspacePlanRepo = sqlstore.NewWorkspacePlanRepository(store.DB())
 		// sample:start
 		itemRepo = sqlstore.NewItemRepository(store.DB())
@@ -174,6 +177,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		a.ready = store.Ready
 		accountRepo = sqlstore.NewAccountRepository(store.DB())
 		sessionRepo = sqlstore.NewSessionRepository(store.DB())
+		signInCodeRepo = sqlstore.NewSignInCodeRepository(store.DB())
 		workspacePlanRepo = sqlstore.NewWorkspacePlanRepository(store.DB())
 		// sample:start
 		itemRepo = sqlstore.NewItemRepository(store.DB())
@@ -187,7 +191,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	}
 	a.Entitlements = app.NewEntitlementsService(entitlementsProvider, workspacesFor(cfg))
 	if cfg.SignIn.IsOn() {
-		a.SignIn = app.NewSignInService(accountRepo, sessionRepo, nil, system.Tokens{}, system.UUIDs{}, system.Clock{})
+		a.SignIn = app.NewSignInService(accountRepo, sessionRepo, signInCodeRepo, system.Tokens{}, system.UUIDs{}, system.Clock{})
 		a.billing = app.NewBillingService(workspacePlanRepo, entitlementsProvider)
 	}
 	// Build each use case on its repository and the driven ports:

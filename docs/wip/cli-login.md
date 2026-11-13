@@ -36,7 +36,8 @@
    - Red: `TestRedeemSignInCode_GivesANewSessionTokenForTheCodesAccount` failed (stub returned no token, no session). Green: `RedeemSignInCode` takes the code by hash and starts a session. Refactor: extracted `startSession`, shared with `SignIn`. Not on `ports.SignInService` yet (httpapi tasks add it); the verifier isn't checked until task 6.
 6. [x] App: redeeming refuses a code used before, a wrong verifier, and an expired code (one test each, table if natural).
    - Red: `TestRedeemSignInCode_RefusesACodeUsedBeforeAWrongVerifierAndAnExpiredCode` (table) failed for the wrong verifier and the expired code (a session was started); the used-before case passed already, as `Take` deletes. Green: `RedeemSignInCode` checks expiry and `VerifiedBy`, refusing with `ErrNotFound` like a missing code. Refactor: nothing worth changing.
-7. [ ] sqlstore: migration and repository for sign-in codes; the contract suite passes on SQLite and Postgres; bootstrap wires the repository with the hosted storage.
+7. [x] sqlstore: migration and repository for sign-in codes; the contract suite passes on SQLite and Postgres; bootstrap wires the repository with the hosted storage.
+   - Red: `TestSignInCodeRepositoryContractOn{SQLite,Postgres}` failed (stub's Take found nothing). Green: migration 00005 `sign_in_codes`, `sqlstore.SignInCodeRepository` (Take is one `DELETE ... RETURNING`), bootstrap wires it for memory, SQLite, and Postgres. Refactor: nothing worth changing.
 8. [ ] httpapi: the session middleware accepts `Authorization: Bearer <token>`, ahead of the cookie.
 9. [ ] httpapi: `POST /auth/sign-out` ends a bearer session (no cookie involved), and passes the cross-origin check without `Origin`.
 10. [ ] httpapi: the sign-in routes (dev and OIDC) return to a `return` path after signing in; anything but a local path is ignored.
