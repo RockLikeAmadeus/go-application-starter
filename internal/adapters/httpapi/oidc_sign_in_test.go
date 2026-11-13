@@ -238,3 +238,48 @@ func TestTheAttemptCookieIsSecureOverPlainHTTPWithAnHTTPSPublicURL(t *testing.T)
 	}
 	t.Fatalf("no %q cookie in %v", httpapi.AttemptCookie, rec.Result().Header.Values("Set-Cookie"))
 }
+
+func TestAnOIDCSignInKeepsALocalReturnPathThroughTheProviderTripAndGoesThereAfterwards(t *testing.T) {
+	identity, _ := domain.NewIdentity("https://provider.example", "sub-ada", "Ada")
+	provider := fakeSignInProvider{
+		url: "https://provider.example/authorize", state: "s1", attempt: "opaque-attempt", identity: identity,
+	}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{token: "token-ada"}, SignInProvider: provider})
+
+	start := httptest.NewRecorder()
+	handler.ServeHTTP(start, httptest.NewRequest(
+		http.MethodGet, "/auth/oidc?return=%2Fauth%2Fnative%2Ffinish%3Fx%3D1", nil))
+	var attempt *http.Cookie
+	for _, c := range start.Result().Cookies() {
+		if c.Name == httpapi.AttemptCookie {
+			attempt = c
+		}
+	}
+	if attempt == nil {
+		t.Fatalf("no %q cookie in %v", httpapi.AttemptCookie, start.Result().Header.Values("Set-Cookie"))
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/auth/oidc/callback?state=s1&code=the-code", nil)
+	req.AddCookie(&http.Cookie{Name: attempt.Name, Value: attempt.Value})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/auth/native/finish?x=1" {
+		t.Errorf("status = %d, Location = %q; want %d to /auth/native/finish?x=1",
+			rec.Code, rec.Header().Get("Location"), http.StatusSeeOther)
+	}
+}
+
+func TestTheOIDCCallbackIgnoresAForeignReturnAddressInTheAttemptCookie(t *testing.T) {
+	identity, _ := domain.NewIdentity("https://provider.example", "sub-ada", "Ada")
+	provider := fakeSignInProvider{state: "s1", attempt: "opaque-attempt", identity: identity}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{token: "token-ada"}, SignInProvider: provider})
+	req := httptest.NewRequest(http.MethodGet, "/auth/oidc/callback?state=s1&code=the-code", nil)
+	req.AddCookie(&http.Cookie{Name: httpapi.AttemptCookie, Value: "s1.opaque-attempt.https%3A%2F%2Fevil.example"})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/" {
+		t.Errorf("status = %d, Location = %q; want %d to /", rec.Code, rec.Header().Get("Location"), http.StatusSeeOther)
+	}
+}

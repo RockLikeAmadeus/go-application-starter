@@ -46,7 +46,12 @@ func signOut(signIn ports.SignInService) http.Handler {
 // browsers drop from addresses and url.Parse refuses) would let a link make the sign-in an open
 // redirect.
 func returnPath(r *http.Request) string {
-	path := r.FormValue("return")
+	return localPath(r.FormValue("return"))
+}
+
+// localPath is path when it is a path on this server, else "/". See returnPath
+// for what it refuses.
+func localPath(path string) string {
 	parsed, err := url.Parse(path)
 	if err != nil || parsed.Scheme != "" || parsed.Host != "" ||
 		!strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.HasPrefix(path, `/\`) {
