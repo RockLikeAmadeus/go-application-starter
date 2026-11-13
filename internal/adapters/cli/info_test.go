@@ -369,3 +369,27 @@ func TestInfoWithAServerSaysWhoIsSignedInThere(t *testing.T) {
 		t.Errorf("info output lacks %q:\n%s", want, out.String())
 	}
 }
+
+// With sign-in on and no session, info says so, leaves out the plan (the
+// server refuses it without a session), and succeeds.
+func TestInfoWithSignInOnAndNoSessionSaysSoAndLeavesOutThePlan(t *testing.T) {
+	srv := testServer(t)
+	newSignIn := func(config.Config) (*clientsignin.Client, func(string) error, error) {
+		reader := sessionIs{IsSignInOn: true}
+		return clientsignin.New(reader, nil, nil, nil), func(string) error { return nil }, nil
+	}
+	var out bytes.Buffer
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(t.TempDir(), nil), &out)
+	cmd.SetArgs([]string{"--server", srv, "info"})
+
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	want := "Server: " + srv + "\nNot signed in to " + srv + ". Run starter login to sign in.\n"
+	if !strings.Contains(out.String(), want) {
+		t.Errorf("info output lacks %q:\n%s", want, out.String())
+	}
+	if strings.Contains(out.String(), "Plan:") {
+		t.Errorf("info output has a Plan line, want none:\n%s", out.String())
+	}
+}

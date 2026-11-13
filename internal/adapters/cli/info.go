@@ -25,6 +25,7 @@ func newInfoCmd(open appOpener, newSignIn SignInFactory) *cobra.Command {
 			}
 			defer app.Close()
 			signedIn := ""
+			isPlanKnown := true
 			if cfg.ServerURL != "" {
 				client, _, err := newSignIn(cfg)
 				if err != nil {
@@ -34,13 +35,21 @@ func newInfoCmd(open appOpener, newSignIn SignInFactory) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				if session.Name != "" {
+				switch {
+				case session.Name != "":
 					signedIn = fmt.Sprintf("Signed in to %s as %s.\n", cfg.ServerURL, session.Name)
+				case session.IsSignInOn:
+					signedIn = fmt.Sprintf("Not signed in to %s. Run starter login to sign in.\n", cfg.ServerURL)
+					isPlanKnown = false
 				}
 			}
-			entitlements, err := app.Entitlements.CurrentEntitlements(cmd.Context())
-			if err != nil {
-				return err
+			plan := ""
+			if isPlanKnown {
+				entitlements, err := app.Entitlements.CurrentEntitlements(cmd.Context())
+				if err != nil {
+					return err
+				}
+				plan = "Plan: " + entitlements.Plan + "\n"
 			}
 			label, location := dataLocation(cfg)
 			settingsFile := cfg.SettingsFile
@@ -52,7 +61,7 @@ func newInfoCmd(open appOpener, newSignIn SignInFactory) *cobra.Command {
 			for _, s := range cfg.Settings() {
 				fmt.Fprintf(out, "  %s = %s  # %s\n", s.Key, tomlValue(s.Value), s.Source)
 			}
-			_, err = fmt.Fprintf(out, "%s: %s\n%sPlan: %s\n", label, location, signedIn, entitlements.Plan)
+			_, err = fmt.Fprintf(out, "%s: %s\n%s%s", label, location, signedIn, plan)
 			return err
 		},
 	}

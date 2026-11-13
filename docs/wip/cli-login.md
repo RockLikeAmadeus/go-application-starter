@@ -143,8 +143,9 @@
 28. [x] CLI: `starter info` with a server says who is signed in there. Task 28 was split (see "Changes to the plan").
    - Agreed text (a line after `Server:`, the `Plan:` line follows): "Signed in to <url> as <name>."
    - Red: `TestInfoWithAServerSaysWhoIsSignedInThere` failed (no such line). Green: `Client.CurrentSession`; `newInfoCmd` takes the `SignInFactory` and prints the line when a server is set and the session has a name. Refactor: nothing worth changing.
-28b. [ ] CLI: `starter info` with sign-in on and no session says so, prints no `Plan:` line, and exits 0.
+28b. [x] CLI: `starter info` with sign-in on and no session says so, prints no `Plan:` line, and exits 0.
    - Agreed text (after `Server:`): "Not signed in to <url>. Run starter login to sign in."
+   - Red: `TestInfoWithSignInOnAndNoSessionSaysSoAndLeavesOutThePlan` failed (no such line, a `Plan:` line). Green: `newInfoCmd` prints the line and skips the entitlements lookup when sign-in is on and no one is signed in. Refactor: nothing worth changing.
 28c. [ ] CLI: `starter info` against a server with sign-in off says so, then the `Plan:` line.
    - Agreed text (after `Server:`): "The server at <url> does not support sign-in."
 29. [ ] CLI: a request refused for want of sign-in tells the user to run `starter login`.
