@@ -109,8 +109,9 @@ SPEC.md §4.17 · [`features/postgres-storage.feature`](../../features/postgres-
 - SPA login and logout. The isolation scenarios run on the http driver.
 - Remove "Authentication and authorization" from SPEC.md §6.
 
-### 9. CLI and TUI login — not started
+### 9. CLI and TUI login — in progress
 - `starter login --server …`, with the token stored locally. `httpclient` sends it.
+- Started 2026-11-13: [`docs/wip/cli-login.md`](../wip/cli-login.md), SPEC.md §4.19. Agreed: the browser and a loopback port (RFC 8252) with one-time codes, the OS credential store with a file fallback, and login storing a token only, never choosing the server.
 
 ### 10. Desktop and mobile remote mode — not started
 - This is the existing TODO item, now unblocked by step 8.

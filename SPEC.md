@@ -11,7 +11,7 @@ _One paragraph: who the users are, what problem this solves, and what success lo
 | Persona | Front-end | Editions (§3) | Notes |
 |---|---|---|---|
 | _e.g. End user_ | Web (React SPA) | Hosted, with sign-in through a sign-in provider (§4.18). Or local: a self-hosted server for one user, with no sign-in | Installable (§4.5) |
-| _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in the desktop app's data folder (§4.11). Hosted, after `starter login --server …` (planned) | Today `--server` reaches only a server without sign-in, as the command line can't sign in yet |
+| _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in the desktop app's data folder (§4.11). Hosted, after `starter login` (§4.19) | `--server` reaches a server with or without sign-in |
 | _e.g. Integrations_ | REST API (`api/openapi.yaml`) | Whichever edition the server runs | |
 | _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | Local, with its data on the computer (§4.6). Hosted, in remote mode (planned) | The web app in its own window |
 | _e.g. Single user on an Android phone_ | Mobile app (Android) | Local, with its data on the phone (§4.7). Hosted, in remote mode (planned) | The web app as a phone app |
@@ -461,6 +461,34 @@ In the hosted edition, each person signs in to their own **account**, and works 
 - A server with a sign-in provider but no public address → it doesn't start, and says which setting is missing.
 
 **Specification:** [`features/sign-in.feature`](features/sign-in.feature), on the memory, sqlite, postgres, and http drivers, whose storage keeps accounts, and on the oidc driver, which signs in through a fake sign-in provider inside the tests. [`features/sign-in-provider.feature`](features/sign-in-provider.feature) runs on the oidc driver only. Checking the provider's tokens, the settings a provider needs, and marking the session for encrypted connections are checked by unit tests. The workspace scenarios in [`features/workspaces.feature`](features/workspaces.feature) also run on the http driver, each workspace being a signed-in account's. The web app's sign-in, creating an account, and sign-out are browser journeys ([`web/e2e/features/sign-in.feature`](web/e2e/features/sign-in.feature)). Refusing plain-text storage, expiring sessions, and leaving the dev sign-in out of release builds are checked by unit tests.
+
+### 4.19 Sign in from the command line
+
+Someone with an account on a hosted server can sign in from the command line, so that the command line and the terminal app work on their own workspace there, on its plan. This is step 9 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). The desktop and mobile apps will sign in the same way in remote mode (step 10).
+
+**Rules**
+- `starter login` signs in to the server the command line is set to use (`--server`, `STARTER_SERVER_URL`, or `server_url`, §4.12). Without a server it's refused, as local data needs no sign-in. A server with sign-in off is refused too, saying that it doesn't sign people in.
+- Signing in opens the person's browser at the server's sign-in page, and they sign in there as they would in the web app (§4.18). The command line never sees their password, and needs no settings for the sign-in provider. If the browser is already signed in to the server, the person isn't asked again.
+- When the browser can't be opened, the command line prints the address to open instead. The browser must run on the same computer, because the server sends it back to the command line there. (Signing in from another computer, such as over SSH, is a follow-up.)
+- The server sends the browser back with a one-time code, which only the command line that started that sign-in can use, once, within a few minutes. So a code that leaks, or a sign-in someone else started, signs no one in.
+- The command line gets its own session, apart from the browser's, and keeps it on the computer: in the operating system's credential store (the macOS Keychain, the Windows Credential Manager, or the Secret Service on Linux). Where there isn't one, it keeps it in a file in the settings folder that only the user can read, and says so when signing in.
+- Signing in doesn't change which data the command line uses. It still works on local data unless a server is set (§4.11). When one is, every command, and the terminal app, sends that server's session, if it has one. The command line can be signed in to several servers at once, one session each.
+- `starter info`, with a server set, says who the command line is signed in as there, or that it isn't signed in.
+- A hosted server refuses the command line without a session: never signed in, signed out, or expired (§4.18). The command line and the terminal app then say to sign in with `starter login`.
+- `starter logout` ends the command line's session on the server, and forgets it on the computer. The person's browsers, and other computers, stay signed in. Even when the server can't be reached, or has already ended the session, the computer forgets it.
+- The terminal app has no sign-in screen of its own: it uses the session from `starter login`.
+
+**Examples**
+- Ada runs `starter --server https://app.example.com login` → Ada's browser opens at the server's sign-in page. Once Ada signs in, the command line says Ada is signed in.
+- Ada then runs `starter --server https://app.example.com info` → it names the server, says Ada is signed in, and gives Ada's workspace's plan.
+<!-- sample:start -->
+- Ada runs `starter --server https://app.example.com item add "Widget"`, then opens the web app → "Widget" is there.
+<!-- sample:end -->
+- Ada runs `starter --server https://app.example.com logout`, then lists the items there → the command line says to sign in with `starter login`. Ada's browser is still signed in.
+- Grace runs `starter --server http://localhost:8080 login` against a server with sign-in off → it's refused, saying the server doesn't sign people in.
+- Ada runs `starter login` with no server set → it's refused, saying which server to sign in to is missing.
+
+**Specification:** [`features/command-line-sign-in.feature`](features/command-line-sign-in.feature), on the http and oidc drivers, whose servers sign people in. A command-line client in the tests signs in through a browser the tests drive. Opening the browser, the terminal app's message, and the command's output and exit status are terminal journeys ([`test/terminal/features/command-line-sign-in.feature`](test/terminal/features/command-line-sign-in.feature)). The credential store and its file fallback, one-time codes expiring, and sessions kept per server are checked by unit tests.
 
 ## 5. Non-functional requirements
 
