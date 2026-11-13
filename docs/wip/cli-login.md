@@ -87,7 +87,10 @@
    - Red: `TestFile_DeletesOneServersTokenLeavingTheOthersAndForgettingAnUnknownOneIsNotAnError` failed (stub kept the token). Green: `File.Delete`, sharing `write` with `Save`; an unknown server writes nothing. Refactor: nothing worth changing.
 17. [x] Token store: the keyring store (go-keyring, `MockInit` in tests), same contract as the file store.
    - Red: `TestKeyringStoreKeepsTheContract` (shared `runContract` in `tokenstore/contract_test.go`, also run on the file store) failed (stub kept nothing). Green: `tokenstore.Keyring` (`keyring.go`) via go-keyring v0.2.8, keyed by `normalise`, `ErrNotFound` mapped to `ErrNoToken` and to nil on Delete; go-keyring now a direct dependency. Refactor: the file store's duplicate delete test removed, as the contract covers it.
-18. [ ] Token store: the system store uses the keyring and falls back to the file when the keyring is unavailable, reporting which it used.
+18. [x] Token store: the system store uses the keyring and falls back to the file when the keyring is unavailable, reporting which it used.
+   - Red: `TestSystem_SavesInTheKeyringAndFallsBackToTheFileWhenTheKeyringIsUnavailable` failed (stub kept nothing, reported nothing). Green: `tokenstore.System` (`system.go`): `NewSystem(folder)`, `Save` returns `Kept` (`InKeyring` or `InFile`); any keyring error falls back. Read and Delete on it come in 18b and 18c. Task 18 was split (see "Changes to the plan"). Refactor: nothing worth changing.
+18b. [ ] Token store: the system store reads a server's token from the keyring, else from the file (a token the fallback kept is still found), and `ErrNoToken` when neither has one.
+18c. [ ] Token store: the system store deletes a server's token from both the keyring and the file, and deleting an unknown one, or with the keyring unavailable, is not an error.
 19. [ ] Config: the `credential_store` setting (`system` or `file`), with its env variable, in `starter info` and the default settings file's comments.
 20. [ ] httpclient: every service sends a bearer token from a token source, asked on each request (one client option); no token sends no header.
 21. [ ] bootstrap: `NewRemote` gives `httpclient` a token source reading the server's token from the configured store.
@@ -118,3 +121,4 @@
 - 2026-11-13: task 10 split: 10 `POST /auth/dev` honours `return`, 10b the dev form and `/auth/sign-in` carry it, 10c OIDC does.
 - 2026-11-13: task 10b split: 10b `GET /auth/sign-in` passes `return` on, 10b2 the dev form carries it in a hidden field.
 - 2026-11-13: task 11 split: 11 refuses bad parameters, 11b redirects to sign-in with the attempt cookie, 11c redirects straight to finish when signed in.
+- 2026-11-13: task 18 split: 18 saves and reports where, 18b reads, 18c deletes (Tasks 21, 24, and 25 use them).
