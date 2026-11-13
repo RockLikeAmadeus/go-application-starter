@@ -117,7 +117,7 @@ func NewRootCmd(newApp AppFactory, newBilling BillingFactory, newSignIn SignInFa
 	root.AddCommand(newTUICmd(openApp))
 	root.AddCommand(newInfoCmd(openApp))
 	root.AddCommand(newLoginCmd(loadConfig, newSignIn))
-	root.AddCommand(newLogoutCmd(loadConfig))
+	root.AddCommand(newLogoutCmd(loadConfig, newSignIn))
 	root.AddCommand(newAdminCmd(loadConfig, newBilling))
 	// sample:start
 	root.AddCommand(newItemCmd(openApp))

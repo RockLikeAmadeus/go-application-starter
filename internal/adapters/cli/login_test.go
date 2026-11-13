@@ -206,3 +206,40 @@ func TestLoginPrintsTheAddressWhenTheBrowserCannotOpenAndKeepsWaiting(t *testing
 		t.Errorf("login output = %q, want it to say Ada is signed in", out.String())
 	}
 }
+
+// signOutPieces play a server that ends the session, and a store that forgets
+// the token, recording that each was asked.
+type signOutPieces struct {
+	isSessionEnded bool
+	isTokenGone    bool
+}
+
+func (p *signOutPieces) EndSession(context.Context) error { p.isSessionEnded = true; return nil }
+func (p *signOutPieces) Forget() error                    { p.isTokenGone = true; return nil }
+func (p *signOutPieces) Save(string) (string, error)      { return "", nil }
+
+// Signing out ends the session on the server, forgets the token, and says
+// both, naming the server.
+func TestLogoutEndsTheSessionForgetsTheTokenAndSaysSo(t *testing.T) {
+	pieces := &signOutPieces{}
+	newSignIn := func(config.Config) (*clientsignin.Client, func(string) error, error) {
+		return clientsignin.New(nil, pieces, nil, pieces), func(string) error { return nil }, nil
+	}
+	var out bytes.Buffer
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(t.TempDir(), nil), &out)
+	cmd.SetArgs([]string{"--storage", "memory", "--server", "https://starter.example.com", "logout"})
+
+	err := cmd.ExecuteContext(context.Background())
+
+	if err != nil {
+		t.Fatalf("logout: %v", err)
+	}
+	want := "Signed out of https://starter.example.com. The server ended the session, " +
+		"and the session token was removed from this computer. Run starter login to sign in again.\n"
+	if out.String() != want {
+		t.Errorf("logout output = %q, want %q", out.String(), want)
+	}
+	if !pieces.isSessionEnded || !pieces.isTokenGone {
+		t.Errorf("session ended = %v, token gone = %v, want both", pieces.isSessionEnded, pieces.isTokenGone)
+	}
+}

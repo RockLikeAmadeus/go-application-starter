@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -14,12 +15,12 @@ var errLogoutNeedsAServer = errors.New("starter logout needs a server to sign ou
 	"Give one with --server <url>, with the STARTER_SERVER_URL environment variable, or with server_url in the settings file.")
 
 // newLogoutCmd signs out of the server the settings name.
-func newLogoutCmd(loadConfig func() (config.Config, error)) *cobra.Command {
+func newLogoutCmd(loadConfig func() (config.Config, error), newSignIn SignInFactory) *cobra.Command {
 	return &cobra.Command{
 		Use:   "logout",
 		Short: "Sign out of the server",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := loadConfig()
 			if err != nil {
 				return err
@@ -27,7 +28,16 @@ func newLogoutCmd(loadConfig func() (config.Config, error)) *cobra.Command {
 			if cfg.ServerURL == "" {
 				return errLogoutNeedsAServer
 			}
-			return nil
+			client, _, err := newSignIn(cfg)
+			if err != nil {
+				return err
+			}
+			if err := client.SignOut(cmd.Context()); err != nil {
+				return err
+			}
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Signed out of %s. The server ended the session, "+
+				"and the session token was removed from this computer. Run starter login to sign in again.\n", cfg.ServerURL)
+			return err
 		},
 	}
 }
