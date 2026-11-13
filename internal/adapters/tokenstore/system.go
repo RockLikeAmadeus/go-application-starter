@@ -36,3 +36,11 @@ func (s *System) Read(serverURL string) (string, error) {
 	}
 	return s.file.Read(serverURL)
 }
+
+// Delete forgets the server's token in the keyring and in the file. A keyring
+// that can't be reached is not an error: its token, if any, can't be read
+// either, and the file's is still removed.
+func (s *System) Delete(serverURL string) error {
+	_ = s.keyring.Delete(serverURL)
+	return s.file.Delete(serverURL)
+}

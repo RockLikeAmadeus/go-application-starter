@@ -90,3 +90,48 @@ func TestSystem_ReadsATokenFromTheKeyringElseFromTheFileAndReportsNoTokenWhenNei
 		}
 	})
 }
+
+func TestSystem_DeletesATokenFromBothStoresAndForgettingAnUnknownOneOrWithNoKeyringIsNotAnError(t *testing.T) {
+	const server = "https://app.example.com"
+
+	t.Run("in both stores", func(t *testing.T) {
+		keyring.MockInit()
+		folder := t.TempDir()
+		if err := tokenstore.NewKeyring().Save(server, "token-a"); err != nil {
+			t.Fatalf("keyring Save: %v", err)
+		}
+		if err := tokenstore.NewFile(folder).Save(server, "token-b"); err != nil {
+			t.Fatalf("file Save: %v", err)
+		}
+		if err := tokenstore.NewSystem(folder).Delete(server); err != nil {
+			t.Fatalf("Delete: %v", err)
+		}
+		if _, err := tokenstore.NewKeyring().Read(server); !errors.Is(err, tokenstore.ErrNoToken) {
+			t.Errorf("keyring Read = %v; want ErrNoToken", err)
+		}
+		if _, err := tokenstore.NewFile(folder).Read(server); !errors.Is(err, tokenstore.ErrNoToken) {
+			t.Errorf("file Read = %v; want ErrNoToken", err)
+		}
+	})
+
+	t.Run("an unknown server", func(t *testing.T) {
+		keyring.MockInit()
+		if err := tokenstore.NewSystem(t.TempDir()).Delete(server); err != nil {
+			t.Errorf("Delete = %v; want nil", err)
+		}
+	})
+
+	t.Run("keyring unavailable", func(t *testing.T) {
+		keyring.MockInitWithError(errors.New("no secret service"))
+		folder := t.TempDir()
+		if err := tokenstore.NewFile(folder).Save(server, "token-b"); err != nil {
+			t.Fatalf("file Save: %v", err)
+		}
+		if err := tokenstore.NewSystem(folder).Delete(server); err != nil {
+			t.Fatalf("Delete = %v; want nil", err)
+		}
+		if _, err := tokenstore.NewFile(folder).Read(server); !errors.Is(err, tokenstore.ErrNoToken) {
+			t.Errorf("file Read = %v; want ErrNoToken", err)
+		}
+	})
+}

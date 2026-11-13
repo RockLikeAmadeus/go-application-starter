@@ -91,7 +91,8 @@
    - Red: `TestSystem_SavesInTheKeyringAndFallsBackToTheFileWhenTheKeyringIsUnavailable` failed (stub kept nothing, reported nothing). Green: `tokenstore.System` (`system.go`): `NewSystem(folder)`, `Save` returns `Kept` (`InKeyring` or `InFile`); any keyring error falls back. Read and Delete on it come in 18b and 18c. Task 18 was split (see "Changes to the plan"). Refactor: nothing worth changing.
 18b. [x] Token store: the system store reads a server's token from the keyring, else from the file (a token the fallback kept is still found), and `ErrNoToken` when neither has one.
    - Red: `TestSystem_ReadsATokenFromTheKeyringElseFromTheFileAndReportsNoTokenWhenNeitherHasOne` failed (stub returned `ErrNoToken` for the three found cases). Green: `System.Read` tries the keyring, else the file. Refactor: nothing worth changing.
-18c. [ ] Token store: the system store deletes a server's token from both the keyring and the file, and deleting an unknown one, or with the keyring unavailable, is not an error.
+18c. [x] Token store: the system store deletes a server's token from both the keyring and the file, and deleting an unknown one, or with the keyring unavailable, is not an error.
+   - Red: `TestSystem_DeletesATokenFromBothStoresAndForgettingAnUnknownOneOrWithNoKeyringIsNotAnError` failed (stub deleted nothing). Green: `System.Delete` ignores the keyring's error and returns the file's. Refactor: nothing worth changing.
 19. [ ] Config: the `credential_store` setting (`system` or `file`), with its env variable, in `starter info` and the default settings file's comments.
 20. [ ] httpclient: every service sends a bearer token from a token source, asked on each request (one client option); no token sends no header.
 21. [ ] bootstrap: `NewRemote` gives `httpclient` a token source reading the server's token from the configured store.
