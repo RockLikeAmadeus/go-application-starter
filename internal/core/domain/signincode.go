@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/hex"
 	"time"
 )
 
@@ -15,9 +16,17 @@ const SignInCodeLifetime = 5 * time.Minute
 // line, to be swapped for a session. It's bound to the PKCE challenge of the
 // client that asked for it, and to the account that signed in.
 type SignInCode struct {
+	CodeHash  string
 	AccountID string
 	Challenge string
 	ExpiresAt time.Time
+}
+
+// HashSignInCode is the hash a sign-in code is kept by: the code's SHA-256,
+// in hex.
+func HashSignInCode(code string) string {
+	hash := sha256.Sum256([]byte(code))
+	return hex.EncodeToString(hash[:])
 }
 
 // NewSignInCode issues a code for the account at now, bound to the challenge.

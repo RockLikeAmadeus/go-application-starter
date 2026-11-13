@@ -140,6 +140,16 @@ type SessionRepository interface {
 	Delete(ctx context.Context, tokenHash string) error
 }
 
+// SignInCodeRepository is the driven port for storing sign-in codes, which
+// are kept by their hash only.
+type SignInCodeRepository interface {
+	// Save inserts or replaces the code with the same hash.
+	Save(ctx context.Context, code domain.SignInCode) error
+	// Take returns the code kept by the hash and deletes it in the same
+	// step, so it can be taken once, or returns domain.ErrNotFound.
+	Take(ctx context.Context, codeHash string) (domain.SignInCode, error)
+}
+
 // TokenGenerator makes session tokens that can't be guessed.
 type TokenGenerator interface {
 	NewToken() string

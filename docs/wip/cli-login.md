@@ -26,7 +26,8 @@
    - Red: `TestSignInCode_VerifiedByTheVerifierBehindItsChallenge` failed on the RFC 7636 pair (stub returned false). Green: `SignInCode.VerifiedBy` in `domain/signincode.go`. Refactor: nothing worth changing.
 2. [x] Domain: a sign-in code expires `SignInCodeLifetime` (5 minutes) after it's issued.
    - Red: `TestSignInCode_ExpiresItsLifetimeAfterItsIssued` failed at and after the lifetime (stub never expired). Green: `NewSignInCode` (account, challenge, now), `ExpiresAt`, `IsExpiredAt`, `SignInCodeLifetime` in `domain/signincode.go`. Refactor: nothing worth changing. Later tasks add the code hash to the struct.
-3. [ ] Ports and memory: `ports.SignInCodeRepository` (save, and take: find and delete in one step, missing after) with a `storagetest` contract suite, passing on memory.
+3. [x] Ports and memory: `ports.SignInCodeRepository` (save, and take: find and delete in one step, missing after) with a `storagetest` contract suite, passing on memory.
+   - Red: `RunSignInCodeRepositoryContract` on memory failed (stub's Take found nothing). Green: `ports.SignInCodeRepository` (Save, Take), `memory.SignInCodeRepository`, `SignInCode.CodeHash` and `HashSignInCode` in `domain`. Refactor: nothing worth changing. Task 4 sets `CodeHash` when issuing.
 4. [ ] App: `SignInService.IssueSignInCode(ctx, sessionToken, challenge)` stores the code's hash for the session's account and returns the code; an unknown or expired session is refused.
 5. [ ] App: `RedeemSignInCode(ctx, code, verifier)` returns a new session token for the code's account.
 6. [ ] App: redeeming refuses a code used before, a wrong verifier, and an expired code (one test each, table if natural).
