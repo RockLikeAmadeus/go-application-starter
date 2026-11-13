@@ -2,6 +2,7 @@ package domain_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
@@ -30,5 +31,30 @@ func TestSignInCode_VerifiedByTheVerifierBehindItsChallenge(t *testing.T) {
 				t.Errorf("VerifiedBy(%q) = %v, want %v", tc.verifier, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestSignInCode_ExpiresItsLifetimeAfterItsIssued(t *testing.T) {
+	issued := time.Date(2026, 11, 13, 10, 0, 0, 0, time.UTC)
+	code := domain.NewSignInCode("account-1", "challenge", issued)
+
+	cases := map[string]struct {
+		at   time.Time
+		want bool
+	}{
+		"when just issued":           {issued, false},
+		"just before its lifetime":   {issued.Add(domain.SignInCodeLifetime - time.Nanosecond), false},
+		"at the end of its lifetime": {issued.Add(domain.SignInCodeLifetime), true},
+		"after its lifetime":         {issued.Add(domain.SignInCodeLifetime + time.Second), true},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			if got := code.IsExpiredAt(tc.at); got != tc.want {
+				t.Errorf("IsExpiredAt(%v) = %v, want %v", tc.at, got, tc.want)
+			}
+		})
+	}
+	if domain.SignInCodeLifetime != 5*time.Minute {
+		t.Errorf("SignInCodeLifetime = %v, want 5m", domain.SignInCodeLifetime)
 	}
 }
