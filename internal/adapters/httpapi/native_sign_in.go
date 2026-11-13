@@ -56,8 +56,16 @@ func nativeFinish(signIn ports.SignInService) http.HandlerFunc {
 			writeNativeAttemptGone(w)
 			return
 		}
+		if _, ok := accountFrom(r.Context()); !ok {
+			writeProblem(w, problem(http.StatusUnauthorized, ProblemNoWorkspace, nativeNotSignedInDetail, nil))
+			return
+		}
 		token, _ := sessionToken(r)
-		code, _ := signIn.IssueSignInCode(r.Context(), token, attempt.Get("challenge"))
+		code, err := signIn.IssueSignInCode(r.Context(), token, attempt.Get("challenge"))
+		if err != nil {
+			writeProblem(w, problemFor(err))
+			return
+		}
 		callback := url.URL{
 			Scheme:   "http",
 			Host:     net.JoinHostPort("127.0.0.1", strconv.Itoa(port)),
@@ -76,6 +84,10 @@ const nativeAttemptGoneDetail = "The sign-in request from the application that i
 	"The browser did not send the saved sign-in attempt (the `native_sign_in` cookie), or it has expired after 10 minutes, " +
 	"or it does not hold a valid `port`, `state`, and `challenge`. Please start signing in again from that application. " +
 	"If this keeps happening, check that your browser accepts cookies from this server, and that the application and the server are the same version."
+
+const nativeNotSignedInDetail = "You are not signed in, so no sign-in code was issued to the application that initiated the sign-in. " +
+	"Please start signing in again from that application, and finish signing in in the browser. " +
+	"If this keeps happening, check that your browser accepts cookies from this server."
 
 // checkNativeAttempt checks a command-line sign-in's "port", "state", and
 // "challenge", and returns the port as a number with a sentence for each

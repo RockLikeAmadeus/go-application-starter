@@ -1,7 +1,9 @@
 package httpapi_test
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -200,5 +202,70 @@ func TestNativeFinishRefusesAMissingOrInvalidAttemptCookieWithOneMessage(t *test
 				t.Errorf("status = %d, detail = %q; want %d, %q", rec.Code, body.Detail, http.StatusBadRequest, nativeAttemptGoneText)
 			}
 		})
+	}
+}
+
+const nativeNotSignedInText = "You are not signed in, so no sign-in code was issued to the application that initiated the sign-in. " +
+	"Please start signing in again from that application, and finish signing in in the browser. " +
+	"If this keeps happening, check that your browser accepts cookies from this server."
+
+func TestNativeFinishWithNoSessionIsRefusedIssuingNoCode(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{
+		SignIn:        sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}},
+		IsDevSignInOn: true,
+	})
+	attempt := url.Values{"port": {"4000"}, "state": {validState}, "challenge": {validChallenge}}
+	for name, session := range map[string]*http.Cookie{
+		"no session cookie":  nil,
+		"an unknown session": {Name: httpapi.SessionCookie, Value: "token-gone"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/auth/native/finish", nil)
+			req.AddCookie(&http.Cookie{Name: httpapi.NativeSignInCookie, Value: attempt.Encode()})
+			if session != nil {
+				req.AddCookie(session)
+			}
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			var body struct {
+				Detail string `json:"detail"`
+			}
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+				t.Fatalf("decode %q: %v", rec.Body.String(), err)
+			}
+			if rec.Code != http.StatusUnauthorized || body.Detail != nativeNotSignedInText || rec.Header().Get("Location") != "" {
+				t.Errorf("status = %d, location = %q, detail = %q; want %d, no redirect, %q",
+					rec.Code, rec.Header().Get("Location"), body.Detail, http.StatusUnauthorized, nativeNotSignedInText)
+			}
+		})
+	}
+}
+
+// failingToIssue is a sign-in service whose sessions are all valid but whose
+// codes can't be kept.
+type failingToIssue struct{ sessions }
+
+func (failingToIssue) IssueSignInCode(context.Context, string, string) (string, error) {
+	return "", errors.New("storage is down")
+}
+
+func TestNativeFinishWhenTheCodeCannotBeIssuedFailsWithoutRedirecting(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{
+		SignIn:        failingToIssue{sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}}},
+		IsDevSignInOn: true,
+	})
+	attempt := url.Values{"port": {"4000"}, "state": {validState}, "challenge": {validChallenge}}
+	req := httptest.NewRequest(http.MethodGet, "/auth/native/finish", nil)
+	req.AddCookie(&http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+	req.AddCookie(&http.Cookie{Name: httpapi.NativeSignInCookie, Value: attempt.Encode()})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError || rec.Header().Get("Location") != "" {
+		t.Errorf("status = %d, location = %q; want %d and no redirect", rec.Code, rec.Header().Get("Location"), http.StatusInternalServerError)
+	}
+	if strings.Contains(rec.Body.String(), "storage is down") {
+		t.Errorf("body = %q, want the error's text kept from the browser", rec.Body.String())
 	}
 }
