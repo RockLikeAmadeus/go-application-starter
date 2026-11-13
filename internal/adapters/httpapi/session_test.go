@@ -39,6 +39,10 @@ func (s sessions) IssueSignInCode(_ context.Context, token, challenge string) (s
 	return "code-for-" + token + "-" + challenge, nil
 }
 
+func (s sessions) RedeemSignInCode(context.Context, string, string) (string, error) {
+	panic("not used by these tests")
+}
+
 // workspaceAsPlan is a ports.EntitlementsService that answers the request's
 // workspace (workspace.FromContext) as its plan, or "none" without one, so a
 // test can see which workspace the server put in the request's context.

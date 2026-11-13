@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -9,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
@@ -73,6 +76,35 @@ func nativeFinish(signIn ports.SignInService) http.HandlerFunc {
 			RawQuery: url.Values{"code": {code}, "state": {attempt.Get("state")}}.Encode(),
 		}
 		http.Redirect(w, r, callback.String(), http.StatusFound)
+	}
+}
+
+// nativeToken answers POST /auth/native/token, where the command line swaps
+// its one-time code and PKCE verifier (a JSON body) for a new session token
+// (a JSON answer). It refuses a bad body or a code that doesn't redeem with
+// a bare 400, so a guesser learns nothing about why.
+func nativeToken(signIn ports.SignInService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Code     string `json:"code"`
+			Verifier string `json:"verifier"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		token, err := signIn.RedeemSignInCode(r.Context(), body.Code, body.Verifier)
+		if errors.Is(err, domain.ErrNotFound) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if err != nil {
+			writeProblem(w, problemFor(err))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 	}
 }
 

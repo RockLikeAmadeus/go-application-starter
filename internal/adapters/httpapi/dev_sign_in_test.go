@@ -40,6 +40,10 @@ func (s *signInRecorder) IssueSignInCode(context.Context, string, string) (strin
 	panic("not used by these tests")
 }
 
+func (s *signInRecorder) RedeemSignInCode(context.Context, string, string) (string, error) {
+	panic("not used by these tests")
+}
+
 // sessionCookieOf returns the response's session cookie, failing the test
 // without one.
 func sessionCookieOf(t *testing.T, rec *httptest.ResponseRecorder) *http.Cookie {

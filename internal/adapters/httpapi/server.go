@@ -102,6 +102,7 @@ func NewHandler(opts Options) http.Handler {
 		mux.Handle("POST /auth/sign-out", signOut(opts.SignIn))
 		mux.HandleFunc("GET /auth/native", nativeSignIn(opts.PublicURL))
 		mux.HandleFunc("GET /auth/native/finish", nativeFinish(opts.SignIn))
+		mux.HandleFunc("POST /auth/native/token", nativeToken(opts.SignIn))
 	}
 
 	mux.Handle("/", spaHandler(opts.WebAssets))

@@ -170,6 +170,10 @@ func (oneSession) IssueSignInCode(context.Context, string, string) (string, erro
 	return "", nil
 }
 
+func (oneSession) RedeemSignInCode(context.Context, string, string) (string, error) {
+	return "", nil
+}
+
 // servedWarnings asks the REST API for the warnings' messages, as the web
 // app does.
 func servedWarnings(t *testing.T, h http.Handler) []string {

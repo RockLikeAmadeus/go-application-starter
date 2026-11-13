@@ -114,6 +114,11 @@ type SignInService interface {
 	// IssueSignInCode returns a one-time code, bound to the PKCE challenge,
 	// for the account whose session the token is.
 	IssueSignInCode(ctx context.Context, token, challenge string) (string, error)
+	// RedeemSignInCode returns a new session's token for the account the
+	// one-time code was issued for, when the verifier matches the code's
+	// PKCE challenge. A missing, used, expired, or mismatched code is
+	// domain.ErrNotFound.
+	RedeemSignInCode(ctx context.Context, code, verifier string) (string, error)
 }
 
 // AccountRepository is the driven port for storing accounts. Accounts aren't

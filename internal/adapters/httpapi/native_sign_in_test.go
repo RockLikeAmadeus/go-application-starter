@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 const (
@@ -267,5 +268,53 @@ func TestNativeFinishWhenTheCodeCannotBeIssuedFailsWithoutRedirecting(t *testing
 	}
 	if strings.Contains(rec.Body.String(), "storage is down") {
 		t.Errorf("body = %q, want the error's text kept from the browser", rec.Body.String())
+	}
+}
+
+// redeemingCodes is a sign-in service that swaps one code and verifier for a
+// token, and refuses every other pair as a missing code.
+type redeemingCodes struct{ sessions }
+
+func (redeemingCodes) RedeemSignInCode(_ context.Context, code, verifier string) (string, error) {
+	if code == "good-code" && verifier == "good-verifier" {
+		return "new-session-token", nil
+	}
+	return "", domain.ErrNotFound
+}
+
+func TestNativeTokenSwapsACodeAndVerifierForASessionTokenAndRefusesAnyOtherWithoutSayingWhy(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: redeemingCodes{}, IsDevSignInOn: true})
+	post := func(body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/auth/native/token", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		return rec
+	}
+
+	rec := post(`{"code":"good-code","verifier":"good-verifier"}`)
+	var got struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil || rec.Code != http.StatusOK || got.Token != "new-session-token" {
+		t.Errorf("status = %d, token = %q, err = %v; want %d and new-session-token", rec.Code, got.Token, err, http.StatusOK)
+	}
+	if cookies := rec.Result().Cookies(); len(cookies) != 0 {
+		t.Errorf("cookies = %v, want none: the token is for the command line, not the browser", cookies)
+	}
+
+	for name, body := range map[string]string{
+		"a wrong verifier": `{"code":"good-code","verifier":"other"}`,
+		"an unknown code":  `{"code":"other","verifier":"good-verifier"}`,
+		"no body fields":   `{}`,
+		"malformed JSON":   `not json`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			rec := post(body)
+			if rec.Code != http.StatusBadRequest || rec.Body.Len() != 0 {
+				t.Errorf("status = %d, body = %q; want %d and an empty body, so the refusal says nothing about why",
+					rec.Code, rec.Body.String(), http.StatusBadRequest)
+			}
+		})
 	}
 }
