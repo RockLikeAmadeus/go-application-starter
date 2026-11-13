@@ -8,12 +8,12 @@ Feature: Signing in from the command line, in a terminal
   Scenario: Signing in from the command line opens the browser and says who I am
     Given a server with the dev sign-in is running
     When I sign in to the server from the command line as "Ada"
-    Then it says I am signed in as "Ada"
+    Then the command line says I am signed in as "Ada"
     And the command line says I am signed in as "Ada" on the server
 
   @wip
   Scenario: The command line can't sign in to a server that doesn't sign people in
-    Given a server is running
+    Given a server is running with sign-in off
     When I try to sign in to the server from the command line
     Then it fails, saying the server doesn't sign people in
 
