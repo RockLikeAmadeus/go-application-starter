@@ -28,7 +28,9 @@
    - Red: `TestSignInCode_ExpiresItsLifetimeAfterItsIssued` failed at and after the lifetime (stub never expired). Green: `NewSignInCode` (account, challenge, now), `ExpiresAt`, `IsExpiredAt`, `SignInCodeLifetime` in `domain/signincode.go`. Refactor: nothing worth changing. Later tasks add the code hash to the struct.
 3. [x] Ports and memory: `ports.SignInCodeRepository` (save, and take: find and delete in one step, missing after) with a `storagetest` contract suite, passing on memory.
    - Red: `RunSignInCodeRepositoryContract` on memory failed (stub's Take found nothing). Green: `ports.SignInCodeRepository` (Save, Take), `memory.SignInCodeRepository`, `SignInCode.CodeHash` and `HashSignInCode` in `domain`. Refactor: nothing worth changing. Task 4 sets `CodeHash` when issuing.
-4. [ ] App: `SignInService.IssueSignInCode(ctx, sessionToken, challenge)` stores the code's hash for the session's account and returns the code; an unknown or expired session is refused.
+4. [x] App: `SignInService.IssueSignInCode(ctx, sessionToken, challenge)` stores the code's hash for the session's account and returns the code.
+   - Red: `TestIssueSignInCode_KeepsTheCodesHashForTheSessionsAccountAndReturnsTheCode` failed (stub returned no code, nothing kept). Green: `IssueSignInCode` in `app/sign_in_service.go`, via `CurrentAccount`; `NewSignInService` takes a `SignInCodeRepository` (nil in callers that don't issue codes; bootstrap wires it in task 7). Not on `ports.SignInService` yet: the httpapi tasks add it. Refactor: nothing worth changing.
+4b. [ ] App: `IssueSignInCode` refuses an unknown or expired session (`ErrNoWorkspace`) and keeps no code.
 5. [ ] App: `RedeemSignInCode(ctx, code, verifier)` returns a new session token for the code's account.
 6. [ ] App: redeeming refuses a code used before, a wrong verifier, and an expired code (one test each, table if natural).
 7. [ ] sqlstore: migration and repository for sign-in codes; the contract suite passes on SQLite and Postgres; bootstrap wires the repository with the hosted storage.
@@ -66,3 +68,4 @@
 
 ## Changes to the plan
 - 2026-11-13: the terminal app signs in and out by itself (the user's request), rather than sending people to `starter login`. Signing in and out moved out of the CLI into a shared client-side package, `httpclient` asks a token source per request, and tasks 30–35 and two terminal journeys were added. No server picker in the TUI (agreed).
+- 2026-11-13: task 4 split: 4 issues a code, 4b refuses an unknown or expired session (one test each).

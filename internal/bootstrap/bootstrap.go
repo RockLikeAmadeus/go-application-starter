@@ -187,7 +187,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	}
 	a.Entitlements = app.NewEntitlementsService(entitlementsProvider, workspacesFor(cfg))
 	if cfg.SignIn.IsOn() {
-		a.SignIn = app.NewSignInService(accountRepo, sessionRepo, system.Tokens{}, system.UUIDs{}, system.Clock{})
+		a.SignIn = app.NewSignInService(accountRepo, sessionRepo, nil, system.Tokens{}, system.UUIDs{}, system.Clock{})
 		a.billing = app.NewBillingService(workspacePlanRepo, entitlementsProvider)
 	}
 	// Build each use case on its repository and the driven ports:

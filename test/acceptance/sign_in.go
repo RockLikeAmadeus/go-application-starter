@@ -45,7 +45,7 @@ func devIdentity(name string) (domain.Identity, error) {
 // newSignInService builds the sign-in use cases on accounts and sessions,
 // driven by the harness's clock.
 func (h *harness) newSignInService(accounts ports.AccountRepository, sessions ports.SessionRepository) *app.SignInService {
-	return app.NewSignInService(accounts, sessions, system.Tokens{}, testsupport.NewSequentialIDs("account"), h.clock)
+	return app.NewSignInService(accounts, sessions, nil, system.Tokens{}, testsupport.NewSequentialIDs("account"), h.clock)
 }
 
 // useDirectSignIn signs scenarios in by calling the sign-in use cases on

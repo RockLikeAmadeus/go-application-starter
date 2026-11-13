@@ -19,7 +19,7 @@ import (
 // cookie, sign-in is on and the session is the signed-in account's.
 func TestCurrentSession_NamesTheSignedInAccount(t *testing.T) {
 	ctx := context.Background()
-	signIn := app.NewSignInService(testsupport.StoredAccounts{}, testsupport.StoredSessions{}, testsupport.FixedToken("token-a"),
+	signIn := app.NewSignInService(testsupport.StoredAccounts{}, testsupport.StoredSessions{}, nil, testsupport.FixedToken("token-a"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Date(2026, 11, 11, 9, 0, 0, 0, time.UTC)))
 	token, err := signIn.SignIn(ctx, domain.Identity{Issuer: "dev", Subject: "Ada", Name: "Ada"})
 	if err != nil {

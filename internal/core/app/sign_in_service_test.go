@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
@@ -19,7 +20,7 @@ func TestSignIn_WithANewIdentityCreatesAnAccountWorkspaceAndThirtyDaySession(t *
 	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
 	accounts := testsupport.StoredAccounts{}
 	sessions := testsupport.StoredSessions{}
-	svc := app.NewSignInService(accounts, sessions, testsupport.FixedToken("token-1"),
+	svc := app.NewSignInService(accounts, sessions, nil, testsupport.FixedToken("token-1"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(now))
 	identity := domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}
 
@@ -51,7 +52,7 @@ func TestSignIn_WithAKnownIdentityReusesItsAccountEvenWhenTheNameHasChanged(t *t
 	known := domain.Account{ID: "account-1", Identity: domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}, WorkspaceID: "workspace-1"}
 	accounts := testsupport.StoredAccounts{known.ID: known}
 	sessions := testsupport.StoredSessions{}
-	svc := app.NewSignInService(accounts, sessions, testsupport.FixedToken("token-1"),
+	svc := app.NewSignInService(accounts, sessions, nil, testsupport.FixedToken("token-1"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
 
 	_, err := svc.SignIn(context.Background(), domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada Lovelace"})
@@ -71,7 +72,7 @@ func TestSignIn_WithAKnownIdentityReusesItsAccountEvenWhenTheNameHasChanged(t *t
 func TestSignIn_WithAKnownIdentityWhoseNameChangedSavesTheNewName(t *testing.T) {
 	known := domain.Account{ID: "account-1", Identity: domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}, WorkspaceID: "workspace-1"}
 	accounts := testsupport.StoredAccounts{known.ID: known}
-	svc := app.NewSignInService(accounts, testsupport.StoredSessions{}, testsupport.FixedToken("token-1"),
+	svc := app.NewSignInService(accounts, testsupport.StoredSessions{}, nil, testsupport.FixedToken("token-1"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
 
 	token, err := svc.SignIn(context.Background(), domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada Lovelace"})
@@ -102,7 +103,7 @@ func (unfindableAccounts) FindByIdentity(context.Context, domain.Identity) (doma
 func TestSignIn_WhenTheAccountCantBeLookedUpIsRefusedAndSavesNothing(t *testing.T) {
 	accounts := testsupport.StoredAccounts{}
 	sessions := testsupport.StoredSessions{}
-	svc := app.NewSignInService(unfindableAccounts{accounts}, sessions, testsupport.FixedToken("token-1"),
+	svc := app.NewSignInService(unfindableAccounts{accounts}, sessions, nil, testsupport.FixedToken("token-1"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
 
 	_, err := svc.SignIn(context.Background(), domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"})
@@ -146,7 +147,7 @@ func TestSignIn_WhenAnotherSignInSavesTheIdentitysAccountFirstSharesThatAccount(
 	rival := domain.Account{ID: "account-rival", Identity: identity, WorkspaceID: "workspace-rival"}
 	accounts := &raceLostAccounts{StoredAccounts: testsupport.StoredAccounts{}, rival: rival}
 	sessions := testsupport.StoredSessions{}
-	svc := app.NewSignInService(accounts, sessions, testsupport.FixedToken("token-1"),
+	svc := app.NewSignInService(accounts, sessions, nil, testsupport.FixedToken("token-1"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
 
 	token, err := svc.SignIn(context.Background(), identity)
@@ -172,7 +173,7 @@ func TestCurrentAccount_WithASignedInTokenReturnsTheSessionsAccount(t *testing.T
 		session := domain.NewSession(token, account.ID, now)
 		sessions[session.TokenHash] = session
 	}
-	svc := app.NewSignInService(accounts, sessions, testsupport.FixedToken("unused"),
+	svc := app.NewSignInService(accounts, sessions, nil, testsupport.FixedToken("unused"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(now.Add(time.Hour)))
 
 	got, err := svc.CurrentAccount(context.Background(), "token-grace")
@@ -186,7 +187,7 @@ func TestCurrentAccount_WithASignedInTokenReturnsTheSessionsAccount(t *testing.T
 }
 
 func TestCurrentAccount_WithAnUnknownTokenHasNoWorkspace(t *testing.T) {
-	svc := app.NewSignInService(testsupport.StoredAccounts{}, testsupport.StoredSessions{}, testsupport.FixedToken("unused"),
+	svc := app.NewSignInService(testsupport.StoredAccounts{}, testsupport.StoredSessions{}, nil, testsupport.FixedToken("unused"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
 
 	_, err := svc.CurrentAccount(context.Background(), "token-unknown")
@@ -201,7 +202,7 @@ func TestCurrentAccount_WithAnExpiredTokenHasNoWorkspaceAndDeletesTheSession(t *
 	ada := domain.Account{ID: "account-1", Identity: domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}, WorkspaceID: "workspace-1"}
 	session := domain.NewSession("token-ada", ada.ID, now)
 	sessions := testsupport.StoredSessions{session.TokenHash: session}
-	svc := app.NewSignInService(testsupport.StoredAccounts{ada.ID: ada}, sessions, testsupport.FixedToken("unused"),
+	svc := app.NewSignInService(testsupport.StoredAccounts{ada.ID: ada}, sessions, nil, testsupport.FixedToken("unused"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(session.ExpiresAt))
 
 	_, err := svc.CurrentAccount(context.Background(), "token-ada")
@@ -219,7 +220,7 @@ func TestSignOut_DeletesTheSessionSoItsTokenIsSignedOut(t *testing.T) {
 	ada := domain.Account{ID: "account-1", Identity: domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}, WorkspaceID: "workspace-1"}
 	session := domain.NewSession("token-ada", ada.ID, now)
 	sessions := testsupport.StoredSessions{session.TokenHash: session}
-	svc := app.NewSignInService(testsupport.StoredAccounts{ada.ID: ada}, sessions, testsupport.FixedToken("unused"),
+	svc := app.NewSignInService(testsupport.StoredAccounts{ada.ID: ada}, sessions, nil, testsupport.FixedToken("unused"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(now.Add(time.Hour)))
 
 	if err := svc.SignOut(context.Background(), "token-ada"); err != nil {
@@ -235,10 +236,46 @@ func TestSignOut_DeletesTheSessionSoItsTokenIsSignedOut(t *testing.T) {
 }
 
 func TestSignOut_OfAnUnknownSessionIsNotAnError(t *testing.T) {
-	svc := app.NewSignInService(testsupport.StoredAccounts{}, testsupport.StoredSessions{}, testsupport.FixedToken("unused"),
+	svc := app.NewSignInService(testsupport.StoredAccounts{}, testsupport.StoredSessions{}, nil, testsupport.FixedToken("unused"),
 		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
 
 	if err := svc.SignOut(context.Background(), "token-unknown"); err != nil {
 		t.Errorf("SignOut: %v, want no error", err)
+	}
+}
+
+func TestIssueSignInCode_KeepsTheCodesHashForTheSessionsAccountAndReturnsTheCode(t *testing.T) {
+	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
+	ada := domain.Account{
+		ID:          "account-1",
+		Identity:    domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"},
+		WorkspaceID: "workspace-1",
+	}
+	session := domain.NewSession("token-ada", ada.ID, now)
+	sessions := testsupport.StoredSessions{session.TokenHash: session}
+	codes := memory.NewSignInCodeRepository()
+	svc := app.NewSignInService(testsupport.StoredAccounts{ada.ID: ada}, sessions, codes, testsupport.FixedToken("code-1"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(now))
+
+	code, err := svc.IssueSignInCode(context.Background(), "token-ada", "challenge-1")
+	if err != nil {
+		t.Fatalf("IssueSignInCode: %v", err)
+	}
+
+	if code != "code-1" {
+		t.Errorf("code = %q, want %q", code, "code-1")
+	}
+	got, err := codes.Take(context.Background(), domain.HashSignInCode("code-1"))
+	if err != nil {
+		t.Fatalf("Take: %v", err)
+	}
+	want := domain.SignInCode{
+		CodeHash:  domain.HashSignInCode("code-1"),
+		AccountID: ada.ID,
+		Challenge: "challenge-1",
+		ExpiresAt: now.Add(domain.SignInCodeLifetime),
+	}
+	if got != want {
+		t.Errorf("kept code = %v, want %v", got, want)
 	}
 }
