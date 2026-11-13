@@ -315,3 +315,38 @@ func TestIssueSignInCode_RefusesAnUnknownOrExpiredSessionAndKeepsNoCode(t *testi
 		})
 	}
 }
+
+func TestRedeemSignInCode_GivesANewSessionTokenForTheCodesAccount(t *testing.T) {
+	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
+	ada := domain.Account{
+		ID:          "account-1",
+		Identity:    domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"},
+		WorkspaceID: "workspace-1",
+	}
+	// The RFC 7636 appendix B pair.
+	const verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+	const challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+	issued := domain.NewSignInCode(ada.ID, challenge, now)
+	issued.CodeHash = domain.HashSignInCode("code-1")
+	codes := memory.NewSignInCodeRepository()
+	if err := codes.Save(context.Background(), issued); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	sessions := testsupport.StoredSessions{}
+	svc := app.NewSignInService(testsupport.StoredAccounts{ada.ID: ada}, sessions, codes, testsupport.FixedToken("token-new"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(now))
+
+	token, err := svc.RedeemSignInCode(context.Background(), "code-1", verifier)
+	if err != nil {
+		t.Fatalf("RedeemSignInCode: %v", err)
+	}
+
+	if token != "token-new" {
+		t.Errorf("token = %q, want %q", token, "token-new")
+	}
+	session := domain.NewSession("token-new", ada.ID, now)
+	wantSessions := testsupport.StoredSessions{session.TokenHash: session}
+	if !reflect.DeepEqual(sessions, wantSessions) {
+		t.Errorf("sessions = %v, want %v", sessions, wantSessions)
+	}
+}

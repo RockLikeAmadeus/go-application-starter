@@ -32,7 +32,8 @@
    - Red: `TestIssueSignInCode_KeepsTheCodesHashForTheSessionsAccountAndReturnsTheCode` failed (stub returned no code, nothing kept). Green: `IssueSignInCode` in `app/sign_in_service.go`, via `CurrentAccount`; `NewSignInService` takes a `SignInCodeRepository` (nil in callers that don't issue codes; bootstrap wires it in task 7). Not on `ports.SignInService` yet: the httpapi tasks add it. Refactor: nothing worth changing.
 4b. [x] App: `IssueSignInCode` refuses an unknown or expired session (`ErrNoWorkspace`) and keeps no code.
    - No red: `TestIssueSignInCode_RefusesAnUnknownOrExpiredSessionAndKeepsNoCode` passed at once, as task 4's `CurrentAccount` call already refuses both; kept as a guard (it fails when that check is removed). No green. Refactor: nothing worth changing.
-5. [ ] App: `RedeemSignInCode(ctx, code, verifier)` returns a new session token for the code's account.
+5. [x] App: `RedeemSignInCode(ctx, code, verifier)` returns a new session token for the code's account.
+   - Red: `TestRedeemSignInCode_GivesANewSessionTokenForTheCodesAccount` failed (stub returned no token, no session). Green: `RedeemSignInCode` takes the code by hash and starts a session. Refactor: extracted `startSession`, shared with `SignIn`. Not on `ports.SignInService` yet (httpapi tasks add it); the verifier isn't checked until task 6.
 6. [ ] App: redeeming refuses a code used before, a wrong verifier, and an expired code (one test each, table if natural).
 7. [ ] sqlstore: migration and repository for sign-in codes; the contract suite passes on SQLite and Postgres; bootstrap wires the repository with the hosted storage.
 8. [ ] httpapi: the session middleware accepts `Authorization: Bearer <token>`, ahead of the cookie.

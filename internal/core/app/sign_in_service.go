@@ -39,8 +39,13 @@ func (s *SignInService) SignIn(ctx context.Context, identity domain.Identity) (s
 	if err != nil {
 		return "", err
 	}
+	return s.startSession(ctx, account.ID)
+}
+
+// startSession saves a new session for the account and returns its token.
+func (s *SignInService) startSession(ctx context.Context, accountID string) (string, error) {
 	token := s.tokens.NewToken()
-	if err := s.sessions.Save(ctx, domain.NewSession(token, account.ID, s.clock.Now())); err != nil {
+	if err := s.sessions.Save(ctx, domain.NewSession(token, accountID, s.clock.Now())); err != nil {
 		return "", fmt.Errorf("save session: %w", err)
 	}
 	return token, nil
@@ -125,4 +130,14 @@ func (s *SignInService) IssueSignInCode(ctx context.Context, token, challenge st
 		return "", fmt.Errorf("save sign-in code: %w", err)
 	}
 	return code, nil
+}
+
+// RedeemSignInCode swaps a code and its PKCE verifier for a new session token
+// for the code's account.
+func (s *SignInService) RedeemSignInCode(ctx context.Context, code, verifier string) (string, error) {
+	signInCode, err := s.codes.Take(ctx, domain.HashSignInCode(code))
+	if err != nil {
+		return "", fmt.Errorf("take sign-in code: %w", err)
+	}
+	return s.startSession(ctx, signInCode.AccountID)
 }
