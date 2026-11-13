@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -79,19 +80,31 @@ func (a *Attempt) Wait(ctx context.Context) (string, error) {
 	tokens := make(chan string, 1)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /callback", func(w http.ResponseWriter, r *http.Request) {
+		// Compared in constant time, so the wait leaks nothing about the state.
+		if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("state")), []byte(a.state)) != 1 {
+			writePage(w, http.StatusBadRequest, "Sign-in refused", wrongStatePage)
+			return
+		}
 		token, err := a.swap(r.Context(), r.URL.Query().Get("code"))
 		if err != nil {
 			return
 		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, "<!doctype html><html><head><meta charset=\"utf-8\"><title>Sign-in complete</title></head>"+
-			"<body><p>"+signedInPage+"</p></body></html>")
+		writePage(w, http.StatusOK, "Sign-in complete", signedInPage)
 		tokens <- token
 	})
 	// Serve ends when Close closes the listener; its error says only that.
 	go func() { _ = http.Serve(a.listener, mux) }()
 	return <-tokens, nil
 }
+
+func writePage(w http.ResponseWriter, status int, title, text string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	fmt.Fprint(w, "<!doctype html><html><head><meta charset=\"utf-8\"><title>"+title+"</title></head>"+
+		"<body><p>"+text+"</p></body></html>")
+}
+
+const wrongStatePage = "This sign-in request was refused, because its state value did not match the sign-in that the application started. No session token was issued. If you started a sign-in from the application, please start signing in again from there. Otherwise, you may close this window."
 
 const signedInPage = "Sign-in complete. Please close this window and return to the application that initiated the sign-in."
 

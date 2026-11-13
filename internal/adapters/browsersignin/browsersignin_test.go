@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -121,6 +122,70 @@ func TestWait_SwapsTheCodeOfACallbackWithTheRightStateForATokenAndAnswersTheSucc
 	}
 	if swapped.Code != "the-code" {
 		t.Errorf("server was sent code %q, want the-code", swapped.Code)
+	}
+}
+
+func TestWait_RefusesACallbackWithAWrongOrMissingStateSwapsNothingAndKeepsWaiting(t *testing.T) {
+	var swaps atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		swaps.Add(1)
+		_ = json.NewEncoder(w).Encode(map[string]string{"token": "session-token"})
+	}))
+	defer server.Close()
+
+	var opened string
+	attempt, err := browsersignin.Start(context.Background(), server.URL, func(address string) error {
+		opened = address
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer attempt.Close()
+	query := mustParse(t, opened).Query()
+
+	done := make(chan string, 1)
+	go func() {
+		token, _ := attempt.Wait(context.Background())
+		done <- token
+	}()
+
+	const want = "This sign-in request was refused, because its state value did not match the sign-in that the application started. No session token was issued. If you started a sign-in from the application, please start signing in again from there. Otherwise, you may close this window."
+	base := "http://127.0.0.1:" + query.Get("port") + "/callback?"
+	client := &http.Client{Timeout: 2 * time.Second}
+	for name, values := range map[string]url.Values{
+		"wrong":   {"code": {"the-code"}, "state": {"not-the-state"}},
+		"missing": {"code": {"the-code"}},
+	} {
+		response, err := client.Get(base + values.Encode())
+		if err != nil {
+			t.Fatalf("%s state callback: %v", name, err)
+		}
+		body, _ := io.ReadAll(response.Body)
+		response.Body.Close()
+		if response.StatusCode != http.StatusBadRequest {
+			t.Errorf("%s state: status %d, want 400", name, response.StatusCode)
+		}
+		if !strings.Contains(string(body), want) {
+			t.Errorf("%s state: page %q does not contain %q", name, body, want)
+		}
+	}
+	if n := swaps.Load(); n != 0 {
+		t.Errorf("the server was asked to swap %d times, want 0", n)
+	}
+
+	response, err := client.Get(base + url.Values{"code": {"the-code"}, "state": {query.Get("state")}}.Encode())
+	if err != nil {
+		t.Fatalf("right state callback: %v", err)
+	}
+	response.Body.Close()
+	select {
+	case token := <-done:
+		if token != "session-token" {
+			t.Errorf("Wait gave %q, want session-token", token)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Wait did not go on to take the callback with the right state")
 	}
 }
 

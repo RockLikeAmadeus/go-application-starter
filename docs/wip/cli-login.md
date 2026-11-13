@@ -72,7 +72,8 @@
 15. [x] Browser sign-in adapter: `Attempt.Wait(ctx)`: the callback with the right state swaps the code at `POST /auth/native/token` and answers the success page (200), and Wait returns the token. Task 15 was split (see "Changes to the plan").
    - Red: `TestWait_SwapsTheCodeOfACallbackWithTheRightStateForATokenAndAnswersTheSuccessPage` failed (the stub answered nothing; the callback timed out). Green: `Attempt.Wait` serves `GET /callback`, swaps the code and verifier at the token endpoint, answers the page, returns the token. Refactor: nothing worth changing; the state is not checked until 15b, the context ignored until 15c, a refused swap not handled until 15d.
    - Agreed text, status 200: "Sign-in complete. Please close this window and return to the application that initiated the sign-in."
-15b. [ ] Browser sign-in adapter: a callback with a wrong or missing state is refused (400, nothing swapped) and the wait goes on.
+15b. [x] Browser sign-in adapter: a callback with a wrong or missing state is refused (400, nothing swapped) and the wait goes on.
+   - Red: `TestWait_RefusesACallbackWithAWrongOrMissingStateSwapsNothingAndKeepsWaiting` failed (200, swapped twice). Green: `Wait` compares the state with `subtle.ConstantTimeCompare` and answers the agreed page. Refactor: extracted `writePage`, shared with the success page.
    - Agreed text, status 400: "This sign-in request was refused, because its state value did not match the sign-in that the application started. No session token was issued. If you started a sign-in from the application, please start signing in again from there. Otherwise, you may close this window."
 15c. [ ] Browser sign-in adapter: the context ending the wait makes `Wait` return `ctx.Err()`.
 15d. [ ] Browser sign-in adapter: a callback with the right state whose swap the server refuses answers the failure page (400) and `Wait` ends with an error.
