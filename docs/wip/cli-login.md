@@ -146,8 +146,9 @@
 28b. [x] CLI: `starter info` with sign-in on and no session says so, prints no `Plan:` line, and exits 0.
    - Agreed text (after `Server:`): "Not signed in to <url>. Run starter login to sign in."
    - Red: `TestInfoWithSignInOnAndNoSessionSaysSoAndLeavesOutThePlan` failed (no such line, a `Plan:` line). Green: `newInfoCmd` prints the line and skips the entitlements lookup when sign-in is on and no one is signed in. Refactor: nothing worth changing.
-28c. [ ] CLI: `starter info` against a server with sign-in off says so, then the `Plan:` line.
+28c. [x] CLI: `starter info` against a server with sign-in off says so, then the `Plan:` line.
    - Agreed text (after `Server:`): "The server at <url> does not support sign-in."
+   - Red: `TestInfoWithAServerThatHasSignInOffSaysSoAndKeepsThePlan` failed (no such line). Green: `newInfoCmd` prints the line in the default case. Refactor: nothing worth changing.
 29. [ ] CLI: a request refused for want of sign-in tells the user to run `starter login`.
 30. [ ] TUI: on a server with sign-in on and no session, it shows the signed-out screen with the sign-in key; on local data or with sign-in off, no sign-in or sign-out key.
 31. [ ] TUI: signed in, it shows who is signed in and the sign-out key.

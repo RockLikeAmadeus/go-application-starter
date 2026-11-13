@@ -41,6 +41,8 @@ func newInfoCmd(open appOpener, newSignIn SignInFactory) *cobra.Command {
 				case session.IsSignInOn:
 					signedIn = fmt.Sprintf("Not signed in to %s. Run starter login to sign in.\n", cfg.ServerURL)
 					isPlanKnown = false
+				default:
+					signedIn = fmt.Sprintf("The server at %s does not support sign-in.\n", cfg.ServerURL)
 				}
 			}
 			plan := ""
