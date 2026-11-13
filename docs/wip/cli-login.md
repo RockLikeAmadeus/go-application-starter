@@ -125,8 +125,9 @@
      - `credential_store = "file"` on purpose: "Signed in to <url> as <name>. The session token is kept in a file in the settings folder, readable only by you, and has a fixed lifetime for security purposes. Run starter logout to end the session before it expires."
    - Any other failure partway (cancelled, refused swap): `starter: <error>`, as the other commands print.
    - Red: `TestLoginSaysWhoIsSignedInAndWhereTheTokenIsKept` (three variants, through `bootstrap.NewClientSignIn`, a fake server, and a `BROWSER` script) failed ("signing in is not available yet"). Green: `bootstrap.NewClientSignIn` wires `httpclient`'s session (with `WithTokenSource`), `browsersignin.Start`/`Wait`, and `tokenstore` bound to the server URL; `login` uses `browsersignin.Open` and prints the variant. `Result.TokenKept` is `clientsignin.KeptInCredentialStore` or `KeptInFile`; the CLI tells "on purpose" from "fallback" by `cfg.CredentialStore`. The `SessionEnder` is a stub that errors until task 27 adds the sign-out request. Refactor: nothing worth changing.
-26d. [ ] CLI: `starter login` prints the address when the browser can't open, and keeps waiting.
+26d. [x] CLI: `starter login` prints the address when the browser can't open, and keeps waiting.
    - Agreed text (stderr): "Could not open a browser. To sign in, open this address in a browser on this computer: <address>. Waiting for you to finish signing in there. Press Ctrl+C to cancel."
+   - Red: `TestLoginPrintsTheAddressWhenTheBrowserCannotOpenAndKeepsWaiting` failed (login returned "no browser here"). Green: `openOrShowAddress` in `cli/login.go` wraps the factory's opener, printing the agreed text on stderr and returning nil, so `browsersignin.Start` needed no change. Refactor: nothing worth changing.
 27. [ ] CLI: `starter logout` refuses without a server, and otherwise signs out.
 28. [ ] CLI: `starter info` with a server says who is signed in there, or that no one is.
 29. [ ] CLI: a request refused for want of sign-in tells the user to run `starter login`.

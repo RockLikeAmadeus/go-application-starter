@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 
@@ -35,7 +36,7 @@ func newLoginCmd(loadConfig func() (config.Config, error), newSignIn SignInFacto
 			if err != nil {
 				return err
 			}
-			result, err := client.SignIn(cmd.Context(), open)
+			result, err := client.SignIn(cmd.Context(), openOrShowAddress(cmd.ErrOrStderr(), open))
 			if errors.Is(err, clientsignin.ErrServerDoesNotSignPeopleIn) {
 				return fmt.Errorf("The server at %s does not support sign-in, so there is nothing to sign in to. "+
 					"No browser was opened, and no session token was stored.", cfg.ServerURL)
@@ -60,5 +61,18 @@ func keptSentence(cfg config.Config, result clientsignin.Result) string {
 	default:
 		return "The session token is kept in a file in the settings folder, readable only by you, " +
 			"because the operating system's credential store is not available here, " + expiry
+	}
+}
+
+// openOrShowAddress wraps open so that a browser that can't be opened doesn't
+// end the sign-in: the address goes to stderr to be opened by hand, and the
+// sign-in carries on waiting.
+func openOrShowAddress(stderr io.Writer, open func(address string) error) func(address string) error {
+	return func(address string) error {
+		if open(address) != nil {
+			fmt.Fprintf(stderr, "Could not open a browser. To sign in, open this address in a browser on this computer: %s. "+
+				"Waiting for you to finish signing in there. Press Ctrl+C to cancel.\n", address)
+		}
+		return nil
 	}
 }

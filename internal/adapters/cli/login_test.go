@@ -9,7 +9,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/zalando/go-keyring"
 
@@ -142,5 +144,49 @@ func TestLoginSaysWhoIsSignedInAndWhereTheTokenIsKept(t *testing.T) {
 				t.Errorf("login output = %q, want %q", out, want)
 			}
 		})
+	}
+}
+
+// A browser that can't be opened doesn't end the sign-in: the address goes to
+// stderr, so it can be opened by hand, and the command keeps waiting for the
+// sign-in to finish there.
+func TestLoginPrintsTheAddressWhenTheBrowserCannotOpenAndKeepsWaiting(t *testing.T) {
+	keyring.MockInit()
+	settings := t.TempDir()
+	srv := signInServer(t)
+	var address string
+	newSignIn := func(cfg config.Config) (*clientsignin.Client, func(string) error, error) {
+		client, _, err := bootstrap.NewClientSignIn(cfg)
+		failing := func(a string) error {
+			address = a
+			go func() {
+				// The user opening the address by hand.
+				if response, err := http.Get(a); err == nil {
+					response.Body.Close()
+				}
+			}()
+			return errors.New("no browser here")
+		}
+		return client, failing, err
+	}
+	var out, errOut bytes.Buffer
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(settings, nil), &out)
+	cmd.SetErr(&errOut)
+	cmd.SetArgs([]string{"--storage", "memory", "--server", srv.URL, "login"})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err := cmd.ExecuteContext(ctx)
+
+	if err != nil {
+		t.Fatalf("login: %v", err)
+	}
+	want := "Could not open a browser. To sign in, open this address in a browser on this computer: " + address + ". " +
+		"Waiting for you to finish signing in there. Press Ctrl+C to cancel.\n"
+	if errOut.String() != want {
+		t.Errorf("login stderr = %q, want %q", errOut.String(), want)
+	}
+	if !strings.HasPrefix(out.String(), "Signed in to "+srv.URL+" as Ada.") {
+		t.Errorf("login output = %q, want it to say Ada is signed in", out.String())
 	}
 }
