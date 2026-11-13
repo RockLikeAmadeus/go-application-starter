@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc/oidctest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/syncedfolder"
@@ -624,5 +626,81 @@ func TestApp_WarnsWhenConflictCopiesCantBeCheckedAndKeepsWorking(t *testing.T) {
 	}
 	if err := a.Ready(t.Context()); err != nil {
 		t.Errorf("Ready error = %v, want the app to keep working", err)
+	}
+}
+
+// With sign-in "oidc", the app has a sign-in provider discovered from the
+// issuer, which sends people back to <public_url>/auth/oidc/callback.
+func TestNewEmbedded_WithOIDCSignInBuildsTheProviderFromTheSettings(t *testing.T) {
+	provider := oidctest.New(t)
+	a, err := bootstrap.NewEmbedded(config.Config{
+		Storage:          config.StorageMemory,
+		SignIn:           config.SignInOIDC,
+		PublicURL:        "https://app.example.com",
+		OIDCIssuer:       provider.Issuer(),
+		OIDCClientID:     "starter",
+		OIDCClientSecret: "secret",
+	})
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	if a.SignInProvider == nil {
+		t.Fatal("SignInProvider is nil, want the OIDC provider")
+	}
+
+	authURL, _, _ := a.SignInProvider.Start()
+
+	if !strings.HasPrefix(authURL, provider.Issuer()) {
+		t.Errorf("authorization URL = %q, want one at the issuer %q", authURL, provider.Issuer())
+	}
+	if want := "redirect_uri=" + url.QueryEscape("https://app.example.com/auth/oidc/callback"); !strings.Contains(authURL, want) {
+		t.Errorf("authorization URL = %q, want it to contain %q", authURL, want)
+	}
+}
+
+// With sign-in "oidc" and an issuer that cannot be reached, the app does not
+// start, and says which setting to check.
+func TestNewEmbedded_WithOIDCSignInAndAnUnreachableIssuerFailsWithAClearMessage(t *testing.T) {
+	closed := httptest.NewServer(nil)
+	issuer := closed.URL
+	closed.Close()
+
+	a, err := bootstrap.NewEmbedded(config.Config{
+		Storage:          config.StorageMemory,
+		SignIn:           config.SignInOIDC,
+		PublicURL:        "https://app.example.com",
+		OIDCIssuer:       issuer,
+		OIDCClientID:     "starter",
+		OIDCClientSecret: "secret",
+	})
+	if err == nil {
+		_ = a.Close()
+		t.Fatal("NewEmbedded error = nil, want one for the unreachable issuer")
+	}
+
+	want := fmt.Sprintf("The sign-in provider at %q could not be reached, or did not answer as an OpenID Connect provider. Please check that the oidc_issuer setting is the address of the sign-in provider, and that the provider is running. The error was: ", issuer)
+	if !strings.HasPrefix(err.Error(), want) {
+		t.Errorf("error = %q, want it to start with %q", err, want)
+	}
+	if errors.Unwrap(err) == nil {
+		t.Error("error wraps nothing, want the underlying error wrapped")
+	}
+}
+
+// The app keeps the public_url setting, for the HTTP handler to mark cookies
+// Secure behind an https address.
+func TestNewEmbedded_KeepsThePublicURLFromTheSettings(t *testing.T) {
+	a, err := bootstrap.NewEmbedded(config.Config{
+		Storage:   config.StorageMemory,
+		PublicURL: "https://app.example.com",
+	})
+	if err != nil {
+		t.Fatalf("NewEmbedded: %v", err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+
+	if a.PublicURL != "https://app.example.com" {
+		t.Errorf("PublicURL = %q, want %q", a.PublicURL, "https://app.example.com")
 	}
 }

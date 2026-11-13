@@ -103,6 +103,15 @@ func TestTheSessionCookieIsSecureOnlyOverHTTPS(t *testing.T) {
 	}
 }
 
+func TestTheSessionCookieIsSecureOverPlainHTTPWithAnHTTPSPublicURL(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{token: "token-ada"}, IsDevSignInOn: true, PublicURL: "https://app.example.com"})
+	rec := postDevSignInTo(handler, "http://example.com/auth/dev", "Ada")
+
+	if cookie := sessionCookieOf(t, rec); !cookie.Secure {
+		t.Errorf("cookie = %+v, want Secure behind an https:// public URL", cookie)
+	}
+}
+
 func TestTheDevSignInFormAsksForANameAndPostsToTheDevSignIn(t *testing.T) {
 	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
 	rec := httptest.NewRecorder()
@@ -135,5 +144,15 @@ func TestABlankDevSignInNameIsAValidationProblemAndSetsNoCookie(t *testing.T) {
 	}
 	if len(signIn.identities) != 0 {
 		t.Errorf("signed in as %+v, want no sign-in", signIn.identities)
+	}
+}
+
+func TestSigningUpWithTheDevSignInGoesToTheDevSignIn(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/sign-up", nil))
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/dev" {
+		t.Errorf("status = %d, Location = %q; want %d to /auth/dev", rec.Code, rec.Header().Get("Location"), http.StatusFound)
 	}
 }

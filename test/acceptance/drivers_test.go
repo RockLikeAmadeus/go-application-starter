@@ -57,3 +57,22 @@ func driverNamed(t *testing.T, drivers []driver, name string) driver {
 	t.Fatalf("no driver named %q", name)
 	return driver{}
 }
+
+func TestSignInProviderScenariosRunOnlyOnTheOIDCDriver(t *testing.T) {
+	drivers := driversFor(t, "")
+	oidc := driverNamed(t, drivers, "oidc")
+	if oidc.startHosted == nil {
+		t.Error("the oidc driver has no hosted edition")
+	}
+	if strings.Contains(oidc.tags, "~@sign-in") || strings.Contains(oidc.tags, "~@sign-in-provider") {
+		t.Errorf("oidc driver tags = %q, want it to run @sign-in and @sign-in-provider", oidc.tags)
+	}
+	for _, d := range drivers {
+		if d.name == "oidc" || d.name == "server" { // the server driver runs only @server
+			continue
+		}
+		if !strings.Contains(d.tags, "~@sign-in-provider") && !strings.Contains(d.tags, "~@sign-in") {
+			t.Errorf("%s driver tags = %q, want it to leave out @sign-in-provider", d.name, d.tags)
+		}
+	}
+}

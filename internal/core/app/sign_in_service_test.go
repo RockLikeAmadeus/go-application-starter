@@ -68,6 +68,26 @@ func TestSignIn_WithAKnownIdentityReusesItsAccountEvenWhenTheNameHasChanged(t *t
 	}
 }
 
+func TestSignIn_WithAKnownIdentityWhoseNameChangedSavesTheNewName(t *testing.T) {
+	known := domain.Account{ID: "account-1", Identity: domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada"}, WorkspaceID: "workspace-1"}
+	accounts := testsupport.StoredAccounts{known.ID: known}
+	svc := app.NewSignInService(accounts, testsupport.StoredSessions{}, testsupport.FixedToken("token-1"),
+		testsupport.NewSequentialIDs("id"), testsupport.NewFixedClock(time.Now()))
+
+	token, err := svc.SignIn(context.Background(), domain.Identity{Issuer: "dev", Subject: "ada", Name: "Ada Lovelace"})
+	if err != nil {
+		t.Fatalf("SignIn: %v", err)
+	}
+
+	account, err := svc.CurrentAccount(context.Background(), token)
+	if err != nil {
+		t.Fatalf("CurrentAccount: %v", err)
+	}
+	if account.Identity.Name != "Ada Lovelace" {
+		t.Errorf("name = %q, want %q", account.Identity.Name, "Ada Lovelace")
+	}
+}
+
 // errAccounts is the error unfindableAccounts' FindByIdentity fails with.
 var errAccounts = errors.New("accounts unavailable")
 

@@ -6,6 +6,7 @@
 package acceptance
 
 import (
+	"context"
 	"database/sql"
 	"io"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -22,6 +24,8 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient/apiclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/mobile"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc/oidctest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres"
@@ -118,7 +122,7 @@ func driversFor(t testing.TB, serverURL string) []driver {
 		name:        "postgres",
 		start:       func() (*harness, error) { return startPostgres(t, localEdition) },
 		startHosted: func() (*harness, error) { return startPostgres(t, hostedEdition) },
-		tags:        "~@desktop && ~@mobile && ~@server",
+		tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider",
 	}
 	serverTags := "@server"
 	if serverURL == "" {
@@ -130,25 +134,30 @@ func driversFor(t testing.TB, serverURL string) []driver {
 			name:        "memory",
 			start:       func() (*harness, error) { return startMemory(localEdition) },
 			startHosted: func() (*harness, error) { return startMemory(hostedEdition) },
-			tags:        "~@desktop && ~@mobile && ~@server",
+			tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider",
 		},
-		{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile && ~@server && ~@sign-in"},
+		{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile && ~@server && ~@sign-in && ~@sign-in-provider"},
 		{
 			name:        "sqlite",
 			start:       func() (*harness, error) { return startSQLite(localEdition) },
 			startHosted: func() (*harness, error) { return startSQLite(hostedEdition) },
-			tags:        "~@desktop && ~@mobile && ~@server",
+			tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider",
 		},
 		postgresDriver,
 		{
 			name:                     "http",
 			start:                    startHTTP,
 			startHosted:              startHostedHTTP,
-			tags:                     "~@desktop && ~@mobile && ~@server",
+			tags:                     "~@desktop && ~@mobile && ~@server && ~@sign-in-provider",
 			needsSignInForWorkspaces: true,
 		},
-		{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server && ~@sign-in"},
-		{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server && ~@sign-in"},
+		{
+			name:        "oidc",
+			startHosted: func() (*harness, error) { return startHostedOIDC(t) },
+			tags:        "@sign-in,@sign-in-provider",
+		},
+		{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server && ~@sign-in && ~@sign-in-provider"},
+		{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server && ~@sign-in && ~@sign-in-provider"},
 		{name: "server", start: func() (*harness, error) { return startServer(t) }, tags: serverTags},
 	}
 }
@@ -359,6 +368,70 @@ func startHostedHTTP() (*harness, error) {
 	h.signIn = newDevSignInOverHTTP(h, srv.URL)
 	if err := h.driveOverHTTP(srv.URL); err != nil {
 		srv.Close()
+		return nil, err
+	}
+	return h, nil
+}
+
+// startHostedOIDC serves the hosted edition over HTTP, with sign-in through
+// a fake sign-in provider, keeping its plans, data, accounts, and sessions in
+// memory. Scenarios sign in through the provider, as a browser does.
+func startHostedOIDC(t testing.TB) (*harness, error) {
+	h := newHarness()
+	if err := h.usePlans(memory.NewWorkspacePlanRepository(), workspace.FromContext{}, hostedEdition); err != nil {
+		return nil, err
+	}
+	h.accounts = memory.NewAccountRepository()
+	// The provider is sent back to the server's address, which is known
+	// before the server starts serving.
+	srv := httptest.NewUnstartedServer(nil)
+	publicURL := "http://" + srv.Listener.Addr().String()
+	provider := oidctest.New(t)
+	provider.SetPromptCreateSupported(true)
+	sessions := memory.NewSessionRepository()
+	opts := httpapi.Options{
+		Entitlements: h.entitlements,
+		SignIn:       h.newSignInService(h.accounts, sessions),
+		PublicURL:    publicURL,
+	}
+	// sample:start
+	opts.Items = h.newItemService(memory.NewItemRepository(), workspace.FromContext{})
+	// sample:end
+	// The server discovers the provider when it starts, so a scenario that
+	// changes the provider starts the handler again.
+	var handler atomic.Pointer[http.Handler]
+	useProvider := func() error {
+		signInProvider, err := oidc.New(context.Background(), oidc.Settings{
+			Issuer:       provider.Issuer(),
+			ClientID:     oidctest.ClientID,
+			ClientSecret: oidctest.ClientSecret,
+			RedirectURL:  publicURL + "/auth/oidc/callback",
+		})
+		if err != nil {
+			return err
+		}
+		opts.SignInProvider = signInProvider
+		next := httpapi.NewHandler(opts)
+		handler.Store(&next)
+		return nil
+	}
+	if err := useProvider(); err != nil {
+		srv.Close()
+		return nil, err
+	}
+	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		(*handler.Load()).ServeHTTP(w, r)
+	})
+	srv.Start()
+	h.cleanup = func() {
+		srv.Close()
+		provider.Close()
+	}
+	signIn := newOIDCSignInOverHTTP(h, srv.URL, provider)
+	signIn.useProvider = useProvider
+	h.signIn = signIn
+	if err := h.driveOverHTTP(srv.URL); err != nil {
+		h.cleanup()
 		return nil, err
 	}
 	return h, nil

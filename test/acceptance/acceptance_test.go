@@ -3,6 +3,7 @@ package acceptance
 import (
 	"flag"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/cucumber/godog"
@@ -46,10 +47,16 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-// joinTags requires both Godog tag expressions; either may be empty.
+// joinTags requires both Godog tag expressions; either may be empty. Godog's
+// "," means "or" and binds more loosely than "&&", so when a driver's tags list alternatives with
+// commas, the other expression is joined to each alternative in turn.
 func joinTags(a, b string) string {
 	if a == "" || b == "" {
 		return a + b
 	}
-	return a + " && " + b
+	alternatives := strings.Split(b, ",")
+	for i, alternative := range alternatives {
+		alternatives[i] = a + " && " + alternative
+	}
+	return strings.Join(alternatives, ",")
 }

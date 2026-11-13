@@ -7,20 +7,21 @@ This guide explains how a product built from this template gets paid. It covers 
 **The template doesn't take payments.** It ships the one step that billing comes down to, moving a workspace to a plan, and an admin command that runs it.
 
 - **Built:** `ChangePlan`, each storage adapter's stored plans, `plans.StoredPlanOf`, and `starter admin set-plan`, all proved by the acceptance tests.
-- **Built:** the hosted edition, with the dev sign-in ([docs/sign-in.md](sign-in.md)). With the `sign_in` setting on, each workspace is on its stored plan, and `starter admin set-plan` changes it.
-- **Not built:** a real sign-in provider. It is step 8b of `docs/plans/editions-and-accounts.md`. Until then, only builds with the dev sign-in can turn sign-in on.
+- **Built:** the hosted edition, with sign-in through an OIDC provider or the dev sign-in ([docs/sign-in.md](sign-in.md)). With the `sign_in` setting on, each workspace is on its stored plan, and `starter admin set-plan` changes it.
 
 With sign-in off, every copy is the local edition. Then `bootstrap.NewBilling` refuses, and `starter admin set-plan` fails with "The plan for the local edition is set when the application is built and cannot be changed." [Stored plans are switched on](#stored-plans-are-switched-on-with-sign-in) explains the difference.
 
 ## The concepts
 
-```
-Stripe webhook ─────┐
-Paddle webhook ─────┼──► ports.BillingService.ChangePlan(workspace, plan) ──► WorkspacePlanRepository
-starter admin ──────┘             │                                                     │
-                                  └── ports.PlanCatalog: does the plan exist?           │
-                                                                                        ▼
-use cases ◄── EntitlementsProvider ◄── plans.Provider ◄── plans.StoredPlanOf ◄── the stored plan
+```mermaid
+flowchart TD
+    stripe["Stripe webhook"] --> change
+    paddle["Paddle webhook"] --> change
+    admin["starter admin"] --> change
+    change["ports.BillingService.ChangePlan(workspace, plan)"] -->|"does the plan exist?"| catalog["ports.PlanCatalog"]
+    change --> repo["WorkspacePlanRepository"] --> stored["the stored plan"]
+    stored --> storedOf["plans.StoredPlanOf"] --> provider["plans.Provider"]
+    provider --> entitlements["EntitlementsProvider"] --> usecases["use cases"]
 ```
 
 - **A plan is a name in the plans file** (`internal/adapters/plans/plans.jsonc`). It sets a workspace's limits and features. It knows nothing about prices. `docs/features.md` covers features, and `.claude/rules/workspaces-and-plans.md` covers limits.
@@ -71,7 +72,7 @@ STARTER_STORAGE=postgres STARTER_DATABASE_URL=postgres://… STARTER_SIGN_IN=dev
   starter admin set-plan WORKSPACE pro
 ```
 
-`WORKSPACE` is the workspace's ID. Each account's personal workspace is in the `workspace_id` column of the `accounts` table. Until step 8b adds a real sign-in provider, `STARTER_SIGN_IN=dev` works only in a program built with the `devsignin` build tag, such as `task run:cli`.
+`WORKSPACE` is the workspace's ID. Each account's personal workspace is in the `workspace_id` column of the `accounts` table. Give `set-plan` the same sign-in setting as the server. With `STARTER_SIGN_IN=oidc`, `set-plan` also needs the server's four other sign-in settings (`docs/configuration.md`), and it reaches the sign-in provider when it starts, as the server does, because it builds the same hosted edition. `STARTER_SIGN_IN=dev` works only in a program built with the `devsignin` build tag, such as `task run:cli`.
 
 It prints `Workspace WORKSPACE is now on the pro plan.` To end a paid account, run it again with your free plan.
 

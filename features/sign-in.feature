@@ -5,9 +5,10 @@ Feature: Sign in to the hosted edition
   So that I work in my own workspace, on its plan, apart from everyone else
 
   # These scenarios run on the drivers whose storage keeps accounts and
-  # sessions: memory, sqlite, postgres, and http. Each signs in with the dev
-  # sign-in, which stands in for a real sign-in provider (OIDC comes in part
-  # 8b of the editions plan). The test plans start new workspaces on "free".
+  # sessions: memory, sqlite, postgres, and http, which sign in with the dev
+  # sign-in, and oidc, which signs in through a fake sign-in provider inside
+  # the tests. The rules only a sign-in provider has are in
+  # sign-in-provider.feature. The test plans start new workspaces on "free".
 
   Scenario: Signing in for the first time gives me a workspace on the starting plan
     When I sign in as "Ada"

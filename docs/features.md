@@ -4,10 +4,11 @@ A **feature** is something a workspace's plan turns on or off, like exporting it
 
 ## How it works
 
-```
-plans.jsonc ──► plans adapter ──► Entitlements.Features ──► use case: CheckFeature(key)  (refuses)
-                                         │
-                                         └──► GET /api/v1/entitlements ──► front ends  (only show)
+```mermaid
+flowchart LR
+    file["plans.jsonc"] --> adapter["plans adapter"] --> features["Entitlements.Features"]
+    features --> check["use case: CheckFeature(key)<br>(refuses)"]
+    features --> api["GET /api/v1/entitlements"] --> fronts["front ends<br>(only show)"]
 ```
 
 1. **The plans file defines the feature.** You add it to the top-level `features` section with a key, a `name` that people read, and `whenOff`. Each plan lists the keys it turns on. A feature a plan doesn't list is off for that plan. The file fails to load if a plan lists an unknown key, a `name` is missing or blank, or `whenOff` isn't `show-locked` or `hide`.

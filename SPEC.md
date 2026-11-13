@@ -10,7 +10,7 @@ _One paragraph: who the users are, what problem this solves, and what success lo
 
 | Persona | Front-end | Editions (§3) | Notes |
 |---|---|---|---|
-| _e.g. End user_ | Web (React SPA) | Hosted, with sign-in (§4.18, through the dev sign-in until a real sign-in provider arrives). Or local: a self-hosted server for one user, with no sign-in | Installable (§4.5) |
+| _e.g. End user_ | Web (React SPA) | Hosted, with sign-in through a sign-in provider (§4.18). Or local: a self-hosted server for one user, with no sign-in | Installable (§4.5) |
 | _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in the desktop app's data folder (§4.11). Hosted, after `starter login --server …` (planned) | Today `--server` reaches only a server without sign-in, as the command line can't sign in yet |
 | _e.g. Integrations_ | REST API (`api/openapi.yaml`) | Whichever edition the server runs | |
 | _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | Local, with its data on the computer (§4.6). Hosted, in remote mode (planned) | The web app in its own window |
@@ -426,10 +426,16 @@ A server can keep its data in a Postgres database, so that several copies of it,
 
 ### 4.18 Sign in to the hosted edition
 
-In the hosted edition, each person signs in to their own **account**, and works in that account's personal workspace (§4.8), on that workspace's plan (§4.9). This is part 8a of step 8 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). It builds everything sign-in needs, and proves it with the **dev sign-in**. Part 8b adds a real sign-in provider, through OpenID Connect (OIDC), behind the same seam. Accounts with an email address and a password come from the provider, not from the product (ADR 5).
+In the hosted edition, each person signs in to their own **account**, and works in that account's personal workspace (§4.8), on that workspace's plan (§4.9). This is step 8 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). People sign in through a **sign-in provider**, through OpenID Connect (OIDC). Developers and tests use the **dev sign-in** in its place, behind the same seam. Any provider that speaks OIDC works, such as Auth0, Clerk, Keycloak, Zitadel, or Google. Accounts with an email address and a password come from the provider, not from the product (ADR 5).
 
 **Rules**
 - Sign-in is a server setting, and it is off by default. With it off, the server is a self-hosted local edition with one workspace, as it is today. The desktop and mobile apps, and the command line and the terminal app on their own, are always the local edition.
+- With a sign-in provider, signing in sends the person to the provider, and the provider sends them back once it knows who they are. The product never sees their password.
+- The provider's word is checked before anyone is signed in. A sign-in that the provider turned down, that didn't start on this server, or whose answer can't be shown to come from the provider for this server is refused, and the person is told that signing in didn't work.
+- An account belongs to the provider's ID for the person, never to their name. So two people with the same name get two accounts, and a person who changes their name at the provider keeps their account. The account shows the name the provider gave at the latest sign-in.
+- A server with a sign-in provider must be told its own public address, because the provider sends people back only to an address registered with it in advance. A server whose public address starts with `https://` keeps the session on encrypted connections only, even behind a proxy that handles HTTPS for it.
+- Signing out ends the session on this server only. The person stays signed in at the provider, so signing in again may not ask for their password.
+- Someone new can create an account from the sign-in screen, beside signing in. The provider creates and keeps that account, and the product's own account and workspace follow at the first sign-in, as for anyone else. Creating an account takes the person straight to the provider's sign-up page, saving them from finding its link on the sign-in page. A provider that can't start at its sign-up page shows its sign-in page instead, which still links to its sign-up. With the dev sign-in, creating an account goes to the same form as signing in.
 - With sign-in on, the server keeps accounts and sessions in its storage, so its storage must be memory, SQLite, or Postgres. Plain-text storage with sign-in on is refused when the server starts.
 - The first time someone signs in, the product creates their account and a personal workspace for it. The workspace starts on the plan that the plans file names for new workspaces.
 - Signing in again brings the person back to the same account and workspace, with its data and its plan.
@@ -448,8 +454,13 @@ In the hosted edition, each person signs in to their own **account**, and works 
 <!-- sample:end -->
 - Someone opens the web app without signing in → they're asked to sign in, and see no data.
 - A server with `storage = "jsonfile"` and sign-in on → it doesn't start, and says sign-in needs memory, SQLite, or Postgres storage.
+- Ada signs in through the sign-in provider, then changes their name there to "Ada Lovelace", and signs in again → Ada is back in the same workspace, shown as "Ada Lovelace".
+- Two people both called "Sam" sign in through the provider → each has their own account and workspace.
+- Grace has never used the product or the provider, and chooses "Create an account" → Grace goes straight to the provider's sign-up page, signs up there, and comes back signed in, to a new workspace on the free plan.
+- Ada cancels on the provider's page → Ada isn't signed in, and is told that signing in didn't work.
+- A server with a sign-in provider but no public address → it doesn't start, and says which setting is missing.
 
-**Specification:** [`features/sign-in.feature`](features/sign-in.feature), on the memory, sqlite, postgres, and http drivers, whose storage keeps accounts. The workspace scenarios in [`features/workspaces.feature`](features/workspaces.feature) also run on the http driver, each workspace being a signed-in account's. The web app's sign-in and sign-out are a browser journey ([`web/e2e/features/sign-in.feature`](web/e2e/features/sign-in.feature)). Refusing plain-text storage, expiring sessions, and leaving the dev sign-in out of release builds are checked by unit tests.
+**Specification:** [`features/sign-in.feature`](features/sign-in.feature), on the memory, sqlite, postgres, and http drivers, whose storage keeps accounts, and on the oidc driver, which signs in through a fake sign-in provider inside the tests. [`features/sign-in-provider.feature`](features/sign-in-provider.feature) runs on the oidc driver only. Checking the provider's tokens, the settings a provider needs, and marking the session for encrypted connections are checked by unit tests. The workspace scenarios in [`features/workspaces.feature`](features/workspaces.feature) also run on the http driver, each workspace being a signed-in account's. The web app's sign-in, creating an account, and sign-out are browser journeys ([`web/e2e/features/sign-in.feature`](web/e2e/features/sign-in.feature)). Refusing plain-text storage, expiring sessions, and leaving the dev sign-in out of release builds are checked by unit tests.
 
 ## 5. Non-functional requirements
 
@@ -457,10 +468,10 @@ In the hosted edition, each person signs in to their own **account**, and works 
 |---|---|
 | Availability | _e.g. best effort; single instance while on plain-text storage, several on one disk with SQLite, several on many machines with Postgres_ |
 | Data | _e.g. data survives restarts; backups via volume snapshots_ |
-| Security | _e.g. the hosted edition signs people in (§4.18) and keeps each session in an `HttpOnly` cookie that page scripts can't read. Requests that change something from another site are refused. A self-hosted server for one user (local edition) keeps running without sign-in. A real sign-in provider (OIDC) is planned_ |
+| Security | _e.g. the hosted edition signs people in (§4.18) and keeps each session in an `HttpOnly` cookie that page scripts can't read. Requests that change something from another site are refused. A self-hosted server for one user (local edition) keeps running without sign-in. People sign in through a sign-in provider (OIDC), so the product stores no passwords_ |
 | Accessibility | Web UI is keyboard navigable, and controls have accessible names (also used by tests) |
 | TUI navigation | Every list or selectable view supports Vim keys alongside the arrow keys: `j` down, `k` up |
 
 ## 6. Out of scope (for now)
 
-- Authentication and authorization (planned: hosted edition, [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md))
+- Roles, such as an admin who changes plans from the web app. They wait for teams (a follow-up of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md)). Until then, an admin uses the command line (§4.15).

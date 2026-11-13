@@ -80,7 +80,8 @@ func TestTheDefaultSettingsFileHasEverySettingTheDesktopAppAndTheCommandLineRead
 	// These are for running a server, which never reads the default settings
 	// file. An operator's command that reaches hosted data (database_url,
 	// sign_in) sets them in the environment too.
-	serverOnly := map[string]bool{"port": true, "log_format": true, "database_url": true, "sign_in": true}
+	serverOnly := map[string]bool{"port": true, "log_format": true, "database_url": true, "sign_in": true,
+		"public_url": true, "oidc_issuer": true, "oidc_client_id": true, "oidc_client_secret": true}
 
 	cfg, err := config.Load(config.Env{Getenv: envOf(nil)}, "")
 	if err != nil {

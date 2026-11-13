@@ -12,3 +12,9 @@ Feature: Sign in in the browser
     And I am shown as signed in as "Browser Ada"
     When I sign out
     Then I am asked to sign in
+
+  Scenario: Create an account, use the app, and see who is signed in
+    Given I am signed out
+    When I create an account as "Browser Grace"
+    Then I see the items page
+    And I am shown as signed in as "Browser Grace"

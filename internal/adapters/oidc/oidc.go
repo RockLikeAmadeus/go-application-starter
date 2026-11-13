@@ -1,0 +1,153 @@
+package oidc
+
+import (
+	"cmp"
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"slices"
+
+	gooidc "github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
+
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+)
+
+// Settings says which provider to sign in through, and as which client.
+type Settings struct {
+	Issuer       string
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+}
+
+// Provider is a discovered sign-in provider.
+type Provider struct {
+	provider *gooidc.Provider
+	config   oauth2.Config
+	verifier *gooidc.IDTokenVerifier
+	// canPromptCreate is whether discovery lists the "create" prompt, which
+	// a provider that doesn't know it may refuse.
+	canPromptCreate bool
+}
+
+// New discovers the provider from its issuer.
+func New(ctx context.Context, s Settings) (*Provider, error) {
+	p, err := gooidc.NewProvider(ctx, s.Issuer)
+	if err != nil {
+		return nil, err
+	}
+	var discovered struct {
+		PromptValuesSupported []string `json:"prompt_values_supported"`
+	}
+	if err := p.Claims(&discovered); err != nil {
+		return nil, fmt.Errorf("reading the provider's discovery document: %w", err)
+	}
+	return &Provider{
+		canPromptCreate: slices.Contains(discovered.PromptValuesSupported, "create"),
+		provider:        p,
+		config: oauth2.Config{
+			ClientID:     s.ClientID,
+			ClientSecret: s.ClientSecret,
+			RedirectURL:  s.RedirectURL,
+			Endpoint:     p.Endpoint(),
+			Scopes:       []string{gooidc.ScopeOpenID, "profile", "email"},
+		},
+		verifier: p.Verifier(&gooidc.Config{ClientID: s.ClientID}),
+	}, nil
+}
+
+// attempt is the secrets of one sign-in in progress, kept until the provider
+// sends the person back. Callers hold it as an opaque string (see encode), so
+// they need no knowledge of what a sign-in needs to remember.
+type attempt struct {
+	Nonce    string `json:"nonce"`
+	Verifier string `json:"verifier"`
+}
+
+// encode turns the attempt into a string that is safe in a cookie.
+func (a attempt) encode() string {
+	raw, _ := json.Marshal(a) // two strings always marshal
+	return base64.RawURLEncoding.EncodeToString(raw)
+}
+
+func decodeAttempt(s string) (attempt, error) {
+	raw, err := base64.RawURLEncoding.DecodeString(s)
+	if err != nil {
+		return attempt{}, fmt.Errorf("reading the attempt: %w", err)
+	}
+	var a attempt
+	if err := json.Unmarshal(raw, &a); err != nil {
+		return attempt{}, fmt.Errorf("reading the attempt: %w", err)
+	}
+	return a, nil
+}
+
+// Start begins a sign-in: the URL to send the person to, the state the
+// provider sends back with them, and the attempt to keep until they return
+// and give to Finish.
+func (p *Provider) Start() (authURL, state, attempt string) { return p.start() }
+
+// start builds the authorization URL, with any extra parameters.
+func (p *Provider) start(extra ...oauth2.AuthCodeOption) (authURL, state, encodedAttempt string) {
+	a := attempt{Nonce: rand.Text(), Verifier: oauth2.GenerateVerifier()}
+	state = rand.Text()
+	opts := append([]oauth2.AuthCodeOption{
+		gooidc.Nonce(a.Nonce),
+		oauth2.S256ChallengeOption(a.Verifier),
+	}, extra...)
+	return p.config.AuthCodeURL(state, opts...), state, a.encode()
+}
+
+// Finish completes a sign-in: it swaps the code for tokens, sending the
+// attempt's PKCE verifier, checks the ID token, and returns who the provider
+// says signed in.
+func (p *Provider) Finish(ctx context.Context, encodedAttempt, code string) (domain.Identity, error) {
+	attempt, err := decodeAttempt(encodedAttempt)
+	if err != nil {
+		return domain.Identity{}, err
+	}
+	token, err := p.config.Exchange(ctx, code, oauth2.VerifierOption(attempt.Verifier))
+	if err != nil {
+		return domain.Identity{}, fmt.Errorf("swapping the code: %w", err)
+	}
+	raw, ok := token.Extra("id_token").(string)
+	if !ok {
+		return domain.Identity{}, errors.New("the provider sent no ID token")
+	}
+	idToken, err := p.verifier.Verify(ctx, raw)
+	if err != nil {
+		return domain.Identity{}, fmt.Errorf("checking the ID token: %w", err)
+	}
+	// go-oidc leaves the nonce to the caller: it ties this token to this attempt.
+	if idToken.Nonce != attempt.Nonce {
+		return domain.Identity{}, errors.New("the ID token's nonce does not match the attempt")
+	}
+	var claims struct {
+		Name              string `json:"name"`
+		PreferredUsername string `json:"preferred_username"`
+		Email             string `json:"email"`
+	}
+	if err := idToken.Claims(&claims); err != nil {
+		return domain.Identity{}, fmt.Errorf("reading the ID token's claims: %w", err)
+	}
+	// A provider that sends no name claim still gives the person something to be called.
+	name := cmp.Or(claims.Name, claims.PreferredUsername, claims.Email, idToken.Subject)
+	return domain.Identity{
+		Issuer:  idToken.Issuer,
+		Subject: idToken.Subject,
+		Name:    name,
+	}, nil
+}
+
+// StartSignUp begins a sign-in that opens at the provider's sign-up page, when
+// the provider says it has one (prompt=create). Otherwise it is Start.
+func (p *Provider) StartSignUp() (authURL, state, attempt string) {
+	if !p.canPromptCreate {
+		return p.start()
+	}
+	return p.start(oauth2.SetAuthURLParam("prompt", "create"))
+}

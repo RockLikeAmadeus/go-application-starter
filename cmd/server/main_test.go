@@ -186,3 +186,34 @@ func servedWarnings(t *testing.T, h http.Handler) []string {
 	}
 	return messages
 }
+
+// With a sign-in provider, the server's handler serves the provider's sign-in,
+// and an https public URL marks its attempt cookie Secure.
+func TestTheServerServesTheSignInProviderBehindAnHTTPSPublicURL(t *testing.T) {
+	app := &bootstrap.App{
+		SignIn:         oneSession{token: "token-a"},
+		SignInProvider: fakeProvider{authURL: "https://id.example.com/authorize"},
+		PublicURL:      "https://app.example.com",
+	}
+	handler := httpapi.NewHandler(handlerOptions(app, nil))
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/oidc", nil))
+
+	if got := rec.Header().Get("Location"); got != "https://id.example.com/authorize" {
+		t.Errorf("GET /auth/oidc = %d, Location %q, want the provider's authorization URL", rec.Code, got)
+	}
+	cookies := rec.Result().Cookies()
+	if len(cookies) != 1 || cookies[0].Name != httpapi.AttemptCookie || !cookies[0].Secure {
+		t.Errorf("cookies = %v, want one Secure %s cookie", cookies, httpapi.AttemptCookie)
+	}
+}
+
+// fakeProvider is a sign-in provider that always sends people to authURL.
+type fakeProvider struct{ authURL string }
+
+func (p fakeProvider) Start() (string, string, string)       { return p.authURL, "state", "attempt" }
+func (p fakeProvider) StartSignUp() (string, string, string) { return p.authURL, "state", "attempt" }
+func (fakeProvider) Finish(context.Context, string, string) (domain.Identity, error) {
+	return domain.Identity{}, domain.ErrNoWorkspace
+}

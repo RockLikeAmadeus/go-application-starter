@@ -4,28 +4,26 @@ A template for multi-front-end applications: a **hexagonal Go core** driven by a
 
 The app comes in two editions, from the same core ([ADR 5](docs/adr/0005-hosted-and-local-editions.md)):
 - **Local** (works today): one user, no sign-in, data on their own device or on a server they host for themselves.
-- **Hosted** (in progress, see [the plan](docs/plans/editions-and-accounts.md)): many users signing in to their own workspaces, with features and limits set by paid plans. The server signs people in today with a dev-only stand-in, the dev sign-in, and a real sign-in provider (OIDC) is next. [docs/sign-in.md](docs/sign-in.md) explains sign-in.
+- **Hosted** (in progress, see [the plan](docs/plans/editions-and-accounts.md)): many users signing in to their own workspaces, with features and limits set by paid plans. The server signs people in through a sign-in provider, such as Auth0, Clerk, or Keycloak, over OpenID Connect (OIDC). For development and tests, a stand-in called the dev sign-in signs in whoever types a name. [docs/sign-in.md](docs/sign-in.md) explains sign-in, and how to connect a provider.
 
 <!-- sample:start -->
 It ships as a working *walking skeleton*: one tiny `Item` domain wired end to end through every layer, tested at every level, and deployable from CI.
 <!-- sample:end -->
 
+```mermaid
+flowchart TD
+    spa["React SPA"] -->|HTTP| api["httpapi adapter"]
+    remote["CLI / TUI<br>(--server mode)"] -->|HTTP| api
+    native["Desktop / Android"] -->|"in-process, no port"| api
+    api --> driving["driving ports"]
+    embedded["CLI / TUI<br>(embedded mode)"] --> driving
+    driving --> core["core (domain + app)"]
+    core --> driven["driven ports"]
+    driven --> memory & jsonfile & sqlite & postgres
 ```
- React SPA ──HTTP──┐
- CLI / TUI ──HTTP──┤ (--server mode)
-                   ▼
-            httpapi adapter ──► driving ports ◄── CLI / TUI (embedded mode)
-                   ▲                   │
- Desktop / Android ┘              core (domain + app)
- (in-process, no port)                 │
-                               driven ports
-                           ┌──────────┼──────────┬──────────┐
-                        memory    jsonfile    sqlite     postgres
 
- Local edition:  CLI / TUI embedded, desktop and Android apps, a self-hosted server
- Hosted edition: the web app on a hosted server with sign-in (the dev sign-in today),
-                 plus the CLI / TUI and the desktop and Android apps connected to it (planned)
-```
+- **Local edition:** the CLI and TUI in embedded mode, the desktop and Android apps, and a self-hosted server.
+- **Hosted edition:** the web app on a hosted server with sign-in, through a sign-in provider (OIDC). Connecting the CLI, the TUI, and the desktop and Android apps to it is planned.
 
 ## Prerequisites
 
@@ -154,6 +152,5 @@ Fly must be able to pull the image from GHCR. The simplest option is to make the
 
 - **Devcontainer** (`.devcontainer/`) so the toolchain is reproducible in Codespaces.
 - **OpenTelemetry** tracing and metrics around the driving ports.
-- **OIDC sign-in**, behind the sign-in seam that the dev sign-in uses today (step 8b of the editions plan).
 - **Conventional commits + release-please** for automatic changelogs and versions.
 - **Contract tests against the deployed API** by reusing the playwright-bdd suite with `E2E_BASE_URL=https://…`.

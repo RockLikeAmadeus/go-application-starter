@@ -13,7 +13,7 @@ The sample domain is `Item`; replace it when starting a real product.
 
 The app comes in two **editions** (ADR 5), built step by step from `docs/plans/editions-and-accounts.md`. Most of it is still planned:
 - **Local edition:** one user, one workspace, no sign-in. This is the CLI and TUI (embedded), the desktop and Android apps, and a self-hosted single-user server. All of these work today.
-- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. The web app on a server with `sign_in` on works today with the dev sign-in (ADR 9, `docs/sign-in.md`). Real providers (OIDC) come in 8b. The CLI and TUI after `starter login`, and the desktop and Android apps in remote mode, are planned.
+- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. The web app on a server with `sign_in` on works today, through a sign-in provider (`oidc`) or the dev sign-in (`dev`) (ADR 9, `docs/sign-in.md`). The CLI and TUI after `starter login`, and the desktop and Android apps in remote mode, are planned.
 
 Each copy uses one edition, and nothing syncs between them. Outside `internal/bootstrap` and `desktop.Open`, never assume local storage or a single user.
 
@@ -80,18 +80,19 @@ cmd/mobile                       Wails v3 Android app around mobile.Open, plus t
 internal/core/domain             entities, value rules, domain errors (stdlib only)
 internal/core/ports              interfaces: driving (…Service) + driven (…Repository, Clock, IDGenerator)
 internal/core/app                use cases implementing driving ports (orchestration only)
-internal/adapters/httpapi        REST server (generated strict interface from OpenAPI), SPA serving, and sign-in under `/auth/` (session cookie, dev sign-in in `devsignin` builds)
+internal/adapters/httpapi        REST server (generated strict interface from OpenAPI), SPA serving, and sign-in under `/auth/` (session cookie, OIDC routes over its `SignInProvider` interface, dev sign-in in `devsignin` builds)
 internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --server mode (later, desktop and mobile remote mode too)
 internal/adapters/cli, tui       Cobra / Bubble Tea + Lip Gloss
 internal/adapters/desktop        desktop app wiring with no Wails import: data folder, storage, in-process handler
 internal/adapters/mobile         Android wiring on top of desktop's, no Wails import: the page handler and Serve, the API bridge
 internal/adapters/storage/*      memory, jsonfile, sqlite, postgres; sqlstore (the SQL both share: goose migrations, repositories); storagetest contract suite
 internal/adapters/workspace      ports.WorkspaceResolver: Local (the local edition's one workspace), FromContext (set with WithID)
+internal/adapters/oidc           the OIDC sign-in protocol (go-oidc, x/oauth2), no routes or cookies; oidctest is the fake provider, for tests only
 internal/adapters/plans          ports.EntitlementsProvider and ports.PlanCatalog from the plans file (plans.jsonc, built in; STARTER_PLANS_FILE replaces it); plans.StoredPlanOf reads stored plans
 internal/bootstrap               composition root: the only place that picks adapters
 web/                             Vite + React + TS + Tailwind + TanStack Query; components every screen can use (e.g. `ErrorMessage`) go in web/src/components
 mobile/android                   Wails' generated Gradle project for the Android app (see docs/mobile.md)
-features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, sqlite, postgres, http, desktop, mobile, and server drivers (tags pick drivers; see .claude/rules/testing.md)
+features/ + test/acceptance      Godog business scenarios, run against memory, jsonfile, sqlite, postgres, http, oidc, desktop, mobile, and server drivers (tags pick drivers; see .claude/rules/testing.md)
 web/e2e                          playwright-bdd browser journeys
 test/terminal                    Godog terminal journeys: the built CLI and TUI (and a server for --server) in a pseudo-terminal; term is the terminal helper (Unix only)
 test/packaging                   package check: builds the Linux packages and the Windows setup program and inspects them (build tag `packaging`, `task test:package`)

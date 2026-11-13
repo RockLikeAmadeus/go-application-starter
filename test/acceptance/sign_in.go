@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strings"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient/apiclient"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc/oidctest"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/system"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
@@ -30,6 +33,8 @@ type signInDriver interface {
 	signedInName(ctx context.Context) (string, error)
 	// signedOut returns ctx working as someone who hasn't signed in.
 	signedOut(ctx context.Context) (context.Context, error)
+	// identity is the identity that signing in as name gives the account.
+	identity(name string) (domain.Identity, error)
 }
 
 // devIdentity is the identity the dev sign-in gives name.
@@ -57,6 +62,8 @@ type directSignIn struct {
 	service ports.SignInService
 	token   string
 }
+
+func (d *directSignIn) identity(name string) (domain.Identity, error) { return devIdentity(name) }
 
 func (d *directSignIn) signIn(ctx context.Context, name string) (context.Context, error) {
 	identity, err := devIdentity(name)
@@ -102,10 +109,11 @@ func (d *directSignIn) inSessionsWorkspace(ctx context.Context) (context.Context
 	return workspace.WithID(ctx, account.WorkspaceID), nil
 }
 
-// devSignInOverHTTP signs in through the server's dev sign-in form, as a
-// browser does, keeping each account's session cookie in its own cookie
-// jar. The harness's driving ports send the current account's cookie.
-type devSignInOverHTTP struct {
+// browsersOverHTTP keeps each account's session cookie in its own cookie
+// jar, as separate browsers do, and points the harness's driving ports at
+// the server through the current one. A way of signing in over HTTP embeds
+// it and adds signIn and identity.
+type browsersOverHTTP struct {
 	h       *harness
 	baseURL string
 	// browsers holds a client, with its own cookie jar, for each name
@@ -114,8 +122,8 @@ type devSignInOverHTTP struct {
 	current  *http.Client
 }
 
-func newDevSignInOverHTTP(h *harness, baseURL string) *devSignInOverHTTP {
-	return &devSignInOverHTTP{h: h, baseURL: baseURL, browsers: map[string]*http.Client{}, current: newBrowser(nil)}
+func newBrowsersOverHTTP(h *harness, baseURL string) browsersOverHTTP {
+	return browsersOverHTTP{h: h, baseURL: baseURL, browsers: map[string]*http.Client{}, current: newBrowser(nil)}
 }
 
 // newBrowser returns a client keeping cookies in jar, or none when jar is
@@ -127,28 +135,35 @@ func newBrowser(jar http.CookieJar) *http.Client {
 	}
 }
 
-func (d *devSignInOverHTTP) signIn(ctx context.Context, name string) (context.Context, error) {
-	browser, ok := d.browsers[name]
+// browserFor returns the browser that signs in as name, with a new cookie
+// jar the first time.
+func (b *browsersOverHTTP) browserFor(name string) (*http.Client, error) {
+	browser, ok := b.browsers[name]
 	if !ok {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
-			return ctx, err
+			return nil, err
 		}
 		browser = newBrowser(jar)
-		d.browsers[name] = browser
+		b.browsers[name] = browser
 	}
-	if err := d.post(browser, "/auth/dev", url.Values{"name": {name}}); err != nil {
+	return browser, nil
+}
+
+func (b *browsersOverHTTP) signOut(ctx context.Context) (context.Context, error) {
+	resp, err := b.current.Post(b.baseURL+"/auth/sign-out", "", nil)
+	if err != nil {
 		return ctx, err
 	}
-	return ctx, d.use(browser)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		return ctx, fmt.Errorf("POST /auth/sign-out: status %d, want %d", resp.StatusCode, http.StatusSeeOther)
+	}
+	return ctx, nil
 }
 
-func (d *devSignInOverHTTP) signOut(ctx context.Context) (context.Context, error) {
-	return ctx, d.post(d.current, "/auth/sign-out", nil)
-}
-
-func (d *devSignInOverHTTP) signedInName(ctx context.Context) (string, error) {
-	sessions, err := httpclient.NewSessionService(d.baseURL, apiclient.WithHTTPClient(d.current))
+func (b *browsersOverHTTP) signedInName(ctx context.Context) (string, error) {
+	sessions, err := httpclient.NewSessionService(b.baseURL, apiclient.WithHTTPClient(b.current))
 	if err != nil {
 		return "", err
 	}
@@ -159,26 +174,193 @@ func (d *devSignInOverHTTP) signedInName(ctx context.Context) (string, error) {
 	return session.Name, nil
 }
 
-func (d *devSignInOverHTTP) signedOut(ctx context.Context) (context.Context, error) {
-	return ctx, d.use(newBrowser(nil))
+func (b *browsersOverHTTP) signedOut(ctx context.Context) (context.Context, error) {
+	return ctx, b.use(newBrowser(nil))
 }
 
-// post posts form to path with browser, which the server answers by sending
-// it on to the web app.
-func (d *devSignInOverHTTP) post(browser *http.Client, path string, form url.Values) error {
-	resp, err := browser.PostForm(d.baseURL+path, form)
+// use points the harness's driving ports at the server through browser.
+func (b *browsersOverHTTP) use(browser *http.Client) error {
+	b.current = browser
+	return b.h.driveOverHTTP(b.baseURL, apiclient.WithHTTPClient(browser))
+}
+
+// devSignInOverHTTP signs in through the server's dev sign-in form, as a
+// browser does.
+type devSignInOverHTTP struct {
+	browsersOverHTTP
+}
+
+func newDevSignInOverHTTP(h *harness, baseURL string) *devSignInOverHTTP {
+	return &devSignInOverHTTP{newBrowsersOverHTTP(h, baseURL)}
+}
+
+func (d *devSignInOverHTTP) identity(name string) (domain.Identity, error) { return devIdentity(name) }
+
+func (d *devSignInOverHTTP) signIn(ctx context.Context, name string) (context.Context, error) {
+	browser, err := d.browserFor(name)
 	if err != nil {
-		return err
+		return ctx, err
+	}
+	resp, err := browser.PostForm(d.baseURL+"/auth/dev", url.Values{"name": {name}})
+	if err != nil {
+		return ctx, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusSeeOther {
-		return fmt.Errorf("POST %s: status %d, want %d", path, resp.StatusCode, http.StatusSeeOther)
+		return ctx, fmt.Errorf("POST /auth/dev: status %d, want %d", resp.StatusCode, http.StatusSeeOther)
+	}
+	return ctx, d.use(browser)
+}
+
+// oidcSignInOverHTTP signs in through the server's OIDC sign-in, as a
+// browser does, at a fake sign-in provider that knows a person for each name.
+type oidcSignInOverHTTP struct {
+	browsersOverHTTP
+	provider *oidctest.Provider
+	// lastAnswer is the page the latest arrival at the server ended on.
+	lastAnswer answer
+	// useProvider makes the server talk to the provider as it now is, by
+	// discovering it again.
+	useProvider func() error
+}
+
+func newOIDCSignInOverHTTP(h *harness, baseURL string, provider *oidctest.Provider) *oidcSignInOverHTTP {
+	return &oidcSignInOverHTTP{browsersOverHTTP: newBrowsersOverHTTP(h, baseURL), provider: provider}
+}
+
+// personNamed is who the fake provider signs in for name.
+func personNamed(name string) oidctest.Person {
+	return oidctest.Person{Subject: "subject-" + name, Name: name}
+}
+
+func (o *oidcSignInOverHTTP) identity(name string) (domain.Identity, error) {
+	person := personNamed(name)
+	return domain.NewIdentity(o.provider.Issuer(), person.Subject, person.Name)
+}
+
+func (o *oidcSignInOverHTTP) signIn(ctx context.Context, name string) (context.Context, error) {
+	return o.signInAs(ctx, name, personNamed(name))
+}
+
+// signInAs signs in person in the browser kept for browserName.
+func (o *oidcSignInOverHTTP) signInAs(ctx context.Context, browserName string, person oidctest.Person) (context.Context, error) {
+	browser, err := o.browserFor(browserName)
+	if err != nil {
+		return ctx, err
+	}
+	o.provider.SetPerson(person)
+	return ctx, o.arrive(browser, o.baseURL+"/auth/sign-in")
+}
+
+// createAccount signs in person named name, by the server's sign-up route.
+func (o *oidcSignInOverHTTP) createAccount(ctx context.Context, name string) (context.Context, error) {
+	browser, err := o.browserFor(name)
+	if err != nil {
+		return ctx, err
+	}
+	o.provider.SetPerson(personNamed(name))
+	return ctx, o.arrive(browser, o.baseURL+"/auth/sign-up")
+}
+
+// cantStartAtSignUp makes the provider stop listing the sign-up prompt, and
+// the server discover it again, as it does when it starts.
+func (o *oidcSignInOverHTTP) cantStartAtSignUp() error {
+	o.provider.SetPromptCreateSupported(false)
+	return o.useProvider()
+}
+
+// showedFirst checks that the latest request the provider got asked for
+// prompt ("create" for its sign-up page, none for its sign-in page).
+func (o *oidcSignInOverHTTP) showedFirst(prompt string) error {
+	if got := o.provider.LastPrompt(); got != prompt {
+		return fmt.Errorf("the provider was asked with prompt %q, want %q", got, prompt)
 	}
 	return nil
 }
 
-// use points the harness's driving ports at the server through browser.
-func (d *devSignInOverHTTP) use(browser *http.Client) error {
-	d.current = browser
-	return d.h.driveOverHTTP(d.baseURL, apiclient.WithHTTPClient(browser))
+// followRedirects gets address with browser and goes wherever the server and
+// the provider send it, until an answer that isn't a redirect.
+func followRedirects(browser *http.Client, address string) (answer, error) {
+	return followRedirectsUntil(browser, address, func(*url.URL) bool { return false })
+}
+
+// answer is the last page a browser was given.
+type answer struct {
+	status int
+	body   string
+}
+
+// followRedirectsUntil is followRedirects, but it stops without asking for an
+// address stop is true for, which it returns as the answer's Location.
+func followRedirectsUntil(browser *http.Client, address string, stop func(*url.URL) bool) (answer, error) {
+	const maxHops = 10
+	for range maxHops {
+		resp, err := browser.Get(address)
+		if err != nil {
+			return answer{}, err
+		}
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return answer{}, err
+		}
+		if resp.StatusCode < 300 || resp.StatusCode >= 400 {
+			return answer{status: resp.StatusCode, body: string(body)}, nil
+		}
+		next, err := resp.Location()
+		if err != nil {
+			return answer{}, err
+		}
+		if stop(next) {
+			return answer{status: resp.StatusCode, body: next.String()}, nil
+		}
+		address = next.String()
+	}
+	return answer{}, fmt.Errorf("GET %s: more than %d redirects", address, maxHops)
+}
+
+// cancel starts signing in, and at the provider, cancels: the provider sends
+// the browser back to the server with an error instead of a code.
+func (o *oidcSignInOverHTTP) cancel(ctx context.Context) (context.Context, error) {
+	browser, err := o.browserFor("someone who cancels")
+	if err != nil {
+		return ctx, err
+	}
+	atProvider, err := followRedirectsUntil(browser, o.baseURL+"/auth/sign-in", func(next *url.URL) bool {
+		return strings.HasPrefix(next.String(), o.provider.Issuer())
+	})
+	if err != nil {
+		return ctx, err
+	}
+	authorize, err := url.Parse(atProvider.body)
+	if err != nil {
+		return ctx, err
+	}
+	back, err := url.Parse(authorize.Query().Get("redirect_uri"))
+	if err != nil {
+		return ctx, err
+	}
+	back.RawQuery = url.Values{"error": {"access_denied"}, "state": {authorize.Query().Get("state")}}.Encode()
+	return ctx, o.arrive(browser, back.String())
+}
+
+// comeBackWithoutStarting sends a browser that never started signing in here
+// to the callback, as a provider's redirect would.
+func (o *oidcSignInOverHTTP) comeBackWithoutStarting(ctx context.Context) (context.Context, error) {
+	browser, err := o.browserFor("someone who never started")
+	if err != nil {
+		return ctx, err
+	}
+	back := o.baseURL + "/auth/oidc/callback?" + url.Values{"code": {"a-code"}, "state": {"a-state"}}.Encode()
+	return ctx, o.arrive(browser, back)
+}
+
+// arrive gets address with browser, keeps the answer, and makes browser the
+// one the harness drives the server through.
+func (o *oidcSignInOverHTTP) arrive(browser *http.Client, address string) error {
+	var err error
+	if o.lastAnswer, err = followRedirects(browser, address); err != nil {
+		return err
+	}
+	return o.use(browser)
 }

@@ -212,11 +212,24 @@ describe("Layout", () => {
     renderLayout();
 
     expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
-    expect(screen.getByText("Please sign in to continue.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Please sign in or create an account to continue."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/sign-in");
     expect(screen.queryByText("Page")).not.toBeInTheDocument();
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Menu" })).not.toBeInTheDocument();
+  });
+
+  it("offers someone signed out a Create an account link to /auth/sign-up beside Sign in", async () => {
+    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true }));
+
+    renderLayout();
+
+    expect(await screen.findByRole("link", { name: "Create an account" })).toHaveAttribute(
+      "href",
+      "/auth/sign-up",
+    );
   });
 
   it("shows who is signed in, and a Sign out button that posts to /auth/sign-out, in the sidebar", async () => {

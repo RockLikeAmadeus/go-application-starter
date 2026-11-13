@@ -12,7 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/plans"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
@@ -49,6 +51,12 @@ type App struct {
 	// IsDevSignInOn says whether the server serves the dev sign-in under
 	// /auth/dev: sign_in is "dev", which only a devsignin build accepts.
 	IsDevSignInOn bool
+	// SignInProvider is the OIDC sign-in provider, discovered at start. It's
+	// nil unless sign_in is "oidc".
+	SignInProvider httpapi.SignInProvider
+	// PublicURL is the address people reach the server at (the public_url
+	// setting), for the server's handler.
+	PublicURL string
 	// Warnings are messages every front end shows the user as given, such
 	// as SQLite's data folder looking synced, or a conflict copy in plain text.
 	Warnings []string
@@ -89,7 +97,21 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 			"The sign-in setting is %q, but this program was built without the dev sign-in, which is only for development and tests. Please set the sign-in setting to %q, or build the program with the %q build tag.",
 			cfg.SignIn, config.SignInOff, devSignInBuildTag)
 	}
-	a := &App{IsDevSignInOn: cfg.SignIn == config.SignInDev}
+	a := &App{IsDevSignInOn: cfg.SignIn == config.SignInDev, PublicURL: cfg.PublicURL}
+	if cfg.SignIn == config.SignInOIDC {
+		provider, err := oidc.New(context.Background(), oidc.Settings{
+			Issuer:       cfg.OIDCIssuer,
+			ClientID:     cfg.OIDCClientID,
+			ClientSecret: cfg.OIDCClientSecret,
+			RedirectURL:  strings.TrimRight(cfg.PublicURL, "/") + "/auth/oidc/callback",
+		})
+		if err != nil {
+			return nil, fmt.Errorf(
+				"The sign-in provider at %q could not be reached, or did not answer as an OpenID Connect provider. Please check that the oidc_issuer setting is the address of the sign-in provider, and that the provider is running. The error was: %w",
+				cfg.OIDCIssuer, err)
+		}
+		a.SignInProvider = provider
+	}
 	// sample:start
 	var itemRepo ports.ItemRepository
 	// sample:end
