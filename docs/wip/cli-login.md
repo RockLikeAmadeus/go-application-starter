@@ -38,7 +38,8 @@
    - Red: `TestRedeemSignInCode_RefusesACodeUsedBeforeAWrongVerifierAndAnExpiredCode` (table) failed for the wrong verifier and the expired code (a session was started); the used-before case passed already, as `Take` deletes. Green: `RedeemSignInCode` checks expiry and `VerifiedBy`, refusing with `ErrNotFound` like a missing code. Refactor: nothing worth changing.
 7. [x] sqlstore: migration and repository for sign-in codes; the contract suite passes on SQLite and Postgres; bootstrap wires the repository with the hosted storage.
    - Red: `TestSignInCodeRepositoryContractOn{SQLite,Postgres}` failed (stub's Take found nothing). Green: migration 00005 `sign_in_codes`, `sqlstore.SignInCodeRepository` (Take is one `DELETE ... RETURNING`), bootstrap wires it for memory, SQLite, and Postgres. Refactor: nothing worth changing.
-8. [ ] httpapi: the session middleware accepts `Authorization: Bearer <token>`, ahead of the cookie.
+8. [x] httpapi: the session middleware accepts `Authorization: Bearer <token>`, ahead of the cookie.
+   - Red: `TestABearerTokenPutsItsAccountsWorkspaceInTheRequestAheadOfTheCookie` failed (the cookie won: ws-b). Green: `sessionToken` in `httpapi/session.go` reads the bearer, else the cookie; an invalid bearer is not replaced by the cookie. Refactor: nothing worth changing.
 9. [ ] httpapi: `POST /auth/sign-out` ends a bearer session (no cookie involved), and passes the cross-origin check without `Origin`.
 10. [ ] httpapi: the sign-in routes (dev and OIDC) return to a `return` path after signing in; anything but a local path is ignored.
 11. [ ] httpapi: `GET /auth/native` checks the loopback port, `state`, and challenge, keeps them in a short-lived cookie, and sends the browser to sign in, returning to `/auth/native/finish` (straight there when already signed in). Bad parameters answer 400.

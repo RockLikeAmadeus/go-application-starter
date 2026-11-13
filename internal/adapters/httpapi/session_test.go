@@ -51,8 +51,17 @@ func (workspaceAsPlan) CurrentEntitlements(ctx context.Context) (domain.Entitlem
 // request ran in.
 func requestWorkspace(t *testing.T, signIn sessions, cookies ...*http.Cookie) string {
 	t.Helper()
+	return requestWorkspaceWithHeaders(t, signIn, nil, cookies...)
+}
+
+// requestWorkspaceWithHeaders is requestWorkspace with extra request headers.
+func requestWorkspaceWithHeaders(t *testing.T, signIn sessions, headers map[string]string, cookies ...*http.Cookie) string {
+	t.Helper()
 	handler := httpapi.NewHandler(httpapi.Options{Entitlements: workspaceAsPlan{}, SignIn: signIn})
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
@@ -73,6 +82,21 @@ func TestASessionCookiePutsItsAccountsWorkspaceInTheRequest(t *testing.T) {
 	signIn := sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}}
 
 	got := requestWorkspace(t, signIn, &http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+
+	if got != "ws-a" {
+		t.Errorf("workspace = %q, want %q", got, "ws-a")
+	}
+}
+
+func TestABearerTokenPutsItsAccountsWorkspaceInTheRequestAheadOfTheCookie(t *testing.T) {
+	signIn := sessions{
+		"token-a": {ID: "account-a", WorkspaceID: "ws-a"},
+		"token-b": {ID: "account-b", WorkspaceID: "ws-b"},
+	}
+
+	got := requestWorkspaceWithHeaders(t, signIn,
+		map[string]string{"Authorization": "Bearer token-a"},
+		&http.Cookie{Name: httpapi.SessionCookie, Value: "token-b"})
 
 	if got != "ws-a" {
 		t.Errorf("workspace = %q, want %q", got, "ws-a")
