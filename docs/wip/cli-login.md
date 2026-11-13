@@ -22,7 +22,8 @@
 - All user-facing text (CLI output, the loopback page, refusals, the TUI message) is agreed with the user in the cycle that writes it.
 
 ## Tasks
-1. [ ] Domain: a sign-in code's PKCE check: `domain` verifies an S256 verifier against its challenge, refusing a wrong or empty one.
+1. [x] Domain: a sign-in code's PKCE check: `domain` verifies an S256 verifier against its challenge, refusing a wrong or empty one.
+   - Red: `TestSignInCode_VerifiedByTheVerifierBehindItsChallenge` failed on the RFC 7636 pair (stub returned false). Green: `SignInCode.VerifiedBy` in `domain/signincode.go`. Refactor: nothing worth changing.
 2. [ ] Domain: a sign-in code expires `SignInCodeLifetime` (5 minutes) after it's issued.
 3. [ ] Ports and memory: `ports.SignInCodeRepository` (save, and take: find and delete in one step, missing after) with a `storagetest` contract suite, passing on memory.
 4. [ ] App: `SignInService.IssueSignInCode(ctx, sessionToken, challenge)` stores the code's hash for the session's account and returns the code; an unknown or expired session is refused.

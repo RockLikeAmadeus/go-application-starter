@@ -301,7 +301,9 @@ func (p *project) specHasNoSample() error {
 func (p *project) buildsAndPasses() error {
 	for _, args := range [][]string{
 		{"build", "./..."},
-		{"test", "-count=1", "./internal/...", "./test/terminal/..."},
+		{"test", "-count=1", "./internal/...", "./test/terminal/term/..."},
+		// Run apart: only this package defines the tags flag.
+		{"test", "-count=1", "./test/terminal/", "--godog.tags=~@wip"},
 		// A feature in progress has @wip scenarios whose steps aren't
 		// written yet, so they are left out, as `task accept` leaves them.
 		{"test", "-count=1", "./test/acceptance/", "--godog.tags=~@wip"},
