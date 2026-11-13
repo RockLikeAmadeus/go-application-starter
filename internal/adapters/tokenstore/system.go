@@ -27,3 +27,12 @@ func (s *System) Save(serverURL, token string) (Kept, error) {
 	}
 	return InFile, s.file.Save(serverURL, token)
 }
+
+// Read returns the server's token from the keyring, else from the file, and
+// ErrNoToken when neither has one.
+func (s *System) Read(serverURL string) (string, error) {
+	if token, err := s.keyring.Read(serverURL); err == nil {
+		return token, nil
+	}
+	return s.file.Read(serverURL)
+}

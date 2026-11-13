@@ -45,3 +45,48 @@ func TestSystem_SavesInTheKeyringAndFallsBackToTheFileWhenTheKeyringIsUnavailabl
 		}
 	})
 }
+
+func TestSystem_ReadsATokenFromTheKeyringElseFromTheFileAndReportsNoTokenWhenNeitherHasOne(t *testing.T) {
+	const server = "https://app.example.com"
+
+	t.Run("in the keyring", func(t *testing.T) {
+		keyring.MockInit()
+		folder := t.TempDir()
+		if err := tokenstore.NewKeyring().Save(server, "token-a"); err != nil {
+			t.Fatalf("keyring Save: %v", err)
+		}
+		if got, err := tokenstore.NewSystem(folder).Read(server); err != nil || got != "token-a" {
+			t.Errorf("Read = %q, %v; want token-a", got, err)
+		}
+	})
+
+	t.Run("only in the file", func(t *testing.T) {
+		keyring.MockInit()
+		folder := t.TempDir()
+		if err := tokenstore.NewFile(folder).Save(server, "token-b"); err != nil {
+			t.Fatalf("file Save: %v", err)
+		}
+		if got, err := tokenstore.NewSystem(folder).Read(server); err != nil || got != "token-b" {
+			t.Errorf("Read = %q, %v; want token-b", got, err)
+		}
+	})
+
+	t.Run("keyring unavailable", func(t *testing.T) {
+		keyring.MockInitWithError(errors.New("no secret service"))
+		folder := t.TempDir()
+		system := tokenstore.NewSystem(folder)
+		if _, err := system.Save(server, "token-c"); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
+		if got, err := system.Read(server); err != nil || got != "token-c" {
+			t.Errorf("Read = %q, %v; want token-c", got, err)
+		}
+	})
+
+	t.Run("in neither", func(t *testing.T) {
+		keyring.MockInit()
+		if _, err := tokenstore.NewSystem(t.TempDir()).Read(server); !errors.Is(err, tokenstore.ErrNoToken) {
+			t.Errorf("Read = %v; want ErrNoToken", err)
+		}
+	})
+}
