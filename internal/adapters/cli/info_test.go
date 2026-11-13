@@ -31,7 +31,7 @@ func runCLI(t *testing.T, args ...string) (string, error) {
 func runCLIWith(t *testing.T, env config.Env, args ...string) (string, error) {
 	t.Helper()
 	var out bytes.Buffer
-	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, env, &out)
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, bootstrap.NewClientSignIn, env, &out)
 	cmd.SetArgs(args)
 	err := cmd.ExecuteContext(context.Background())
 	return out.String(), err
@@ -120,7 +120,7 @@ func TestWithoutDataDirCommandsUseTheLocalDataFolder(t *testing.T) {
 				opened = cfg.DataDir
 				return bootstrap.New(cfg)
 			}
-			cmd := cli.NewRootCmd(newApp, bootstrap.NewBilling, computer(settings, nil), &bytes.Buffer{})
+			cmd := cli.NewRootCmd(newApp, bootstrap.NewBilling, bootstrap.NewClientSignIn, computer(settings, nil), &bytes.Buffer{})
 			cmd.SetArgs([]string{"--storage", storage, "info"})
 
 			if err := cmd.ExecuteContext(context.Background()); err != nil {

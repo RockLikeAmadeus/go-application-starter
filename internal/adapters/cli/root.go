@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
@@ -21,6 +22,10 @@ type AppFactory func(cfg config.Config) (*bootstrap.App, error)
 // BillingFactory builds the billing service for `starter admin set-plan`.
 // Tests substitute their own.
 type BillingFactory func(cfg config.Config) (ports.BillingService, error)
+
+// SignInFactory builds the client that signs the command line in to the
+// server cfg names. Tests substitute their own.
+type SignInFactory func(cfg config.Config) (*clientsignin.Client, error)
 
 // appOpener opens the application, and says which configuration it opened
 // it with. Commands call it only when they run, so --help and --version work
@@ -34,7 +39,7 @@ var Version = "dev"
 // (config.Env, with os.Getenv and os.UserConfigDir in production): its
 // environment, and its local data folder, which commands use unless
 // --data-dir names another.
-func NewRootCmd(newApp AppFactory, newBilling BillingFactory, env config.Env, out io.Writer) *cobra.Command {
+func NewRootCmd(newApp AppFactory, newBilling BillingFactory, newSignIn SignInFactory, env config.Env, out io.Writer) *cobra.Command {
 	var (
 		serverURL  string
 		dataDir    string
@@ -110,7 +115,7 @@ func NewRootCmd(newApp AppFactory, newBilling BillingFactory, env config.Env, ou
 
 	root.AddCommand(newTUICmd(openApp))
 	root.AddCommand(newInfoCmd(openApp))
-	root.AddCommand(newLoginCmd(loadConfig))
+	root.AddCommand(newLoginCmd(loadConfig, newSignIn))
 	root.AddCommand(newAdminCmd(loadConfig, newBilling))
 	// sample:start
 	root.AddCommand(newItemCmd(openApp))

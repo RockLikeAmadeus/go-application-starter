@@ -15,7 +15,7 @@ import (
 // read, stays as it is, and it ends with a failing exit status.
 func TestRunPrintsAFailedCommandsErrorOnStderr(t *testing.T) {
 	var out, errOut bytes.Buffer
-	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, computer(t.TempDir(), nil), &out)
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, bootstrap.NewClientSignIn, computer(t.TempDir(), nil), &out)
 	cmd.SetErr(&errOut)
 	cmd.SetArgs([]string{"--storage", "disk", "info"})
 
@@ -43,7 +43,7 @@ func TestAnErrorStartingTheApplicationFollowsThePrefixDirectly(t *testing.T) {
 	}
 	env := computer(t.TempDir(), map[string]string{"STARTER_PLANS_FILE": plansFile})
 	var out, errOut bytes.Buffer
-	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, env, &out)
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, bootstrap.NewClientSignIn, env, &out)
 	cmd.SetErr(&errOut)
 	cmd.SetArgs([]string{"--storage", "memory", "info"})
 

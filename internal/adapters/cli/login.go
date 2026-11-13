@@ -2,9 +2,11 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
@@ -16,12 +18,12 @@ var errLoginNeedsAServer = errors.New("starter login needs a server to sign in t
 	"so the same server must be set whenever you run starter afterwards.")
 
 // newLoginCmd signs in to the server the settings name.
-func newLoginCmd(loadConfig func() (config.Config, error)) *cobra.Command {
+func newLoginCmd(loadConfig func() (config.Config, error), newSignIn SignInFactory) *cobra.Command {
 	return &cobra.Command{
 		Use:   "login",
 		Short: "Sign in to the server in your browser",
 		Args:  cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := loadConfig()
 			if err != nil {
 				return err
@@ -29,7 +31,16 @@ func newLoginCmd(loadConfig func() (config.Config, error)) *cobra.Command {
 			if cfg.ServerURL == "" {
 				return errLoginNeedsAServer
 			}
-			return nil
+			client, err := newSignIn(cfg)
+			if err != nil {
+				return err
+			}
+			_, err = client.SignIn(cmd.Context(), func(string) error { return nil })
+			if errors.Is(err, clientsignin.ErrServerDoesNotSignPeopleIn) {
+				return fmt.Errorf("The server at %s does not support sign-in, so there is nothing to sign in to. "+
+					"No browser was opened, and no session token was stored.", cfg.ServerURL)
+			}
+			return err
 		},
 	}
 }

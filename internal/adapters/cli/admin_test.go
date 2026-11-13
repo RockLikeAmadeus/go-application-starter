@@ -38,7 +38,7 @@ func usingBilling(billing ports.BillingService) cli.BillingFactory {
 // runAdmin runs `starter admin ARGS...` with the given billing factory.
 func runAdmin(t *testing.T, newBilling cli.BillingFactory, out io.Writer, args ...string) error {
 	t.Helper()
-	cmd := cli.NewRootCmd(bootstrap.New, newBilling, computer(t.TempDir(), nil), out)
+	cmd := cli.NewRootCmd(bootstrap.New, newBilling, bootstrap.NewClientSignIn, computer(t.TempDir(), nil), out)
 	cmd.SetArgs(append([]string{"admin"}, args...))
 	return cmd.ExecuteContext(context.Background())
 }

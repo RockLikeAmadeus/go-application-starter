@@ -115,8 +115,9 @@
 26. [x] CLI: `starter login` is refused without a server (stderr, non-zero exit). Task 26 was split (see "Changes to the plan").
    - Agreed text: "starter login needs a server to sign in to, and none is set. Give one with --server <url>, with the STARTER_SERVER_URL environment variable, or with server_url in the settings file. Signing in stores a session token only; it never changes which server or data the command line uses, so the same server must be set whenever you run starter afterwards."
    - Red: `TestLoginIsRefusedWithoutAServer` failed (unknown command "login"). Green: `cli/login.go` `newLoginCmd(loadConfig)` returns `errLoginNeedsAServer` when `cfg.ServerURL` is empty; registered in `root.go`. Refactor: nothing worth changing. 26c adds the `clientsignin` seam.
-26b. [ ] CLI: `starter login` against a server with sign-in off is refused.
+26b. [x] CLI: `starter login` against a server with sign-in off is refused.
    - Agreed text (stderr, non-zero exit): "The server at <url> does not support sign-in, so there is nothing to sign in to. No browser was opened, and no session token was stored."
+   - Red: `TestLoginIsRefusedByAServerThatDoesNotSignPeopleIn` failed (no error). Green: `NewRootCmd` takes a `SignInFactory` (`*clientsignin.Client` for the config; the test builds one from fakes); `login` calls `SignIn` and words `ErrServerDoesNotSignPeopleIn`. `bootstrap.NewClientSignIn` is a stub returning an error until 26c; `login` passes a no-op opener until 26c and 26d. Refactor: nothing worth changing.
 26c. [ ] CLI: `starter login` signs in and says who is signed in, and where the token is kept. Bootstrap builds the real `clientsignin.Client` (`httpclient` session reader sending the stored token via `WithTokenSource`, `browsersignin`, `tokenstore` with the server URL bound, `Kept` as a string).
    - Agreed text (stdout), three variants:
      - Credential store: "Signed in to <url> as <name>. The session token is kept in the operating system's credential store, and has a fixed lifetime for security purposes. Run starter logout to end the session before it expires."

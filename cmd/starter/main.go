@@ -17,7 +17,7 @@ func main() {
 	defer stop()
 
 	env := config.Env{Getenv: os.Getenv, UserConfigDir: os.UserConfigDir}
-	if status := cli.Run(ctx, cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, env, os.Stdout)); status != 0 {
+	if status := cli.Run(ctx, cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, bootstrap.NewClientSignIn, env, os.Stdout)); status != 0 {
 		os.Exit(status)
 	}
 }
