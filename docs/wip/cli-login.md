@@ -85,7 +85,8 @@
    - Review fixes: `TestFile_KeepsServersWhoseAddressesDifferOnlyInTheCaseOfTheirPathsApart` failed (whole address lowercased); `normalise` now parses the address and lowercases only scheme and host. `TestFile_MakesAnExistingWiderFilePrivateWhenItSavesATokenInIt` failed (mode stayed 644); `Save` writes a 0600 temporary file and renames it over `tokens.json`.
 16b. [x] Token store: the file store deletes a server's token, leaving the others, and deleting an unknown one is not an error.
    - Red: `TestFile_DeletesOneServersTokenLeavingTheOthersAndForgettingAnUnknownOneIsNotAnError` failed (stub kept the token). Green: `File.Delete`, sharing `write` with `Save`; an unknown server writes nothing. Refactor: nothing worth changing.
-17. [ ] Token store: the keyring store (go-keyring, `MockInit` in tests), same contract as the file store.
+17. [x] Token store: the keyring store (go-keyring, `MockInit` in tests), same contract as the file store.
+   - Red: `TestKeyringStoreKeepsTheContract` (shared `runContract` in `tokenstore/contract_test.go`, also run on the file store) failed (stub kept nothing). Green: `tokenstore.Keyring` (`keyring.go`) via go-keyring v0.2.8, keyed by `normalise`, `ErrNotFound` mapped to `ErrNoToken` and to nil on Delete; go-keyring now a direct dependency. Refactor: the file store's duplicate delete test removed, as the contract covers it.
 18. [ ] Token store: the system store uses the keyring and falls back to the file when the keyring is unavailable, reporting which it used.
 19. [ ] Config: the `credential_store` setting (`system` or `file`), with its env variable, in `starter info` and the default settings file's comments.
 20. [ ] httpclient: every service sends a bearer token from a token source, asked on each request (one client option); no token sends no header.
