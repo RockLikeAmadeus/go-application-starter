@@ -80,7 +80,10 @@
 15d. [x] Browser sign-in adapter: a callback with the right state whose swap the server refuses answers the failure page (400) and `Wait` ends with an error.
    - Agreed text, status 400: "Sign-in failed. The server refused to exchange the sign-in code for a session token. The code may have expired (codes last 5 minutes), may already have been used, or may not match the application that requested it. Please start signing in again from the application that initiated the sign-in."
    - Red: `TestWait_AnswersTheFailurePageAndEndsWithErrCodeRefusedWhenTheServerRefusesTheSwap` failed (200, empty page, Wait ran to its deadline). Green: `swap` returns `ErrCodeRefused` on a non-200 answer; `Wait` answers the failure page and returns the error (a transport error also ends Wait, with that error). Refactor: nothing worth changing.
-16. [ ] Token store: the file store (JSON in the settings folder, 0600, keyed by the normalised server URL): save, read, delete.
+16. [x] Token store: the file store (JSON in the settings folder, 0600, keyed by the normalised server URL): save and read. Task 16 was split (see "Changes to the plan").
+   - Red: `TestFile_KeepsEachServersTokenApartInAPrivateFileUnderItsNormalisedAddress` failed (stub kept and found nothing). Green: package `tokenstore` (`internal/adapters/tokenstore/file.go`): `File` (`NewFile(folder)`, `Save`, `Read`, `ErrNoToken`), `tokens.json` at 0600. Refactor: nothing worth changing. Later stores (16b, 17, 18) follow `Save`, `Read`, and `Delete`.
+   - Review fixes: `TestFile_KeepsServersWhoseAddressesDifferOnlyInTheCaseOfTheirPathsApart` failed (whole address lowercased); `normalise` now parses the address and lowercases only scheme and host. `TestFile_MakesAnExistingWiderFilePrivateWhenItSavesATokenInIt` failed (mode stayed 644); `Save` writes a 0600 temporary file and renames it over `tokens.json`.
+16b. [ ] Token store: the file store deletes a server's token, leaving the others, and deleting an unknown one is not an error.
 17. [ ] Token store: the keyring store (go-keyring, `MockInit` in tests), same contract as the file store.
 18. [ ] Token store: the system store uses the keyring and falls back to the file when the keyring is unavailable, reporting which it used.
 19. [ ] Config: the `credential_store` setting (`system` or `file`), with its env variable, in `starter info` and the default settings file's comments.
@@ -105,6 +108,7 @@
 38. [ ] Docs and finish: `docs/sign-in.md` (the command line's and the terminal app's sign-in, with a sequence diagram), ADR 9 (bearer tokens, the native routes, codes, the token store), `docs/configuration.md` (`credential_store`), `.claude/rules/server.md` (the `/auth/native` routes), `.claude/rules/tui.md` (the signed-out screen), README and CLAUDE.md (CLI and TUI hosted is no longer planned), `.env.example` if it lists settings; device code over SSH as a follow-up in the plan; remove the `@wip` tags, run `task test:init` and `task check`, mark step 9 done in the plan, and delete this file.
 
 ## Changes to the plan
+- 2026-11-13: task 16 split: 16 save and read, 16b delete.
 - 2026-11-13: task 15 split: 15 the good callback and swap, 15b wrong state, 15c the context ends the wait, 15d the swap refused. A callback on any other path gets a bare 404.
 - 2026-11-13: task 12 split: 12 the good path, 12b no attempt cookie, 12c no session (the refusals pin user-facing text, so each is agreed first).
 - 2026-11-13: the terminal app signs in and out by itself (the user's request), rather than sending people to `starter login`. Signing in and out moved out of the CLI into a shared client-side package, `httpclient` asks a token source per request, and tasks 30–35 and two terminal journeys were added. No server picker in the TUI (agreed).
