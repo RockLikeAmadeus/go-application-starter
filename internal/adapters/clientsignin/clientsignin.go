@@ -44,11 +44,19 @@ type BrowserSignIn interface {
 type TokenStore interface {
 	// Save keeps the token and says where it was kept.
 	Save(token string) (kept string, err error)
+	// Forget drops the kept token.
+	Forget() error
+}
+
+// SessionEnder ends the server's session for the token the client holds.
+type SessionEnder interface {
+	EndSession(ctx context.Context) error
 }
 
 // Client signs in to, and out of, one server.
 type Client struct {
 	session SessionReader
+	ender   SessionEnder
 	browser BrowserSignIn
 	store   TokenStore
 }
@@ -56,8 +64,8 @@ type Client struct {
 // New returns a Client that asks session about the server, signs in through
 // browser, and keeps the token in store. The session reader must send the
 // token the store keeps, so it names the account once the token is saved.
-func New(session SessionReader, browser BrowserSignIn, store TokenStore) *Client {
-	return &Client{session: session, browser: browser, store: store}
+func New(session SessionReader, ender SessionEnder, browser BrowserSignIn, store TokenStore) *Client {
+	return &Client{session: session, ender: ender, browser: browser, store: store}
 }
 
 // SignIn signs in to the server, handing the browser's address to open.
@@ -82,4 +90,11 @@ func (c *Client) SignIn(ctx context.Context, open func(address string) error) (R
 		return Result{}, err
 	}
 	return Result{Name: signedIn.Name, TokenKept: kept}, nil
+}
+
+// SignOut ends the server session and forgets the token. It forgets the token
+// even when the server can't end the session, and returns every error.
+func (c *Client) SignOut(ctx context.Context) error {
+	endErr := c.ender.EndSession(ctx)
+	return errors.Join(endErr, c.store.Forget())
 }

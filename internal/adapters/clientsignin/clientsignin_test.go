@@ -21,6 +21,20 @@ type fakeServer struct {
 	token      string
 	kept       string
 	savedToken string
+
+	endError     error
+	wasEnded     bool
+	wasForgotten bool
+}
+
+func (f *fakeServer) EndSession(context.Context) error {
+	f.wasEnded = true
+	return f.endError
+}
+
+func (f *fakeServer) Forget() error {
+	f.wasForgotten = true
+	return nil
 }
 
 func (f *fakeServer) CurrentSession(context.Context) (clientsignin.Session, error) {
@@ -43,7 +57,7 @@ func (f *fakeServer) Save(token string) (string, error) {
 // with a named error, which each client words for its own screen, and opens
 // no browser.
 func TestSignIn_RefusesAServerThatDoesNotSignPeopleIn(t *testing.T) {
-	client := clientsignin.New(fakeSession{clientsignin.Session{IsSignInOn: false}}, &fakeServer{}, &fakeServer{})
+	client := clientsignin.New(fakeSession{clientsignin.Session{IsSignInOn: false}}, &fakeServer{}, &fakeServer{}, &fakeServer{})
 	wasOpened := false
 	open := func(string) error {
 		wasOpened = true
@@ -64,7 +78,7 @@ func TestSignIn_RefusesAServerThatDoesNotSignPeopleIn(t *testing.T) {
 // the account's name (read with the saved token) and where the token was kept.
 func TestSignIn_SavesTheBrowsersTokenAndReportsTheAccountAndWhereItWasKept(t *testing.T) {
 	server := &fakeServer{name: "Ada", token: "tok-1", kept: "file"}
-	client := clientsignin.New(server, server, server)
+	client := clientsignin.New(server, server, server, server)
 
 	result, err := client.SignIn(context.Background(), func(string) error { return nil })
 
@@ -76,5 +90,31 @@ func TestSignIn_SavesTheBrowsersTokenAndReportsTheAccountAndWhereItWasKept(t *te
 	}
 	if result.Name != "Ada" || result.TokenKept != "file" {
 		t.Errorf("result = %+v, want name Ada and token kept in file", result)
+	}
+}
+
+// Signing out ends the server's session and forgets the token, and forgets
+// the token even when the server refuses or can't be reached, so the client
+// never keeps a token it was told to drop. The server's error is still
+// returned, for the caller to word.
+func TestSignOut_EndsTheServerSessionAndForgetsTheTokenEvenWhenTheServerFails(t *testing.T) {
+	serverDown := errors.New("server unreachable")
+	for name, endError := range map[string]error{"server answers": nil, "server fails": serverDown} {
+		t.Run(name, func(t *testing.T) {
+			server := &fakeServer{endError: endError}
+			client := clientsignin.New(server, server, server, server)
+
+			err := client.SignOut(context.Background())
+
+			if !server.wasEnded {
+				t.Error("SignOut did not end the server session")
+			}
+			if !server.wasForgotten {
+				t.Error("SignOut did not forget the token")
+			}
+			if !errors.Is(err, endError) {
+				t.Errorf("SignOut error = %v, want %v", err, endError)
+			}
+		})
 	}
 }
