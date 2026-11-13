@@ -6,11 +6,15 @@
 package browsersignin
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -18,9 +22,10 @@ import (
 
 // Attempt is a sign-in in progress. Close it when done, to free the port.
 type Attempt struct {
-	listener net.Listener
-	state    string
-	verifier string
+	listener  net.Listener
+	state     string
+	verifier  string
+	serverURL string
 }
 
 // Start listens on a free loopback port and hands the address of the
@@ -31,7 +36,7 @@ func Start(ctx context.Context, serverURL string, open func(address string) erro
 	if err != nil {
 		return nil, err
 	}
-	attempt := &Attempt{listener: listener}
+	attempt := &Attempt{listener: listener, serverURL: strings.TrimRight(serverURL, "/")}
 	if attempt.state, err = randomToken(); err != nil {
 		listener.Close()
 		return nil, err
@@ -41,7 +46,7 @@ func Start(ctx context.Context, serverURL string, open func(address string) erro
 		return nil, err
 	}
 	challenge := sha256.Sum256([]byte(attempt.verifier))
-	address := strings.TrimRight(serverURL, "/") + "/auth/native?" + url.Values{
+	address := attempt.serverURL + "/auth/native?" + url.Values{
 		"port":      {strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)},
 		"state":     {attempt.state},
 		"challenge": {base64.RawURLEncoding.EncodeToString(challenge[:])},
@@ -66,4 +71,51 @@ func randomToken() (string, error) {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(random), nil
+}
+
+// Wait blocks until the browser returns to the loopback address, and gives
+// the session token the server swapped for its code.
+func (a *Attempt) Wait(ctx context.Context) (string, error) {
+	tokens := make(chan string, 1)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /callback", func(w http.ResponseWriter, r *http.Request) {
+		token, err := a.swap(r.Context(), r.URL.Query().Get("code"))
+		if err != nil {
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, "<!doctype html><html><head><meta charset=\"utf-8\"><title>Sign-in complete</title></head>"+
+			"<body><p>"+signedInPage+"</p></body></html>")
+		tokens <- token
+	})
+	// Serve ends when Close closes the listener; its error says only that.
+	go func() { _ = http.Serve(a.listener, mux) }()
+	return <-tokens, nil
+}
+
+const signedInPage = "Sign-in complete. Please close this window and return to the application that initiated the sign-in."
+
+// swap exchanges the one-time code and the verifier for a session token.
+func (a *Attempt) swap(ctx context.Context, code string) (string, error) {
+	body, err := json.Marshal(map[string]string{"code": code, "verifier": a.verifier})
+	if err != nil {
+		return "", err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, a.serverURL+"/auth/native/token", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	request.Header.Set("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+	var token struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&token); err != nil {
+		return "", err
+	}
+	return token.Token, nil
 }

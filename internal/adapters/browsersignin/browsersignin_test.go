@@ -2,11 +2,19 @@ package browsersignin_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"io"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/browsersignin"
 )
@@ -47,4 +55,80 @@ func TestStart_ListensOnALoopbackPortAndHandsTheNativeSignInAddressToTheOpener(t
 		t.Fatalf("nothing listens on 127.0.0.1:%d: %v", port, err)
 	}
 	conn.Close()
+}
+
+func TestWait_SwapsTheCodeOfACallbackWithTheRightStateForATokenAndAnswersTheSuccessPage(t *testing.T) {
+	var challenge string
+	var swapped struct{ Code, Verifier string }
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/auth/native/token" {
+			http.NotFound(w, r)
+			return
+		}
+		if err := json.NewDecoder(r.Body).Decode(&swapped); err != nil {
+			t.Errorf("token request body: %v", err)
+		}
+		sum := sha256.Sum256([]byte(swapped.Verifier))
+		if base64.RawURLEncoding.EncodeToString(sum[:]) != challenge {
+			http.Error(w, "", http.StatusBadRequest)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]string{"token": "session-token"})
+	}))
+	defer server.Close()
+
+	var opened string
+	attempt, err := browsersignin.Start(context.Background(), server.URL, func(address string) error {
+		opened = address
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer attempt.Close()
+	query := mustParse(t, opened).Query()
+	challenge = query.Get("challenge")
+
+	type result struct {
+		token string
+		err   error
+	}
+	done := make(chan result, 1)
+	go func() {
+		token, err := attempt.Wait(context.Background())
+		done <- result{token, err}
+	}()
+
+	callback := "http://127.0.0.1:" + query.Get("port") + "/callback?" +
+		url.Values{"code": {"the-code"}, "state": {query.Get("state")}}.Encode()
+	response, err := (&http.Client{Timeout: 2 * time.Second}).Get(callback)
+	if err != nil {
+		t.Fatalf("callback: %v", err)
+	}
+	defer response.Body.Close()
+	body, _ := io.ReadAll(response.Body)
+
+	const want = "Sign-in complete. Please close this window and return to the application that initiated the sign-in."
+	if response.StatusCode != http.StatusOK {
+		t.Errorf("callback status %d, want 200", response.StatusCode)
+	}
+	if !strings.Contains(string(body), want) {
+		t.Errorf("callback page %q does not contain %q", body, want)
+	}
+	got := <-done
+	if got.err != nil || got.token != "session-token" {
+		t.Errorf("Wait gave %q, %v, want session-token", got.token, got.err)
+	}
+	if swapped.Code != "the-code" {
+		t.Errorf("server was sent code %q, want the-code", swapped.Code)
+	}
+}
+
+func mustParse(t *testing.T, address string) *url.URL {
+	t.Helper()
+	parsed, err := url.Parse(address)
+	if err != nil {
+		t.Fatalf("address %q: %v", address, err)
+	}
+	return parsed
 }
