@@ -100,7 +100,7 @@ func NewHandler(opts Options) http.Handler {
 	}
 	if opts.SignIn != nil {
 		mux.Handle("POST /auth/sign-out", signOut(opts.SignIn))
-		mux.HandleFunc("GET /auth/native", nativeSignIn)
+		mux.HandleFunc("GET /auth/native", nativeSignIn(opts.PublicURL))
 	}
 
 	mux.Handle("/", spaHandler(opts.WebAssets))

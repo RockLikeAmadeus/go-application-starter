@@ -71,3 +71,36 @@ func TestABadNativeSignInRequestIsRefusedListingEveryFailingValue(t *testing.T) 
 		})
 	}
 }
+
+func TestAGoodNativeSignInRequestWithNoSessionIsKeptInACookieAndSentToSignIn(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	query := url.Values{"port": {"4000"}, "state": {validState}, "challenge": {validChallenge}}
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/native?"+query.Encode(), nil))
+
+	location, err := url.Parse(rec.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("parse location: %v", err)
+	}
+	if rec.Code != http.StatusFound || location.Path != "/auth/sign-in" || location.Query().Get("return") != "/auth/native/finish" {
+		t.Errorf("status = %d, location = %q; want %d, /auth/sign-in?return=/auth/native/finish",
+			rec.Code, rec.Header().Get("Location"), http.StatusFound)
+	}
+
+	var cookie *http.Cookie
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == "native_sign_in" {
+			cookie = c
+		}
+	}
+	if cookie == nil {
+		t.Fatal("no native_sign_in cookie")
+	}
+	kept, err := url.ParseQuery(cookie.Value)
+	if err != nil || kept.Get("port") != "4000" || kept.Get("state") != validState || kept.Get("challenge") != validChallenge {
+		t.Errorf("cookie value = %q, want the port, state, and challenge", cookie.Value)
+	}
+	if cookie.Path != "/auth/native" || !cookie.HttpOnly || cookie.MaxAge <= 0 {
+		t.Errorf("cookie path = %q, HttpOnly = %v, MaxAge = %d; want /auth/native, HttpOnly, a lifetime", cookie.Path, cookie.HttpOnly, cookie.MaxAge)
+	}
+}
