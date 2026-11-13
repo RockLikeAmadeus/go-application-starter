@@ -4,7 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/zalando/go-keyring"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
@@ -46,8 +53,8 @@ func (signInOffServer) CurrentSession(context.Context) (clientsignin.Session, er
 // refusal names the server, so a mistyped address is easy to spot.
 func TestLoginIsRefusedByAServerThatDoesNotSignPeopleIn(t *testing.T) {
 	server := signInOffServer{}
-	newSignIn := func(config.Config) (*clientsignin.Client, error) {
-		return clientsignin.New(server, nil, server, nil), nil
+	newSignIn := func(config.Config) (*clientsignin.Client, func(string) error, error) {
+		return clientsignin.New(server, nil, server, nil), func(string) error { return nil }, nil
 	}
 	var out bytes.Buffer
 	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(t.TempDir(), nil), &out)
@@ -62,5 +69,78 @@ func TestLoginIsRefusedByAServerThatDoesNotSignPeopleIn(t *testing.T) {
 	}
 	if out.Len() != 0 {
 		t.Errorf("login output = %q, want nothing", out.String())
+	}
+}
+
+// signInServer plays a server that signs people in: its session names Ada
+// once a request carries the token it hands out, its native sign-in goes
+// straight back to the command line, and its token endpoint gives the token.
+func signInServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/v1/session", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Header.Get("Authorization") == "Bearer the-token" {
+			_, _ = w.Write([]byte(`{"isSignInOn":true,"name":"Ada"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"isSignInOn":true}`))
+	})
+	mux.HandleFunc("GET /auth/native", func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		http.Redirect(w, r, "http://127.0.0.1:"+query.Get("port")+"/callback?"+url.Values{
+			"code": {"the-code"}, "state": {query.Get("state")},
+		}.Encode(), http.StatusFound)
+	})
+	mux.HandleFunc("POST /auth/native/token", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"token":"the-token"}`))
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+// A finished sign-in says who is signed in, and where the token is kept, in
+// words that differ for the credential store, for a file used because that
+// store is unavailable, and for a file chosen with credential_store.
+func TestLoginSaysWhoIsSignedInAndWhereTheTokenIsKept(t *testing.T) {
+	const lifetime = "and has a fixed lifetime for security purposes. Run starter logout to end the session before it expires."
+	tests := []struct {
+		name  string
+		setup func()
+		vars  map[string]string
+		kept  string
+	}{
+		{"credential store", keyring.MockInit, nil,
+			"The session token is kept in the operating system's credential store, " + lifetime},
+		{"file fallback", func() { keyring.MockInitWithError(errors.New("no secret service")) }, nil,
+			"The session token is kept in a file in the settings folder, readable only by you, " +
+				"because the operating system's credential store is not available here, " + lifetime},
+		{"file on purpose", keyring.MockInit, map[string]string{"STARTER_CREDENTIAL_STORE": "file"},
+			"The session token is kept in a file in the settings folder, readable only by you, " + lifetime},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+			settings := t.TempDir()
+			t.Setenv("XDG_CONFIG_HOME", settings)
+			browser := filepath.Join(t.TempDir(), "browser")
+			if err := os.WriteFile(browser, []byte("#!/bin/sh\ncurl -s -L \"$1\" >/dev/null\n"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("BROWSER", browser)
+			srv := signInServer(t)
+
+			out, err := runCLIWith(t, computer(settings, tt.vars), "--storage", "memory", "--server", srv.URL, "login")
+
+			if err != nil {
+				t.Fatalf("login: %v", err)
+			}
+			want := "Signed in to " + srv.URL + " as Ada. " + tt.kept + "\n"
+			if out != want {
+				t.Errorf("login output = %q, want %q", out, want)
+			}
+		})
 	}
 }

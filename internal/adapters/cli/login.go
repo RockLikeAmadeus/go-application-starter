@@ -31,16 +31,34 @@ func newLoginCmd(loadConfig func() (config.Config, error), newSignIn SignInFacto
 			if cfg.ServerURL == "" {
 				return errLoginNeedsAServer
 			}
-			client, err := newSignIn(cfg)
+			client, open, err := newSignIn(cfg)
 			if err != nil {
 				return err
 			}
-			_, err = client.SignIn(cmd.Context(), func(string) error { return nil })
+			result, err := client.SignIn(cmd.Context(), open)
 			if errors.Is(err, clientsignin.ErrServerDoesNotSignPeopleIn) {
 				return fmt.Errorf("The server at %s does not support sign-in, so there is nothing to sign in to. "+
 					"No browser was opened, and no session token was stored.", cfg.ServerURL)
 			}
+			if err != nil {
+				return err
+			}
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Signed in to %s as %s. %s\n", cfg.ServerURL, result.Name, keptSentence(cfg, result))
 			return err
 		},
+	}
+}
+
+// keptSentence says where the session token is kept, and that it expires.
+func keptSentence(cfg config.Config, result clientsignin.Result) string {
+	const expiry = "and has a fixed lifetime for security purposes. Run starter logout to end the session before it expires."
+	switch {
+	case result.TokenKept == clientsignin.KeptInCredentialStore:
+		return "The session token is kept in the operating system's credential store, " + expiry
+	case cfg.CredentialStore == config.CredentialStoreFile:
+		return "The session token is kept in a file in the settings folder, readable only by you, " + expiry
+	default:
+		return "The session token is kept in a file in the settings folder, readable only by you, " +
+			"because the operating system's credential store is not available here, " + expiry
 	}
 }

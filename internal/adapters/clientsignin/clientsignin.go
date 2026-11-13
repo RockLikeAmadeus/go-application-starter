@@ -26,11 +26,20 @@ type SessionReader interface {
 	CurrentSession(ctx context.Context) (Session, error)
 }
 
+// Where a token can be kept, as TokenKept and a TokenStore's Save name it.
+const (
+	// KeptInCredentialStore is the operating system's credential store.
+	KeptInCredentialStore = "credential store"
+	// KeptInFile is a file in the settings folder.
+	KeptInFile = "file"
+)
+
 // Result is what a finished sign-in leaves.
 type Result struct {
 	// Name is the signed-in account's name.
 	Name string
-	// TokenKept says where the token was kept, as the token store names it.
+	// TokenKept says where the token was kept: KeptInCredentialStore or
+	// KeptInFile.
 	TokenKept string
 }
 

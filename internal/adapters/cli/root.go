@@ -24,8 +24,9 @@ type AppFactory func(cfg config.Config) (*bootstrap.App, error)
 type BillingFactory func(cfg config.Config) (ports.BillingService, error)
 
 // SignInFactory builds the client that signs the command line in to the
-// server cfg names. Tests substitute their own.
-type SignInFactory func(cfg config.Config) (*clientsignin.Client, error)
+// server cfg names, and the opener it hands the browser's address to. Tests
+// substitute their own.
+type SignInFactory func(cfg config.Config) (*clientsignin.Client, func(address string) error, error)
 
 // appOpener opens the application, and says which configuration it opened
 // it with. Commands call it only when they run, so --help and --version work
