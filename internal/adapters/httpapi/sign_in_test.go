@@ -58,3 +58,19 @@ func TestASignOutThatFailsIsAProblemAndKeepsTheCookie(t *testing.T) {
 		t.Errorf("Set-Cookie = %q, want none, so the browser keeps the session cookie", cookies)
 	}
 }
+
+func TestSigningOutWithABearerTokenEndsThatSessionWithNoCookieOrOrigin(t *testing.T) {
+	signIn := &signInRecorder{}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: signIn})
+	req := httptest.NewRequest(http.MethodPost, "http://starter.example/auth/sign-out", nil)
+	req.Header.Set("Authorization", "Bearer token-ada")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want %d; body %q", rec.Code, http.StatusSeeOther, rec.Body.String())
+	}
+	if len(signIn.signedOut) != 1 || signIn.signedOut[0] != "token-ada" {
+		t.Errorf("signed out %q, want [token-ada]", signIn.signedOut)
+	}
+}

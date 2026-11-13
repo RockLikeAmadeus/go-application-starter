@@ -40,7 +40,8 @@
    - Red: `TestSignInCodeRepositoryContractOn{SQLite,Postgres}` failed (stub's Take found nothing). Green: migration 00005 `sign_in_codes`, `sqlstore.SignInCodeRepository` (Take is one `DELETE ... RETURNING`), bootstrap wires it for memory, SQLite, and Postgres. Refactor: nothing worth changing.
 8. [x] httpapi: the session middleware accepts `Authorization: Bearer <token>`, ahead of the cookie.
    - Red: `TestABearerTokenPutsItsAccountsWorkspaceInTheRequestAheadOfTheCookie` failed (the cookie won: ws-b). Green: `sessionToken` in `httpapi/session.go` reads the bearer, else the cookie; an invalid bearer is not replaced by the cookie. Refactor: nothing worth changing.
-9. [ ] httpapi: `POST /auth/sign-out` ends a bearer session (no cookie involved), and passes the cross-origin check without `Origin`.
+9. [x] httpapi: `POST /auth/sign-out` ends a bearer session (no cookie involved), and passes the cross-origin check without `Origin`.
+   - Red: `TestSigningOutWithABearerTokenEndsThatSessionWithNoCookieOrOrigin` failed (nothing signed out; the cross-origin half already held). Green: `signOut` reads `sessionToken`. Refactor: nothing worth changing.
 10. [ ] httpapi: the sign-in routes (dev and OIDC) return to a `return` path after signing in; anything but a local path is ignored.
 11. [ ] httpapi: `GET /auth/native` checks the loopback port, `state`, and challenge, keeps them in a short-lived cookie, and sends the browser to sign in, returning to `/auth/native/finish` (straight there when already signed in). Bad parameters answer 400.
 12. [ ] httpapi: `GET /auth/native/finish` issues a code for the browser's session and redirects to `http://127.0.0.1:<port>/callback?code=…&state=…`; no attempt cookie or no session is refused.
