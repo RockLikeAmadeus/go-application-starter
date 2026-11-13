@@ -99,7 +99,10 @@
    - Red: `TestWithTokenSource_SendsTheTokenItReturnsOnEachRequestAndNoHeaderForNone` failed (no header sent). Green: `httpclient.WithTokenSource` (`token_source.go`), a request editor option that works with every `New…Service`; the source is `func(ctx) (string, error)`, an error fails the request. Refactor: nothing worth changing.
 21. [x] bootstrap: `NewRemote` gives `httpclient` a token source reading the server's token from the configured store.
    - Red: `TestNewRemote_SendsTheStoredSessionTokenForItsServerAndNoneWhenThereIsNone` failed (no header sent after the token was saved). Green: `NewRemote(cfg, appFolder)` passes `WithTokenSource` (file or system store by `credential_store`; `ErrNoToken` becomes no token) to the item and entitlements services; `New` finds the folder with the new `config.AppFolder`, which the data and settings-file paths now share. Refactor: nothing worth changing.
-22. [ ] Client sign-in: the opener honours `BROWSER`, else the OS default, discards the program's output, and reports a failure so the caller shows the address.
+22. [x] Client sign-in: the opener honours `BROWSER` (the program and its arguments, then the address). Task 22 was split (see "Changes to the plan").
+   - Red: `TestOpen_RunsTheProgramNamedByBrowserWithTheAddressAsItsLastArgument` failed (the stub ran nothing; a fake script records its arguments, so no real browser opens). Green: `browsersignin.Open` (`opener.go`) runs `BROWSER`'s fields plus the address. Refactor: nothing worth changing. It panics on an empty `BROWSER` until 22c.
+22b. [ ] Client sign-in: the opener reports a failure (a program that exits non-zero or cannot start) as an error, and discards the program's output (decide whether to wait for the program, as a blocking browser would hang login).
+22c. [ ] Client sign-in: with no `BROWSER`, the opener runs the OS default (`xdg-open`, `open`, `rundll32`), tested with a fake `xdg-open` on `PATH`.
 23. [ ] Client sign-in: signing in refuses a server whose sign-in is off (`GET /api/v1/session`).
 24. [ ] Client sign-in: signing in runs the browser sign-in, saves the token, and returns the account's name and which store held it.
 25. [ ] Client sign-in: signing out ends the server session and forgets the token, even when the server refuses or can't be reached.
@@ -118,6 +121,7 @@
 38. [ ] Docs and finish: `docs/sign-in.md` (the command line's and the terminal app's sign-in, with a sequence diagram), ADR 9 (bearer tokens, the native routes, codes, the token store), `docs/configuration.md` (`credential_store`), `.claude/rules/server.md` (the `/auth/native` routes), `.claude/rules/tui.md` (the signed-out screen), README and CLAUDE.md (CLI and TUI hosted is no longer planned), `.env.example` if it lists settings; device code over SSH as a follow-up in the plan; remove the `@wip` tags, run `task test:init` and `task check`, mark step 9 done in the plan, and delete this file.
 
 ## Changes to the plan
+- 2026-11-13: task 22 split: 22 `BROWSER`, 22b failure and discarded output, 22c the OS default.
 - 2026-11-13: task 16 split: 16 save and read, 16b delete.
 - 2026-11-13: task 15 split: 15 the good callback and swap, 15b wrong state, 15c the context ends the wait, 15d the swap refused. A callback on any other path gets a bare 404.
 - 2026-11-13: task 12 split: 12 the good path, 12b no attempt cookie, 12c no session (the refusals pin user-facing text, so each is agreed first).
