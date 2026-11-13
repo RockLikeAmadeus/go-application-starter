@@ -250,6 +250,49 @@ func TestShouldIgnoreSyncedFolderIsABoolFromTheSettingsFileOrEnvironmentDefaulti
 	})
 }
 
+func TestTheCredentialStoreIsSystemByDefaultOrFileFromTheSettingsFileOrEnvironmentAndAnyOtherIsRefused(t *testing.T) {
+	cases := []struct {
+		name     string
+		file     string
+		env      map[string]string
+		want     config.CredentialStore
+		wantFrom string
+	}{
+		{"built in", "", nil, config.CredentialStoreSystem, "built in"},
+		{"settings file", `credential_store = "file"`, nil, config.CredentialStoreFile, "settings file"},
+		{"environment", "", map[string]string{"STARTER_CREDENTIAL_STORE": "file"}, config.CredentialStoreFile, "environment (STARTER_CREDENTIAL_STORE)"},
+		{"environment over file", `credential_store = "file"`, map[string]string{"STARTER_CREDENTIAL_STORE": "system"}, config.CredentialStoreSystem, "environment (STARTER_CREDENTIAL_STORE)"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			file := ""
+			if c.file != "" {
+				file = writeSettings(t, c.file)
+			}
+
+			cfg, err := config.Load(config.Env{Getenv: envOf(c.env)}, file)
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if cfg.CredentialStore != c.want {
+				t.Errorf("CredentialStore = %q, want %q", cfg.CredentialStore, c.want)
+			}
+			if !listsSetting(cfg.Settings(), config.Setting{Key: "credential_store", Value: string(c.want), Source: c.wantFrom}) {
+				t.Errorf("Settings() = %v, want credential_store = %q from %q", cfg.Settings(), c.want, c.wantFrom)
+			}
+		})
+	}
+
+	t.Run("not recognized", func(t *testing.T) {
+		_, err := config.Load(config.Env{Getenv: envOf(map[string]string{"STARTER_CREDENTIAL_STORE": "vault"})}, "")
+
+		want := `The credential store setting "vault" is not recognized. Please use "system" or "file".`
+		if err == nil || err.Error() != want {
+			t.Errorf("error = %v, want %q", err, want)
+		}
+	})
+}
+
 func TestSignInIsOffByDefaultOrDevFromTheSettingsFileOrEnvironment(t *testing.T) {
 	cases := []struct {
 		name     string
