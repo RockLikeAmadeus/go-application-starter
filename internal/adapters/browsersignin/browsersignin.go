@@ -94,7 +94,12 @@ func (a *Attempt) Wait(ctx context.Context) (string, error) {
 	})
 	// Serve ends when Close closes the listener; its error says only that.
 	go func() { _ = http.Serve(a.listener, mux) }()
-	return <-tokens, nil
+	select {
+	case token := <-tokens:
+		return token, nil
+	case <-ctx.Done():
+		return "", ctx.Err()
+	}
 }
 
 func writePage(w http.ResponseWriter, status int, title, text string) {

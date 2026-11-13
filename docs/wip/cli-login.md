@@ -75,7 +75,8 @@
 15b. [x] Browser sign-in adapter: a callback with a wrong or missing state is refused (400, nothing swapped) and the wait goes on.
    - Red: `TestWait_RefusesACallbackWithAWrongOrMissingStateSwapsNothingAndKeepsWaiting` failed (200, swapped twice). Green: `Wait` compares the state with `subtle.ConstantTimeCompare` and answers the agreed page. Refactor: extracted `writePage`, shared with the success page.
    - Agreed text, status 400: "This sign-in request was refused, because its state value did not match the sign-in that the application started. No session token was issued. If you started a sign-in from the application, please start signing in again from there. Otherwise, you may close this window."
-15c. [ ] Browser sign-in adapter: the context ending the wait makes `Wait` return `ctx.Err()`.
+15c. [x] Browser sign-in adapter: the context ending the wait makes `Wait` return `ctx.Err()`.
+   - Red: `TestWait_ReturnsTheContextsErrorWhenTheContextEndsBeforeAnyCallback` failed (Wait never returned). Green: `Wait` selects on the token channel and `ctx.Done()`. Refactor: nothing worth changing.
 15d. [ ] Browser sign-in adapter: a callback with the right state whose swap the server refuses answers the failure page (400) and `Wait` ends with an error.
    - Agreed text, status 400: "Sign-in failed. The server refused to exchange the sign-in code for a session token. The code may have expired (codes last 5 minutes), may already have been used, or may not match the application that requested it. Please start signing in again from the application that initiated the sign-in."
 16. [ ] Token store: the file store (JSON in the settings folder, 0600, keyed by the normalised server URL): save, read, delete.

@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -186,6 +187,31 @@ func TestWait_RefusesACallbackWithAWrongOrMissingStateSwapsNothingAndKeepsWaitin
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("Wait did not go on to take the callback with the right state")
+	}
+}
+
+func TestWait_ReturnsTheContextsErrorWhenTheContextEndsBeforeAnyCallback(t *testing.T) {
+	attempt, err := browsersignin.Start(context.Background(), "https://app.example.com", func(string) error { return nil })
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer attempt.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errs := make(chan error, 1)
+	go func() {
+		_, err := attempt.Wait(ctx)
+		errs <- err
+	}()
+	cancel()
+
+	select {
+	case err := <-errs:
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("Wait returned %v, want context.Canceled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Wait did not return after its context ended")
 	}
 }
 
