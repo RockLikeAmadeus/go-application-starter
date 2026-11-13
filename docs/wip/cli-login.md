@@ -128,7 +128,15 @@
 26d. [x] CLI: `starter login` prints the address when the browser can't open, and keeps waiting.
    - Agreed text (stderr): "Could not open a browser. To sign in, open this address in a browser on this computer: <address>. Waiting for you to finish signing in there. Press Ctrl+C to cancel."
    - Red: `TestLoginPrintsTheAddressWhenTheBrowserCannotOpenAndKeepsWaiting` failed (login returned "no browser here"). Green: `openOrShowAddress` in `cli/login.go` wraps the factory's opener, printing the agreed text on stderr and returning nil, so `browsersignin.Start` needed no change. Refactor: nothing worth changing.
-27. [ ] CLI: `starter logout` refuses without a server, and otherwise signs out.
+27. [x] CLI: `starter logout` is refused without a server (stderr, non-zero exit). Task 27 was split (see "Changes to the plan").
+   - Agreed text: "starter logout needs a server to sign out of, and none is set. Give one with --server <url>, with the STARTER_SERVER_URL environment variable, or with server_url in the settings file."
+   - Red: `TestLogoutIsRefusedWithoutAServer` failed (unknown command "logout"). Green: `cli/logout.go` `newLogoutCmd(loadConfig)` returns `errLogoutNeedsAServer` when `cfg.ServerURL` is empty (does nothing else yet); registered in `root.go`. Refactor: nothing worth changing.
+27b. [ ] httpclient: a sign-out call, `POST /auth/sign-out` with the bearer token from the token source; bootstrap's `sessionEnder` uses it. No user-facing text.
+27c. [ ] CLI: `starter logout` signs out and prints the success message.
+   - Agreed text (stdout): "Signed out of <url>. The server ended the session, and the session token was removed from this computer. Run starter login to sign in again."
+27d. [ ] CLI: `starter logout` where the server failed or could not be reached, but the token was removed, prints a message and exits non-zero.
+   - Agreed text (stderr, non-zero exit): "Signed out of <url> on this computer only: the session token was removed from this computer, but the server did not confirm that it ended the session (<server error>). The session may remain valid on the server until it expires, after a fixed lifetime for security purposes."
+   - A token that could not be removed: a plain `starter: <error>`, with no agreed text.
 28. [ ] CLI: `starter info` with a server says who is signed in there, or that no one is.
 29. [ ] CLI: a request refused for want of sign-in tells the user to run `starter login`.
 30. [ ] TUI: on a server with sign-in on and no session, it shows the signed-out screen with the sign-in key; on local data or with sign-in off, no sign-in or sign-out key.
@@ -153,3 +161,4 @@
 - 2026-11-13: task 10b split: 10b `GET /auth/sign-in` passes `return` on, 10b2 the dev form carries it in a hidden field.
 - 2026-11-13: task 11 split: 11 refuses bad parameters, 11b redirects to sign-in with the attempt cookie, 11c redirects straight to finish when signed in.
 - 2026-11-13: task 18 split: 18 saves and reports where, 18b reads, 18c deletes (Tasks 21, 24, and 25 use them).
+- 2026-11-13: task 27 split: 27 refused without a server, 27b the `httpclient` sign-out call, 27c the success message, 27d the server-failed message (each message agreed first).

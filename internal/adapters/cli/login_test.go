@@ -39,6 +39,22 @@ func TestLoginIsRefusedWithoutAServer(t *testing.T) {
 	}
 }
 
+// Signing out forgets the token of the server the settings name, so with none
+// set there is nothing to sign out of.
+func TestLogoutIsRefusedWithoutAServer(t *testing.T) {
+	want := "starter logout needs a server to sign out of, and none is set. " +
+		"Give one with --server <url>, with the STARTER_SERVER_URL environment variable, or with server_url in the settings file."
+
+	out, err := runCLI(t, "--storage", "memory", "logout")
+
+	if err == nil || err.Error() != want {
+		t.Errorf("logout error = %v, want %q", err, want)
+	}
+	if out != "" {
+		t.Errorf("logout output = %q, want nothing", out)
+	}
+}
+
 // signInOffServer plays a server with sign-in off: its session says so, and
 // nothing else may be asked of it.
 type signInOffServer struct{}
