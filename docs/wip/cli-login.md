@@ -176,8 +176,12 @@
 33c. [x] CLI: `starter tui` with a server passes `Ports.SignIn`, `ServerURL`, and `OpenBrowser` from the `SignInFactory`, so the signed-out screen shows for a server with sign-in on and no session.
    - Check how `cli` tests stub `tui.Run`; if they can't, add a small test seam in the same cycle.
    - Red: `TestTheTerminalAppIsHandedTheSignInOnlyWithAServer` failed (no `SignIn`, no `ServerURL`; local data passed already). Green: `newTUICmd` takes the `SignInFactory` and fills `Ports.SignIn`, `ServerURL`, `OpenBrowser` when `cfg.ServerURL` is set. Seam: `runTUI` var in `cli/tui.go`, set by `export_test.go`. Refactor: nothing worth changing.
-34. [ ] TUI: the sign-out key signs out and shows the signed-out screen.
-   - Agreed text: the signed-out screen with no extra message; when the server did not confirm, "Signed out of <url> on this computer only: the server did not confirm that it ended the session (<error>)."
+34. [x] TUI: the sign-out key (`o`, only while no text input has focus) signs out and shows the signed-out screen with no extra message.
+   - Red: `TestTheSignOutKeySignsOutAndShowsTheSignedOutScreenWithNoMessage` failed (no sign-out, the signed-in screen stayed). Green: `SignInClient.SignOut`; `signInGate.Update` runs it on `o` (`canSignOut`) and, on success, clears `name` and shows the signed-out screen. Refactor: nothing worth changing. An error is ignored until 34b and 34c.
+34b. [ ] TUI: a `*clientsignin.SessionNotEndedError` from the sign-out shows the signed-out screen plus the notice.
+   - Agreed text: "Signed out of <url> on this computer only: the server did not confirm that it ended the session (<error>)."
+34c. [ ] TUI: any other sign-out error (the token couldn't be removed, so the user is still signed in here) keeps the current screen and shows an error line.
+   - Agreed text: "Signing out failed: <error>." in the same error style as "Signing in failed: <error>."
 35. [ ] TUI: a request refused for want of sign-in mid-use shows the signed-out screen.
    - Agreed text: "The server at <url> refused this request, because there is no valid session for it: you are not signed in, or the session token has expired or been ended. Press l to sign in."
 36. [ ] Acceptance: route `@command-line-sign-in` to the http and oidc drivers (hosted), and add the command-line client and its steps; the Godog scenarios pass.
@@ -185,6 +189,7 @@
 38. [ ] Docs and finish: `docs/sign-in.md` (the command line's and the terminal app's sign-in, with a sequence diagram), ADR 9 (bearer tokens, the native routes, codes, the token store), `docs/configuration.md` (`credential_store`), `.claude/rules/server.md` (the `/auth/native` routes), `.claude/rules/tui.md` (the signed-out screen), README and CLAUDE.md (CLI and TUI hosted is no longer planned), `.env.example` if it lists settings; device code over SSH as a follow-up in the plan; remove the `@wip` tags, run `task test:init` and `task check`, mark step 9 done in the plan, and delete this file.
 
 ## Changes to the plan
+- 2026-11-13: task 34 split (approved by the user): 34 `o` signs out, 34b the server did not end the session (notice), 34c the token could not be removed (still signed in, error line).
 - 2026-11-13: task 33 split (approved by the user): 33 a finished sign-in loads the screen, 33b a failed one shows the error, 33c `cli/tui.go` passes the sign-in pieces.
 - 2026-11-13: task 30 split: 30 the signed-out screen, 30b no keys or text on local data or with sign-in off. Wiring `cli/tui.go` to pass `Ports.SignIn`, `ServerURL`, and the opener goes to task 33, when the TUI first needs the opener.
 - 2026-11-13: task 28 split: 28 signed in, 28b no session (no plan line), 28c sign-in off (each pins user-facing text, agreed with the user).

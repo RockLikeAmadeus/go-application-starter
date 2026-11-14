@@ -19,6 +19,9 @@ type addressMsg struct {
 	openFailed bool
 }
 
+// signOutDoneMsg says the sign-out ended, and how.
+type signOutDoneMsg struct{ err error }
+
 // signInDoneMsg says the browser sign-in ended, and how.
 type signInDoneMsg struct {
 	name string
@@ -91,9 +94,25 @@ func (g signInGate) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return g, nil
 	}
+	if m, ok := msg.(signOutDoneMsg); ok {
+		if m.err == nil {
+			g.signedOut, g.name = true, ""
+		}
+		return g, nil
+	}
+	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "o" && g.canSignOut() {
+		return g, func() tea.Msg { return signOutDoneMsg{g.client.SignOut(context.Background())} }
+	}
 	var cmd tea.Cmd
 	g.screen, cmd = g.screen.Update(msg)
 	return g, cmd
+}
+
+// canSignOut is true when someone is signed in and the screen shows the
+// sign-out key, which it doesn't while a text input has focus.
+func (g signInGate) canSignOut() bool {
+	s, ok := g.screen.(signOutScreen)
+	return g.name != "" && ok && !s.typing()
 }
 
 // startSignIn begins the browser sign-in, which runs until it finishes or is

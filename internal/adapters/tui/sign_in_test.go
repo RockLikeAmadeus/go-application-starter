@@ -21,6 +21,16 @@ type fakeSignIn struct {
 	signsInAs string
 	// failsWith, when set, ends the sign-in at once, with this error.
 	failsWith error
+	// signedOut counts the calls to SignOut, when set.
+	signedOut *int
+}
+
+// SignOut counts the call.
+func (f fakeSignIn) SignOut(context.Context) error {
+	if f.signedOut != nil {
+		*f.signedOut++
+	}
+	return nil
 }
 
 // SignIn opens the address, then waits for the sign-in to be cancelled.
@@ -351,5 +361,32 @@ func TestStartingANewSignInForgetsTheLastFailureSoCancellingShowsNoError(t *test
 	got := m.View().Content
 	if !strings.Contains(got, "Signed out") || strings.Contains(got, "Signing in failed") {
 		t.Errorf("view after esc = %q, want the signed-out screen with no error", got)
+	}
+}
+
+func TestTheSignOutKeySignsOutAndShowsTheSignedOutScreenWithNoMessage(t *testing.T) {
+	var calls int
+	m := firstScreen(Ports{
+		SignIn:    fakeSignIn{session: clientsignin.Session{IsSignInOn: true, Name: "Ada"}, signedOut: &calls},
+		ServerURL: "https://app.example.com",
+	}, nil)
+	m = run(m, m.Init())
+
+	m, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	m = run(m, cmd)
+
+	if calls != 1 {
+		t.Errorf("sign-outs = %d, want 1", calls)
+	}
+	got := m.View().Content
+	for _, want := range []string{"Signed out", "Not signed in to https://app.example.com.", "l sign in • q quit"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("view = %q, want it to contain %q", got, want)
+		}
+	}
+	for _, unwanted := range []string{"Signed in to", "failed", "this computer only"} {
+		if strings.Contains(got, unwanted) {
+			t.Errorf("view = %q, want no %q", got, unwanted)
+		}
 	}
 }

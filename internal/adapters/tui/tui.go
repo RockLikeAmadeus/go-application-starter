@@ -33,6 +33,8 @@ type SignInClient interface {
 	CurrentSession(ctx context.Context) (clientsignin.Session, error)
 	// SignIn signs in through the browser, handing its address to open.
 	SignIn(ctx context.Context, open func(address string) error) (clientsignin.Result, error)
+	// SignOut ends the session and forgets the token.
+	SignOut(ctx context.Context) error
 }
 
 // Run starts the TUI and blocks until the user quits. warnings show above
