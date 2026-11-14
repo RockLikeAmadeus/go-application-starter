@@ -28,6 +28,9 @@ type world struct {
 	// commandLine is the command line the scenario signs in from, made by
 	// the first step that uses it.
 	commandLine *commandLine
+	// desktopApp is the desktop app opened on the server, made by the first
+	// step that uses it.
+	desktopApp *remoteApp
 	// codeReplay is the answer to the latest second use of a sign-in code.
 	codeReplay answer
 	// isSettingUp is whether the step running is a Given.
@@ -83,6 +86,7 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		w.registerSyncedPlainTextSteps(sc)
 		w.registerSignInSteps(sc)
 		w.registerCommandLineSignInSteps(sc)
+		w.registerRemoteModeSteps(sc)
 		// sample:start
 		w.registerItemSteps(sc)
 		w.registerPlanSteps(sc)

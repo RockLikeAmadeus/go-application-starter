@@ -307,3 +307,25 @@ func servedWarnings(t *testing.T, h http.Handler) []string {
 	}
 	return messages
 }
+
+// With a server set, the desktop app is a window on that server: it opens no
+// data folder (so locks nothing), and the web app waits for a connection.
+func TestOpenWithAServerOpensRemoteMode(t *testing.T) {
+	dataDir := filepath.Join(t.TempDir(), "data")
+	env := envOf(map[string]string{
+		"STARTER_SERVER_URL": "http://127.0.0.1:1",
+		"STARTER_DATA_DIR":   dataDir,
+	})
+	app, err := desktop.Open(env, configDirAt(t.TempDir()), nil)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
+
+	if !isConnectionRequired(t, app.Handler) {
+		t.Error("required = false, want true")
+	}
+	if _, err := os.Stat(dataDir); !os.IsNotExist(err) {
+		t.Errorf("data folder: stat error = %v, want it not to exist", err)
+	}
+}

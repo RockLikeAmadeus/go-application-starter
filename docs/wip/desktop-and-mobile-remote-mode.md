@@ -74,7 +74,8 @@ The API:
   - Red: `TestSigningOutOfAHandlerWithAClientSignInSignsOutThroughItAndGoesToTheWebApp` (200 from the SPA, no sign-out). Green: `ClientSignIn.SignOut`, `httpapi.ErrSessionNotEnded`, `clientSignOut`. Refactor: nothing worth changing. The bootstrap adapter (task 15) must return `ErrSessionNotEnded` for `*clientsignin.SessionNotEndedError`.
 
 The apps:
-- [ ] 14. `desktop.Open` with a server set opens remote mode: the core is `NewRemote` (no data folder is opened, nothing locked), and `GET /api/v1/connection` says a connection is required. Acceptance: define the steps for opening the apps on the server; "An app can't see anything without signing in" passes for the desktop app.
+- [x] 14. `desktop.Open` with a server set opens remote mode: the core is `NewRemote` (no data folder is opened, nothing locked), and `GET /api/v1/connection` says a connection is required. Acceptance: define the steps for opening the apps on the server; "An app can't see anything without signing in" passes for the desktop app.
+  - Red: `TestOpenWithAServerOpensRemoteMode` (required = false, data folder created). Green: `desktop.Open` calls `openRemote` (`NewRemote`, `DesktopOrMobileApp`) when `ServerURL` is set; steps in `test/acceptance/remote_mode_steps.go` (desktop only; mobile steps come with task 16). Refactor: nothing worth changing.
 - [ ] 15. `desktop.Open` takes the opener and wires the client sign-in into the handler (the app's own token store, in its settings folder). Acceptance: signing in, the browser offer, signing out, and the sample scenario pass for the desktop app.
 - [ ] 16. `mobile.Open` in remote mode: through `desktop`'s, with the file token store in private storage, and the opener. Acceptance: the same scenarios pass for the mobile app.
 - [ ] 17. Acceptance: creating an account and cancelling a sign-in pass for both apps (steps only, if tasks 5, 6, 11, and 12 hold).

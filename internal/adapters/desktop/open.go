@@ -25,7 +25,9 @@ type App struct {
 
 // Open creates the default settings file when there is none
 // (config.CreateDefaultSettingsFile), loads the configuration from the local
-// settings file and the environment (config.Load), with SQLite storage when the settings choose it
+// settings file and the environment (config.Load). With a server set
+// (server_url, or one built in) it opens remote mode, a window on that server
+// with no local data. Otherwise it uses SQLite storage when the settings choose it
 // and jsonfile otherwise (never memory: the desktop app keeps its data; and
 // it refuses Postgres, because hosted data is reached through a server),
 // opens the desktop app's data folder (config.LocalDataDir:
@@ -51,6 +53,9 @@ func OpenWithoutDefaultSettingsFile(getenv func(string) string, userConfigDir fu
 	if err != nil {
 		return nil, err
 	}
+	if cfg.ServerURL != "" {
+		return openRemote(env, cfg, webAssets)
+	}
 	if cfg.Storage == config.StoragePostgres {
 		return nil, errors.New(`The storage setting is "postgres", but this application keeps its data on this device. Please use "jsonfile" or "sqlite".`)
 	}
@@ -73,6 +78,32 @@ func OpenWithoutDefaultSettingsFile(getenv func(string) string, userConfigDir fu
 		Ready:        core.Ready,
 		Warnings:     core.Warnings,
 		IsDataLocal:  true,
+		WebAssets:    webAssets,
+	})
+	return &App{
+		Handler: withoutServiceWorker(api),
+		Icon:    iconOf(webAssets),
+		core:    core,
+	}, nil
+}
+
+// openRemote opens the app as a window on the server in cfg.ServerURL: no data
+// folder is opened, so nothing is locked, and IsDataLocal stays unset so the
+// web app waits for a connection.
+func openRemote(env config.Env, cfg config.Config, webAssets fs.FS) (*App, error) {
+	folder, err := config.AppFolder(env)
+	if err != nil {
+		return nil, err
+	}
+	core, err := bootstrap.NewRemote(cfg, folder, bootstrap.DesktopOrMobileApp)
+	if err != nil {
+		return nil, err
+	}
+	api := httpapi.NewHandler(httpapi.Options{
+		// sample:start
+		Items: core.Items,
+		// sample:end
+		Entitlements: core.Entitlements,
 		WebAssets:    webAssets,
 	})
 	return &App{
