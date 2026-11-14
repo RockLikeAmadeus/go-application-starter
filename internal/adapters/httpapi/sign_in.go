@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -35,6 +36,19 @@ func signOut(signIn ports.SignInService) http.Handler {
 			}
 		}
 		clearSessionCookie(w)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	})
+}
+
+// clientSignOut answers POST /auth/sign-out in an app's in-process handler: it
+// signs out through the client sign-in and goes to the web app. A server that
+// couldn't end the session doesn't stop it, as the token is forgotten anyway.
+func clientSignOut(signIn ClientSignIn) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := signIn.SignOut(r.Context()); err != nil && !errors.Is(err, ErrSessionNotEnded) {
+			writeProblem(w, problemFor(err))
+			return
+		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 }

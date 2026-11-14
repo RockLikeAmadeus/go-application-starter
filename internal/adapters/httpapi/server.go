@@ -61,6 +61,11 @@ type ClientSession struct {
 // when CancelBrowserSignIn ended it.
 var ErrSignInCancelled = errors.New("the sign-in was cancelled")
 
+// ErrSessionNotEnded is what a ClientSignIn returns from SignOut (possibly
+// wrapped) when the token was forgotten but the server couldn't end the
+// session.
+var ErrSessionNotEnded = errors.New("the server could not end the session")
+
 // ClientSignIn signs an app in to a hosted server.
 type ClientSignIn interface {
 	CurrentSession(ctx context.Context) (ClientSession, error)
@@ -70,6 +75,10 @@ type ClientSignIn interface {
 	// CancelBrowserSignIn ends the sign-in in progress, if any, so that
 	// SignInThroughBrowser returns ErrSignInCancelled.
 	CancelBrowserSignIn()
+	// SignOut ends the session and forgets the token. It returns
+	// ErrSessionNotEnded when only the server couldn't end the session, and
+	// any other error when the token wasn't forgotten.
+	SignOut(ctx context.Context) error
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and
@@ -129,6 +138,10 @@ func NewHandler(opts Options) http.Handler {
 		mux.HandleFunc("GET /auth/native", nativeSignIn(opts.PublicURL))
 		mux.HandleFunc("GET /auth/native/finish", nativeFinish(opts.SignIn))
 		mux.HandleFunc("POST /auth/native/token", nativeToken(opts.SignIn))
+	}
+
+	if opts.ClientSignIn != nil {
+		mux.Handle("POST /auth/sign-out", clientSignOut(opts.ClientSignIn))
 	}
 
 	mux.Handle("/", spaHandler(opts.WebAssets))

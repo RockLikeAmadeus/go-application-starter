@@ -56,6 +56,45 @@ func (c clientSession) SignInThroughBrowser(_ context.Context, isSignUp bool, op
 
 func (c clientSession) CancelBrowserSignIn() {}
 
+func (c clientSession) SignOut(context.Context) error { return nil }
+
+// signOutRecorder is an httpapi.ClientSignIn that counts sign-outs and
+// answers them with signOutErr.
+type signOutRecorder struct {
+	clientSession
+	signOutErr error
+	signedOut  *int
+}
+
+func (s signOutRecorder) SignOut(context.Context) error {
+	*s.signedOut++
+	return s.signOutErr
+}
+
+func TestSigningOutOfAHandlerWithAClientSignInSignsOutThroughItAndGoesToTheWebApp(t *testing.T) {
+	cases := map[string]error{
+		"the server ends the session":      nil,
+		"the server can't end the session": httpapi.ErrSessionNotEnded,
+	}
+	for name, signOutErr := range cases {
+		t.Run(name, func(t *testing.T) {
+			var signedOut int
+			handler := httpapi.NewHandler(httpapi.Options{
+				ClientSignIn: signOutRecorder{signOutErr: signOutErr, signedOut: &signedOut},
+			})
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/auth/sign-out", nil))
+
+			if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/" {
+				t.Errorf("status = %d, Location = %q; want %d to %q", rec.Code, rec.Header().Get("Location"), http.StatusSeeOther, "/")
+			}
+			if signedOut != 1 {
+				t.Errorf("signed out %d times, want 1", signedOut)
+			}
+		})
+	}
+}
+
 func TestAHandlerWithAClientSignInAnswersTheHostedServersSessionAndSaysToSignInThroughTheBrowser(t *testing.T) {
 	handler := httpapi.NewHandler(httpapi.Options{
 		ClientSignIn: clientSession{session: httpapi.ClientSession{IsSignInOn: true, Name: "Ada"}},

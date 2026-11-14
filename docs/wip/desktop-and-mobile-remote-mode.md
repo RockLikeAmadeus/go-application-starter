@@ -70,7 +70,8 @@ The API:
   - Red: `TestStartingABrowserSignInSignsInThroughTheClientSignInAndAnswersTheSession` (404, not 200); the failure guard `TestAFailedBrowserSignInIsAProblemResponse` failed the same way. Green: `ClientSignIn.SignInThroughBrowser`, `Options.OpenBrowser`. Refactor: `hostedSession` returns `openapi.Session`, so both handlers share it.
 - [x] 12. `httpapi`: `DELETE /api/v1/browser-sign-in` cancels the sign-in in progress, and the waiting `POST` answers a cancelled problem.
   - Red: `TestCancellingABrowserSignInAnswersNoContentAndTheWaitingStartAProblem` (DELETE answered 404, not 204). Green: `ClientSignIn.CancelBrowserSignIn`, `httpapi.ErrSignInCancelled` (409, problem type `cancelled`, detail is the error's text). Refactor: nothing worth changing. The bootstrap adapter over `*clientsignin.Client` (task 15) must return `ErrSignInCancelled` for `clientsignin.ErrCancelled`.
-- [ ] 13. `httpapi`: with `Options.ClientSignIn`, `POST /auth/sign-out` signs out through it and redirects to `/`, also when the server can't end the session.
+- [x] 13. `httpapi`: with `Options.ClientSignIn`, `POST /auth/sign-out` signs out through it and redirects to `/`, also when the server can't end the session.
+  - Red: `TestSigningOutOfAHandlerWithAClientSignInSignsOutThroughItAndGoesToTheWebApp` (200 from the SPA, no sign-out). Green: `ClientSignIn.SignOut`, `httpapi.ErrSessionNotEnded`, `clientSignOut`. Refactor: nothing worth changing. The bootstrap adapter (task 15) must return `ErrSessionNotEnded` for `*clientsignin.SessionNotEndedError`.
 
 The apps:
 - [ ] 14. `desktop.Open` with a server set opens remote mode: the core is `NewRemote` (no data folder is opened, nothing locked), and `GET /api/v1/connection` says a connection is required. Acceptance: define the steps for opening the apps on the server; "An app can't see anything without signing in" passes for the desktop app.
