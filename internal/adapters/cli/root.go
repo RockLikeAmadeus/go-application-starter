@@ -116,7 +116,7 @@ func NewRootCmd(newApp AppFactory, newBilling BillingFactory, newSignIn SignInFa
 
 	noteGatedCommands(root, loadConfig)
 
-	root.AddCommand(newTUICmd(openApp))
+	root.AddCommand(newTUICmd(openApp, newSignIn))
 	root.AddCommand(newInfoCmd(openApp, newSignIn))
 	root.AddCommand(newLoginCmd(loadConfig, newSignIn))
 	root.AddCommand(newLogoutCmd(loadConfig, newSignIn))
@@ -199,17 +199,5 @@ func Run(ctx context.Context, root *cobra.Command) int {
 func printWarnings(errOut io.Writer, warnings []string) {
 	for _, w := range warnings {
 		fmt.Fprintln(errOut, "Warning:", w)
-	}
-}
-
-// withApp opens the app for the duration of a command.
-func withApp(open appOpener, fn func(cmd *cobra.Command, args []string, app *bootstrap.App) error) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		app, _, err := open()
-		if err != nil {
-			return err
-		}
-		defer app.Close()
-		return fn(cmd, args, app)
 	}
 }

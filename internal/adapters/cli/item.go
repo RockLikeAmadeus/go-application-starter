@@ -134,3 +134,15 @@ type itemJSON struct {
 func toItemJSON(i domain.Item) itemJSON {
 	return itemJSON{ID: i.ID, Name: i.Name, CreatedAt: i.CreatedAt, UpdatedAt: i.UpdatedAt}
 }
+
+// withApp opens the app for the duration of a command.
+func withApp(open appOpener, fn func(cmd *cobra.Command, args []string, app *bootstrap.App) error) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		app, _, err := open()
+		if err != nil {
+			return err
+		}
+		defer app.Close()
+		return fn(cmd, args, app)
+	}
+}

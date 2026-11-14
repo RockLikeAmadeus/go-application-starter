@@ -13,10 +13,12 @@ import (
 	"testing"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/zalando/go-keyring"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/tui"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -331,5 +333,45 @@ func TestLoginReportsASessionRefusalAsItIsWithoutAdvisingLogin(t *testing.T) {
 
 	if !errors.Is(err, domain.ErrNoWorkspace) || err.Error() != domain.ErrNoWorkspace.Error() {
 		t.Errorf("login error = %v, want %q as it is", err, domain.ErrNoWorkspace)
+	}
+}
+
+// With a server, the terminal app is handed the sign-in the command line uses,
+// and the server's address, so it can show the signed-out screen. On local
+// data there is no sign-in to hand it.
+func TestTheTerminalAppIsHandedTheSignInOnlyWithAServer(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		args       []string
+		wantSignIn bool
+		wantServer string
+	}{
+		{"a server", []string{"--server", "https://starter.example.com", "tui"}, true, "https://starter.example.com"},
+		{"local data", []string{"--storage", "memory", "tui"}, false, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var got tui.Ports
+			defer cli.RunTUIWith(func(p tui.Ports, _ []string, _ ...tea.ProgramOption) error {
+				got = p
+				return nil
+			})()
+			server := signInOffServer{}
+			newSignIn := func(config.Config) (*clientsignin.Client, func(string) error, error) {
+				return clientsignin.New(server, nil, server, nil), func(string) error { return nil }, nil
+			}
+			cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(t.TempDir(), nil), &bytes.Buffer{})
+			cmd.SetArgs(tc.args)
+
+			if err := cmd.ExecuteContext(context.Background()); err != nil {
+				t.Fatalf("tui: %v", err)
+			}
+			if (got.SignIn != nil) != tc.wantSignIn || (got.OpenBrowser != nil) != tc.wantSignIn {
+				t.Errorf("SignIn set = %t, OpenBrowser set = %t, want both %t",
+					got.SignIn != nil, got.OpenBrowser != nil, tc.wantSignIn)
+			}
+			if got.ServerURL != tc.wantServer {
+				t.Errorf("ServerURL = %q, want %q", got.ServerURL, tc.wantServer)
+			}
+		})
 	}
 }

@@ -173,8 +173,9 @@
 33b. [x] TUI: a failed sign-in shows the error on the signed-out screen.
    - Red: `TestAFailedSignInShowsTheErrorOnTheSignedOutScreen` failed (the waiting screen stayed). Green: `signInGate` keeps `err` from a failed `signInDoneMsg` and shows "Signing in failed: <error>." in `errorStyle` on the signed-out screen; Esc clears `waiting` first, so its cancel shows nothing. Refactor: nothing worth changing.
    - Agreed text: an error line on the signed-out screen, "Signing in failed: <error>." Esc shows no error (task 32's test already pins that half).
-33c. [ ] CLI: `starter tui` with a server passes `Ports.SignIn`, `ServerURL`, and `OpenBrowser` from the `SignInFactory`, so the signed-out screen shows for a server with sign-in on and no session.
+33c. [x] CLI: `starter tui` with a server passes `Ports.SignIn`, `ServerURL`, and `OpenBrowser` from the `SignInFactory`, so the signed-out screen shows for a server with sign-in on and no session.
    - Check how `cli` tests stub `tui.Run`; if they can't, add a small test seam in the same cycle.
+   - Red: `TestTheTerminalAppIsHandedTheSignInOnlyWithAServer` failed (no `SignIn`, no `ServerURL`; local data passed already). Green: `newTUICmd` takes the `SignInFactory` and fills `Ports.SignIn`, `ServerURL`, `OpenBrowser` when `cfg.ServerURL` is set. Seam: `runTUI` var in `cli/tui.go`, set by `export_test.go`. Refactor: nothing worth changing.
 34. [ ] TUI: the sign-out key signs out and shows the signed-out screen.
    - Agreed text: the signed-out screen with no extra message; when the server did not confirm, "Signed out of <url> on this computer only: the server did not confirm that it ended the session (<error>)."
 35. [ ] TUI: a request refused for want of sign-in mid-use shows the signed-out screen.
