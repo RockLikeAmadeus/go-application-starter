@@ -51,6 +51,9 @@ type signInGate struct {
 	// notice is a note on the signed-out screen after a sign-out the server
 	// did not confirm.
 	notice string
+	// signOutErr is why the last sign-out failed, shown on the signed-in
+	// screen, where the user stays because the token is still stored.
+	signOutErr error
 	// name is who is signed in, empty when no one is or sign-in is off.
 	name string
 }
@@ -107,8 +110,13 @@ func (g signInGate) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			g.signedOut, g.name = true, ""
 			g.notice = "Signed out of " + g.serverURL + " on this computer only: " +
 				"the server did not confirm that it ended the session (" + notEnded.Cause.Error() + ")."
+		default:
+			g.signOutErr = m.err
 		}
 		return g, nil
+	}
+	if _, ok := msg.(tea.KeyPressMsg); ok {
+		g.signOutErr = nil
 	}
 	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "o" && g.canSignOut() {
 		return g, func() tea.Msg { return signOutDoneMsg{g.client.SignOut(context.Background())} }
@@ -244,6 +252,10 @@ func (g signInGate) signedInView() tea.View {
 		return g.screen.View()
 	}
 	v := s.withExtraHelp(signOutBinding).View()
-	v.Content = itemStyle.Render("Signed in to "+g.serverURL+" as "+g.name+".") + "\n" + v.Content
+	head := itemStyle.Render("Signed in to "+g.serverURL+" as "+g.name+".") + "\n"
+	if g.signOutErr != nil {
+		head += errorStyle.Render("Signing out failed: "+g.signOutErr.Error()+".") + "\n"
+	}
+	v.Content = head + v.Content
 	return v
 }

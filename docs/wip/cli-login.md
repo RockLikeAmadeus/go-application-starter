@@ -183,8 +183,9 @@
 34c.
 34b. [x] TUI: a `*clientsignin.SessionNotEndedError` from the sign-out shows the signed-out screen plus the notice.
    - Agreed text: "Signed out of <url> on this computer only: the server did not confirm that it ended the session (<error>)."
-34c. [ ] TUI: any other sign-out error (the token couldn't be removed, so the user is still signed in here) keeps the current screen and shows an error line.
+34c. [x] TUI: any other sign-out error (the token couldn't be removed, so the user is still signed in here) keeps the current screen and shows an error line.
    - Agreed text: "Signing out failed: <error>." in the same error style as "Signing in failed: <error>."
+   - Red: `TestAFailedSignOutKeepsTheSignedInScreenAndShowsTheError` failed (no error line); `TestTheNextKeyPressClearsTheSignOutError` failed once the line showed. Green: `signInGate.signOutErr`, shown under the "Signed in" line, cleared by any key press. Decision: the next key press clears it. Refactor: nothing worth changing.
 35. [ ] TUI: a request refused for want of sign-in mid-use shows the signed-out screen.
    - Agreed text: "The server at <url> refused this request, because there is no valid session for it: you are not signed in, or the session token has expired or been ended. Press l to sign in."
 36. [ ] Acceptance: route `@command-line-sign-in` to the http and oidc drivers (hosted), and add the command-line client and its steps; the Godog scenarios pass.

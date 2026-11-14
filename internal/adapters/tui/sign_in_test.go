@@ -468,3 +468,50 @@ func TestACleanSignOutShowsNoNoticeFromAnEarlierUnconfirmedOne(t *testing.T) {
 		t.Errorf("view after the clean sign-out = %q, want the signed-out screen with no notice", got)
 	}
 }
+
+func TestAFailedSignOutKeepsTheSignedInScreenAndShowsTheError(t *testing.T) {
+	m := firstScreen(Ports{
+		SignIn: fakeSignIn{
+			session:    clientsignin.Session{IsSignInOn: true, Name: "Ada"},
+			signOutErr: errors.New("keyring locked"),
+		},
+		ServerURL: "https://app.example.com",
+	}, nil)
+	m = run(m, m.Init())
+
+	m, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	m = run(m, cmd)
+
+	got := m.View().Content
+	for _, want := range []string{
+		"Signed in to https://app.example.com as Ada.",
+		"o sign out",
+		"Signing out failed: keyring locked.",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("view = %q, want it to contain %q", got, want)
+		}
+	}
+	if strings.Contains(got, "Not signed in") {
+		t.Errorf("view = %q, want the signed-in screen kept", got)
+	}
+}
+
+func TestTheNextKeyPressClearsTheSignOutError(t *testing.T) {
+	m := firstScreen(Ports{
+		SignIn: fakeSignIn{
+			session:    clientsignin.Session{IsSignInOn: true, Name: "Ada"},
+			signOutErr: errors.New("keyring locked"),
+		},
+		ServerURL: "https://app.example.com",
+	}, nil)
+	m = run(m, m.Init())
+	m, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	m = run(m, cmd)
+
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+
+	if got := m.View().Content; strings.Contains(got, "Signing out failed") {
+		t.Errorf("view = %q, want the error gone after a key press", got)
+	}
+}
