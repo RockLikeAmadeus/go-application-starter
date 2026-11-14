@@ -47,7 +47,8 @@ Keeping the apps' tokens apart:
 Creating an account through the browser:
 - [x] 3. `browsersignin.Start` for a sign-up opens the `/auth/native` address with `sign-up=1`.
   - Red: `TestStart_ForASignUpAsksTheNativeSignInAddressForSignUp` (no `sign-up` in the address). Green: `Start` takes `isSignUp` and adds `sign-up=1`; callers pass `false`. Refactor: nothing to change.
-- [ ] 4. `httpapi`: `/auth/native` with `sign-up=1` sends a signed-out browser to `/auth/sign-up`, returning to `/auth/native/finish`.
+- [x] 4. `httpapi`: `/auth/native` with `sign-up=1` sends a signed-out browser to `/auth/sign-up`, returning to `/auth/native/finish`.
+  - Red: `TestANativeSignInRequestToSignUpWithNoSessionIsSentToSignUp` redirected to `/auth/sign-in`. Green: `startNativeSignIn` picks the page from `sign-up`. Refactor: nothing worth changing.
 - [ ] 5. `clientsignin.SignUp` signs in through the browser's sign-up, and keeps the token as `SignIn` does.
 
 Cancelling:
