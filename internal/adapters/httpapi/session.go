@@ -89,9 +89,26 @@ func accountFrom(ctx context.Context) (domain.Account, bool) {
 // The Session endpoint.
 
 func (h *Handlers) GetSession(ctx context.Context, _ openapi.GetSessionRequestObject) (openapi.GetSessionResponseObject, error) {
+	if h.clientSignIn != nil {
+		return h.hostedSession(ctx)
+	}
 	session := openapi.GetSession200JSONResponse{IsSignInOn: h.isSignInOn, SignInMethod: openapi.Page}
 	if account, ok := accountFrom(ctx); ok {
 		session.Name = &account.Identity.Name
+	}
+	return session, nil
+}
+
+// hostedSession answers the session of the hosted server this handler is the
+// app's window to. The app signs in through the browser.
+func (h *Handlers) hostedSession(ctx context.Context) (openapi.GetSessionResponseObject, error) {
+	hosted, err := h.clientSignIn.CurrentSession(ctx)
+	if err != nil {
+		return nil, err
+	}
+	session := openapi.GetSession200JSONResponse{IsSignInOn: hosted.IsSignInOn, SignInMethod: openapi.Browser}
+	if hosted.Name != "" {
+		session.Name = &hosted.Name
 	}
 	return session, nil
 }

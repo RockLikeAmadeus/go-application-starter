@@ -18,6 +18,7 @@ type Handlers struct {
 	isDataLocal  bool
 	isSignInOn   bool
 	warnings     []string
+	clientSignIn ClientSignIn
 }
 
 var _ openapi.StrictServerInterface = (*Handlers)(nil)
@@ -32,5 +33,6 @@ func NewHandlers(opts Options) *Handlers {
 		isDataLocal:  opts.IsDataLocal,
 		isSignInOn:   opts.SignIn != nil,
 		warnings:     opts.Warnings,
+		clientSignIn: opts.ClientSignIn,
 	}
 }

@@ -44,6 +44,20 @@ type Options struct {
 	// PublicURL is the address people reach the server at. When it starts with
 	// https://, cookies are Secure even over plain HTTP (a proxy ended TLS).
 	PublicURL string
+	// ClientSignIn is set by the apps' in-process handler in remote mode,
+	// where the session is the hosted server's, not this handler's.
+	ClientSignIn ClientSignIn
+}
+
+// ClientSession is what a hosted server says about the current session.
+type ClientSession struct {
+	IsSignInOn bool
+	Name       string
+}
+
+// ClientSignIn signs an app in to a hosted server.
+type ClientSignIn interface {
+	CurrentSession(ctx context.Context) (ClientSession, error)
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and

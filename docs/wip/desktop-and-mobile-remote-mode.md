@@ -64,7 +64,8 @@ The API:
   - Red: `TestTheSessionEndpointSaysToSignInOnAPage` (signInMethod empty). Green: `SignInMethod` schema in the contract, handler answers `page`. Refactor: nothing worth changing; Layout test fixtures gained `signInMethod`.
 - [x] 9. `api/openapi.yaml`: `POST` and `DELETE /api/v1/browser-sign-in`; a server with no client sign-in answers both 404. `task gen`.
   - No red: `TestAServerWithNoClientSignInAnswersBothBrowserSignInOperationsNotFound` passed at once (the `/api/` catch-all already answers 404), kept as a guard. Contract: `startBrowserSignIn` and `cancelBrowserSignIn` (body `isSignUp`), `task gen`, and `Handlers` answers `ErrNotFound`. Refactor: nothing worth changing.
-- [ ] 10. `httpapi`: with `Options.ClientSignIn`, `GET /api/v1/session` answers the hosted server's session (name, sign-in on), with `signInMethod: browser`.
+- [x] 10. `httpapi`: with `Options.ClientSignIn`, `GET /api/v1/session` answers the hosted server's session (name, sign-in on), with `signInMethod: browser`.
+  - Red: `TestAHandlerWithAClientSignInAnswersTheHostedServersSessionAndSaysToSignInThroughTheBrowser` (answered the page method, sign-in off). Green: `httpapi.ClientSignIn` (`CurrentSession`) and `ClientSession`, `Handlers.hostedSession`. Refactor: nothing worth changing.
 - [ ] 11. `httpapi`: `POST /api/v1/browser-sign-in` signs in (or up) through the client sign-in, handing it the opener, and answers the session; a failure is a problem response.
 - [ ] 12. `httpapi`: `DELETE /api/v1/browser-sign-in` cancels the sign-in in progress, and the waiting `POST` answers a cancelled problem.
 - [ ] 13. `httpapi`: with `Options.ClientSignIn`, `POST /auth/sign-out` signs out through it and redirects to `/`, also when the server can't end the session.
