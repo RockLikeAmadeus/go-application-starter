@@ -33,7 +33,7 @@ func main() {
 }
 
 func run() error {
-	opened, err := mobile.Open(os.Getenv, application.Android.StoragePath(), web.Assets())
+	opened, err := mobile.Open(os.Getenv, application.Android.StoragePath(), web.Assets(), nil)
 	if err != nil {
 		return err
 	}

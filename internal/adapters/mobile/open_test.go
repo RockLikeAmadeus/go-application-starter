@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/fs"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,7 +17,7 @@ import (
 // connection. It asks over the bridge (API); the asset path (Handler) must not
 // answer API calls at all.
 func TestOpenAnswersTheAPIOverTheBridgeOnly(t *testing.T) {
-	app, err := mobile.Open(func(string) string { return "" }, t.TempDir(), nil)
+	app, err := mobile.Open(func(string) string { return "" }, t.TempDir(), nil, nil)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -43,7 +44,7 @@ func TestOpenAnswersTheAPIOverTheBridgeOnly(t *testing.T) {
 func TestOpenCreatesNoSettingsFile(t *testing.T) {
 	storage := t.TempDir()
 
-	app, err := mobile.Open(func(string) string { return "" }, storage, nil)
+	app, err := mobile.Open(func(string) string { return "" }, storage, nil, nil)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -53,4 +54,30 @@ func TestOpenCreatesNoSettingsFile(t *testing.T) {
 	if _, err := os.Stat(settingsFile); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("Open left a settings file at %s (stat: %v), want none", settingsFile, err)
 	}
+}
+
+// Android has no Secret Service, so in remote mode the app keeps its token in
+// a file in its private storage, whatever credential_store says: an invalid
+// value there is never read.
+func TestOpenInRemoteModeKeepsTheTokenInAFileWhateverTheSettingSays(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"isSignInOn":true,"signInMethod":"page"}`))
+	}))
+	t.Cleanup(server.Close)
+	getenv := func(key string) string {
+		switch key {
+		case "STARTER_SERVER_URL":
+			return server.URL
+		case "STARTER_CREDENTIAL_STORE":
+			return "not-a-store"
+		}
+		return ""
+	}
+
+	app, err := mobile.Open(getenv, t.TempDir(), nil, func(string) error { return nil })
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
 }

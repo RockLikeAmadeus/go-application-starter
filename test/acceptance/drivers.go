@@ -686,7 +686,7 @@ type mobileApp struct {
 // open opens the app and points h's driving ports at its bridge. The
 // scenarios drive the API only, so the app is opened without the web app.
 func (m *mobileApp) open(h *harness) error {
-	app, err := mobile.Open(func(string) string { return "" }, m.storagePath, nil)
+	app, err := mobile.Open(func(string) string { return "" }, m.storagePath, nil, nil)
 	if err != nil {
 		return err
 	}

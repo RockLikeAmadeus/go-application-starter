@@ -28,9 +28,9 @@ type world struct {
 	// commandLine is the command line the scenario signs in from, made by
 	// the first step that uses it.
 	commandLine *commandLine
-	// desktopApp is the desktop app opened on the server, made by the first
-	// step that uses it.
-	desktopApp *remoteApp
+	// remoteApps are the apps opened on the server, by the name the feature
+	// gives them, each made by the first step that uses it.
+	remoteApps map[string]*remoteApp
 	// codeReplay is the answer to the latest second use of a sign-in code.
 	codeReplay answer
 	// isSettingUp is whether the step running is a Given.
