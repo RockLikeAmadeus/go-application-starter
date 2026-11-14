@@ -23,6 +23,15 @@ const (
 	StoragePostgres StorageBackend = "postgres"
 )
 
+// BuiltInServerURL is the server address a build sets, as server_url's lowest
+// layer: a settings file or STARTER_SERVER_URL still wins. Set it with
+//
+//	go build -ldflags "-X github.com/RockLikeAmadeus/go-application-starter/internal/config.BuiltInServerURL=<address>"
+//
+// A program built with one has no local mode, as an empty setting doesn't
+// override it.
+var BuiltInServerURL = ""
+
 // CredentialStore says where the command line and the terminal application
 // keep the session token they receive when you sign in to a server.
 type CredentialStore string
@@ -137,7 +146,7 @@ func Load(env Env, settingsFile string) (Config, error) {
 		Storage:          StorageBackend(setting("storage", string(StorageJSONFile))),
 		DataDir:          setting("data_dir", "./data"),
 		DatabaseURL:      setting("database_url", ""),
-		ServerURL:        setting("server_url", ""),
+		ServerURL:        setting("server_url", BuiltInServerURL),
 		CredentialStore:  CredentialStore(setting("credential_store", string(CredentialStoreSystem))),
 		LogFormat:        setting("log_format", "text"),
 		PlansFile:        setting("plans_file", ""),

@@ -17,7 +17,7 @@ So the settings file holds what you want every time, and an environment variable
 | `data_dir` | `STARTER_DATA_DIR` | `--data-dir` | see below | The data folder for `jsonfile` and `sqlite`. |
 | `database_url` | `STARTER_DATABASE_URL` | | none | The database that `postgres` storage connects to, for example `postgres://user:password@host:5432/starter`. It usually holds a password, so set it in the environment, as a secret, rather than in a settings file. |
 | `port` | `PORT` | | `8080` | The port the server listens on. `PORT` has no prefix: it's the name cloud platforms set. |
-| `server_url` | `STARTER_SERVER_URL` | `--server` | none | Makes the CLI and TUI use a server at this URL instead of their own data. |
+| `server_url` | `STARTER_SERVER_URL` | `--server` | none (a build can set one: `config.BuiltInServerURL`) | Makes the CLI and TUI use a server at this URL instead of their own data. |
 | `credential_store` | `STARTER_CREDENTIAL_STORE` | | `system` | Where the command line and the terminal application keep the session token they receive when you sign in to a server: `system` (the operating system's credential store, falling back to `tokens.json` in the settings folder when it is not available) or `file` (`tokens.json` only, readable only by you). [docs/sign-in.md](sign-in.md), "Where the token is kept", explains both. |
 | `log_format` | `STARTER_LOG_FORMAT` | | `text` | The server's log format: `text` or `json`. |
 | `plans_file` | `STARTER_PLANS_FILE` | | none | A plans file to use instead of the one built in (`internal/adapters/plans/plans.jsonc`). |

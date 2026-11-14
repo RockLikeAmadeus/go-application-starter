@@ -57,7 +57,7 @@ Cancelling:
 - [x] 6b. `clientsignin`: starting another sign-in cancels the first. Red: `TestSignIn_StartingAnotherCancelsTheFirst`, failing "the first SignIn was still waiting 2s after another started"; green: a new sign-in cancels the previous one's context with `ErrCancelled`. Refactor: nothing worth changing.
 
 The built-in server address:
-- [ ] 7. `config`: `BuiltInServerURL` is `server_url`'s built-in value, below the settings file and `STARTER_SERVER_URL`; an empty setting doesn't override it. Add a Taskfile variable for the desktop and Android builds, and a step for template users under the starter TODO item.
+- [x] 7. `config`: `BuiltInServerURL` is `server_url`'s built-in value, below the settings file and `STARTER_SERVER_URL`; an empty setting doesn't override it. Add a Taskfile variable for the desktop and Android builds, and a step for template users under the starter TODO item. Red: `TestTheBuiltInServerURLIsTheLowestLayerOfServerURL` got an empty URL. Green: `server_url` falls back to `BuiltInServerURL`. Taskfile `BUILT_IN_SERVER_URL` feeds `APP_LDFLAGS` (desktop, Windows, Android builds). Refactor: nothing worth changing.
 
 The API:
 - [ ] 8. `api/openapi.yaml`: `Session` gains `signInMethod` (`page`, `browser`); the server answers `page`. `task gen`.
