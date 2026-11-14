@@ -419,11 +419,12 @@ func hostedEntitlementsProvider(file plans.File, workspacePlans ports.WorkspaceP
 // NewRemote returns an App whose driving ports talk to a server over HTTP,
 // signed in with the session token that cfg's credential store holds for
 // that server, if any. appFolder is the app's folder in the user's settings
-// folder, where the file store keeps its tokens.
-func NewRemote(cfg config.Config, appFolder string) (*App, error) {
+// folder, where the file store keeps its tokens, and program picks which
+// program's token that is.
+func NewRemote(cfg config.Config, appFolder string, program Program) (*App, error) {
 	serverURL := cfg.ServerURL
 	a := &App{}
-	withToken := httpclient.WithTokenSource(tokenSource(cfg, appFolder))
+	withToken := httpclient.WithTokenSource(tokenSource(cfg, appFolder, program))
 	// sample:start
 	svc, err := httpclient.NewItemService(serverURL, withToken)
 	if err != nil {
@@ -441,12 +442,12 @@ func NewRemote(cfg config.Config, appFolder string) (*App, error) {
 
 // tokenSource reads the server's session token from the configured store,
 // where having none means sending none, not failing the request.
-func tokenSource(cfg config.Config, appFolder string) httpclient.TokenSource {
+func tokenSource(cfg config.Config, appFolder string, program Program) httpclient.TokenSource {
 	var store interface {
 		Read(serverURL string) (string, error)
-	} = tokenstore.NewSystem(appFolder)
+	} = systemStore(appFolder, program)
 	if cfg.CredentialStore == config.CredentialStoreFile {
-		store = tokenstore.NewFile(appFolder)
+		store = fileStore(appFolder, program)
 	}
 	return func(context.Context) (string, error) {
 		token, err := store.Read(cfg.ServerURL)
@@ -464,7 +465,7 @@ func New(cfg config.Config) (*App, error) {
 		if err != nil {
 			return nil, fmt.Errorf("find the settings folder: %w", err)
 		}
-		return NewRemote(cfg, folder)
+		return NewRemote(cfg, folder, CommandLine)
 	}
 	return NewEmbedded(cfg)
 }

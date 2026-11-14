@@ -21,11 +21,32 @@ func NewClientSignIn(cfg config.Config) (*clientsignin.Client, func(address stri
 	if err != nil {
 		return nil, nil, fmt.Errorf("find the settings folder: %w", err)
 	}
-	session, err := httpclient.NewSessionService(cfg.ServerURL, httpclient.WithTokenSource(tokenSource(cfg, folder)))
+	return NewClientSignInFor(cfg, folder, CommandLine)
+}
+
+// Program is the program a session token belongs to. Each keeps its own
+// token for a server, so signing in or out of one leaves the others alone.
+type Program int
+
+const (
+	CommandLine Program = iota
+	DesktopOrMobileApp
+)
+
+// NewClientSignInFor is NewClientSignIn for a program, keeping its token in
+// the settings folder given.
+func NewClientSignInFor(cfg config.Config, folder string, program Program) (*clientsignin.Client, func(address string) error, error) {
+	session, err := httpclient.NewSessionService(cfg.ServerURL, httpclient.WithTokenSource(tokenSource(cfg, folder, program)))
 	if err != nil {
 		return nil, nil, fmt.Errorf("create API client: %w", err)
 	}
-	return clientsignin.New(sessionReader{session}, session, browserSignIn{cfg.ServerURL}, newServerTokenStore(cfg, folder)), browsersignin.Open, nil
+	client := clientsignin.New(
+		sessionReader{session},
+		session,
+		browserSignIn{cfg.ServerURL},
+		newServerTokenStore(cfg, folder, program),
+	)
+	return client, browsersignin.Open, nil
 }
 
 // sessionReader adapts httpclient's session to clientsignin's.
@@ -56,14 +77,14 @@ type serverTokenStore struct {
 	forget    func(serverURL string) error
 }
 
-func newServerTokenStore(cfg config.Config, folder string) serverTokenStore {
+func newServerTokenStore(cfg config.Config, folder string, program Program) serverTokenStore {
 	if cfg.CredentialStore == config.CredentialStoreFile {
-		file := tokenstore.NewFile(folder)
+		file := fileStore(folder, program)
 		return serverTokenStore{cfg.ServerURL, func(serverURL, token string) (string, error) {
 			return clientsignin.KeptInFile, file.Save(serverURL, token)
 		}, file.Delete}
 	}
-	system := tokenstore.NewSystem(folder)
+	system := systemStore(folder, program)
 	return serverTokenStore{cfg.ServerURL, func(serverURL, token string) (string, error) {
 		kept, err := system.Save(serverURL, token)
 		if kept == tokenstore.InKeyring {
@@ -75,3 +96,17 @@ func newServerTokenStore(cfg config.Config, folder string) serverTokenStore {
 
 func (s serverTokenStore) Save(token string) (string, error) { return s.save(s.serverURL, token) }
 func (s serverTokenStore) Forget() error                     { return s.forget(s.serverURL) }
+
+func fileStore(folder string, program Program) *tokenstore.File {
+	if program == DesktopOrMobileApp {
+		return tokenstore.NewAppFile(folder)
+	}
+	return tokenstore.NewFile(folder)
+}
+
+func systemStore(folder string, program Program) *tokenstore.System {
+	if program == DesktopOrMobileApp {
+		return tokenstore.NewAppSystem(folder)
+	}
+	return tokenstore.NewSystem(folder)
+}
