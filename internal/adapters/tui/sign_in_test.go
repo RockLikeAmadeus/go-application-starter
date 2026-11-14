@@ -23,6 +23,8 @@ type fakeSignIn struct {
 	failsWith error
 	// signedOut counts the calls to SignOut, when set.
 	signedOut *int
+	// signOutErr, when set, is what SignOut returns.
+	signOutErr error
 }
 
 // SignOut counts the call.
@@ -30,7 +32,7 @@ func (f fakeSignIn) SignOut(context.Context) error {
 	if f.signedOut != nil {
 		*f.signedOut++
 	}
-	return nil
+	return f.signOutErr
 }
 
 // SignIn opens the address, then waits for the sign-in to be cancelled.
@@ -388,5 +390,81 @@ func TestTheSignOutKeySignsOutAndShowsTheSignedOutScreenWithNoMessage(t *testing
 		if strings.Contains(got, unwanted) {
 			t.Errorf("view = %q, want no %q", got, unwanted)
 		}
+	}
+}
+
+func TestASignOutTheServerDidNotConfirmShowsTheSignedOutScreenWithTheNotice(t *testing.T) {
+	m := firstScreen(Ports{
+		SignIn: fakeSignIn{
+			session:    clientsignin.Session{IsSignInOn: true, Name: "Ada"},
+			signOutErr: &clientsignin.SessionNotEndedError{Cause: errors.New("server unreachable")},
+		},
+		ServerURL: "https://app.example.com",
+	}, nil)
+	m = run(m, m.Init())
+
+	m, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	m = run(m, cmd)
+
+	got := m.View().Content
+	for _, want := range []string{
+		"Signed out",
+		"Not signed in to https://app.example.com.",
+		"Signed out of https://app.example.com on this computer only: " +
+			"the server did not confirm that it ended the session (server unreachable).",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("view = %q, want it to contain %q", got, want)
+		}
+	}
+}
+
+// signOutsEndingAs is a fakeSignIn whose successive sign-outs end with each of
+// results in turn.
+type signOutsEndingAs struct {
+	fakeSignIn
+	results *[]error
+}
+
+func (f signOutsEndingAs) SignOut(context.Context) error {
+	err := (*f.results)[0]
+	*f.results = (*f.results)[1:]
+	return err
+}
+
+func TestACleanSignOutShowsNoNoticeFromAnEarlierUnconfirmedOne(t *testing.T) {
+	results := []error{&clientsignin.SessionNotEndedError{Cause: errors.New("server unreachable")}, nil}
+	m := firstScreen(Ports{
+		SignIn: signOutsEndingAs{
+			fakeSignIn: fakeSignIn{session: clientsignin.Session{IsSignInOn: true, Name: "Ada"}, signsInAs: "Ada"},
+			results:    &results,
+		},
+		ServerURL:   "https://app.example.com",
+		OpenBrowser: func(string) error { return nil },
+	}, nil)
+	m = run(m, m.Init())
+	press := func(key rune) {
+		var cmd tea.Cmd
+		m, cmd = m.Update(tea.KeyPressMsg{Code: key, Text: string(key)})
+		m = run(m, cmd)
+	}
+
+	press('o')
+	if got := m.View().Content; !strings.Contains(got, "this computer only") {
+		t.Fatalf("view after the unconfirmed sign-out = %q, want the notice", got)
+	}
+	msgs := make(chan tea.Msg, 4)
+	m, cmd := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+	collectAsync(cmd, msgs)
+	for range 2 {
+		var more tea.Cmd
+		m, more = m.Update(next(t, msgs))
+		collectAsync(more, msgs)
+	}
+	press('o')
+
+	got := m.View().Content
+	if !strings.Contains(got, "Signed out") || strings.Contains(got, "this computer only") {
+		t.Errorf("view after the clean sign-out = %q, want the signed-out screen with no notice", got)
 	}
 }

@@ -178,7 +178,10 @@
    - Red: `TestTheTerminalAppIsHandedTheSignInOnlyWithAServer` failed (no `SignIn`, no `ServerURL`; local data passed already). Green: `newTUICmd` takes the `SignInFactory` and fills `Ports.SignIn`, `ServerURL`, `OpenBrowser` when `cfg.ServerURL` is set. Seam: `runTUI` var in `cli/tui.go`, set by `export_test.go`. Refactor: nothing worth changing.
 34. [x] TUI: the sign-out key (`o`, only while no text input has focus) signs out and shows the signed-out screen with no extra message.
    - Red: `TestTheSignOutKeySignsOutAndShowsTheSignedOutScreenWithNoMessage` failed (no sign-out, the signed-in screen stayed). Green: `SignInClient.SignOut`; `signInGate.Update` runs it on `o` (`canSignOut`) and, on success, clears `name` and shows the signed-out screen. Refactor: nothing worth changing. An error is ignored until 34b and 34c.
-34b. [ ] TUI: a `*clientsignin.SessionNotEndedError` from the sign-out shows the signed-out screen plus the notice.
+
+   - Red: `TestASignOutTheServerDidNotConfirmShowsTheSignedOutScreenWithTheNotice` failed (the signed-in screen stayed). Green: `signInGate.notice`, set from `SessionNotEndedError.Cause` in the sign-out result and shown on the signed-out screen. Refactor: nothing worth changing.
+34c.
+34b. [x] TUI: a `*clientsignin.SessionNotEndedError` from the sign-out shows the signed-out screen plus the notice.
    - Agreed text: "Signed out of <url> on this computer only: the server did not confirm that it ended the session (<error>)."
 34c. [ ] TUI: any other sign-out error (the token couldn't be removed, so the user is still signed in here) keeps the current screen and shows an error line.
    - Agreed text: "Signing out failed: <error>." in the same error style as "Signing in failed: <error>."

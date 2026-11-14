@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -47,6 +48,9 @@ type signInGate struct {
 	cancel     context.CancelFunc
 	// err is why the last sign-in failed, shown on the signed-out screen.
 	err error
+	// notice is a note on the signed-out screen after a sign-out the server
+	// did not confirm.
+	notice string
 	// name is who is signed in, empty when no one is or sign-in is off.
 	name string
 }
@@ -95,8 +99,14 @@ func (g signInGate) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return g, nil
 	}
 	if m, ok := msg.(signOutDoneMsg); ok {
-		if m.err == nil {
+		var notEnded *clientsignin.SessionNotEndedError
+		switch {
+		case m.err == nil:
+			g.signedOut, g.name, g.notice = true, "", ""
+		case errors.As(m.err, &notEnded):
 			g.signedOut, g.name = true, ""
+			g.notice = "Signed out of " + g.serverURL + " on this computer only: " +
+				"the server did not confirm that it ended the session (" + notEnded.Cause.Error() + ")."
 		}
 		return g, nil
 	}
@@ -170,6 +180,9 @@ func (g signInGate) View() tea.View {
 	b.WriteString(itemStyle.Render("Sign in to see your data.") + "\n")
 	if g.err != nil {
 		b.WriteString(errorStyle.Render("Signing in failed: "+g.err.Error()+".") + "\n")
+	}
+	if g.notice != "" {
+		b.WriteString(itemStyle.Render(g.notice) + "\n")
 	}
 	b.WriteString("\n")
 	b.WriteString(helpStyle.Render("l sign in • q quit"))
