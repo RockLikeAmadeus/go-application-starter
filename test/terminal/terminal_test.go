@@ -50,9 +50,10 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// build builds the program in pkg to out, as a user would install it.
+// build builds the program in pkg to out, as a user would install it, with the dev sign-in the sign-in journeys use
+// (a server still needs sign_in set to turn it on).
 func build(out, pkg string) error {
-	cmd := exec.Command("go", "build", "-o", out, pkg)
+	cmd := exec.Command("go", "build", "-tags", "devsignin", "-o", out, pkg)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("building %s: %w", pkg, err)

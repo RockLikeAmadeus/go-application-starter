@@ -83,7 +83,7 @@ func (w *world) runCommandLine(ctx context.Context, args ...string) error {
 		return errNoLocalComputer
 	}
 	var out, errOut bytes.Buffer
-	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, w.local.configEnv(), &out)
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, bootstrap.NewClientSignIn, w.local.configEnv(), &out)
 	cmd.SetErr(&errOut)
 	cmd.SetArgs(append(append([]string{}, w.commandLineOptions...), args...))
 	w.lastErr = cmd.ExecuteContext(ctx)

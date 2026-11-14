@@ -18,6 +18,7 @@ So the settings file holds what you want every time, and an environment variable
 | `database_url` | `STARTER_DATABASE_URL` | | none | The database that `postgres` storage connects to, for example `postgres://user:password@host:5432/starter`. It usually holds a password, so set it in the environment, as a secret, rather than in a settings file. |
 | `port` | `PORT` | | `8080` | The port the server listens on. `PORT` has no prefix: it's the name cloud platforms set. |
 | `server_url` | `STARTER_SERVER_URL` | `--server` | none | Makes the CLI and TUI use a server at this URL instead of their own data. |
+| `credential_store` | `STARTER_CREDENTIAL_STORE` | | `system` | Where the command line and the terminal application keep the session token they receive when you sign in to a server: `system` (the operating system's credential store, falling back to `tokens.json` in the settings folder when it is not available) or `file` (`tokens.json` only, readable only by you). [docs/sign-in.md](sign-in.md), "Where the token is kept", explains both. |
 | `log_format` | `STARTER_LOG_FORMAT` | | `text` | The server's log format: `text` or `json`. |
 | `plans_file` | `STARTER_PLANS_FILE` | | none | A plans file to use instead of the one built in (`internal/adapters/plans/plans.jsonc`). |
 | `sign_in` | `STARTER_SIGN_IN` | | `off` | How people sign in to the server. `off` makes the server a self-hosted local edition, with one workspace and no sign-in. `oidc` turns on the hosted edition with a sign-in provider (OpenID Connect), set up with the four settings below. `dev` turns on the hosted edition with the dev sign-in, which signs in whoever types a name, so it is only for development and tests. Only a program built with the `devsignin` build tag accepts `dev`, and `task build` leaves the tag out, so a release build refuses it at start. Sign-in needs `memory`, `sqlite`, or `postgres` storage, so a program with sign-in on refuses `jsonfile` at start. Set it for the server, and for `starter admin set-plan` when an admin changes a plan beside a hosted server's data. With sign-in on, `set-plan` changes the stored plan, and with it off, `set-plan` refuses, as the local edition's plan is fixed. Set it in the environment, as the server reads no settings file unless `STARTER_CONFIG_FILE` names one. Any other value stops the program at start. [docs/sign-in.md](sign-in.md) explains sign-in. |
@@ -60,6 +61,13 @@ ignore_synced_folder = false
 # server's address.
 # server_url = "https://example.com"
 
+# Where the command line and the terminal application keep the session token
+# they receive when you sign in to a server, one for each server. "system"
+# uses the operating system's credential store, and falls back to tokens.json
+# in the settings folder when that store is not available. "file" always uses
+# tokens.json, which only you can read (mode 0600).
+credential_store = "system"
+
 # To use a plans file of your own instead of the one built into the
 # application, please remove the "#" below and give the file's full path.
 # plans_file = "/path/to/plans.jsonc"
@@ -100,6 +108,7 @@ Settings file: /home/you/.config/starter/config.toml
   database_url = ""  # built in
   port = 8080  # built in
   server_url = ""  # built in
+  credential_store = "system"  # built in
   log_format = "json"  # environment (STARTER_LOG_FORMAT)
   plans_file = ""  # built in
   ignore_synced_folder = false  # settings file

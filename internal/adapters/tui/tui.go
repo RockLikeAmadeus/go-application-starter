@@ -3,18 +3,38 @@
 package tui
 
 import (
+	"context"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
 // Ports are the driving ports the TUI can show screens for.
 type Ports struct {
+	// SignIn reads, and changes, who is signed in to the server. Nil when the
+	// TUI runs on local data, which has no sign-in.
+	SignIn SignInClient
+	// ServerURL is the server SignIn signs in to, as the screens name it.
+	ServerURL string
+	// OpenBrowser opens an address in the user's browser. It must not write to
+	// the terminal.
+	OpenBrowser func(address string) error
 	// sample:start
 	Items ports.ItemService
 	// sample:end
+}
+
+// SignInClient is the part of the client-side sign-in the TUI uses.
+// *clientsignin.Client satisfies it.
+type SignInClient interface {
+	CurrentSession(ctx context.Context) (clientsignin.Session, error)
+	// SignIn signs in through the browser, handing its address to open.
+	SignIn(ctx context.Context, open func(address string) error) (clientsignin.Result, error)
+	// SignOut ends the session and forgets the token.
+	SignOut(ctx context.Context) error
 }
 
 // Run starts the TUI and blocks until the user quits. warnings show above
@@ -32,6 +52,9 @@ func firstScreen(drivingPorts Ports, warnings []string) tea.Model {
 		screen = newItemsScreen(drivingPorts.Items)
 	}
 	// sample:end
+	if drivingPorts.SignIn != nil {
+		screen = signInGate{screen: screen, client: drivingPorts.SignIn, serverURL: drivingPorts.ServerURL, openBrowser: drivingPorts.OpenBrowser}
+	}
 	return warnedScreen{screen: screen, warnings: warnings}
 }
 
@@ -62,7 +85,7 @@ func (w warnedScreen) View() tea.View {
 }
 
 // home is shown until the project has a capability of its own.
-type home struct{}
+type home struct{ extraHelp string }
 
 func (home) Init() tea.Cmd { return nil }
 
@@ -76,11 +99,18 @@ func (h home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return h, nil
 }
 
-func (home) View() tea.View {
+func (home) typing() bool { return false }
+
+func (h home) withExtraHelp(binding string) tea.Model {
+	h.extraHelp = binding
+	return h
+}
+
+func (h home) View() tea.View {
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("Home") + "\n\n")
 	b.WriteString(itemStyle.Render("Nothing here yet.") + "\n\n")
-	b.WriteString(helpStyle.Render("q quit"))
+	b.WriteString(helpStyle.Render(helpLine(h.extraHelp, "q quit")))
 	v := tea.NewView(frameStyle.Render(b.String()))
 	v.AltScreen = true
 	return v

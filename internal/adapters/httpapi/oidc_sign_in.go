@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -40,7 +41,7 @@ func oidcStart(start func() (authURL, state, attempt string), publicURL string) 
 		// Lax still sends the cookie on the provider's top-level redirect back.
 		http.SetCookie(w, &http.Cookie{
 			Name:     AttemptCookie,
-			Value:    attemptCookieValue(state, attempt),
+			Value:    attemptCookieValue(state, attempt, returnPath(r)),
 			Path:     "/auth/oidc",
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
@@ -71,7 +72,17 @@ func oidcCallback(log *slog.Logger, provider SignInProvider, signIn ports.SignIn
 			fail("no attempt cookie")
 			return
 		}
-		state, attempt, _ := strings.Cut(cookie.Value, ".")
+		parts := strings.SplitN(cookie.Value, ".", 3)
+		state, attempt := parts[0], ""
+		if len(parts) > 1 {
+			attempt = parts[1]
+		}
+		back := "/"
+		if len(parts) == 3 {
+			if unescaped, err := url.QueryUnescape(parts[2]); err == nil {
+				back = localPath(unescaped)
+			}
+		}
 		if subtle.ConstantTimeCompare([]byte(state), []byte(r.URL.Query().Get("state"))) != 1 {
 			fail("state does not match")
 			return
@@ -87,7 +98,7 @@ func oidcCallback(log *slog.Logger, provider SignInProvider, signIn ports.SignIn
 			return
 		}
 		setSessionCookie(w, r, publicURL, token)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, back, http.StatusSeeOther)
 	}
 }
 
@@ -97,10 +108,16 @@ func clearAttemptCookie(w http.ResponseWriter) {
 }
 
 // attemptCookieValue keeps the state and the attempt together as
-// "<state>.<attempt>". The state is base32 and the attempt base64url, so
-// neither holds a dot, and the callback can split them again.
-func attemptCookieValue(state, attempt string) string {
-	return state + "." + attempt
+// "<state>.<attempt>", followed by ".<return path>" (query-escaped) when the
+// sign-in is to return somewhere other than the web app. The state is base32
+// and the attempt base64url, so neither holds a dot, and the callback can
+// split them again.
+func attemptCookieValue(state, attempt, back string) string {
+	value := state + "." + attempt
+	if back != "/" {
+		value += "." + url.QueryEscape(back)
+	}
+	return value
 }
 
 // signInFailedPage is what a person sees when signing in through the provider

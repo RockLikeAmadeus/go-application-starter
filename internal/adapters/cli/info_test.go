@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/jsonfile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/postgres/postgrestest"
@@ -31,7 +32,7 @@ func runCLI(t *testing.T, args ...string) (string, error) {
 func runCLIWith(t *testing.T, env config.Env, args ...string) (string, error) {
 	t.Helper()
 	var out bytes.Buffer
-	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, env, &out)
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, bootstrap.NewClientSignIn, env, &out)
 	cmd.SetArgs(args)
 	err := cmd.ExecuteContext(context.Background())
 	return out.String(), err
@@ -120,7 +121,7 @@ func TestWithoutDataDirCommandsUseTheLocalDataFolder(t *testing.T) {
 				opened = cfg.DataDir
 				return bootstrap.New(cfg)
 			}
-			cmd := cli.NewRootCmd(newApp, bootstrap.NewBilling, computer(settings, nil), &bytes.Buffer{})
+			cmd := cli.NewRootCmd(newApp, bootstrap.NewBilling, bootstrap.NewClientSignIn, computer(settings, nil), &bytes.Buffer{})
 			cmd.SetArgs([]string{"--storage", storage, "info"})
 
 			if err := cmd.ExecuteContext(context.Background()); err != nil {
@@ -339,4 +340,77 @@ func testServer(t *testing.T) string {
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core.Entitlements}))
 	t.Cleanup(srv.Close)
 	return srv.URL
+}
+
+// sessionIs is a clientsignin.SessionReader that answers with one session.
+type sessionIs clientsignin.Session
+
+func (s sessionIs) CurrentSession(context.Context) (clientsignin.Session, error) {
+	return clientsignin.Session(s), nil
+}
+
+// With a server set, info says who the command line is signed in as there,
+// and the plan follows.
+func TestInfoWithAServerSaysWhoIsSignedInThere(t *testing.T) {
+	srv := testServer(t)
+	newSignIn := func(config.Config) (*clientsignin.Client, func(string) error, error) {
+		reader := sessionIs{IsSignInOn: true, Name: "Ada"}
+		return clientsignin.New(reader, nil, nil, nil), func(string) error { return nil }, nil
+	}
+	var out bytes.Buffer
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(t.TempDir(), nil), &out)
+	cmd.SetArgs([]string{"--server", srv, "info"})
+
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	want := "Server: " + srv + "\nSigned in to " + srv + " as Ada.\nPlan: "
+	if !strings.Contains(out.String(), want) {
+		t.Errorf("info output lacks %q:\n%s", want, out.String())
+	}
+}
+
+// With sign-in on and no session, info says so, leaves out the plan (the
+// server refuses it without a session), and succeeds.
+func TestInfoWithSignInOnAndNoSessionSaysSoAndLeavesOutThePlan(t *testing.T) {
+	srv := testServer(t)
+	newSignIn := func(config.Config) (*clientsignin.Client, func(string) error, error) {
+		reader := sessionIs{IsSignInOn: true}
+		return clientsignin.New(reader, nil, nil, nil), func(string) error { return nil }, nil
+	}
+	var out bytes.Buffer
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(t.TempDir(), nil), &out)
+	cmd.SetArgs([]string{"--server", srv, "info"})
+
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	want := "Server: " + srv + "\nNot signed in to " + srv + ". Run starter login to sign in.\n"
+	if !strings.Contains(out.String(), want) {
+		t.Errorf("info output lacks %q:\n%s", want, out.String())
+	}
+	if strings.Contains(out.String(), "Plan:") {
+		t.Errorf("info output has a Plan line, want none:\n%s", out.String())
+	}
+}
+
+// With a server that has sign-in off, info says the server does not support
+// sign-in, and the plan follows.
+func TestInfoWithAServerThatHasSignInOffSaysSoAndKeepsThePlan(t *testing.T) {
+	srv := testServer(t)
+	newSignIn := func(config.Config) (*clientsignin.Client, func(string) error, error) {
+		reader := sessionIs{IsSignInOn: false}
+		return clientsignin.New(reader, nil, nil, nil), func(string) error { return nil }, nil
+	}
+	var out bytes.Buffer
+	cmd := cli.NewRootCmd(bootstrap.New, bootstrap.NewBilling, newSignIn, computer(t.TempDir(), nil), &out)
+	cmd.SetArgs([]string{"--server", srv, "info"})
+
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("info: %v", err)
+	}
+	want := "Server: " + srv + "\nThe server at " + srv + " does not support sign-in.\nPlan: "
+	if !strings.Contains(out.String(), want) {
+		t.Errorf("info output lacks %q:\n%s", want, out.String())
+	}
 }

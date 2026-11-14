@@ -23,6 +23,18 @@ const (
 	StoragePostgres StorageBackend = "postgres"
 )
 
+// CredentialStore says where the command line and the terminal application
+// keep the session token they receive when you sign in to a server.
+type CredentialStore string
+
+const (
+	// CredentialStoreSystem is the operating system's credential store, with
+	// a file as the fallback.
+	CredentialStoreSystem CredentialStore = "system"
+	// CredentialStoreFile is a file in the settings folder only.
+	CredentialStoreFile CredentialStore = "file"
+)
+
 // SignInMode says how people sign in to a hosted server, or that they don't.
 type SignInMode string
 
@@ -56,6 +68,9 @@ type Config struct {
 	// ServerURL, when set, makes CLI/TUI use a remote server (server_url;
 	// STARTER_SERVER_URL).
 	ServerURL string
+	// CredentialStore says where the CLI and TUI keep their session tokens
+	// (credential_store; STARTER_CREDENTIAL_STORE).
+	CredentialStore CredentialStore
 	// LogFormat is "json" or "text" (log_format; STARTER_LOG_FORMAT).
 	LogFormat string
 	// PlansFile replaces the plans file built into the binary (plans_file;
@@ -123,6 +138,7 @@ func Load(env Env, settingsFile string) (Config, error) {
 		DataDir:          setting("data_dir", "./data"),
 		DatabaseURL:      setting("database_url", ""),
 		ServerURL:        setting("server_url", ""),
+		CredentialStore:  CredentialStore(setting("credential_store", string(CredentialStoreSystem))),
 		LogFormat:        setting("log_format", "text"),
 		PlansFile:        setting("plans_file", ""),
 		SignIn:           SignInMode(setting("sign_in", string(SignInOff))),
@@ -163,6 +179,7 @@ func (c Config) Settings() []Setting {
 		{"database_url", hiddenIfSet(c.DatabaseURL)},
 		{"port", c.Port},
 		{"server_url", c.ServerURL},
+		{"credential_store", string(c.CredentialStore)},
 		{"log_format", c.LogFormat},
 		{"plans_file", c.PlansFile},
 		{"sign_in", string(c.SignIn)},
@@ -193,6 +210,9 @@ func (c Config) Validate() error {
 	case StorageMemory, StorageJSONFile, StorageSQLite, StoragePostgres:
 	default:
 		return UnrecognizedStorageError(c.Storage)
+	}
+	if c.CredentialStore != CredentialStoreSystem && c.CredentialStore != CredentialStoreFile {
+		return fmt.Errorf("The credential store setting %q is not recognized. Please use %q or %q.", c.CredentialStore, CredentialStoreSystem, CredentialStoreFile)
 	}
 	if c.LogFormat != "json" && c.LogFormat != "text" {
 		return fmt.Errorf("The log format setting %q is not recognized. Please use \"text\" or \"json\".", c.LogFormat)
@@ -236,6 +256,7 @@ var envVars = map[string]string{
 	"database_url":         "STARTER_DATABASE_URL",
 	"port":                 "PORT",
 	"server_url":           "STARTER_SERVER_URL",
+	"credential_store":     "STARTER_CREDENTIAL_STORE",
 	"log_format":           "STARTER_LOG_FORMAT",
 	"plans_file":           "STARTER_PLANS_FILE",
 	"sign_in":              "STARTER_SIGN_IN",

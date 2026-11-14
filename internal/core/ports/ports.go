@@ -111,6 +111,14 @@ type SignInService interface {
 	CurrentAccount(ctx context.Context, token string) (domain.Account, error)
 	// SignOut ends the token's session.
 	SignOut(ctx context.Context, token string) error
+	// IssueSignInCode returns a one-time code, bound to the PKCE challenge,
+	// for the account whose session the token is.
+	IssueSignInCode(ctx context.Context, token, challenge string) (string, error)
+	// RedeemSignInCode returns a new session's token for the account the
+	// one-time code was issued for, when the verifier matches the code's
+	// PKCE challenge. A missing, used, expired, or mismatched code is
+	// domain.ErrNotFound.
+	RedeemSignInCode(ctx context.Context, code, verifier string) (string, error)
 }
 
 // AccountRepository is the driven port for storing accounts. Accounts aren't
@@ -138,6 +146,16 @@ type SessionRepository interface {
 	// Delete removes the session kept by the token hash, or returns
 	// domain.ErrNotFound when there is none.
 	Delete(ctx context.Context, tokenHash string) error
+}
+
+// SignInCodeRepository is the driven port for storing sign-in codes, which
+// are kept by their hash only.
+type SignInCodeRepository interface {
+	// Save inserts or replaces the code with the same hash.
+	Save(ctx context.Context, code domain.SignInCode) error
+	// Take returns the code kept by the hash and deletes it in the same
+	// step, so it can be taken once, or returns domain.ErrNotFound.
+	Take(ctx context.Context, codeHash string) (domain.SignInCode, error)
 }
 
 // TokenGenerator makes session tokens that can't be guessed.

@@ -14,14 +14,27 @@ import (
 // SessionCookie is the name of the cookie that holds the session's token.
 const SessionCookie = "session"
 
-// sessionMiddleware runs a request with a valid session cookie in its
+// sessionToken returns the request's session token: the bearer token the
+// command line sends, else the browser's session cookie. A bearer token that
+// turns out invalid is not replaced by the cookie.
+func sessionToken(r *http.Request) (string, bool) {
+	if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok && token != "" {
+		return token, true
+	}
+	if cookie, err := r.Cookie(SessionCookie); err == nil {
+		return cookie.Value, true
+	}
+	return "", false
+}
+
+// sessionMiddleware runs a request with a valid session token in its
 // account's workspace (workspace.WithID). Any other request runs with no
 // workspace, so the use cases refuse it with domain.ErrNoWorkspace: signed out
 // fails closed.
 func sessionMiddleware(signIn ports.SignInService, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if cookie, err := r.Cookie(SessionCookie); err == nil {
-			if account, err := signIn.CurrentAccount(r.Context(), cookie.Value); err == nil {
+		if token, ok := sessionToken(r); ok {
+			if account, err := signIn.CurrentAccount(r.Context(), token); err == nil {
 				r = r.WithContext(withAccount(r.Context(), account))
 			}
 		}

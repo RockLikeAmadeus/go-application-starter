@@ -36,6 +36,14 @@ func (s *signInRecorder) SignOut(_ context.Context, token string) error {
 	return s.signOutErr
 }
 
+func (s *signInRecorder) IssueSignInCode(context.Context, string, string) (string, error) {
+	panic("not used by these tests")
+}
+
+func (s *signInRecorder) RedeemSignInCode(context.Context, string, string) (string, error) {
+	panic("not used by these tests")
+}
+
 // sessionCookieOf returns the response's session cookie, failing the test
 // without one.
 func sessionCookieOf(t *testing.T, rec *httptest.ResponseRecorder) *http.Cookie {
@@ -154,5 +162,43 @@ func TestSigningUpWithTheDevSignInGoesToTheDevSignIn(t *testing.T) {
 
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/dev" {
 		t.Errorf("status = %d, Location = %q; want %d to /auth/dev", rec.Code, rec.Header().Get("Location"), http.StatusFound)
+	}
+}
+
+func TestTheDevSignInReturnsToALocalReturnPathAndIgnoresAnyOther(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{token: "token-ada"}, IsDevSignInOn: true})
+	for returnTo, want := range map[string]string{
+		"/auth/native/finish?x=1": "/auth/native/finish?x=1",
+		"https://evil.example/":   "/",
+		"//evil.example/":         "/",
+		`/\evil.example/`:         "/",
+		"relative":                "/",
+		"/\t/evil.example":        "/",
+		"/\n/evil.example":        "/",
+		"":                        "/",
+	} {
+		rec := postDevSignInTo(handler, "/auth/dev?return="+url.QueryEscape(returnTo), "Ada")
+		if got := rec.Header().Get("Location"); rec.Code != http.StatusSeeOther || got != want {
+			t.Errorf("return=%q: status = %d, Location = %q; want %d to %q", returnTo, rec.Code, got, http.StatusSeeOther, want)
+		}
+	}
+}
+
+func TestTheDevSignInFormCarriesALocalReturnPathOnAndDropsAnyOther(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	formFor := func(returnTo string) string {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/dev?return="+url.QueryEscape(returnTo), nil))
+		return rec.Body.String()
+	}
+
+	hidden := `<input type="hidden" name="return" value="/auth/native/finish?x=1">`
+	if body := formFor("/auth/native/finish?x=1"); !strings.Contains(body, hidden) {
+		t.Errorf("the page has no %s:\n%s", hidden, body)
+	}
+	for _, foreign := range []string{"https://evil.example/", "//evil.example/", ""} {
+		if body := formFor(foreign); strings.Contains(body, `name="return"`) {
+			t.Errorf("return=%q: the page carries a return field:\n%s", foreign, body)
+		}
 	}
 }

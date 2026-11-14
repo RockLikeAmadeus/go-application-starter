@@ -166,6 +166,14 @@ func (s oneSession) CurrentAccount(_ context.Context, token string) (domain.Acco
 
 func (oneSession) SignOut(context.Context, string) error { return nil }
 
+func (oneSession) IssueSignInCode(context.Context, string, string) (string, error) {
+	return "", nil
+}
+
+func (oneSession) RedeemSignInCode(context.Context, string, string) (string, error) {
+	return "", nil
+}
+
 // servedWarnings asks the REST API for the warnings' messages, as the web
 // app does.
 func servedWarnings(t *testing.T, h http.Handler) []string {

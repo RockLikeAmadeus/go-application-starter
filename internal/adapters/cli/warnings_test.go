@@ -34,7 +34,7 @@ func TestCommandsPrintTheAppsWarningsOnStderr(t *testing.T) {
 				return app, nil
 			}
 			var out, errOut bytes.Buffer
-			cmd := cli.NewRootCmd(newApp, bootstrap.NewBilling, computer(t.TempDir(), nil), &out)
+			cmd := cli.NewRootCmd(newApp, bootstrap.NewBilling, bootstrap.NewClientSignIn, computer(t.TempDir(), nil), &out)
 			cmd.SetErr(&errOut)
 			cmd.SetArgs([]string{"--storage", "memory", "info"})
 

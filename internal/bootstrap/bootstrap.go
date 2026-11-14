@@ -23,6 +23,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlstore"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/syncedfolder"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/system"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/tokenstore"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
@@ -117,11 +118,13 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	// sample:end
 	var accountRepo ports.AccountRepository
 	var sessionRepo ports.SessionRepository
+	var signInCodeRepo ports.SignInCodeRepository
 	var workspacePlanRepo ports.WorkspacePlanRepository
 	switch cfg.Storage {
 	case config.StorageMemory:
 		accountRepo = memory.NewAccountRepository()
 		sessionRepo = memory.NewSessionRepository()
+		signInCodeRepo = memory.NewSignInCodeRepository()
 		workspacePlanRepo = memory.NewWorkspacePlanRepository()
 		// sample:start
 		itemRepo = memory.NewItemRepository()
@@ -158,6 +161,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		}
 		accountRepo = sqlstore.NewAccountRepository(store.DB())
 		sessionRepo = sqlstore.NewSessionRepository(store.DB())
+		signInCodeRepo = sqlstore.NewSignInCodeRepository(store.DB())
 		workspacePlanRepo = sqlstore.NewWorkspacePlanRepository(store.DB())
 		// sample:start
 		itemRepo = sqlstore.NewItemRepository(store.DB())
@@ -174,6 +178,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 		a.ready = store.Ready
 		accountRepo = sqlstore.NewAccountRepository(store.DB())
 		sessionRepo = sqlstore.NewSessionRepository(store.DB())
+		signInCodeRepo = sqlstore.NewSignInCodeRepository(store.DB())
 		workspacePlanRepo = sqlstore.NewWorkspacePlanRepository(store.DB())
 		// sample:start
 		itemRepo = sqlstore.NewItemRepository(store.DB())
@@ -187,7 +192,7 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	}
 	a.Entitlements = app.NewEntitlementsService(entitlementsProvider, workspacesFor(cfg))
 	if cfg.SignIn.IsOn() {
-		a.SignIn = app.NewSignInService(accountRepo, sessionRepo, system.Tokens{}, system.UUIDs{}, system.Clock{})
+		a.SignIn = app.NewSignInService(accountRepo, sessionRepo, signInCodeRepo, system.Tokens{}, system.UUIDs{}, system.Clock{})
 		a.billing = app.NewBillingService(workspacePlanRepo, entitlementsProvider)
 	}
 	// Build each use case on its repository and the driven ports:
@@ -411,17 +416,22 @@ func hostedEntitlementsProvider(file plans.File, workspacePlans ports.WorkspaceP
 	}
 }
 
-// NewRemote returns an App whose driving ports talk to a server over HTTP.
-func NewRemote(serverURL string) (*App, error) {
+// NewRemote returns an App whose driving ports talk to a server over HTTP,
+// signed in with the session token that cfg's credential store holds for
+// that server, if any. appFolder is the app's folder in the user's settings
+// folder, where the file store keeps its tokens.
+func NewRemote(cfg config.Config, appFolder string) (*App, error) {
+	serverURL := cfg.ServerURL
 	a := &App{}
+	withToken := httpclient.WithTokenSource(tokenSource(cfg, appFolder))
 	// sample:start
-	svc, err := httpclient.NewItemService(serverURL)
+	svc, err := httpclient.NewItemService(serverURL, withToken)
 	if err != nil {
 		return nil, fmt.Errorf("create API client: %w", err)
 	}
 	a.Items = svc
 	// sample:end
-	entitlements, err := httpclient.NewEntitlementsService(serverURL)
+	entitlements, err := httpclient.NewEntitlementsService(serverURL, withToken)
 	if err != nil {
 		return nil, fmt.Errorf("create API client: %w", err)
 	}
@@ -429,10 +439,32 @@ func NewRemote(serverURL string) (*App, error) {
 	return a, nil
 }
 
+// tokenSource reads the server's session token from the configured store,
+// where having none means sending none, not failing the request.
+func tokenSource(cfg config.Config, appFolder string) httpclient.TokenSource {
+	var store interface {
+		Read(serverURL string) (string, error)
+	} = tokenstore.NewSystem(appFolder)
+	if cfg.CredentialStore == config.CredentialStoreFile {
+		store = tokenstore.NewFile(appFolder)
+	}
+	return func(context.Context) (string, error) {
+		token, err := store.Read(cfg.ServerURL)
+		if errors.Is(err, tokenstore.ErrNoToken) {
+			return "", nil
+		}
+		return token, err
+	}
+}
+
 // New picks remote mode when cfg.ServerURL is set, embedded otherwise.
 func New(cfg config.Config) (*App, error) {
 	if cfg.ServerURL != "" {
-		return NewRemote(cfg.ServerURL)
+		folder, err := config.AppFolder(config.Env{UserConfigDir: os.UserConfigDir})
+		if err != nil {
+			return nil, fmt.Errorf("find the settings folder: %w", err)
+		}
+		return NewRemote(cfg, folder)
 	}
 	return NewEmbedded(cfg)
 }

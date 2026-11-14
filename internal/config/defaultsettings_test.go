@@ -18,6 +18,7 @@ func TestTheDefaultSettingsFileSetsTheStorageDataFolderAndSyncedFolderSettings(t
 	for _, want := range []config.Setting{
 		{Key: "storage", Value: string(config.StorageJSONFile), Source: "settings file"},
 		{Key: "data_dir", Value: dataDir, Source: "settings file"},
+		{Key: "credential_store", Value: string(config.CredentialStoreSystem), Source: "settings file"},
 		{Key: "ignore_synced_folder", Value: false, Source: "settings file"},
 	} {
 		if !listsSetting(cfg.Settings(), want) {
@@ -52,6 +53,13 @@ ignore_synced_folder = false
 # of the data on this computer, please remove the "#" below and give the
 # server's address.
 # server_url = "https://example.com"
+
+# Where the command line and the terminal application keep the session token
+# they receive when you sign in to a server, one for each server. "system"
+# uses the operating system's credential store, and falls back to tokens.json
+# in the settings folder when that store is not available. "file" always uses
+# tokens.json, which only you can read (mode 0600).
+credential_store = "system"
 
 # To use a plans file of your own instead of the one built into the
 # application, please remove the "#" below and give the file's full path.

@@ -33,6 +33,16 @@ func (s sessions) SignOut(context.Context, string) error {
 	panic("not used by the session middleware")
 }
 
+// IssueSignInCode answers a code that spells out the session token and the
+// challenge it was issued for, so a test can see both.
+func (s sessions) IssueSignInCode(_ context.Context, token, challenge string) (string, error) {
+	return "code-for-" + token + "-" + challenge, nil
+}
+
+func (s sessions) RedeemSignInCode(context.Context, string, string) (string, error) {
+	panic("not used by these tests")
+}
+
 // workspaceAsPlan is a ports.EntitlementsService that answers the request's
 // workspace (workspace.FromContext) as its plan, or "none" without one, so a
 // test can see which workspace the server put in the request's context.
@@ -51,8 +61,17 @@ func (workspaceAsPlan) CurrentEntitlements(ctx context.Context) (domain.Entitlem
 // request ran in.
 func requestWorkspace(t *testing.T, signIn sessions, cookies ...*http.Cookie) string {
 	t.Helper()
+	return requestWorkspaceWithHeaders(t, signIn, nil, cookies...)
+}
+
+// requestWorkspaceWithHeaders is requestWorkspace with extra request headers.
+func requestWorkspaceWithHeaders(t *testing.T, signIn sessions, headers map[string]string, cookies ...*http.Cookie) string {
+	t.Helper()
 	handler := httpapi.NewHandler(httpapi.Options{Entitlements: workspaceAsPlan{}, SignIn: signIn})
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/entitlements", nil)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
@@ -73,6 +92,21 @@ func TestASessionCookiePutsItsAccountsWorkspaceInTheRequest(t *testing.T) {
 	signIn := sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}}
 
 	got := requestWorkspace(t, signIn, &http.Cookie{Name: httpapi.SessionCookie, Value: "token-a"})
+
+	if got != "ws-a" {
+		t.Errorf("workspace = %q, want %q", got, "ws-a")
+	}
+}
+
+func TestABearerTokenPutsItsAccountsWorkspaceInTheRequestAheadOfTheCookie(t *testing.T) {
+	signIn := sessions{
+		"token-a": {ID: "account-a", WorkspaceID: "ws-a"},
+		"token-b": {ID: "account-b", WorkspaceID: "ws-b"},
+	}
+
+	got := requestWorkspaceWithHeaders(t, signIn,
+		map[string]string{"Authorization": "Bearer token-a"},
+		&http.Cookie{Name: httpapi.SessionCookie, Value: "token-b"})
 
 	if got != "ws-a" {
 		t.Errorf("workspace = %q, want %q", got, "ws-a")

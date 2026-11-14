@@ -27,6 +27,10 @@ type (
 	errMsg         struct{ err error }
 )
 
+// failure is why the command failed, which the sign-in gate reads to see
+// whether the server refused it for want of a session.
+func (m errMsg) failure() error { return m.err }
+
 // itemsScreen is the Items screen.
 type itemsScreen struct {
 	service ports.ItemService
@@ -35,6 +39,8 @@ type itemsScreen struct {
 	mode    mode
 	input   textinput.Model
 	err     error
+	// extraHelp is a binding the sign-in gate adds before the quit key.
+	extraHelp string
 }
 
 // newItemsScreen creates the Items screen.
@@ -124,6 +130,13 @@ func (m itemsScreen) updateInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+func (m itemsScreen) typing() bool { return m.mode != modeBrowse }
+
+func (m itemsScreen) withExtraHelp(binding string) tea.Model {
+	m.extraHelp = binding
+	return m
+}
+
 func (m itemsScreen) View() tea.View {
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("Items") + "\n\n")
@@ -148,7 +161,7 @@ func (m itemsScreen) View() tea.View {
 		b.WriteString("Rename to: " + m.input.View() + "\n")
 		b.WriteString(helpStyle.Render("enter save • esc cancel"))
 	default:
-		b.WriteString(helpStyle.Render("↑/↓ move • a add • r rename • d delete • q quit"))
+		b.WriteString(helpStyle.Render(helpLine("↑/↓ move", "a add", "r rename", "d delete", m.extraHelp, "q quit")))
 	}
 	if m.err != nil {
 		b.WriteString("\n" + errorLine(m.err))

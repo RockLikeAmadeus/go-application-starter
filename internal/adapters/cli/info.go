@@ -13,7 +13,7 @@ import (
 // any command that uses the data does, and names the settings file it read
 // (or none), lists each setting with where it came from, says where the data
 // is (see dataLocation) and names the workspace's plan.
-func newInfoCmd(open appOpener) *cobra.Command {
+func newInfoCmd(open appOpener, newSignIn SignInFactory) *cobra.Command {
 	return &cobra.Command{
 		Use:   "info",
 		Short: "Show the data location and the current plan",
@@ -24,9 +24,34 @@ func newInfoCmd(open appOpener) *cobra.Command {
 				return err
 			}
 			defer app.Close()
-			entitlements, err := app.Entitlements.CurrentEntitlements(cmd.Context())
-			if err != nil {
-				return err
+			signedIn := ""
+			isPlanKnown := true
+			if cfg.ServerURL != "" {
+				client, _, err := newSignIn(cfg)
+				if err != nil {
+					return err
+				}
+				session, err := client.CurrentSession(cmd.Context())
+				if err != nil {
+					return err
+				}
+				switch {
+				case session.Name != "":
+					signedIn = fmt.Sprintf("Signed in to %s as %s.\n", cfg.ServerURL, session.Name)
+				case session.IsSignInOn:
+					signedIn = fmt.Sprintf("Not signed in to %s. Run starter login to sign in.\n", cfg.ServerURL)
+					isPlanKnown = false
+				default:
+					signedIn = fmt.Sprintf("The server at %s does not support sign-in.\n", cfg.ServerURL)
+				}
+			}
+			plan := ""
+			if isPlanKnown {
+				entitlements, err := app.Entitlements.CurrentEntitlements(cmd.Context())
+				if err != nil {
+					return err
+				}
+				plan = "Plan: " + entitlements.Plan + "\n"
 			}
 			label, location := dataLocation(cfg)
 			settingsFile := cfg.SettingsFile
@@ -38,7 +63,7 @@ func newInfoCmd(open appOpener) *cobra.Command {
 			for _, s := range cfg.Settings() {
 				fmt.Fprintf(out, "  %s = %s  # %s\n", s.Key, tomlValue(s.Value), s.Source)
 			}
-			_, err = fmt.Fprintf(out, "%s: %s\nPlan: %s\n", label, location, entitlements.Plan)
+			_, err = fmt.Fprintf(out, "%s: %s\n%s%s", label, location, signedIn, plan)
 			return err
 		},
 	}

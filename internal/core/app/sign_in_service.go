@@ -13,6 +13,7 @@ import (
 type SignInService struct {
 	accounts ports.AccountRepository
 	sessions ports.SessionRepository
+	codes    ports.SignInCodeRepository
 	tokens   ports.TokenGenerator
 	ids      ports.IDGenerator
 	clock    ports.Clock
@@ -21,8 +22,15 @@ type SignInService struct {
 var _ ports.SignInService = (*SignInService)(nil)
 
 // NewSignInService wires the use case to its driven ports.
-func NewSignInService(accounts ports.AccountRepository, sessions ports.SessionRepository, tokens ports.TokenGenerator, ids ports.IDGenerator, clock ports.Clock) *SignInService {
-	return &SignInService{accounts: accounts, sessions: sessions, tokens: tokens, ids: ids, clock: clock}
+func NewSignInService(
+	accounts ports.AccountRepository,
+	sessions ports.SessionRepository,
+	codes ports.SignInCodeRepository,
+	tokens ports.TokenGenerator,
+	ids ports.IDGenerator,
+	clock ports.Clock,
+) *SignInService {
+	return &SignInService{accounts: accounts, sessions: sessions, codes: codes, tokens: tokens, ids: ids, clock: clock}
 }
 
 // SignIn returns a new session's token for the identity's account.
@@ -31,8 +39,13 @@ func (s *SignInService) SignIn(ctx context.Context, identity domain.Identity) (s
 	if err != nil {
 		return "", err
 	}
+	return s.startSession(ctx, account.ID)
+}
+
+// startSession saves a new session for the account and returns its token.
+func (s *SignInService) startSession(ctx context.Context, accountID string) (string, error) {
 	token := s.tokens.NewToken()
-	if err := s.sessions.Save(ctx, domain.NewSession(token, account.ID, s.clock.Now())); err != nil {
+	if err := s.sessions.Save(ctx, domain.NewSession(token, accountID, s.clock.Now())); err != nil {
 		return "", fmt.Errorf("save session: %w", err)
 	}
 	return token, nil
@@ -101,4 +114,36 @@ func (s *SignInService) accountFor(ctx context.Context, identity domain.Identity
 		return domain.Account{}, fmt.Errorf("save account: %w", err)
 	}
 	return account, nil
+}
+
+// IssueSignInCode returns a one-time code for the account of the session the
+// token is, bound to the challenge.
+func (s *SignInService) IssueSignInCode(ctx context.Context, token, challenge string) (string, error) {
+	account, err := s.CurrentAccount(ctx, token)
+	if err != nil {
+		return "", err
+	}
+	code := s.tokens.NewToken()
+	signInCode := domain.NewSignInCode(account.ID, challenge, s.clock.Now())
+	signInCode.CodeHash = domain.HashSignInCode(code)
+	if err := s.codes.Save(ctx, signInCode); err != nil {
+		return "", fmt.Errorf("save sign-in code: %w", err)
+	}
+	return code, nil
+}
+
+// RedeemSignInCode swaps a code and its PKCE verifier for a new session token
+// for the code's account. A code works once, whatever the outcome.
+func (s *SignInService) RedeemSignInCode(ctx context.Context, code, verifier string) (string, error) {
+	signInCode, err := s.codes.Take(ctx, domain.HashSignInCode(code))
+	if err != nil {
+		return "", fmt.Errorf("take sign-in code: %w", err)
+	}
+	// A wrong verifier and an expired code are refused like a missing code, so
+	// a caller can't tell which one it was. The code is already taken, so none
+	// of them can be tried again.
+	if signInCode.IsExpiredAt(s.clock.Now()) || !signInCode.VerifiedBy(verifier) {
+		return "", fmt.Errorf("sign-in code is expired or the verifier is wrong: %w", domain.ErrNotFound)
+	}
+	return s.startSession(ctx, signInCode.AccountID)
 }

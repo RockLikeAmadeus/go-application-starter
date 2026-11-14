@@ -2,12 +2,14 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -161,5 +163,51 @@ func TestVimKeysAreTypedWhileEditing(t *testing.T) {
 	items, _ := core.ListItems(context.Background())
 	if len(items) != 1 || items[0].Name != "jk" {
 		t.Errorf("core items = %+v", items)
+	}
+}
+
+func TestTheItemsScreenTakesPartInTheSignedInViewOnlyWhileBrowsing(t *testing.T) {
+	var m tea.Model = newItemsScreen(newCore())
+	s := m.(signOutScreen)
+	if s.typing() {
+		t.Error("typing() = true while browsing")
+	}
+	if got := s.withExtraHelp("o sign out").View().Content; !strings.Contains(got, "d delete • o sign out • q quit") {
+		t.Errorf("browsing help = %q, want the sign-out key before quit", got)
+	}
+
+	m = send(t, m, tea.KeyPressMsg{Code: 'a', Text: "a"})
+	if !m.(signOutScreen).typing() {
+		t.Error("typing() = false while adding an item")
+	}
+}
+
+// noSessionItems is an item service whose server refuses every request for
+// want of a session.
+type noSessionItems struct{ ports.ItemService }
+
+func (noSessionItems) ListItems(context.Context) ([]domain.Item, error) {
+	return nil, fmt.Errorf("load items: %w", domain.ErrNoWorkspace)
+}
+
+func TestARequestRefusedForWantOfASessionShowsTheSignedOutScreenWithTheNotice(t *testing.T) {
+	m := firstScreen(Ports{
+		SignIn:    fakeSignIn{session: clientsignin.Session{IsSignInOn: true, Name: "Ada"}},
+		ServerURL: "https://app.example.com",
+		Items:     noSessionItems{},
+	}, nil)
+
+	m = run(m, m.Init())
+
+	got := m.View().Content
+	for _, want := range []string{
+		"Signed out",
+		"The server at https://app.example.com refused this request, because there is no valid session for it: " +
+			"you are not signed in, or the session token has expired or been ended. Press l to sign in.",
+		"l sign in",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("view = %q, want it to contain %q", got, want)
+		}
 	}
 }

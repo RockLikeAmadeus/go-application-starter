@@ -5,13 +5,16 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
@@ -21,6 +24,11 @@ type AppFactory func(cfg config.Config) (*bootstrap.App, error)
 // BillingFactory builds the billing service for `starter admin set-plan`.
 // Tests substitute their own.
 type BillingFactory func(cfg config.Config) (ports.BillingService, error)
+
+// SignInFactory builds the client that signs the command line in to the
+// server cfg names, and the opener it hands the browser's address to. Tests
+// substitute their own.
+type SignInFactory func(cfg config.Config) (*clientsignin.Client, func(address string) error, error)
 
 // appOpener opens the application, and says which configuration it opened
 // it with. Commands call it only when they run, so --help and --version work
@@ -34,7 +42,7 @@ var Version = "dev"
 // (config.Env, with os.Getenv and os.UserConfigDir in production): its
 // environment, and its local data folder, which commands use unless
 // --data-dir names another.
-func NewRootCmd(newApp AppFactory, newBilling BillingFactory, env config.Env, out io.Writer) *cobra.Command {
+func NewRootCmd(newApp AppFactory, newBilling BillingFactory, newSignIn SignInFactory, env config.Env, out io.Writer) *cobra.Command {
 	var (
 		serverURL  string
 		dataDir    string
@@ -108,13 +116,49 @@ func NewRootCmd(newApp AppFactory, newBilling BillingFactory, env config.Env, ou
 
 	noteGatedCommands(root, loadConfig)
 
-	root.AddCommand(newTUICmd(openApp))
-	root.AddCommand(newInfoCmd(openApp))
+	root.AddCommand(newTUICmd(openApp, newSignIn))
+	root.AddCommand(newInfoCmd(openApp, newSignIn))
+	root.AddCommand(newLoginCmd(loadConfig, newSignIn))
+	root.AddCommand(newLogoutCmd(loadConfig, newSignIn))
 	root.AddCommand(newAdminCmd(loadConfig, newBilling))
 	// sample:start
 	root.AddCommand(newItemCmd(openApp))
 	// sample:end
+	adviseLoginWhenSignedOut(root, loadConfig)
 	return root
+}
+
+// wordsSignInErrorsItself is the annotation of a command, such as login and
+// logout, whose own errors may hold ErrNoWorkspace without the user needing
+// the advice to run starter login.
+const wordsSignInErrorsItself = "wordsSignInErrorsItself"
+
+// adviseLoginWhenSignedOut makes every command that a server refuses for want
+// of a session (domain.ErrNoWorkspace) say which server, and tell the user to
+// run starter login, except the commands annotated wordsSignInErrorsItself.
+func adviseLoginWhenSignedOut(root *cobra.Command, loadConfig func() (config.Config, error)) {
+	var wrap func(cmd *cobra.Command)
+	wrap = func(cmd *cobra.Command) {
+		if run := cmd.RunE; run != nil && cmd.Annotations[wordsSignInErrorsItself] == "" {
+			cmd.RunE = func(cmd *cobra.Command, args []string) error {
+				err := run(cmd, args)
+				if !errors.Is(err, domain.ErrNoWorkspace) {
+					return err
+				}
+				cfg, loadErr := loadConfig()
+				if loadErr != nil || cfg.ServerURL == "" {
+					return err
+				}
+				return fmt.Errorf("The server at %s refused this request, because there is no valid session for it: "+
+					"you are not signed in, or the session token has expired or been ended. "+
+					"Please run starter login to sign in, then run this command again.", cfg.ServerURL)
+			}
+		}
+		for _, child := range cmd.Commands() {
+			wrap(child)
+		}
+	}
+	wrap(root)
 }
 
 // chosenByOption records that the option --flag chose cfg's setting key.
@@ -155,17 +199,5 @@ func Run(ctx context.Context, root *cobra.Command) int {
 func printWarnings(errOut io.Writer, warnings []string) {
 	for _, w := range warnings {
 		fmt.Fprintln(errOut, "Warning:", w)
-	}
-}
-
-// withApp opens the app for the duration of a command.
-func withApp(open appOpener, fn func(cmd *cobra.Command, args []string, app *bootstrap.App) error) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		app, _, err := open()
-		if err != nil {
-			return err
-		}
-		defer app.Close()
-		return fn(cmd, args, app)
 	}
 }
