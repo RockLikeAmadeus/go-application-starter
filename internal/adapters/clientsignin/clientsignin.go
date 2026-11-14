@@ -110,6 +110,9 @@ func (c *Client) signInThroughBrowser(ctx context.Context, isSignUp bool, open f
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
 	c.mu.Lock()
+	if c.cancel != nil {
+		c.cancel(ErrCancelled)
+	}
 	c.cancel = cancel
 	c.mu.Unlock()
 	token, err := c.browser.BrowserSignIn(ctx, isSignUp, open)

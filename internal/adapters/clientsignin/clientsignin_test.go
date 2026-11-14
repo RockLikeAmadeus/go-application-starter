@@ -212,3 +212,51 @@ func TestCancel_EndsTheSignInInProgressAndKeepsNoToken(t *testing.T) {
 		t.Errorf("saved token = %q, want none", server.savedToken)
 	}
 }
+
+// manyWaitingBrowser is a browser sign-in that waits for the person, until its
+// context is cancelled, and says each time one starts waiting.
+type manyWaitingBrowser struct{ started chan struct{} }
+
+func (w manyWaitingBrowser) BrowserSignIn(ctx context.Context, _ bool, _ func(string) error) (string, error) {
+	w.started <- struct{}{}
+	<-ctx.Done()
+	return "", ctx.Err()
+}
+
+// One sign-in at a time: starting another cancels the first, which ends with
+// ErrCancelled, while the new one carries on waiting.
+func TestSignIn_StartingAnotherCancelsTheFirst(t *testing.T) {
+	server := &fakeServer{name: "Ada", kept: "file"}
+	browser := manyWaitingBrowser{started: make(chan struct{}, 2)}
+	client := clientsignin.New(server, server, browser, server)
+	first := make(chan error, 1)
+	go func() {
+		_, err := client.SignIn(context.Background(), func(string) error { return nil })
+		first <- err
+	}()
+	<-browser.started
+	second := make(chan error, 1)
+	go func() {
+		_, err := client.SignIn(context.Background(), func(string) error { return nil })
+		second <- err
+	}()
+	<-browser.started
+
+	select {
+	case err := <-first:
+		if !errors.Is(err, clientsignin.ErrCancelled) {
+			t.Errorf("first SignIn error = %v, want ErrCancelled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("the first SignIn was still waiting 2s after another started")
+	}
+	select {
+	case err := <-second:
+		t.Fatalf("the second SignIn ended with %v, want it still waiting", err)
+	default:
+	}
+	client.Cancel()
+	if err := <-second; !errors.Is(err, clientsignin.ErrCancelled) {
+		t.Errorf("second SignIn error = %v, want ErrCancelled after Cancel", err)
+	}
+}
