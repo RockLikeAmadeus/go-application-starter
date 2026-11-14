@@ -60,7 +60,8 @@ The built-in server address:
 - [x] 7. `config`: `BuiltInServerURL` is `server_url`'s built-in value, below the settings file and `STARTER_SERVER_URL`; an empty setting doesn't override it. Add a Taskfile variable for the desktop and Android builds, and a step for template users under the starter TODO item. Red: `TestTheBuiltInServerURLIsTheLowestLayerOfServerURL` got an empty URL. Green: `server_url` falls back to `BuiltInServerURL`. Taskfile `BUILT_IN_SERVER_URL` feeds `APP_LDFLAGS` (desktop, Windows, Android builds). Refactor: nothing worth changing.
 
 The API:
-- [ ] 8. `api/openapi.yaml`: `Session` gains `signInMethod` (`page`, `browser`); the server answers `page`. `task gen`.
+- [x] 8. `api/openapi.yaml`: `Session` gains `signInMethod` (`page`, `browser`); the server answers `page`. `task gen`.
+  - Red: `TestTheSessionEndpointSaysToSignInOnAPage` (signInMethod empty). Green: `SignInMethod` schema in the contract, handler answers `page`. Refactor: nothing worth changing; Layout test fixtures gained `signInMethod`.
 - [ ] 9. `api/openapi.yaml`: `POST` and `DELETE /api/v1/browser-sign-in`; a server with no client sign-in answers both 404. `task gen`.
 - [ ] 10. `httpapi`: with `Options.ClientSignIn`, `GET /api/v1/session` answers the hosted server's session (name, sign-in on), with `signInMethod: browser`.
 - [ ] 11. `httpapi`: `POST /api/v1/browser-sign-in` signs in (or up) through the client sign-in, handing it the opener, and answers the session; a failure is a problem response.

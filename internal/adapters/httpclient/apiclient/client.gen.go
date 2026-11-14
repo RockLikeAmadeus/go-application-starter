@@ -53,6 +53,24 @@ func (e OverLimitBehavior) Valid() bool {
 	}
 }
 
+// Defines values for SignInMethod.
+const (
+	Browser SignInMethod = "browser"
+	Page    SignInMethod = "page"
+)
+
+// Valid indicates whether the value is a known member of the SignInMethod enum.
+func (e SignInMethod) Valid() bool {
+	switch e {
+	case Browser:
+		return true
+	case Page:
+		return true
+	default:
+		return false
+	}
+}
+
 // Connection defines model for Connection.
 type Connection struct {
 	// IsRequired True when the app reaches its data over the network (the server).
@@ -174,7 +192,17 @@ type Session struct {
 
 	// Name The signed-in account's name. Missing when no one is signed in.
 	Name *string `json:"name,omitempty"`
+
+	// SignInMethod How someone signs in. page: the window goes to /auth/sign-in, as on the
+	// hosted web app. browser: the app opens the system browser and waits for
+	// the sign-in to finish (the desktop and mobile apps in remote mode).
+	SignInMethod SignInMethod `json:"signInMethod"`
 }
+
+// SignInMethod How someone signs in. page: the window goes to /auth/sign-in, as on the
+// hosted web app. browser: the app opens the system browser and waits for
+// the sign-in to finish (the desktop and mobile apps in remote mode).
+type SignInMethod string
 
 // Warning defines model for Warning.
 type Warning struct {

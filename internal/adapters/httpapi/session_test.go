@@ -135,8 +135,9 @@ func TestAnUnknownSessionCookieLeavesNoWorkspaceInTheRequest(t *testing.T) {
 
 // session is the body of GET /api/v1/session.
 type session struct {
-	IsSignInOn bool    `json:"isSignInOn"`
-	Name       *string `json:"name"`
+	IsSignInOn   bool    `json:"isSignInOn"`
+	Name         *string `json:"name"`
+	SignInMethod string  `json:"signInMethod"`
 }
 
 // requestSession sends GET /api/v1/session through a handler with the given
@@ -186,5 +187,13 @@ func TestTheSessionEndpointSaysSignInIsOffWithNoSignInService(t *testing.T) {
 
 	if got.IsSignInOn || got.Name != nil {
 		t.Errorf("session = %+v, want sign-in off and no name", got)
+	}
+}
+
+func TestTheSessionEndpointSaysToSignInOnAPage(t *testing.T) {
+	got := requestSession(t, sessionsWithAda)
+
+	if got.SignInMethod != "page" {
+		t.Errorf("signInMethod = %q, want %q", got.SignInMethod, "page")
 	}
 }

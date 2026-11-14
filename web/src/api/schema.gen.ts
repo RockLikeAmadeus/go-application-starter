@@ -139,7 +139,15 @@ export interface components {
             isSignInOn: boolean;
             /** @description The signed-in account's name. Missing when no one is signed in. */
             name?: string;
+            signInMethod: components["schemas"]["SignInMethod"];
         };
+        /**
+         * @description How someone signs in. page: the window goes to /auth/sign-in, as on the
+         *     hosted web app. browser: the app opens the system browser and waits for
+         *     the sign-in to finish (the desktop and mobile apps in remote mode).
+         * @enum {string}
+         */
+        SignInMethod: "page" | "browser";
         Entitlements: {
             /** @description The name of the plan the workspace is on. */
             plan: string;

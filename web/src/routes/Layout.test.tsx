@@ -207,7 +207,7 @@ describe("Layout", () => {
   });
 
   it("asks someone signed out to sign in, with no sidebar or page, when sign-in is on", async () => {
-    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true }));
+    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true, signInMethod: "page" }));
 
     renderLayout();
 
@@ -222,7 +222,7 @@ describe("Layout", () => {
   });
 
   it("offers someone signed out a Create an account link to /auth/sign-up beside Sign in", async () => {
-    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true }));
+    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true, signInMethod: "page" }));
 
     renderLayout();
 
@@ -233,7 +233,7 @@ describe("Layout", () => {
   });
 
   it("shows who is signed in, and a Sign out button that posts to /auth/sign-out, in the sidebar", async () => {
-    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true, name: "Alpha" }));
+    vi.stubGlobal("fetch", sessionApi({ isSignInOn: true, name: "Alpha", signInMethod: "page" }));
 
     renderLayout();
 
@@ -247,7 +247,7 @@ describe("Layout", () => {
   });
 
   it("shows no signed-in name or Sign out button when sign-in is off", async () => {
-    const fetch = sessionApi({ isSignInOn: false });
+    const fetch = sessionApi({ isSignInOn: false, signInMethod: "page" });
     vi.stubGlobal("fetch", fetch);
 
     renderLayout();
