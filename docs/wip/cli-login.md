@@ -153,17 +153,28 @@
    - Agreed text (stderr, after `Error: `, non-zero exit; any command, while a server is set): "The server at <url> refused this request, because there is no valid session for it: you are not signed in, or the session token has expired or been ended. Please run starter login to sign in, then run this command again."
    - Review fix (login test: `TestLoginReportsASessionRefusalAsItIsWithoutAdvisingLogin`, red with the annotation removed): `login` and `logout` carry the `wordsSignInErrorsItself` annotation and are left out of the wrapping; the "server refuses the session" case of the logout test failed first (logout gave the login advice).
    - Red: `TestARequestRefusedForWantOfASessionTellsTheUserToRunLogin` failed (plain "Please sign in to continue."). Green: `adviseLoginWhenSignedOut` in `cli/root.go` wraps every command's `RunE`, replacing `ErrNoWorkspace` with the text when `cfg.ServerURL` is set. Refactor: nothing worth changing.
-30. [ ] TUI: on a server with sign-in on and no session, it shows the signed-out screen with the sign-in key; on local data or with sign-in off, no sign-in or sign-out key.
+30. [x] TUI: on a server with sign-in on and no session, it shows the signed-out screen with the sign-in key.
+30b. [ ] TUI: on local data or with sign-in off, no sign-in or sign-out key and no text (a guard, likely passing at once).
+   - Keys (agreed): `l` signs in, `o` signs out, both bound only on screens with no text input.
+   - Agreed text, signed-out screen: title "Signed out"; body "Not signed in to <url>." and "Sign in to see your data."; help "l sign in · q quit".
+   - Red: `TestOnAServerWithSignInOnAndNoSessionItShowsTheSignedOutScreenWithTheSignInKey` failed (the Home screen showed). Green: `signInGate` in `tui/sign_in.go` (reads the session on `Init`, shows the screen), wrapped around the first screen when `Ports.SignIn` is set. Refactor: nothing worth changing. `cli/tui.go` doesn't pass `Ports.SignIn` yet (task 33 wires it).
 31. [ ] TUI: signed in, it shows who is signed in and the sign-out key.
+   - Agreed text: "Signed in to <url> as <name>." in the status area; "o sign out" is added to the help line before "q quit".
 32. [ ] TUI: the sign-in key starts the browser sign-in and shows the waiting screen with the address; Esc cancels and returns to the signed-out screen.
+   - Agreed text: title "Signing in"; body "Waiting for you to finish signing in, in your browser." and "If no browser opened, open this address in a browser on this computer: <address>"; help "esc cancel". When the browser can't open, the first line becomes "Could not open a browser. To sign in, open this address in a browser on this computer: <address>. Waiting for you to finish signing in there."
 33. [ ] TUI: a finished sign-in loads the workspace's screen on the new session, with no restart; a failed one shows the error on the signed-out screen.
+   - Also wires `cli/tui.go` to pass `Ports.SignIn`, `ServerURL`, and the opener, from the `SignInFactory`, when `cfg.ServerURL` is set.
+   - Agreed text: an error line on the signed-out screen, "Signing in failed: <error>." Esc shows no error.
 34. [ ] TUI: the sign-out key signs out and shows the signed-out screen.
+   - Agreed text: the signed-out screen with no extra message; when the server did not confirm, "Signed out of <url> on this computer only: the server did not confirm that it ended the session (<error>)."
 35. [ ] TUI: a request refused for want of sign-in mid-use shows the signed-out screen.
+   - Agreed text: "The server at <url> refused this request, because there is no valid session for it: you are not signed in, or the session token has expired or been ended. Press l to sign in."
 36. [ ] Acceptance: route `@command-line-sign-in` to the http and oidc drivers (hosted), and add the command-line client and its steps; the Godog scenarios pass.
 37. [ ] Terminal journeys (note: the step for `signed in as "Ada" on the server` must match "Signed in to <url> as Ada."; and the sign-in-off message now says "does not support sign-in", so the step for "it fails, saying the server doesn't sign people in" checks that phrase): the server built with `devsignin`, a `BROWSER` helper that completes the dev sign-in, and the steps for the command line and the terminal app; the journeys pass.
 38. [ ] Docs and finish: `docs/sign-in.md` (the command line's and the terminal app's sign-in, with a sequence diagram), ADR 9 (bearer tokens, the native routes, codes, the token store), `docs/configuration.md` (`credential_store`), `.claude/rules/server.md` (the `/auth/native` routes), `.claude/rules/tui.md` (the signed-out screen), README and CLAUDE.md (CLI and TUI hosted is no longer planned), `.env.example` if it lists settings; device code over SSH as a follow-up in the plan; remove the `@wip` tags, run `task test:init` and `task check`, mark step 9 done in the plan, and delete this file.
 
 ## Changes to the plan
+- 2026-11-13: task 30 split: 30 the signed-out screen, 30b no keys or text on local data or with sign-in off. Wiring `cli/tui.go` to pass `Ports.SignIn`, `ServerURL`, and the opener goes to task 33, when the TUI first needs the opener.
 - 2026-11-13: task 28 split: 28 signed in, 28b no session (no plan line), 28c sign-in off (each pins user-facing text, agreed with the user).
 - 2026-11-13: task 26 split: 26 no server refused, 26b sign-in off refused, 26c signs in and reports (bootstrap wiring), 26d prints the address when the browser can't open (each pins user-facing text, agreed with the user).
 - 2026-11-13: task 22 split: 22 `BROWSER`, 22b failure and discarded output, 22c the OS default.

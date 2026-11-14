@@ -3,18 +3,31 @@
 package tui
 
 import (
+	"context"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/ports"
 )
 
 // Ports are the driving ports the TUI can show screens for.
 type Ports struct {
+	// SignIn reads, and changes, who is signed in to the server. Nil when the
+	// TUI runs on local data, which has no sign-in.
+	SignIn SignInClient
+	// ServerURL is the server SignIn signs in to, as the screens name it.
+	ServerURL string
 	// sample:start
 	Items ports.ItemService
 	// sample:end
+}
+
+// SignInClient is the part of the client-side sign-in the TUI uses.
+// *clientsignin.Client satisfies it.
+type SignInClient interface {
+	CurrentSession(ctx context.Context) (clientsignin.Session, error)
 }
 
 // Run starts the TUI and blocks until the user quits. warnings show above
@@ -32,6 +45,9 @@ func firstScreen(drivingPorts Ports, warnings []string) tea.Model {
 		screen = newItemsScreen(drivingPorts.Items)
 	}
 	// sample:end
+	if drivingPorts.SignIn != nil {
+		screen = signInGate{screen: screen, client: drivingPorts.SignIn, serverURL: drivingPorts.ServerURL}
+	}
 	return warnedScreen{screen: screen, warnings: warnings}
 }
 
