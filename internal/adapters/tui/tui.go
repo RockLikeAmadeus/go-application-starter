@@ -19,6 +19,9 @@ type Ports struct {
 	SignIn SignInClient
 	// ServerURL is the server SignIn signs in to, as the screens name it.
 	ServerURL string
+	// OpenBrowser opens an address in the user's browser. It must not write to
+	// the terminal.
+	OpenBrowser func(address string) error
 	// sample:start
 	Items ports.ItemService
 	// sample:end
@@ -28,6 +31,8 @@ type Ports struct {
 // *clientsignin.Client satisfies it.
 type SignInClient interface {
 	CurrentSession(ctx context.Context) (clientsignin.Session, error)
+	// SignIn signs in through the browser, handing its address to open.
+	SignIn(ctx context.Context, open func(address string) error) (clientsignin.Result, error)
 }
 
 // Run starts the TUI and blocks until the user quits. warnings show above
@@ -46,7 +51,7 @@ func firstScreen(drivingPorts Ports, warnings []string) tea.Model {
 	}
 	// sample:end
 	if drivingPorts.SignIn != nil {
-		screen = signInGate{screen: screen, client: drivingPorts.SignIn, serverURL: drivingPorts.ServerURL}
+		screen = signInGate{screen: screen, client: drivingPorts.SignIn, serverURL: drivingPorts.ServerURL, openBrowser: drivingPorts.OpenBrowser}
 	}
 	return warnedScreen{screen: screen, warnings: warnings}
 }

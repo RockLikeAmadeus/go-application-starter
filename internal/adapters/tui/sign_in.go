@@ -12,6 +12,12 @@ import (
 // sessionMsg carries what the server says about the current session.
 type sessionMsg struct{ session clientsignin.Session }
 
+// addressMsg carries the address the browser sign-in opened.
+type addressMsg struct{ address string }
+
+// signInDoneMsg says the browser sign-in ended, and how.
+type signInDoneMsg struct{ err error }
+
 // signInGate shows the signed-out screen, instead of screen, on a server that
 // has sign-in on when no one is signed in, and passes everything to screen
 // otherwise.
@@ -19,7 +25,14 @@ type signInGate struct {
 	screen    tea.Model
 	client    SignInClient
 	serverURL string
-	signedOut bool
+	// openBrowser opens the sign-in address in the user's browser.
+	openBrowser func(address string) error
+	signedOut   bool
+	// waiting is true while a browser sign-in runs, with its address once
+	// known, and cancel ends it.
+	waiting bool
+	address string
+	cancel  context.CancelFunc
 	// name is who is signed in, empty when no one is or sign-in is off.
 	name string
 }
@@ -44,9 +57,17 @@ func (g signInGate) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return g, g.screen.Init()
 	}
+	if g.waiting {
+		return g.updateWaiting(msg)
+	}
 	if g.signedOut {
-		if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "q" {
-			return g, tea.Quit
+		if k, ok := msg.(tea.KeyPressMsg); ok {
+			switch k.String() {
+			case "q":
+				return g, tea.Quit
+			case "l":
+				return g.startSignIn()
+			}
 		}
 		return g, nil
 	}
@@ -55,7 +76,52 @@ func (g signInGate) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return g, cmd
 }
 
+// startSignIn begins the browser sign-in, which runs until it finishes or is
+// cancelled.
+func (g signInGate) startSignIn() (tea.Model, tea.Cmd) {
+	ctx, cancel := context.WithCancel(context.Background())
+	g.waiting, g.address, g.cancel = true, "", cancel
+	addresses := make(chan string, 1)
+	open := func(address string) error {
+		addresses <- address
+		if g.openBrowser == nil {
+			return nil
+		}
+		return g.openBrowser(address)
+	}
+	waitForAddress := func() tea.Msg {
+		select {
+		case address := <-addresses:
+			return addressMsg{address}
+		case <-ctx.Done():
+			return nil
+		}
+	}
+	signIn := func() tea.Msg {
+		_, err := g.client.SignIn(ctx, open)
+		return signInDoneMsg{err}
+	}
+	return g, tea.Batch(waitForAddress, signIn)
+}
+
+// updateWaiting handles messages while the browser sign-in runs: Esc cancels it.
+func (g signInGate) updateWaiting(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch m := msg.(type) {
+	case addressMsg:
+		g.address = m.address
+	case tea.KeyPressMsg:
+		if m.String() == "esc" {
+			g.cancel()
+			g.waiting = false
+		}
+	}
+	return g, nil
+}
+
 func (g signInGate) View() tea.View {
+	if g.waiting {
+		return g.waitingView()
+	}
 	if !g.signedOut {
 		return g.signedInView()
 	}
@@ -64,6 +130,19 @@ func (g signInGate) View() tea.View {
 	b.WriteString(itemStyle.Render("Not signed in to "+g.serverURL+".") + "\n")
 	b.WriteString(itemStyle.Render("Sign in to see your data.") + "\n\n")
 	b.WriteString(helpStyle.Render("l sign in • q quit"))
+	v := tea.NewView(frameStyle.Render(b.String()))
+	v.AltScreen = true
+	return v
+}
+
+func (g signInGate) waitingView() tea.View {
+	var b strings.Builder
+	b.WriteString(titleStyle.Render("Signing in") + "\n\n")
+	b.WriteString(itemStyle.Render("Waiting for you to finish signing in, in your browser.") + "\n")
+	if g.address != "" {
+		b.WriteString(itemStyle.Render("If no browser opened, open this address in a browser on this computer: "+g.address) + "\n")
+	}
+	b.WriteString("\n" + helpStyle.Render(helpLine("esc cancel")))
 	v := tea.NewView(frameStyle.Render(b.String()))
 	v.AltScreen = true
 	return v

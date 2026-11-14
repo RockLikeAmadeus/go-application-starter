@@ -163,8 +163,10 @@
 31. [x] TUI: signed in, it shows who is signed in and the sign-out key.
    - Agreed text: "Signed in to <url> as <name>." in the status area; "o sign out" is added to the help line before "q quit".
    - Red: `TestSignedInItShowsWhoIsSignedInAndTheSignOutKey` failed (no status line, no key in the help). Green: `signInGate.signedInView` in `tui/sign_in.go` prepends the status line and adds "o sign out" before "q quit" through the optional `signOutScreen` interface (`typing()`, `withExtraHelp`), implemented by `home` and the Items screen; no text is searched for, and a screen with a text input focused is left alone. Refactor: nothing worth changing. The `o` key does nothing until task 34.
-32. [ ] TUI: the sign-in key starts the browser sign-in and shows the waiting screen with the address; Esc cancels and returns to the signed-out screen.
+32. [x] TUI: the sign-in key starts the browser sign-in and shows the waiting screen with the address; Esc cancels and returns to the signed-out screen.
    - Agreed text: title "Signing in"; body "Waiting for you to finish signing in, in your browser." and "If no browser opened, open this address in a browser on this computer: <address>"; help "esc cancel". When the browser can't open, the first line becomes "Could not open a browser. To sign in, open this address in a browser on this computer: <address>. Waiting for you to finish signing in there."
+   - Red: `TestTheSignInKeyShowsTheWaitingScreenWithTheAddressAndEscReturnsToTheSignedOutScreen` failed (the `l` key did nothing). Green: `signInGate.startSignIn` runs `SignInClient.SignIn` (new, with `Ports.OpenBrowser`) and shows `waitingView`; Esc cancels. Refactor: nothing worth changing. Not done: the "Could not open a browser" variant (task 32b, added); the done message is ignored until task 33.
+32b. [ ] TUI: when the browser can't be opened, the waiting screen says so, with the address (agreed text under task 32).
 33. [ ] TUI: a finished sign-in loads the workspace's screen on the new session, with no restart; a failed one shows the error on the signed-out screen.
    - Also wires `cli/tui.go` to pass `Ports.SignIn`, `ServerURL`, and the opener, from the `SignInFactory`, when `cfg.ServerURL` is set.
    - Agreed text: an error line on the signed-out screen, "Signing in failed: <error>." Esc shows no error.
