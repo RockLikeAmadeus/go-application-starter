@@ -57,12 +57,19 @@ type ClientSession struct {
 	Name       string
 }
 
+// ErrSignInCancelled is what a ClientSignIn returns from SignInThroughBrowser
+// when CancelBrowserSignIn ended it.
+var ErrSignInCancelled = errors.New("the sign-in was cancelled")
+
 // ClientSignIn signs an app in to a hosted server.
 type ClientSignIn interface {
 	CurrentSession(ctx context.Context) (ClientSession, error)
 	// SignInThroughBrowser signs in, or with isSignUp creates an account,
 	// handing the address to open, and returns when it finishes.
 	SignInThroughBrowser(ctx context.Context, isSignUp bool, open func(address string) error) error
+	// CancelBrowserSignIn ends the sign-in in progress, if any, so that
+	// SignInThroughBrowser returns ErrSignInCancelled.
+	CancelBrowserSignIn()
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and

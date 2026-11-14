@@ -68,7 +68,8 @@ The API:
   - Red: `TestAHandlerWithAClientSignInAnswersTheHostedServersSessionAndSaysToSignInThroughTheBrowser` (answered the page method, sign-in off). Green: `httpapi.ClientSignIn` (`CurrentSession`) and `ClientSession`, `Handlers.hostedSession`. Refactor: nothing worth changing.
 - [x] 11. `httpapi`: `POST /api/v1/browser-sign-in` signs in (or up) through the client sign-in, handing it the opener, and answers the session; a failure is a problem response.
   - Red: `TestStartingABrowserSignInSignsInThroughTheClientSignInAndAnswersTheSession` (404, not 200); the failure guard `TestAFailedBrowserSignInIsAProblemResponse` failed the same way. Green: `ClientSignIn.SignInThroughBrowser`, `Options.OpenBrowser`. Refactor: `hostedSession` returns `openapi.Session`, so both handlers share it.
-- [ ] 12. `httpapi`: `DELETE /api/v1/browser-sign-in` cancels the sign-in in progress, and the waiting `POST` answers a cancelled problem.
+- [x] 12. `httpapi`: `DELETE /api/v1/browser-sign-in` cancels the sign-in in progress, and the waiting `POST` answers a cancelled problem.
+  - Red: `TestCancellingABrowserSignInAnswersNoContentAndTheWaitingStartAProblem` (DELETE answered 404, not 204). Green: `ClientSignIn.CancelBrowserSignIn`, `httpapi.ErrSignInCancelled` (409, problem type `cancelled`, detail is the error's text). Refactor: nothing worth changing. The bootstrap adapter over `*clientsignin.Client` (task 15) must return `ErrSignInCancelled` for `clientsignin.ErrCancelled`.
 - [ ] 13. `httpapi`: with `Options.ClientSignIn`, `POST /auth/sign-out` signs out through it and redirects to `/`, also when the server can't end the session.
 
 The apps:

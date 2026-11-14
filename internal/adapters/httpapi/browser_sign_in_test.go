@@ -54,6 +54,8 @@ func (c clientSession) SignInThroughBrowser(_ context.Context, isSignUp bool, op
 	return c.signInErr
 }
 
+func (c clientSession) CancelBrowserSignIn() {}
+
 func TestAHandlerWithAClientSignInAnswersTheHostedServersSessionAndSaysToSignInThroughTheBrowser(t *testing.T) {
 	handler := httpapi.NewHandler(httpapi.Options{
 		ClientSignIn: clientSession{session: httpapi.ClientSession{IsSignInOn: true, Name: "Ada"}},
@@ -123,5 +125,55 @@ func TestAFailedBrowserSignInIsAProblemResponse(t *testing.T) {
 	var body struct{ Type string }
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil || body.Type != httpapi.ProblemInternal {
 		t.Errorf("body type = %q (err %v), want %q", body.Type, err, httpapi.ProblemInternal)
+	}
+}
+
+// waitingSignIn is an httpapi.ClientSignIn whose browser sign-in waits until
+// it is cancelled.
+type waitingSignIn struct {
+	clientSession
+	waiting   chan struct{}
+	cancelled chan struct{}
+}
+
+func (w waitingSignIn) SignInThroughBrowser(ctx context.Context, _ bool, _ func(string) error) error {
+	close(w.waiting)
+	select {
+	case <-w.cancelled:
+		return httpapi.ErrSignInCancelled
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (w waitingSignIn) CancelBrowserSignIn() { close(w.cancelled) }
+
+func TestCancellingABrowserSignInAnswersNoContentAndTheWaitingStartAProblem(t *testing.T) {
+	signIn := waitingSignIn{waiting: make(chan struct{}), cancelled: make(chan struct{})}
+	handler := httpapi.NewHandler(httpapi.Options{ClientSignIn: signIn})
+
+	started := make(chan *httptest.ResponseRecorder)
+	go func() {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/browser-sign-in", strings.NewReader(`{"isSignUp":false}`))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		started <- rec
+	}()
+	<-signIn.waiting
+
+	cancel := httptest.NewRecorder()
+	handler.ServeHTTP(cancel, httptest.NewRequest(http.MethodDelete, "/api/v1/browser-sign-in", nil))
+	if cancel.Code != http.StatusNoContent {
+		t.Fatalf("cancel status = %d, want 204", cancel.Code)
+	}
+
+	waiting := <-started
+	if waiting.Code != http.StatusConflict {
+		t.Fatalf("waiting status = %d, want 409", waiting.Code)
+	}
+	var body struct{ Type string }
+	if err := json.NewDecoder(waiting.Body).Decode(&body); err != nil || body.Type != httpapi.ProblemCancelled {
+		t.Errorf("body type = %q (err %v), want %q", body.Type, err, httpapi.ProblemCancelled)
 	}
 }

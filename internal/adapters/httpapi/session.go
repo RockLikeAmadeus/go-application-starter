@@ -132,5 +132,9 @@ func (h *Handlers) StartBrowserSignIn(ctx context.Context, request openapi.Start
 }
 
 func (h *Handlers) CancelBrowserSignIn(context.Context, openapi.CancelBrowserSignInRequestObject) (openapi.CancelBrowserSignInResponseObject, error) {
-	return nil, domain.ErrNotFound
+	if h.clientSignIn == nil {
+		return nil, domain.ErrNotFound
+	}
+	h.clientSignIn.CancelBrowserSignIn()
+	return openapi.CancelBrowserSignIn204Response{}, nil
 }
