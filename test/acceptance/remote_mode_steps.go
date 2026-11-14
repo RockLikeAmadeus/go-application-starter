@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/cucumber/godog"
 
@@ -37,6 +38,13 @@ type remoteApp struct {
 	signingInAs string
 	// browserErrors gets the result of each browser's part of a sign-in.
 	browserErrors chan error
+	// waits is whether the browser is left open and never signs in, so the
+	// sign-in in progress waits until it is cancelled.
+	waits bool
+	// opened is told when the app has opened the sign-in address.
+	opened chan struct{}
+	// pending gets the answer to the sign-in the app is waiting on.
+	pending chan int
 }
 
 func (a *remoteApp) close() {
@@ -59,6 +67,10 @@ func (w *world) registerRemoteModeSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^the `+app+` says my workspace's plan is "([^"]*)"$`, w.theAppSaysThePlanIs)
 	sc.Step(`^I open the `+app+` on the server$`, w.iOpenTheApp)
 	sc.Step(`^the `+app+` offers to sign in through the browser$`, w.theAppOffersToSignInThroughTheBrowser)
+	sc.Step(`^I create an account from the `+app+` as "([^"]*)"$`, w.iCreateAnAccountFromTheApp)
+	sc.Step(`^the `+app+` is waiting for me to sign in in the browser$`, w.theAppIsWaitingForTheBrowser)
+	sc.Step(`^I cancel signing in from the `+app+`$`, w.iCancelSigningInFromTheApp)
+	sc.Step(`^the `+app+` is not signed in$`, w.theAppIsNotSignedIn)
 	sc.Step(`^I sign out from the `+app+`$`, w.iSignOutFromTheApp)
 	sc.Step(`^the `+app+` keeps no session for the server$`, w.theAppKeepsNoSessionForTheServer)
 	// sample:start
@@ -82,25 +94,30 @@ func (w *world) theApp(name string) (*remoteApp, error) {
 		"STARTER_CREDENTIAL_STORE": "file",
 	}}
 	// The opener is the system browser, which the scenario's sign-in drives.
-	opened := &remoteApp{dir: filepath.Clean(dir), browserErrors: make(chan error, 8), isMobile: name == "mobile app"}
-	openInBrowser := func(address string) error { return w.openInTheBrowser(opened, address) }
-	if opened.isMobile {
+	remote := &remoteApp{
+		dir:           filepath.Clean(dir),
+		browserErrors: make(chan error, 8),
+		opened:        make(chan struct{}, 8),
+		isMobile:      name == "mobile app",
+	}
+	openInBrowser := func(address string) error { return w.openInTheBrowser(remote, address) }
+	if remote.isMobile {
 		// The phone's private storage is its only folder.
 		app, err := mobile.Open(local.getenv, dir, nil, openInBrowser)
 		if err != nil {
 			_ = os.RemoveAll(dir)
 			return nil, fmt.Errorf("open the %s on the server: %w", name, err)
 		}
-		opened.handler, opened.closeApp = app.API, app.Close
-		opened.tokenFolder = filepath.Join(dir, "starter")
+		remote.handler, remote.closeApp = app.API, app.Close
+		remote.tokenFolder = filepath.Join(dir, "starter")
 	} else {
 		app, err := desktop.Open(local.getenv, local.userConfigDir, nil, openInBrowser)
 		if err != nil {
 			_ = os.RemoveAll(dir)
 			return nil, fmt.Errorf("open the %s on the server: %w", name, err)
 		}
-		opened.handler, opened.closeApp = app.Handler, app.Close
-		opened.tokenFolder, err = config.AppFolder(local.configEnv())
+		remote.handler, remote.closeApp = app.Handler, app.Close
+		remote.tokenFolder, err = config.AppFolder(local.configEnv())
 		if err != nil {
 			return nil, err
 		}
@@ -108,8 +125,8 @@ func (w *world) theApp(name string) (*remoteApp, error) {
 	if w.remoteApps == nil {
 		w.remoteApps = map[string]*remoteApp{}
 	}
-	w.remoteApps[name] = opened
-	return opened, nil
+	w.remoteApps[name] = remote
+	return remote, nil
 }
 
 // openInTheBrowser is the app's opener: the person named by the step signs
@@ -120,6 +137,10 @@ func (w *world) openInTheBrowser(a *remoteApp, address string) error {
 	if !ok {
 		return errors.New("this driver's sign-in can't finish an app's: tag the scenario @remote-mode")
 	}
+	a.opened <- struct{}{}
+	if a.waits {
+		return nil
+	}
 	name := a.signingInAs
 	go func() { a.browserErrors <- finishInTheBrowser(browser, name, address) }()
 	return nil
@@ -128,9 +149,16 @@ func (w *world) openInTheBrowser(a *remoteApp, address string) error {
 // request sends the app a request and returns the answer's status and body.
 // The mobile app's requests go over its bridge, as the phone's do.
 func (a *remoteApp) request(ctx context.Context, method, path, body string) (int, string) {
+	status, reply := a.send(ctx, method, path, body)
+	a.status = status
+	return status, reply
+}
+
+// send is request without noting the status, for a request made while the
+// scenario goes on.
+func (a *remoteApp) send(ctx context.Context, method, path, body string) (int, string) {
 	if a.isMobile {
 		reply := mobile.Serve(a.handler, method, path, body)
-		a.status = reply.Status
 		return reply.Status, reply.Body
 	}
 	req := httptest.NewRequestWithContext(ctx, method, path, strings.NewReader(body))
@@ -139,7 +167,6 @@ func (a *remoteApp) request(ctx context.Context, method, path, body string) (int
 	}
 	rec := httptest.NewRecorder()
 	a.handler.ServeHTTP(rec, req)
-	a.status = rec.Code
 	return rec.Code, rec.Body.String()
 }
 
@@ -156,6 +183,14 @@ func (a *remoteApp) sessionName(ctx context.Context) (string, error) {
 }
 
 func (w *world) iSignInFromTheApp(ctx context.Context, name, person string) error {
+	return w.signInFromTheApp(ctx, name, person, false)
+}
+
+func (w *world) iCreateAnAccountFromTheApp(ctx context.Context, name, person string) error {
+	return w.signInFromTheApp(ctx, name, person, true)
+}
+
+func (w *world) signInFromTheApp(ctx context.Context, name, person string, isSignUp bool) error {
 	a, err := w.theApp(name)
 	if err != nil {
 		return err
@@ -163,9 +198,69 @@ func (w *world) iSignInFromTheApp(ctx context.Context, name, person string) erro
 	a.signingInAs = person
 	ctx, cancel := context.WithTimeout(ctx, signInTimeout)
 	defer cancel()
-	status, body := a.request(ctx, http.MethodPost, "/api/v1/browser-sign-in", `{"isSignUp":false}`)
+	status, body := a.request(ctx, http.MethodPost, "/api/v1/browser-sign-in", fmt.Sprintf(`{"isSignUp":%t}`, isSignUp))
 	if status != http.StatusOK {
 		return fmt.Errorf("signing in from the %s answered status %d: %.120s", name, status, body)
+	}
+	return nil
+}
+
+// theAppIsWaitingForTheBrowser starts a sign-in whose browser never comes
+// back, and returns once the app has opened it.
+func (w *world) theAppIsWaitingForTheBrowser(name string) error {
+	a, err := w.theApp(name)
+	if err != nil {
+		return err
+	}
+	a.waits = true
+	a.pending = make(chan int, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), signInTimeout)
+		defer cancel()
+		status, _ := a.send(ctx, http.MethodPost, "/api/v1/browser-sign-in", `{"isSignUp":false}`)
+		a.pending <- status
+	}()
+	select {
+	case <-a.opened:
+		return nil
+	case <-time.After(signInTimeout):
+		return fmt.Errorf("the %s never opened the browser", name)
+	}
+}
+
+func (w *world) iCancelSigningInFromTheApp(ctx context.Context, name string) error {
+	a, err := w.theApp(name)
+	if err != nil {
+		return err
+	}
+	if a.pending == nil {
+		return fmt.Errorf("the %s is not waiting for the browser", name)
+	}
+	if status, body := a.request(ctx, http.MethodDelete, "/api/v1/browser-sign-in", ""); status >= 300 {
+		return fmt.Errorf("cancelling the sign-in from the %s answered status %d: %.120s", name, status, body)
+	}
+	select {
+	case status := <-a.pending:
+		if status == http.StatusOK {
+			return fmt.Errorf("the %s's sign-in succeeded after it was cancelled", name)
+		}
+	case <-time.After(signInTimeout):
+		return fmt.Errorf("the %s's sign-in kept waiting after it was cancelled", name)
+	}
+	return nil
+}
+
+func (w *world) theAppIsNotSignedIn(ctx context.Context, name string) error {
+	a, err := w.theApp(name)
+	if err != nil {
+		return err
+	}
+	got, err := a.sessionName(ctx)
+	if err != nil {
+		return err
+	}
+	if got != "" {
+		return fmt.Errorf("the %s is signed in as %q, want no one", name, got)
 	}
 	return nil
 }
