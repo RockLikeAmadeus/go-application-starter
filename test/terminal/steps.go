@@ -51,6 +51,9 @@ func initializeScenario(sc *godog.ScenarioContext) {
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		home, err := os.MkdirTemp("", "starter-journey-")
 		j.home = home
+		if err == nil {
+			err = j.installBrowser()
+		}
 		return ctx, err
 	})
 	// The After hook returns only its own errors: Godog keeps the step's.
@@ -65,6 +68,7 @@ func initializeScenario(sc *godog.ScenarioContext) {
 
 	j.registerCommandLineSteps(sc)
 	j.registerTerminalAppSteps(sc)
+	j.registerSignInSteps(sc)
 	// sample:start
 	j.registerItemSteps(sc)
 	// sample:end
@@ -73,6 +77,9 @@ func initializeScenario(sc *godog.ScenarioContext) {
 // run starts the starter program with args in a new terminal, on this
 // scenario's computer.
 func (j *journey) run(args ...string) error {
+	if j.term != nil {
+		_ = j.term.Close() // the program that ran before
+	}
 	cmd := exec.Command(cliProgram, args...)
 	cmd.Dir = j.home
 	cmd.Env = append(j.env(), j.settings...)
@@ -122,6 +129,12 @@ func (j *journey) exitStatus(isExpected func(status int) bool, want string) erro
 
 // startServer starts the built server for this scenario and sets serverURL.
 func (j *journey) startServer() error {
+	return j.startServerWith()
+}
+
+// startServerWith starts the built server for this scenario, with more settings
+// as KEY=value, and sets serverURL.
+func (j *journey) startServerWith(settings ...string) error {
 	port, err := freePort()
 	if err != nil {
 		return err
@@ -129,6 +142,7 @@ func (j *journey) startServer() error {
 	cmd := exec.Command(serverProgram)
 	cmd.Dir = j.home
 	cmd.Env = append(j.env(), "STARTER_STORAGE=memory", fmt.Sprintf("PORT=%d", port))
+	cmd.Env = append(cmd.Env, settings...)
 	cmd.Stdout, cmd.Stderr = &j.serverOut, &j.serverOut
 	if err := cmd.Start(); err != nil {
 		return err
