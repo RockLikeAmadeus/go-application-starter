@@ -78,7 +78,7 @@ func (w warnedScreen) View() tea.View {
 }
 
 // home is shown until the project has a capability of its own.
-type home struct{}
+type home struct{ extraHelp string }
 
 func (home) Init() tea.Cmd { return nil }
 
@@ -92,11 +92,18 @@ func (h home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return h, nil
 }
 
-func (home) View() tea.View {
+func (home) typing() bool { return false }
+
+func (h home) withExtraHelp(binding string) tea.Model {
+	h.extraHelp = binding
+	return h
+}
+
+func (h home) View() tea.View {
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("Home") + "\n\n")
 	b.WriteString(itemStyle.Render("Nothing here yet.") + "\n\n")
-	b.WriteString(helpStyle.Render("q quit"))
+	b.WriteString(helpStyle.Render(helpLine(h.extraHelp, "q quit")))
 	v := tea.NewView(frameStyle.Render(b.String()))
 	v.AltScreen = true
 	return v

@@ -163,3 +163,19 @@ func TestVimKeysAreTypedWhileEditing(t *testing.T) {
 		t.Errorf("core items = %+v", items)
 	}
 }
+
+func TestTheItemsScreenTakesPartInTheSignedInViewOnlyWhileBrowsing(t *testing.T) {
+	var m tea.Model = newItemsScreen(newCore())
+	s := m.(signOutScreen)
+	if s.typing() {
+		t.Error("typing() = true while browsing")
+	}
+	if got := s.withExtraHelp("o sign out").View().Content; !strings.Contains(got, "d delete • o sign out • q quit") {
+		t.Errorf("browsing help = %q, want the sign-out key before quit", got)
+	}
+
+	m = send(t, m, tea.KeyPressMsg{Code: 'a', Text: "a"})
+	if !m.(signOutScreen).typing() {
+		t.Error("typing() = false while adding an item")
+	}
+}

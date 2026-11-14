@@ -43,7 +43,7 @@ func TestOnAServerWithSignInOnAndNoSessionItShowsTheSignedOutScreenWithTheSignIn
 		"Signed out",
 		"Not signed in to https://app.example.com.",
 		"Sign in to see your data.",
-		"l sign in · q quit",
+		"l sign in • q quit",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("view = %q, want it to contain %q", got, want)
@@ -73,5 +73,24 @@ func TestOnLocalDataOrWithSignInOffThereIsNoSignInOrSignOutKeyAndNoText(t *testi
 				}
 			}
 		})
+	}
+}
+
+func TestSignedInItShowsWhoIsSignedInAndTheSignOutKey(t *testing.T) {
+	m := firstScreen(Ports{
+		SignIn:    fakeSignIn{clientsignin.Session{IsSignInOn: true, Name: "Ada"}},
+		ServerURL: "https://app.example.com",
+	}, nil)
+
+	m = run(m, m.Init())
+
+	got := m.View().Content
+	for _, want := range []string{
+		"Signed in to https://app.example.com as Ada.",
+		"o sign out • q quit",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("view = %q, want it to contain %q", got, want)
+		}
 	}
 }

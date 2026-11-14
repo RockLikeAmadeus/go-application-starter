@@ -157,10 +157,12 @@
 30b. [x] TUI: on local data or with sign-in off, no sign-in or sign-out key and no text (a guard, likely passing at once).
    - No red: `TestOnLocalDataOrWithSignInOffThereIsNoSignInOrSignOutKeyAndNoText` passed at once, as the gate only shows the signed-out screen when sign-in is on and `Ports.SignIn` is unset on local data; kept as a guard (it fails when the gate ignores `IsSignInOn`). No green. Refactor: nothing worth changing.
    - Keys (agreed): `l` signs in, `o` signs out, both bound only on screens with no text input.
-   - Agreed text, signed-out screen: title "Signed out"; body "Not signed in to <url>." and "Sign in to see your data."; help "l sign in · q quit".
+   - Agreed text, signed-out screen: title "Signed out"; body "Not signed in to <url>." and "Sign in to see your data."; help "l sign in • q quit".
+   - Separator • (agreed 2026-11-13), as in the rest of the app.
    - Red: `TestOnAServerWithSignInOnAndNoSessionItShowsTheSignedOutScreenWithTheSignInKey` failed (the Home screen showed). Green: `signInGate` in `tui/sign_in.go` (reads the session on `Init`, shows the screen), wrapped around the first screen when `Ports.SignIn` is set. Refactor: nothing worth changing. `cli/tui.go` doesn't pass `Ports.SignIn` yet (task 33 wires it).
-31. [ ] TUI: signed in, it shows who is signed in and the sign-out key.
+31. [x] TUI: signed in, it shows who is signed in and the sign-out key.
    - Agreed text: "Signed in to <url> as <name>." in the status area; "o sign out" is added to the help line before "q quit".
+   - Red: `TestSignedInItShowsWhoIsSignedInAndTheSignOutKey` failed (no status line, no key in the help). Green: `signInGate.signedInView` in `tui/sign_in.go` prepends the status line and adds "o sign out" before "q quit" through the optional `signOutScreen` interface (`typing()`, `withExtraHelp`), implemented by `home` and the Items screen; no text is searched for, and a screen with a text input focused is left alone. Refactor: nothing worth changing. The `o` key does nothing until task 34.
 32. [ ] TUI: the sign-in key starts the browser sign-in and shows the waiting screen with the address; Esc cancels and returns to the signed-out screen.
    - Agreed text: title "Signing in"; body "Waiting for you to finish signing in, in your browser." and "If no browser opened, open this address in a browser on this computer: <address>"; help "esc cancel". When the browser can't open, the first line becomes "Could not open a browser. To sign in, open this address in a browser on this computer: <address>. Waiting for you to finish signing in there."
 33. [ ] TUI: a finished sign-in loads the workspace's screen on the new session, with no restart; a failed one shows the error on the signed-out screen.
