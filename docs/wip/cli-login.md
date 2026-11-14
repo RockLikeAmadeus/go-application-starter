@@ -168,9 +168,12 @@
    - Red: `TestTheSignInKeyShowsTheWaitingScreenWithTheAddressAndEscReturnsToTheSignedOutScreen` failed (the `l` key did nothing). Green: `signInGate.startSignIn` runs `SignInClient.SignIn` (new, with `Ports.OpenBrowser`) and shows `waitingView`; Esc cancels. Refactor: nothing worth changing. Not done: the "Could not open a browser" variant (task 32b, added); the done message is ignored until task 33.
 32b. [x] TUI: when the browser can't be opened, the waiting screen says so, with the address (agreed text under task 32).
    - Red: `TestWhenTheBrowserCannotBeOpenedTheWaitingScreenSaysSoWithTheAddressAndKeepsWaiting` failed (the normal waiting text showed). Green: `signInGate.startSignIn`'s `open` swallows the opener's error and `addressMsg` carries `openFailed`, so `waitingView` shows the could-not-open line and the sign-in keeps waiting. Refactor: nothing worth changing.
-33. [ ] TUI: a finished sign-in loads the workspace's screen on the new session, with no restart; a failed one shows the error on the signed-out screen.
-   - Also wires `cli/tui.go` to pass `Ports.SignIn`, `ServerURL`, and the opener, from the `SignInFactory`, when `cfg.ServerURL` is set.
-   - Agreed text: an error line on the signed-out screen, "Signing in failed: <error>." Esc shows no error.
+33. [x] TUI: a finished sign-in loads the workspace's screen on the new session, with no restart.
+   - Red: `TestAFinishedSignInShowsTheWorkspacesScreenOnTheNewSessionWithNoRestart` failed (the waiting screen stayed). Green: `signInGate.Update` handles a successful `signInDoneMsg` (name from the result, runs the screen's `Init`); a failed or cancelled one is left to 33b. Refactor: nothing worth changing. Task 33 was split (see "Changes to the plan").
+33b. [ ] TUI: a failed sign-in shows the error on the signed-out screen.
+   - Agreed text: an error line on the signed-out screen, "Signing in failed: <error>." Esc shows no error (task 32's test already pins that half).
+33c. [ ] CLI: `starter tui` with a server passes `Ports.SignIn`, `ServerURL`, and `OpenBrowser` from the `SignInFactory`, so the signed-out screen shows for a server with sign-in on and no session.
+   - Check how `cli` tests stub `tui.Run`; if they can't, add a small test seam in the same cycle.
 34. [ ] TUI: the sign-out key signs out and shows the signed-out screen.
    - Agreed text: the signed-out screen with no extra message; when the server did not confirm, "Signed out of <url> on this computer only: the server did not confirm that it ended the session (<error>)."
 35. [ ] TUI: a request refused for want of sign-in mid-use shows the signed-out screen.
@@ -180,6 +183,7 @@
 38. [ ] Docs and finish: `docs/sign-in.md` (the command line's and the terminal app's sign-in, with a sequence diagram), ADR 9 (bearer tokens, the native routes, codes, the token store), `docs/configuration.md` (`credential_store`), `.claude/rules/server.md` (the `/auth/native` routes), `.claude/rules/tui.md` (the signed-out screen), README and CLAUDE.md (CLI and TUI hosted is no longer planned), `.env.example` if it lists settings; device code over SSH as a follow-up in the plan; remove the `@wip` tags, run `task test:init` and `task check`, mark step 9 done in the plan, and delete this file.
 
 ## Changes to the plan
+- 2026-11-13: task 33 split (approved by the user): 33 a finished sign-in loads the screen, 33b a failed one shows the error, 33c `cli/tui.go` passes the sign-in pieces.
 - 2026-11-13: task 30 split: 30 the signed-out screen, 30b no keys or text on local data or with sign-in off. Wiring `cli/tui.go` to pass `Ports.SignIn`, `ServerURL`, and the opener goes to task 33, when the TUI first needs the opener.
 - 2026-11-13: task 28 split: 28 signed in, 28b no session (no plan line), 28c sign-in off (each pins user-facing text, agreed with the user).
 - 2026-11-13: task 26 split: 26 no server refused, 26b sign-in off refused, 26c signs in and reports (bootstrap wiring), 26d prints the address when the browser can't open (each pins user-facing text, agreed with the user).

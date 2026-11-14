@@ -20,7 +20,10 @@ type addressMsg struct {
 }
 
 // signInDoneMsg says the browser sign-in ended, and how.
-type signInDoneMsg struct{ err error }
+type signInDoneMsg struct {
+	name string
+	err  error
+}
 
 // signInGate shows the signed-out screen, instead of screen, on a server that
 // has sign-in on when no one is signed in, and passes everything to screen
@@ -61,6 +64,10 @@ func (g signInGate) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if g.signedOut {
 			return g, nil
 		}
+		return g, g.screen.Init()
+	}
+	if m, ok := msg.(signInDoneMsg); ok && g.waiting && m.err == nil {
+		g.waiting, g.signedOut, g.name = false, false, m.name
 		return g, g.screen.Init()
 	}
 	if g.waiting {
@@ -104,8 +111,8 @@ func (g signInGate) startSignIn() (tea.Model, tea.Cmd) {
 		}
 	}
 	signIn := func() tea.Msg {
-		_, err := g.client.SignIn(ctx, open)
-		return signInDoneMsg{err}
+		result, err := g.client.SignIn(ctx, open)
+		return signInDoneMsg{result.Name, err}
 	}
 	return g, tea.Batch(waitForAddress, signIn)
 }

@@ -17,11 +17,16 @@ type fakeSignIn struct {
 	session clientsignin.Session
 	// address is what the sign-in hands to its opener before it waits.
 	address string
+	// signsInAs, when set, ends the sign-in at once, with this name.
+	signsInAs string
 }
 
 // SignIn opens the address, then waits for the sign-in to be cancelled.
 func (f fakeSignIn) SignIn(ctx context.Context, open func(address string) error) (clientsignin.Result, error) {
 	_ = open(f.address)
+	if f.signsInAs != "" {
+		return clientsignin.Result{Name: f.signsInAs}, nil
+	}
 	<-ctx.Done()
 	return clientsignin.Result{}, ctx.Err()
 }
@@ -217,5 +222,43 @@ func TestWhenTheBrowserCannotBeOpenedTheWaitingScreenSaysSoWithTheAddressAndKeep
 	case msg := <-msgs:
 		t.Errorf("got %T, want the sign-in to keep waiting", msg)
 	case <-time.After(50 * time.Millisecond):
+	}
+}
+
+func TestAFinishedSignInShowsTheWorkspacesScreenOnTheNewSessionWithNoRestart(t *testing.T) {
+	m := firstScreen(Ports{
+		SignIn: fakeSignIn{
+			session:   clientsignin.Session{IsSignInOn: true},
+			address:   "https://app.example.com/auth/native?port=1",
+			signsInAs: "Ada",
+		},
+		ServerURL:   "https://app.example.com",
+		OpenBrowser: func(string) error { return nil },
+	}, nil)
+	m = run(m, m.Init())
+	msgs := make(chan tea.Msg, 4)
+
+	m, cmd := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+	collectAsync(cmd, msgs)
+	for range 2 {
+		var more tea.Cmd
+		m, more = m.Update(next(t, msgs))
+		collectAsync(more, msgs)
+	}
+
+	got := m.View().Content
+	for _, want := range []string{
+		"Signed in to https://app.example.com as Ada.",
+		"Nothing here yet.",
+		"o sign out • q quit",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("view = %q, want it to contain %q", got, want)
+		}
+	}
+	for _, unwanted := range []string{"Signed out", "Signing in"} {
+		if strings.Contains(got, unwanted) {
+			t.Errorf("view = %q, want no %q", got, unwanted)
+		}
 	}
 }
