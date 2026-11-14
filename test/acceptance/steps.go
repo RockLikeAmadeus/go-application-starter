@@ -104,11 +104,12 @@ func (w *world) iAmToldTheFieldIsInvalid(field string) error {
 	return nil
 }
 
-// isSignInScenario is whether the scenario signs in (@sign-in, or
-// @command-line-sign-in, which signs in from the command line).
+// isSignInScenario is whether the scenario signs in (@sign-in,
+// @command-line-sign-in, which signs in from the command line, or
+// @remote-mode, which signs in from the desktop and mobile apps).
 func isSignInScenario(scenario *godog.Scenario) bool {
 	return hasTag(scenario, "@sign-in") || hasTag(scenario, "@sign-in-provider") ||
-		hasTag(scenario, "@command-line-sign-in")
+		hasTag(scenario, "@command-line-sign-in") || hasTag(scenario, "@remote-mode")
 }
 
 // hasTag is whether the scenario, or its feature, has the tag.

@@ -98,3 +98,25 @@ func TestCommandLineSignInScenariosRunOnlyOnTheHTTPAndOIDCDrivers(t *testing.T) 
 		t.Errorf("oidc driver tags = %q, want it to include @command-line-sign-in", oidc.tags)
 	}
 }
+
+func TestRemoteModeScenariosRunOnlyOnTheHTTPAndOIDCDrivers(t *testing.T) {
+	for _, d := range driversFor(t, "") {
+		switch d.name {
+		case "http", "oidc":
+			if d.startHosted == nil {
+				t.Errorf("%s driver has no hosted edition", d.name)
+			}
+			if strings.Contains(d.tags, "~@remote-mode") {
+				t.Errorf("%s driver tags = %q, want it to run @remote-mode", d.name, d.tags)
+			}
+		case "server": // runs only @server
+		default:
+			if !strings.Contains(d.tags, "~@remote-mode") {
+				t.Errorf("%s driver tags = %q, want it to leave out @remote-mode", d.name, d.tags)
+			}
+		}
+	}
+	if oidc := driverNamed(t, driversFor(t, ""), "oidc"); !strings.Contains(oidc.tags, "@remote-mode") {
+		t.Errorf("oidc driver tags = %q, want it to include @remote-mode", oidc.tags)
+	}
+}

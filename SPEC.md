@@ -13,8 +13,8 @@ _One paragraph: who the users are, what problem this solves, and what success lo
 | _e.g. End user_ | Web (React SPA) | Hosted, with sign-in through a sign-in provider (§4.18). Or local: a self-hosted server for one user, with no sign-in | Installable (§4.5) |
 | _e.g. Power user / operator_ | CLI (`starter`) and TUI (`starter tui`) | Local by default: the core runs inside the CLI, with data in the desktop app's data folder (§4.11). Hosted, after `starter login` (§4.19) | `--server` reaches a server with or without sign-in |
 | _e.g. Integrations_ | REST API (`api/openapi.yaml`) | Whichever edition the server runs | |
-| _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | Local, with its data on the computer (§4.6). Hosted, in remote mode (planned) | The web app in its own window |
-| _e.g. Single user on an Android phone_ | Mobile app (Android) | Local, with its data on the phone (§4.7). Hosted, in remote mode (planned) | The web app as a phone app |
+| _e.g. Single user on one computer_ | Desktop app (`starter-desktop`) | Local, with its data on the computer (§4.6). Hosted, in remote mode (§4.20) | The web app in its own window |
+| _e.g. Single user on an Android phone_ | Mobile app (Android) | Local, with its data on the phone (§4.7). Hosted, in remote mode (§4.20) | The web app as a phone app |
 
 Each copy of a front-end uses one edition, never both. Nothing is synced or moved between local and hosted data. The planned parts are being built step by step: see [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md) and [ADR 5](docs/adr/0005-hosted-and-local-editions.md).
 
@@ -26,12 +26,12 @@ Use these terms consistently in code, Gherkin, and UI copy.
 |---|---|
 | **Theme** | The colour scheme of the web app: **dark** or **light**. Independent of the style. |
 | **Style** | A named look for the web app: its layout, fonts, shape, and density. Independent of the theme; every style works in dark and light. |
-| **Desktop app** | The web app packaged as a program for the user's computer. In the local edition it keeps its own data and needs no server. Working on hosted data instead (remote mode) is planned. |
+| **Desktop app** | The web app packaged as a program for the user's computer. In the local edition it keeps its own data and needs no server. In remote mode it works on the person's account on a hosted server instead (§4.20). |
 | **Command line** | The `starter` program's commands (the CLI), run one at a time in a terminal. |
 | **Terminal app** | The full-screen app the command line opens with `starter tui` (the TUI), worked with the keyboard. |
 | **Settings file** | An optional file of the app's settings (such as the data folder) on the user's computer, shared by the desktop app and the command line. |
 | **Data folder** | The folder where the local edition keeps its data: on the user's computer, shared by the desktop app and the command line, or in the app's private storage on the phone. |
-| **Mobile app** | The web app packaged as an app for the user's phone (Android for now). In the local edition it keeps its own data on the phone and needs no server. Working on hosted data instead (remote mode) is planned. |
+| **Mobile app** | The web app packaged as an app for the user's phone (Android for now). In the local edition it keeps its own data on the phone and needs no server. In remote mode it works on the person's account on a hosted server instead (§4.20). |
 | **Edition** | How a copy of the product runs. The **hosted edition** serves many users from a server, each signing in to an account (§4.18). The **local edition** is for one user, with no account: data on their own device, or on a server they host for themselves. Both run the same app, and each copy uses one edition only. |
 | **Workspace** | The space a piece of data belongs to. In the hosted edition, each user has their own workspace. The local edition has exactly one. |
 | **Plan** | What a workspace is allowed to do: which features it has and what its limits are (for example, free or paid). |
@@ -143,7 +143,7 @@ Users can install the web app on their phone or computer, so it opens from the h
 
 ### 4.6 Use the desktop app
 
-Users can run the app as a program on their own computer, so they can use it without a server, an account, or a connection. This section describes the desktop app in the local edition. Working on hosted data instead (remote mode) is planned: see [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
+Users can run the app as a program on their own computer, so they can use it without a server, an account, or a connection. This section describes the desktop app in the local edition. Working on hosted data instead is remote mode (§4.20).
 
 **Rules**
 - The desktop app shows the same app as the web app, with the same styles and themes, in its own window.
@@ -169,7 +169,7 @@ Users can run the app as a program on their own computer, so they can use it wit
 
 ### 4.7 Use the mobile app
 
-Users can install the app on their Android phone and use it without a server, an account, or a connection. This section describes the mobile app in the local edition. Working on hosted data instead (remote mode) is planned: see [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
+Users can install the app on their Android phone and use it without a server, an account, or a connection. This section describes the mobile app in the local edition. Working on hosted data instead is remote mode (§4.20).
 
 **Rules**
 - The mobile app shows the same app as the web app on a phone (§4.4), with the same styles and themes.
@@ -407,7 +407,7 @@ A server can keep its data in a Postgres database, so that several copies of it,
 
 **Rules**
 - The storage setting (§4.12) can be `postgres`. A new setting, `database_url`, says which database to use. Postgres without a `database_url` is refused when the program starts.
-- The server, the command line, and the terminal app honour it, so an operator can run commands such as `starter admin set-plan` on a hosted server's data. The desktop and mobile apps refuse it, because they keep local data. They reach hosted data through a server instead (remote mode, planned).
+- The server, the command line, and the terminal app honour it, so an operator can run commands such as `starter admin set-plan` on a hosted server's data. The desktop and mobile apps refuse it, because they keep local data. They reach hosted data through a server instead (remote mode, §4.20).
 - Several servers, on one machine or many, can use the same database at once, and each sees what the others saved.
 - Postgres and SQLite keep the same data in the same layout, defined once for both. Opening the database brings its layout up to date with the app. A database saved by a newer version of the app is refused rather than changed, as with SQLite (§4.14).
 - A server on Postgres is ready while it can reach its database, and is not ready while it can't (§4.10). It recovers by itself once the database is back.
@@ -429,7 +429,7 @@ A server can keep its data in a Postgres database, so that several copies of it,
 In the hosted edition, each person signs in to their own **account**, and works in that account's personal workspace (§4.8), on that workspace's plan (§4.9). This is step 8 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). People sign in through a **sign-in provider**, through OpenID Connect (OIDC). Developers and tests use the **dev sign-in** in its place, behind the same seam. Any provider that speaks OIDC works, such as Auth0, Clerk, Keycloak, Zitadel, or Google. Accounts with an email address and a password come from the provider, not from the product (ADR 5).
 
 **Rules**
-- Sign-in is a server setting, and it is off by default. With it off, the server is a self-hosted local edition with one workspace, as it is today. The desktop and mobile apps, and the command line and the terminal app on their own, are always the local edition.
+- Sign-in is a server setting, and it is off by default. With it off, the server is a self-hosted local edition with one workspace, as it is today. The desktop and mobile apps on their own, and the command line and the terminal app on their own, are always the local edition; set to a server, they work on it (§4.19, §4.20).
 - With a sign-in provider, signing in sends the person to the provider, and the provider sends them back once it knows who they are. The product never sees their password.
 - The provider's word is checked before anyone is signed in. A sign-in that the provider turned down, that didn't start on this server, or whose answer can't be shown to come from the provider for this server is refused, and the person is told that signing in didn't work.
 - An account belongs to the provider's ID for the person, never to their name. So two people with the same name get two accounts, and a person who changes their name at the provider keeps their account. The account shows the name the provider gave at the latest sign-in.
@@ -464,7 +464,7 @@ In the hosted edition, each person signs in to their own **account**, and works 
 
 ### 4.19 Sign in from the command line
 
-Someone with an account on a hosted server can sign in from the command line, so that the command line and the terminal app work on their own workspace there, on its plan. This is step 9 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). The desktop and mobile apps will sign in the same way in remote mode (step 10).
+Someone with an account on a hosted server can sign in from the command line, so that the command line and the terminal app work on their own workspace there, on its plan. This is step 9 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md). The desktop and mobile apps sign in the same way in remote mode (§4.20).
 
 **Rules**
 - `starter login` signs in to the server the command line is set to use (`--server`, `STARTER_SERVER_URL`, or `server_url`, §4.12). Without a server it's refused, as local data needs no sign-in. A server with sign-in off is refused too, saying that it doesn't sign people in.
@@ -496,6 +496,33 @@ Someone with an account on a hosted server can sign in from the command line, so
 - Grace signs out from the terminal app, then runs `starter --server https://app.example.com info` → it says Grace isn't signed in.
 
 **Specification:** [`features/command-line-sign-in.feature`](features/command-line-sign-in.feature), on the http and oidc drivers, whose servers sign people in. A command-line client in the tests signs in through a browser the tests drive. Opening the browser, the terminal app's sign-in and sign-out, and the commands' output and exit status are terminal journeys ([`test/terminal/features/command-line-sign-in.feature`](test/terminal/features/command-line-sign-in.feature)). The credential store and its file fallback, one-time codes expiring, sessions kept per server, cancelling the terminal app's wait, and the terminal app offering neither key on local data are checked by unit tests.
+
+### 4.20 Use the desktop and mobile apps on a hosted server
+
+Someone with an account on a hosted server can use the desktop app or the mobile app on that account, in **remote mode**, so the apps work on the same workspace as the web app and the command line. This is step 10 of [`docs/plans/editions-and-accounts.md`](docs/plans/editions-and-accounts.md).
+
+**Rules**
+- An app is in remote mode when it is set to a server, and works on local data otherwise (§4.6, §4.7). In remote mode it keeps no local data, and opens no data folder.
+- The desktop app is set to a server as the command line is: with `server_url` in the settings file it shares with the command line (§4.12), or `STARTER_SERVER_URL`. Changing the server takes effect the next time the app opens.
+- A product can build its server's address into its apps. An app built with one is in remote mode on that server when no setting names another. This is how the mobile app reaches a server, as nobody can change its settings on the phone. The command line and the terminal app use a built-in address in the same way.
+- In remote mode the app shows the same app as the web app, on the server's data, with the same rules: a workspace's plan, its limits, and its features come from the server. It needs a connection, and says when it is offline, as the web app does.
+- Signing in works as for the command line (§4.19): the app opens the person's own browser at the server's sign-in page, and they sign in there. The app never sees their password. While it waits, the app says it is waiting for the browser, and the person can cancel. Once they have signed in, the app shows their workspace, with no restart. Creating an account works the same way, starting at the server's sign-up page.
+- The app keeps its own session for the server, apart from the command line's and the browser's, in the operating system's credential store, or in a file only the user can read when there isn't one (on the phone, in the app's private storage). So signing in or out in the command line doesn't sign the app in or out, and the other way round.
+- Signing out in the app ends its session on the server, and forgets it on the device. Even when the server can't be reached, the device forgets it.
+- A server with sign-in off needs no signing in: the app works on its one workspace, as the web app does.
+- The app without a session, or whose session has ended, shows the sign-in screen, and sees no data.
+
+**Examples**
+- Ada sets `server_url = "https://app.example.com"` and opens the desktop app → it shows the sign-in screen. Ada signs in in the browser, and the app shows Ada's workspace, on its plan.
+<!-- sample:start -->
+- Ada adds "Widget" in the desktop app, then opens the web app → "Widget" is there.
+<!-- sample:end -->
+- Ada has signed in with `starter login` and opens the desktop app on the same server → the app still asks Ada to sign in.
+- Ada signs out in the desktop app → `starter info` still says Ada is signed in.
+- Grace installs a phone app built for `https://app.example.com` → it opens on that server's sign-in screen.
+- Ada starts signing in, then cancels before finishing in the browser → the app is still signed out.
+
+**Specification:** [`features/remote-mode.feature`](features/remote-mode.feature), for the desktop and mobile apps, on the http and oidc drivers, whose servers sign people in. The apps in the tests sign in through a browser the tests drive. The waiting screen and cancelling it are checked by the web app's unit tests and by hand, as are opening the system browser on a desktop and on a phone, the credential store, the built-in address on the command line, and a server with sign-in off.
 
 ## 5. Non-functional requirements
 
