@@ -90,7 +90,8 @@ func accountFrom(ctx context.Context) (domain.Account, bool) {
 
 func (h *Handlers) GetSession(ctx context.Context, _ openapi.GetSessionRequestObject) (openapi.GetSessionResponseObject, error) {
 	if h.clientSignIn != nil {
-		return h.hostedSession(ctx)
+		hosted, err := h.hostedSession(ctx)
+		return openapi.GetSession200JSONResponse(hosted), err
 	}
 	session := openapi.GetSession200JSONResponse{IsSignInOn: h.isSignInOn, SignInMethod: openapi.Page}
 	if account, ok := accountFrom(ctx); ok {
@@ -101,12 +102,12 @@ func (h *Handlers) GetSession(ctx context.Context, _ openapi.GetSessionRequestOb
 
 // hostedSession answers the session of the hosted server this handler is the
 // app's window to. The app signs in through the browser.
-func (h *Handlers) hostedSession(ctx context.Context) (openapi.GetSessionResponseObject, error) {
+func (h *Handlers) hostedSession(ctx context.Context) (openapi.Session, error) {
 	hosted, err := h.clientSignIn.CurrentSession(ctx)
 	if err != nil {
-		return nil, err
+		return openapi.Session{}, err
 	}
-	session := openapi.GetSession200JSONResponse{IsSignInOn: hosted.IsSignInOn, SignInMethod: openapi.Browser}
+	session := openapi.Session{IsSignInOn: hosted.IsSignInOn, SignInMethod: openapi.Browser}
 	if hosted.Name != "" {
 		session.Name = &hosted.Name
 	}
@@ -116,8 +117,18 @@ func (h *Handlers) hostedSession(ctx context.Context) (openapi.GetSessionRespons
 // The browser sign-in endpoints belong to the apps' in-process handler. A
 // server, which has no client sign-in, answers both as if they didn't exist.
 
-func (h *Handlers) StartBrowserSignIn(context.Context, openapi.StartBrowserSignInRequestObject) (openapi.StartBrowserSignInResponseObject, error) {
-	return nil, domain.ErrNotFound
+func (h *Handlers) StartBrowserSignIn(ctx context.Context, request openapi.StartBrowserSignInRequestObject) (openapi.StartBrowserSignInResponseObject, error) {
+	if h.clientSignIn == nil {
+		return nil, domain.ErrNotFound
+	}
+	if err := h.clientSignIn.SignInThroughBrowser(ctx, request.Body.IsSignUp, h.openBrowser); err != nil {
+		return nil, err
+	}
+	session, err := h.hostedSession(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.StartBrowserSignIn200JSONResponse(session), nil
 }
 
 func (h *Handlers) CancelBrowserSignIn(context.Context, openapi.CancelBrowserSignInRequestObject) (openapi.CancelBrowserSignInResponseObject, error) {

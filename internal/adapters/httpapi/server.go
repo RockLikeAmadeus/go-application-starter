@@ -47,6 +47,8 @@ type Options struct {
 	// ClientSignIn is set by the apps' in-process handler in remote mode,
 	// where the session is the hosted server's, not this handler's.
 	ClientSignIn ClientSignIn
+	// OpenBrowser opens an address in the system browser, for ClientSignIn.
+	OpenBrowser func(address string) error
 }
 
 // ClientSession is what a hosted server says about the current session.
@@ -58,6 +60,9 @@ type ClientSession struct {
 // ClientSignIn signs an app in to a hosted server.
 type ClientSignIn interface {
 	CurrentSession(ctx context.Context) (ClientSession, error)
+	// SignInThroughBrowser signs in, or with isSignUp creates an account,
+	// handing the address to open, and returns when it finishes.
+	SignInThroughBrowser(ctx context.Context, isSignUp bool, open func(address string) error) error
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and

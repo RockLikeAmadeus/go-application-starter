@@ -3,6 +3,7 @@ package httpapi_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -31,16 +32,31 @@ func TestAServerWithNoClientSignInAnswersBothBrowserSignInOperationsNotFound(t *
 	}
 }
 
-// clientSession is an httpapi.ClientSignIn that answers a fixed session.
-type clientSession struct{ session httpapi.ClientSession }
+// clientSession is an httpapi.ClientSignIn that answers a fixed session, and
+// records how it was asked to sign in.
+type clientSession struct {
+	session    httpapi.ClientSession
+	signInErr  error
+	isSignUp   *bool
+	openedWith *string
+}
 
 func (c clientSession) CurrentSession(context.Context) (httpapi.ClientSession, error) {
 	return c.session, nil
 }
 
+func (c clientSession) SignInThroughBrowser(_ context.Context, isSignUp bool, open func(address string) error) error {
+	*c.isSignUp = isSignUp
+	if err := open("http://browser.test/sign-in"); err != nil {
+		return err
+	}
+	*c.openedWith = "http://browser.test/sign-in"
+	return c.signInErr
+}
+
 func TestAHandlerWithAClientSignInAnswersTheHostedServersSessionAndSaysToSignInThroughTheBrowser(t *testing.T) {
 	handler := httpapi.NewHandler(httpapi.Options{
-		ClientSignIn: clientSession{httpapi.ClientSession{IsSignInOn: true, Name: "Ada"}},
+		ClientSignIn: clientSession{session: httpapi.ClientSession{IsSignInOn: true, Name: "Ada"}},
 	})
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/session", nil))
@@ -51,5 +67,61 @@ func TestAHandlerWithAClientSignInAnswersTheHostedServersSessionAndSaysToSignInT
 	}
 	if !got.IsSignInOn || got.Name == nil || *got.Name != "Ada" || got.SignInMethod != "browser" {
 		t.Errorf("session = %+v, want sign-in on, name Ada, method browser", got)
+	}
+}
+
+func TestStartingABrowserSignInSignsInThroughTheClientSignInAndAnswersTheSession(t *testing.T) {
+	var isSignUp bool
+	var opened string
+	var handedAddress string
+	handler := httpapi.NewHandler(httpapi.Options{
+		ClientSignIn: clientSession{
+			session:    httpapi.ClientSession{IsSignInOn: true, Name: "Ada"},
+			isSignUp:   &isSignUp,
+			openedWith: &opened,
+		},
+		OpenBrowser: func(address string) error { handedAddress = address; return nil },
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/browser-sign-in", strings.NewReader(`{"isSignUp":true}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (%s)", rec.Code, rec.Body)
+	}
+	var got session
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Name == nil || *got.Name != "Ada" || got.SignInMethod != "browser" {
+		t.Errorf("session = %+v, want name Ada, method browser", got)
+	}
+	if !isSignUp {
+		t.Error("isSignUp = false, want true")
+	}
+	if handedAddress != "http://browser.test/sign-in" {
+		t.Errorf("opener got %q, want the address the client sign-in opened", handedAddress)
+	}
+}
+
+func TestAFailedBrowserSignInIsAProblemResponse(t *testing.T) {
+	var isSignUp bool
+	var opened string
+	handler := httpapi.NewHandler(httpapi.Options{
+		ClientSignIn: clientSession{signInErr: errors.New("the browser never came back"), isSignUp: &isSignUp, openedWith: &opened},
+		OpenBrowser:  func(string) error { return nil },
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/browser-sign-in", strings.NewReader(`{"isSignUp":false}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", rec.Code)
+	}
+	var body struct{ Type string }
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil || body.Type != httpapi.ProblemInternal {
+		t.Errorf("body type = %q (err %v), want %q", body.Type, err, httpapi.ProblemInternal)
 	}
 }

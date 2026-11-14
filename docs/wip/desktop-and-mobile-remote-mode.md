@@ -66,7 +66,8 @@ The API:
   - No red: `TestAServerWithNoClientSignInAnswersBothBrowserSignInOperationsNotFound` passed at once (the `/api/` catch-all already answers 404), kept as a guard. Contract: `startBrowserSignIn` and `cancelBrowserSignIn` (body `isSignUp`), `task gen`, and `Handlers` answers `ErrNotFound`. Refactor: nothing worth changing.
 - [x] 10. `httpapi`: with `Options.ClientSignIn`, `GET /api/v1/session` answers the hosted server's session (name, sign-in on), with `signInMethod: browser`.
   - Red: `TestAHandlerWithAClientSignInAnswersTheHostedServersSessionAndSaysToSignInThroughTheBrowser` (answered the page method, sign-in off). Green: `httpapi.ClientSignIn` (`CurrentSession`) and `ClientSession`, `Handlers.hostedSession`. Refactor: nothing worth changing.
-- [ ] 11. `httpapi`: `POST /api/v1/browser-sign-in` signs in (or up) through the client sign-in, handing it the opener, and answers the session; a failure is a problem response.
+- [x] 11. `httpapi`: `POST /api/v1/browser-sign-in` signs in (or up) through the client sign-in, handing it the opener, and answers the session; a failure is a problem response.
+  - Red: `TestStartingABrowserSignInSignsInThroughTheClientSignInAndAnswersTheSession` (404, not 200); the failure guard `TestAFailedBrowserSignInIsAProblemResponse` failed the same way. Green: `ClientSignIn.SignInThroughBrowser`, `Options.OpenBrowser`. Refactor: `hostedSession` returns `openapi.Session`, so both handlers share it.
 - [ ] 12. `httpapi`: `DELETE /api/v1/browser-sign-in` cancels the sign-in in progress, and the waiting `POST` answers a cancelled problem.
 - [ ] 13. `httpapi`: with `Options.ClientSignIn`, `POST /auth/sign-out` signs out through it and redirects to `/`, also when the server can't end the session.
 

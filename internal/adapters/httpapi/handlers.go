@@ -19,6 +19,7 @@ type Handlers struct {
 	isSignInOn   bool
 	warnings     []string
 	clientSignIn ClientSignIn
+	openBrowser  func(address string) error
 }
 
 var _ openapi.StrictServerInterface = (*Handlers)(nil)
@@ -34,5 +35,6 @@ func NewHandlers(opts Options) *Handlers {
 		isSignInOn:   opts.SignIn != nil,
 		warnings:     opts.Warnings,
 		clientSignIn: opts.ClientSignIn,
+		openBrowser:  opts.OpenBrowser,
 	}
 }
