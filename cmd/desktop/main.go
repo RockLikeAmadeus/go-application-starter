@@ -21,13 +21,18 @@ func main() {
 }
 
 func run() error {
-	opened, err := desktop.Open(os.Getenv, os.UserConfigDir, web.Assets(), nil)
+	// The sign-in opens the system browser through Wails, which works on every
+	// operating system. The app exists only after Open, so the opener reaches it
+	// through this variable, and is called only once the app is running.
+	var app *application.App
+	openBrowser := func(address string) error { return app.Browser.OpenURL(address) }
+	opened, err := desktop.Open(os.Getenv, os.UserConfigDir, web.Assets(), openBrowser)
 	if err != nil {
 		return err
 	}
 	defer opened.Close()
 
-	app := application.New(application.Options{
+	app = application.New(application.Options{
 		Name:   "Starter",
 		Icon:   opened.Icon,
 		Assets: application.AssetOptions{Handler: opened.Handler},

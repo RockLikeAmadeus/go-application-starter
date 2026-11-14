@@ -86,7 +86,8 @@ The apps:
   - No red in unit terms: the two scenarios failed on an undefined step; added `I have signed in from the command line on this computer`, which opens the desktop app first and signs the CLI in through `bootstrap.NewClientSignInFor` on its folder. Both pass on http and oidc.
 - [x] 19. Acceptance: the built-in address scenario passes for both apps (`config.BuiltInServerURL` set for the scenario).
   - No red in unit terms: the scenario failed on an undefined step; added `the <app> was built for the server, with no server setting` (sets `config.BuiltInServerURL`, restored after; `theApp` then omits `STARTER_SERVER_URL`). Passes on http and oidc. Nothing to refactor.
-- [ ] 20. `cmd/desktop` and `cmd/mobile` pass Wails' `Browser.OpenURL`. `task build:desktop`, and the Android build, compile. (No unit test: wiring only.)
+- [x] 20. `cmd/desktop` and `cmd/mobile` pass Wails' `Browser.OpenURL`. `task build:desktop`, and the Android build, compile. (No unit test: wiring only.)
+  - No test (wiring only): both entrypoints pass `app.Browser.OpenURL` through a closure over the app variable (the app exists only after `Open`); `task build:desktop` and `task mobile:android:build` build.
 
 The web app:
 - [ ] 21. `useSession` reads `signInMethod`; with `browser`, the sign-in screen's sign-in and create-account controls start `POST /api/v1/browser-sign-in` instead of following links, show the waiting screen with Cancel (`DELETE`), refetch on success, and show the error on failure. One Vitest test per behaviour. Agree the wording first.
