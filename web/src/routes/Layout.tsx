@@ -26,7 +26,7 @@ export function Layout() {
   const [style, setStyle] = useStyle();
   const session = useSession();
   if (session?.isSignInOn && session.name === undefined) {
-    return <SignInScreen />;
+    return <SignInScreen signInMethod={session.signInMethod} />;
   }
   const content = (
     <SidebarContent
