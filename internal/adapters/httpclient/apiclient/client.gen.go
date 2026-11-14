@@ -71,6 +71,12 @@ func (e SignInMethod) Valid() bool {
 	}
 }
 
+// BrowserSignInInput defines model for BrowserSignInInput.
+type BrowserSignInInput struct {
+	// IsSignUp True to create an account in the browser, false to sign in.
+	IsSignUp bool `json:"isSignUp"`
+}
+
 // Connection defines model for Connection.
 type Connection struct {
 	// IsRequired True when the app reaches its data over the network (the server).
@@ -217,6 +223,9 @@ type Warnings struct {
 	Warnings []Warning `json:"warnings"`
 }
 
+// StartBrowserSignInJSONRequestBody defines body for StartBrowserSignIn for application/json ContentType.
+type StartBrowserSignInJSONRequestBody = BrowserSignInInput
+
 // CreateItemJSONRequestBody defines body for CreateItem for application/json ContentType.
 type CreateItemJSONRequestBody = ItemInput
 
@@ -297,6 +306,33 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
+	// CancelBrowserSignIn performs a DELETE /api/v1/browser-sign-in (the `CancelBrowserSignIn` operationId) request.
+	//
+	// Cancels the sign-in in progress, so its waiting POST answers a problem.
+	// Only the desktop and mobile apps in remote mode serve it; a server
+	// answers 404.
+	CancelBrowserSignIn(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartBrowserSignInWithBody performs a POST /api/v1/browser-sign-in (the `StartBrowserSignIn` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Opens the system browser to sign in (or up), waits until the sign-in
+	// finishes, and answers the session. Only the desktop and mobile apps in
+	// remote mode serve it; a server answers 404. It blocks rather than being
+	// polled, so the Android bridge, which can't cancel a request, needs no
+	// more than this call and the DELETE below.
+	StartBrowserSignInWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartBrowserSignIn performs a POST /api/v1/browser-sign-in (the `StartBrowserSignIn` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Opens the system browser to sign in (or up), waits until the sign-in
+	// finishes, and answers the session. Only the desktop and mobile apps in
+	// remote mode serve it; a server answers 404. It blocks rather than being
+	// polled, so the Android bridge, which can't cancel a request, needs no
+	// more than this call and the DELETE below.
+	StartBrowserSignIn(ctx context.Context, body StartBrowserSignInJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetConnection performs a GET /api/v1/connection (the `GetConnection` operationId) request.
 	GetConnection(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -336,6 +372,63 @@ type ClientInterface interface {
 
 	// GetWarnings performs a GET /api/v1/warnings (the `GetWarnings` operationId) request.
 	GetWarnings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+// CancelBrowserSignIn performs a DELETE /api/v1/browser-sign-in (the `CancelBrowserSignIn` operationId) request.
+//
+// Cancels the sign-in in progress, so its waiting POST answers a problem.
+// Only the desktop and mobile apps in remote mode serve it; a server
+// answers 404.
+func (c *Client) CancelBrowserSignIn(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelBrowserSignInRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// StartBrowserSignInWithBody performs a POST /api/v1/browser-sign-in (the `StartBrowserSignIn` operationId) request,
+// with any type of body and a specified content type.
+//
+// Opens the system browser to sign in (or up), waits until the sign-in
+// finishes, and answers the session. Only the desktop and mobile apps in
+// remote mode serve it; a server answers 404. It blocks rather than being
+// polled, so the Android bridge, which can't cancel a request, needs no
+// more than this call and the DELETE below.
+func (c *Client) StartBrowserSignInWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartBrowserSignInRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// StartBrowserSignIn performs a POST /api/v1/browser-sign-in (the `StartBrowserSignIn` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Opens the system browser to sign in (or up), waits until the sign-in
+// finishes, and answers the session. Only the desktop and mobile apps in
+// remote mode serve it; a server answers 404. It blocks rather than being
+// polled, so the Android bridge, which can't cancel a request, needs no
+// more than this call and the DELETE below.
+func (c *Client) StartBrowserSignIn(ctx context.Context, body StartBrowserSignInJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartBrowserSignInRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 // GetConnection performs a GET /api/v1/connection (the `GetConnection` operationId) request.
@@ -496,6 +589,73 @@ func (c *Client) GetWarnings(ctx context.Context, reqEditors ...RequestEditorFn)
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewCancelBrowserSignInRequest constructs an http.Request for the CancelBrowserSignIn method
+func NewCancelBrowserSignInRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/browser-sign-in")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStartBrowserSignInRequest calls the generic StartBrowserSignIn builder with application/json body
+func NewStartBrowserSignInRequest(server string, body StartBrowserSignInJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewStartBrowserSignInRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewStartBrowserSignInRequestWithBody constructs an http.Request for the StartBrowserSignIn method, with any body, and a specified content type
+func NewStartBrowserSignInRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/browser-sign-in")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
 }
 
 // NewGetConnectionRequest constructs an http.Request for the GetConnection method
@@ -859,6 +1019,37 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
+	// CancelBrowserSignInWithResponse performs a DELETE /api/v1/browser-sign-in (the `CancelBrowserSignIn` operationId) request.
+	//
+	// Cancels the sign-in in progress, so its waiting POST answers a problem.
+	// Only the desktop and mobile apps in remote mode serve it; a server
+	// answers 404.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CancelBrowserSignInWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CancelBrowserSignInResponse, error)
+
+	// StartBrowserSignInWithBodyWithResponse performs a POST /api/v1/browser-sign-in (the `StartBrowserSignIn` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Opens the system browser to sign in (or up), waits until the sign-in
+	// finishes, and answers the session. Only the desktop and mobile apps in
+	// remote mode serve it; a server answers 404. It blocks rather than being
+	// polled, so the Android bridge, which can't cancel a request, needs no
+	// more than this call and the DELETE below.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	StartBrowserSignInWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartBrowserSignInResponse, error)
+
+	// StartBrowserSignInWithResponse performs a POST /api/v1/browser-sign-in (the `StartBrowserSignIn` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Opens the system browser to sign in (or up), waits until the sign-in
+	// finishes, and answers the session. Only the desktop and mobile apps in
+	// remote mode serve it; a server answers 404. It blocks rather than being
+	// polled, so the Android bridge, which can't cancel a request, needs no
+	// more than this call and the DELETE below.
+	StartBrowserSignInWithResponse(ctx context.Context, body StartBrowserSignInJSONRequestBody, reqEditors ...RequestEditorFn) (*StartBrowserSignInResponse, error)
+
 	// GetConnectionWithResponse performs a GET /api/v1/connection (the `GetConnection` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -918,6 +1109,95 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetWarningsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetWarningsResponse, error)
+}
+
+type CancelBrowserSignInResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CancelBrowserSignInResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CancelBrowserSignInResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelBrowserSignInResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelBrowserSignInResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CancelBrowserSignInResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type StartBrowserSignInResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Session
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r StartBrowserSignInResponse) GetJSON200() *Session {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r StartBrowserSignInResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r StartBrowserSignInResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r StartBrowserSignInResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartBrowserSignInResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StartBrowserSignInResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
 }
 
 type GetConnectionResponse struct {
@@ -1386,6 +1666,55 @@ func (r GetWarningsResponse) ContentType() string {
 	return ""
 }
 
+// CancelBrowserSignInWithResponse performs a DELETE /api/v1/browser-sign-in (the `CancelBrowserSignIn` operationId) request.
+//
+// Cancels the sign-in in progress, so its waiting POST answers a problem.
+// Only the desktop and mobile apps in remote mode serve it; a server
+// answers 404.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CancelBrowserSignInWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CancelBrowserSignInResponse, error) {
+	rsp, err := c.CancelBrowserSignIn(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelBrowserSignInResponse(rsp)
+}
+
+// StartBrowserSignInWithBodyWithResponse performs a POST /api/v1/browser-sign-in (the `StartBrowserSignIn` operationId) request,
+// with any type of body and a specified content type.
+//
+// Opens the system browser to sign in (or up), waits until the sign-in
+// finishes, and answers the session. Only the desktop and mobile apps in
+// remote mode serve it; a server answers 404. It blocks rather than being
+// polled, so the Android bridge, which can't cancel a request, needs no
+// more than this call and the DELETE below.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) StartBrowserSignInWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartBrowserSignInResponse, error) {
+	rsp, err := c.StartBrowserSignInWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartBrowserSignInResponse(rsp)
+}
+
+// StartBrowserSignInWithResponse performs a POST /api/v1/browser-sign-in (the `StartBrowserSignIn` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Opens the system browser to sign in (or up), waits until the sign-in
+// finishes, and answers the session. Only the desktop and mobile apps in
+// remote mode serve it; a server answers 404. It blocks rather than being
+// polled, so the Android bridge, which can't cancel a request, needs no
+// more than this call and the DELETE below.
+func (c *ClientWithResponses) StartBrowserSignInWithResponse(ctx context.Context, body StartBrowserSignInJSONRequestBody, reqEditors ...RequestEditorFn) (*StartBrowserSignInResponse, error) {
+	rsp, err := c.StartBrowserSignIn(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartBrowserSignInResponse(rsp)
+}
+
 // GetConnectionWithResponse performs a GET /api/v1/connection (the `GetConnection` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -1516,6 +1845,68 @@ func (c *ClientWithResponses) GetWarningsWithResponse(ctx context.Context, reqEd
 		return nil, err
 	}
 	return ParseGetWarningsResponse(rsp)
+}
+
+// ParseCancelBrowserSignInResponse parses an HTTP response from a CancelBrowserSignInWithResponse call
+func ParseCancelBrowserSignInResponse(rsp *http.Response) (*CancelBrowserSignInResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelBrowserSignInResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStartBrowserSignInResponse parses an HTTP response from a StartBrowserSignInWithResponse call
+func ParseStartBrowserSignInResponse(rsp *http.Response) (*StartBrowserSignInResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartBrowserSignInResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Session
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseGetConnectionResponse parses an HTTP response from a GetConnectionWithResponse call

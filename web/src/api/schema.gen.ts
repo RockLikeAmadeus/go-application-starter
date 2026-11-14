@@ -68,6 +68,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/browser-sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Opens the system browser to sign in (or up), waits until the sign-in
+         *     finishes, and answers the session. Only the desktop and mobile apps in
+         *     remote mode serve it; a server answers 404. It blocks rather than being
+         *     polled, so the Android bridge, which can't cancel a request, needs no
+         *     more than this call and the DELETE below.
+         */
+        post: operations["startBrowserSignIn"];
+        /**
+         * @description Cancels the sign-in in progress, so its waiting POST answers a problem.
+         *     Only the desktop and mobile apps in remote mode serve it; a server
+         *     answers 404.
+         */
+        delete: operations["cancelBrowserSignIn"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/items": {
         parameters: {
             query?: never;
@@ -140,6 +168,10 @@ export interface components {
             /** @description The signed-in account's name. Missing when no one is signed in. */
             name?: string;
             signInMethod: components["schemas"]["SignInMethod"];
+        };
+        BrowserSignInInput: {
+            /** @description True to create an account in the browser, false to sign in. */
+            isSignUp: boolean;
         };
         /**
          * @description How someone signs in. page: the window goes to /auth/sign-in, as on the
@@ -347,6 +379,50 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Session"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    startBrowserSignIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserSignInInput"];
+            };
+        };
+        responses: {
+            /** @description Signed in. The session, as GET /api/v1/session answers it. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    cancelBrowserSignIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled, or there was nothing to cancel. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };

@@ -71,6 +71,12 @@ func (e SignInMethod) Valid() bool {
 	}
 }
 
+// BrowserSignInInput defines model for BrowserSignInInput.
+type BrowserSignInInput struct {
+	// IsSignUp True to create an account in the browser, false to sign in.
+	IsSignUp bool `json:"isSignUp"`
+}
+
 // Connection defines model for Connection.
 type Connection struct {
 	// IsRequired True when the app reaches its data over the network (the server).
@@ -217,6 +223,9 @@ type Warnings struct {
 	Warnings []Warning `json:"warnings"`
 }
 
+// StartBrowserSignInJSONRequestBody defines body for StartBrowserSignIn for application/json ContentType.
+type StartBrowserSignInJSONRequestBody = BrowserSignInInput
+
 // CreateItemJSONRequestBody defines body for CreateItem for application/json ContentType.
 type CreateItemJSONRequestBody = ItemInput
 
@@ -225,6 +234,12 @@ type RenameItemJSONRequestBody = ItemInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (DELETE /api/v1/browser-sign-in)
+	CancelBrowserSignIn(w http.ResponseWriter, r *http.Request)
+
+	// (POST /api/v1/browser-sign-in)
+	StartBrowserSignIn(w http.ResponseWriter, r *http.Request)
 
 	// (GET /api/v1/connection)
 	GetConnection(w http.ResponseWriter, r *http.Request)
@@ -265,6 +280,34 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// CancelBrowserSignIn operation middleware
+func (siw *ServerInterfaceWrapper) CancelBrowserSignIn(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelBrowserSignIn(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartBrowserSignIn operation middleware
+func (siw *ServerInterfaceWrapper) StartBrowserSignIn(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartBrowserSignIn(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetConnection operation middleware
 func (siw *ServerInterfaceWrapper) GetConnection(w http.ResponseWriter, r *http.Request) {
@@ -566,6 +609,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/entitlements", wrapper.GetEntitlements)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/warnings", wrapper.GetWarnings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/session", wrapper.GetSession)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/browser-sign-in", wrapper.CancelBrowserSignIn)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/browser-sign-in", wrapper.StartBrowserSignIn)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/items", wrapper.ListItems)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/items", wrapper.CreateItem)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/items/export", wrapper.ExportItems)
@@ -577,6 +622,77 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 }
 
 type ProblemApplicationProblemPlusJSONResponse Problem
+
+type CancelBrowserSignInRequestObject struct {
+}
+
+type CancelBrowserSignInResponseObject interface {
+	VisitCancelBrowserSignInResponse(w http.ResponseWriter) error
+}
+
+type CancelBrowserSignIn204Response struct {
+}
+
+func (response CancelBrowserSignIn204Response) VisitCancelBrowserSignInResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type CancelBrowserSignIndefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CancelBrowserSignIndefaultApplicationProblemPlusJSONResponse) VisitCancelBrowserSignInResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartBrowserSignInRequestObject struct {
+	Body *StartBrowserSignInJSONRequestBody
+}
+
+type StartBrowserSignInResponseObject interface {
+	VisitStartBrowserSignInResponse(w http.ResponseWriter) error
+}
+
+type StartBrowserSignIn200JSONResponse Session
+
+func (response StartBrowserSignIn200JSONResponse) VisitStartBrowserSignInResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartBrowserSignIndefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response StartBrowserSignIndefaultApplicationProblemPlusJSONResponse) VisitStartBrowserSignInResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type GetConnectionRequestObject struct {
 }
@@ -966,6 +1082,12 @@ func (response GetWarningsdefaultApplicationProblemPlusJSONResponse) VisitGetWar
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (DELETE /api/v1/browser-sign-in)
+	CancelBrowserSignIn(ctx context.Context, request CancelBrowserSignInRequestObject) (CancelBrowserSignInResponseObject, error)
+
+	// (POST /api/v1/browser-sign-in)
+	StartBrowserSignIn(ctx context.Context, request StartBrowserSignInRequestObject) (StartBrowserSignInResponseObject, error)
+
 	// (GET /api/v1/connection)
 	GetConnection(ctx context.Context, request GetConnectionRequestObject) (GetConnectionResponseObject, error)
 
@@ -1034,6 +1156,61 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// CancelBrowserSignIn operation middleware
+func (sh *strictHandler) CancelBrowserSignIn(w http.ResponseWriter, r *http.Request) {
+	var request CancelBrowserSignInRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelBrowserSignIn(ctx, request.(CancelBrowserSignInRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelBrowserSignIn")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelBrowserSignInResponseObject); ok {
+		if err := validResponse.VisitCancelBrowserSignInResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartBrowserSignIn operation middleware
+func (sh *strictHandler) StartBrowserSignIn(w http.ResponseWriter, r *http.Request) {
+	var request StartBrowserSignInRequestObject
+
+	var body StartBrowserSignInJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartBrowserSignIn(ctx, request.(StartBrowserSignInRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartBrowserSignIn")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartBrowserSignInResponseObject); ok {
+		if err := validResponse.VisitStartBrowserSignInResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetConnection operation middleware

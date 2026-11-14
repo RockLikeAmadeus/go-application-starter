@@ -95,3 +95,14 @@ func (h *Handlers) GetSession(ctx context.Context, _ openapi.GetSessionRequestOb
 	}
 	return session, nil
 }
+
+// The browser sign-in endpoints belong to the apps' in-process handler. A
+// server, which has no client sign-in, answers both as if they didn't exist.
+
+func (h *Handlers) StartBrowserSignIn(context.Context, openapi.StartBrowserSignInRequestObject) (openapi.StartBrowserSignInResponseObject, error) {
+	return nil, domain.ErrNotFound
+}
+
+func (h *Handlers) CancelBrowserSignIn(context.Context, openapi.CancelBrowserSignInRequestObject) (openapi.CancelBrowserSignInResponseObject, error) {
+	return nil, domain.ErrNotFound
+}
