@@ -84,7 +84,8 @@ The apps:
   - No red: the task is steps only, and the existing signing-in code already does it. Added steps for creating an account, waiting for the browser, cancelling, and not being signed in in `test/acceptance/remote_mode_steps.go`; both scenarios pass for both apps. Refactor: `request` split into `send`, so a pending sign-in does not race the noted status.
 - [x] 18. Acceptance: the command line "on this computer" through `bootstrap.NewClientSignIn` on the apps' settings folder; the two separate-session scenarios pass.
   - No red in unit terms: the two scenarios failed on an undefined step; added `I have signed in from the command line on this computer`, which opens the desktop app first and signs the CLI in through `bootstrap.NewClientSignInFor` on its folder. Both pass on http and oidc.
-- [ ] 19. Acceptance: the built-in address scenario passes for both apps (`config.BuiltInServerURL` set for the scenario).
+- [x] 19. Acceptance: the built-in address scenario passes for both apps (`config.BuiltInServerURL` set for the scenario).
+  - No red in unit terms: the scenario failed on an undefined step; added `the <app> was built for the server, with no server setting` (sets `config.BuiltInServerURL`, restored after; `theApp` then omits `STARTER_SERVER_URL`). Passes on http and oidc. Nothing to refactor.
 - [ ] 20. `cmd/desktop` and `cmd/mobile` pass Wails' `Browser.OpenURL`. `task build:desktop`, and the Android build, compile. (No unit test: wiring only.)
 
 The web app:

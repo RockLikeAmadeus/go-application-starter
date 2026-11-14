@@ -58,10 +58,14 @@ func (w *world) registerRemoteModeSteps(sc *godog.ScenarioContext) {
 		for _, a := range w.remoteApps {
 			a.close()
 		}
+		if w.isBuiltForServer {
+			config.BuiltInServerURL = w.previousBuiltInServerURL
+		}
 		return ctx, err
 	})
 	const app = `(desktop app|mobile app)`
 	sc.Step(`^the `+app+` tries to see my workspace's plan(?: without signing in)?$`, w.theAppTriesToSeeThePlan)
+	sc.Step(`^the `+app+` was built for the server, with no server setting$`, w.theAppWasBuiltForTheServer)
 	sc.Step(`^I (?:have )?signed in from the `+app+` as "([^"]*)"$`, w.iSignInFromTheApp)
 	sc.Step(`^I sign in from the `+app+` as "([^"]*)"$`, w.iSignInFromTheApp)
 	sc.Step(`^the `+app+` is signed in as "([^"]*)"$`, w.theAppIsSignedInAs)
@@ -92,9 +96,11 @@ func (w *world) theApp(name string) (*remoteApp, error) {
 		return nil, err
 	}
 	local := &localComputer{dir: dir, env: map[string]string{
-		"STARTER_SERVER_URL":       w.apiURL,
 		"STARTER_CREDENTIAL_STORE": "file",
 	}}
+	if !w.isBuiltForServer {
+		local.env["STARTER_SERVER_URL"] = w.apiURL
+	}
 	// The opener is the system browser, which the scenario's sign-in drives.
 	remote := &remoteApp{
 		dir:           filepath.Clean(dir),
@@ -358,6 +364,21 @@ func (w *world) iCreateAnItemFromTheApp(ctx context.Context, item, name string) 
 }
 
 // sample:end
+
+// theAppWasBuiltForTheServer gives the build the server's address, as
+// -ldflags does, and leaves the app's settings and environment without one.
+// The build's address is restored when the scenario ends.
+func (w *world) theAppWasBuiltForTheServer(name string) error {
+	if w.remoteApps[name] != nil {
+		return fmt.Errorf("the %s was opened before it was built for the server", name)
+	}
+	if !w.isBuiltForServer {
+		w.isBuiltForServer = true
+		w.previousBuiltInServerURL = config.BuiltInServerURL
+	}
+	config.BuiltInServerURL = w.apiURL
+	return nil
+}
 
 func (w *world) iOpenTheApp(name string) error {
 	_, err := w.theApp(name)
