@@ -53,7 +53,8 @@ Creating an account through the browser:
   - Red: `TestSignUp_SignsUpThroughTheBrowserAndKeepsTheToken` failed (stub). Green: `BrowserSignIn` takes `isSignUp`; `SignIn` and `SignUp` share one helper. Refactor: nothing more.
 
 Cancelling:
-- [ ] 6. `clientsignin`: cancelling the sign-in in progress makes it return a cancelled error and keeps no token; starting another sign-in cancels the first.
+- [x] 6. `clientsignin`: cancelling the sign-in in progress makes it return a cancelled error and keeps no token. Red: `TestCancel_EndsTheSignInInProgressAndKeepsNoToken` with an empty `Cancel`, failing "SignIn was still waiting 2s after Cancel"; green: `Client.Cancel` cancels the sign-in's context with cause `ErrCancelled`. Refactor: nothing worth changing.
+- [ ] 6b. `clientsignin`: starting another sign-in cancels the first.
 
 The built-in server address:
 - [ ] 7. `config`: `BuiltInServerURL` is `server_url`'s built-in value, below the settings file and `STARTER_SERVER_URL`; an empty setting doesn't override it. Add a Taskfile variable for the desktop and Android builds, and a step for template users under the starter TODO item.
@@ -83,3 +84,5 @@ Finish:
 - [ ] 23. Docs and finish: ADR 4 (remote mode built), ADR 9 (the apps' sign-in, separate sessions, `signInMethod`, browser sign-in routes), `docs/sign-in.md` (the apps, sign-up through `/auth/native`, where the apps keep tokens), `docs/configuration.md` (the built-in address; the `credential_store` row naming the apps), the `credential_store` note in `config.DefaultSettingsFileText` (wording agreed), `docs/mobile.md`, `docs/data-locations.md`, `.claude/rules/` (`desktop.md`, `mobile.md`, `server.md`, `web.md`, `configuration.md`), CLAUDE.md (the editions list, the architecture lines for `httpclient` and `clientsignin`), and README if it mentions remote mode. Remove the `@wip` tags once every scenario passes, and delete this file. Mark step 10 done in the plan, with a summary and links. If step 5's by-hand check is still open, the plan stays; otherwise it was the last step, so move the plan's open follow-ups (without the built-in address, done here) into `TODO.md`, tick the "Hosted and local editions" and "Desktop and mobile remote mode" items, and delete the plan. Run `task test:init`.
 
 ## Changes to the plan
+
+- Task 6 split: 6 (cancel) and 6b (a new sign-in cancels the first), one test each.

@@ -8,11 +8,15 @@ package clientsignin
 import (
 	"context"
 	"errors"
+	"sync"
 )
 
 // ErrServerDoesNotSignPeopleIn is what SignIn returns for a server that has
 // sign-in off. Each client words it for its own screen.
 var ErrServerDoesNotSignPeopleIn = errors.New("the server does not sign people in")
+
+// ErrCancelled is what SignIn and SignUp return when Cancel ended them.
+var ErrCancelled = errors.New("the sign-in was cancelled")
 
 // Session is what the server says about the current session: whether it signs
 // people in, and the signed-in account's name, empty when no one is.
@@ -78,6 +82,9 @@ type Client struct {
 	ender   SessionEnder
 	browser BrowserSignIn
 	store   TokenStore
+
+	mu     sync.Mutex
+	cancel context.CancelCauseFunc
 }
 
 // New returns a Client that asks session about the server, signs in through
@@ -100,7 +107,17 @@ func (c *Client) signInThroughBrowser(ctx context.Context, isSignUp bool, open f
 	if !session.IsSignInOn {
 		return Result{}, ErrServerDoesNotSignPeopleIn
 	}
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	c.mu.Lock()
+	c.cancel = cancel
+	c.mu.Unlock()
 	token, err := c.browser.BrowserSignIn(ctx, isSignUp, open)
+	// Only Cancel ends it with this cause; a caller cancelling its own context
+	// still gets its own error back.
+	if err != nil && errors.Is(context.Cause(ctx), ErrCancelled) {
+		return Result{}, ErrCancelled
+	}
 	if err != nil {
 		return Result{}, err
 	}
@@ -137,4 +154,14 @@ func (c *Client) SignOut(ctx context.Context) error {
 		return &SessionNotEndedError{Cause: endErr}
 	}
 	return errors.Join(endErr, forgetErr)
+}
+
+// Cancel ends the sign-in in progress, if any, so that it returns
+// ErrCancelled and keeps no token.
+func (c *Client) Cancel() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.cancel != nil {
+		c.cancel(ErrCancelled)
+	}
 }

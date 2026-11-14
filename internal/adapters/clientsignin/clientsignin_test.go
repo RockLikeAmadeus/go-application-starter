@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 )
@@ -171,5 +172,43 @@ func TestSignOut_TellsAServerFailureWithTheTokenForgottenFromAForgetFailure(t *t
 				t.Errorf("SignOut error = %v, want it to wrap the server's error", err)
 			}
 		})
+	}
+}
+
+// waitingBrowser is a browser sign-in that waits for the person, until its
+// context is cancelled.
+type waitingBrowser struct{ started chan struct{} }
+
+func (w waitingBrowser) BrowserSignIn(ctx context.Context, _ bool, _ func(string) error) (string, error) {
+	close(w.started)
+	<-ctx.Done()
+	return "", ctx.Err()
+}
+
+// Cancelling a sign-in that is waiting for the browser ends it with a named
+// cancelled error and keeps no token.
+func TestCancel_EndsTheSignInInProgressAndKeepsNoToken(t *testing.T) {
+	server := &fakeServer{name: "Ada", kept: "file"}
+	browser := waitingBrowser{started: make(chan struct{})}
+	client := clientsignin.New(server, server, browser, server)
+	errs := make(chan error, 1)
+	go func() {
+		_, err := client.SignIn(context.Background(), func(string) error { return nil })
+		errs <- err
+	}()
+	<-browser.started
+
+	client.Cancel()
+
+	select {
+	case err := <-errs:
+		if !errors.Is(err, clientsignin.ErrCancelled) {
+			t.Errorf("SignIn error = %v, want ErrCancelled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("SignIn was still waiting 2s after Cancel")
+	}
+	if server.savedToken != "" {
+		t.Errorf("saved token = %q, want none", server.savedToken)
 	}
 }
