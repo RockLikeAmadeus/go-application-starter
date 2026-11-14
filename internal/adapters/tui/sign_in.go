@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 // sessionMsg carries what the server says about the current session.
@@ -28,6 +29,11 @@ type signInDoneMsg struct {
 	name string
 	err  error
 }
+
+// failedMsg is what a screen's message implements when it reports that a
+// request failed, so the gate can see a refusal for want of a session whichever
+// screen made the request.
+type failedMsg interface{ failure() error }
 
 // signInGate shows the signed-out screen, instead of screen, on a server that
 // has sign-in on when no one is signed in, and passes everything to screen
@@ -77,6 +83,12 @@ func (g signInGate) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return g, nil
 		}
 		return g, g.screen.Init()
+	}
+	if f, ok := msg.(failedMsg); ok && g.name != "" && errors.Is(f.failure(), domain.ErrNoWorkspace) {
+		g.signedOut, g.name, g.signOutErr = true, "", nil
+		g.notice = "The server at " + g.serverURL + " refused this request, because there is no valid session for it: " +
+			"you are not signed in, or the session token has expired or been ended. Press l to sign in."
+		return g, nil
 	}
 	if m, ok := msg.(signInDoneMsg); ok && g.waiting {
 		g.waiting = false

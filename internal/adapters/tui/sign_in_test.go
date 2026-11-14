@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -10,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
 )
 
 // fakeSignIn is a signed-in-or-not view of a server.
@@ -513,5 +515,32 @@ func TestTheNextKeyPressClearsTheSignOutError(t *testing.T) {
 
 	if got := m.View().Content; strings.Contains(got, "Signing out failed") {
 		t.Errorf("view = %q, want the error gone after a key press", got)
+	}
+}
+
+// refusedMsg is a message a screen's request failed with.
+type refusedMsg struct{ err error }
+
+func (m refusedMsg) failure() error { return m.err }
+
+func TestAnyScreensRequestRefusedForWantOfASessionShowsTheSignedOutScreenWithTheNotice(t *testing.T) {
+	m := firstScreen(Ports{
+		SignIn:    fakeSignIn{session: clientsignin.Session{IsSignInOn: true, Name: "Ada"}},
+		ServerURL: "https://app.example.com",
+	}, nil)
+	m = run(m, m.Init())
+
+	m, _ = m.Update(refusedMsg{fmt.Errorf("load: %w", domain.ErrNoWorkspace)})
+
+	got := m.View().Content
+	for _, want := range []string{
+		"Signed out",
+		"The server at https://app.example.com refused this request, because there is no valid session for it: " +
+			"you are not signed in, or the session token has expired or been ended. Press l to sign in.",
+		"l sign in",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("view = %q, want it to contain %q", got, want)
+		}
 	}
 }

@@ -2,12 +2,14 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
@@ -177,5 +179,35 @@ func TestTheItemsScreenTakesPartInTheSignedInViewOnlyWhileBrowsing(t *testing.T)
 	m = send(t, m, tea.KeyPressMsg{Code: 'a', Text: "a"})
 	if !m.(signOutScreen).typing() {
 		t.Error("typing() = false while adding an item")
+	}
+}
+
+// noSessionItems is an item service whose server refuses every request for
+// want of a session.
+type noSessionItems struct{ ports.ItemService }
+
+func (noSessionItems) ListItems(context.Context) ([]domain.Item, error) {
+	return nil, fmt.Errorf("load items: %w", domain.ErrNoWorkspace)
+}
+
+func TestARequestRefusedForWantOfASessionShowsTheSignedOutScreenWithTheNotice(t *testing.T) {
+	m := firstScreen(Ports{
+		SignIn:    fakeSignIn{session: clientsignin.Session{IsSignInOn: true, Name: "Ada"}},
+		ServerURL: "https://app.example.com",
+		Items:     noSessionItems{},
+	}, nil)
+
+	m = run(m, m.Init())
+
+	got := m.View().Content
+	for _, want := range []string{
+		"Signed out",
+		"The server at https://app.example.com refused this request, because there is no valid session for it: " +
+			"you are not signed in, or the session token has expired or been ended. Press l to sign in.",
+		"l sign in",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("view = %q, want it to contain %q", got, want)
+		}
 	}
 }

@@ -27,6 +27,10 @@ type (
 	errMsg         struct{ err error }
 )
 
+// failure is why the command failed, which the sign-in gate reads to see
+// whether the server refused it for want of a session.
+func (m errMsg) failure() error { return m.err }
+
 // itemsScreen is the Items screen.
 type itemsScreen struct {
 	service ports.ItemService
