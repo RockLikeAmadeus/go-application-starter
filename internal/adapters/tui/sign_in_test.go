@@ -50,3 +50,28 @@ func TestOnAServerWithSignInOnAndNoSessionItShowsTheSignedOutScreenWithTheSignIn
 		}
 	}
 }
+
+func TestOnLocalDataOrWithSignInOffThereIsNoSignInOrSignOutKeyAndNoText(t *testing.T) {
+	cases := map[string]Ports{
+		"local data":  {},
+		"sign-in off": {SignIn: fakeSignIn{clientsignin.Session{}}, ServerURL: "https://app.example.com"},
+	}
+	for name, ports := range cases {
+		t.Run(name, func(t *testing.T) {
+			m := firstScreen(ports, nil)
+			m = run(m, m.Init())
+			before := m.View().Content
+
+			for _, key := range []rune{'l', 'o'} {
+				m, _ = m.Update(tea.KeyPressMsg{Code: key, Text: string(key)})
+			}
+
+			got := m.View().Content
+			for _, unwanted := range []string{"sign in", "Sign in", "sign out", "Signed"} {
+				if strings.Contains(got, unwanted) || strings.Contains(before, unwanted) {
+					t.Errorf("view contains %q: %q", unwanted, got)
+				}
+			}
+		})
+	}
+}

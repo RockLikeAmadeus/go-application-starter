@@ -154,7 +154,8 @@
    - Review fix (login test: `TestLoginReportsASessionRefusalAsItIsWithoutAdvisingLogin`, red with the annotation removed): `login` and `logout` carry the `wordsSignInErrorsItself` annotation and are left out of the wrapping; the "server refuses the session" case of the logout test failed first (logout gave the login advice).
    - Red: `TestARequestRefusedForWantOfASessionTellsTheUserToRunLogin` failed (plain "Please sign in to continue."). Green: `adviseLoginWhenSignedOut` in `cli/root.go` wraps every command's `RunE`, replacing `ErrNoWorkspace` with the text when `cfg.ServerURL` is set. Refactor: nothing worth changing.
 30. [x] TUI: on a server with sign-in on and no session, it shows the signed-out screen with the sign-in key.
-30b. [ ] TUI: on local data or with sign-in off, no sign-in or sign-out key and no text (a guard, likely passing at once).
+30b. [x] TUI: on local data or with sign-in off, no sign-in or sign-out key and no text (a guard, likely passing at once).
+   - No red: `TestOnLocalDataOrWithSignInOffThereIsNoSignInOrSignOutKeyAndNoText` passed at once, as the gate only shows the signed-out screen when sign-in is on and `Ports.SignIn` is unset on local data; kept as a guard (it fails when the gate ignores `IsSignInOn`). No green. Refactor: nothing worth changing.
    - Keys (agreed): `l` signs in, `o` signs out, both bound only on screens with no text input.
    - Agreed text, signed-out screen: title "Signed out"; body "Not signed in to <url>." and "Sign in to see your data."; help "l sign in · q quit".
    - Red: `TestOnAServerWithSignInOnAndNoSessionItShowsTheSignedOutScreenWithTheSignInKey` failed (the Home screen showed). Green: `signInGate` in `tui/sign_in.go` (reads the session on `Init`, shows the screen), wrapped around the first screen when `Ports.SignIn` is set. Refactor: nothing worth changing. `cli/tui.go` doesn't pass `Ports.SignIn` yet (task 33 wires it).
