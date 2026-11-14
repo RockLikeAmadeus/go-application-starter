@@ -62,7 +62,7 @@ func TestLogoutIsRefusedWithoutAServer(t *testing.T) {
 // nothing else may be asked of it.
 type signInOffServer struct{}
 
-func (signInOffServer) BrowserSignIn(context.Context, func(string) error) (string, error) {
+func (signInOffServer) BrowserSignIn(context.Context, bool, func(string) error) (string, error) {
 	return "", errors.New("no browser sign-in is expected")
 }
 
@@ -312,7 +312,7 @@ func (s *refusedAfterSavingSession) CurrentSession(context.Context) (clientsigni
 // browserGivingToken signs in at once, with a token.
 type browserGivingToken struct{}
 
-func (browserGivingToken) BrowserSignIn(context.Context, func(string) error) (string, error) {
+func (browserGivingToken) BrowserSignIn(context.Context, bool, func(string) error) (string, error) {
 	return "the-token", nil
 }
 

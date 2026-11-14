@@ -25,6 +25,7 @@ type fakeServer struct {
 	endError     error
 	wasEnded     bool
 	wasForgotten bool
+	wasSignUp    bool
 	forgetError  error
 }
 
@@ -45,7 +46,8 @@ func (f *fakeServer) CurrentSession(context.Context) (clientsignin.Session, erro
 	return clientsignin.Session{IsSignInOn: true, Name: f.name}, nil
 }
 
-func (f *fakeServer) BrowserSignIn(context.Context, func(string) error) (string, error) {
+func (f *fakeServer) BrowserSignIn(_ context.Context, isSignUp bool, _ func(string) error) (string, error) {
+	f.wasSignUp = isSignUp
 	return f.token, nil
 }
 
@@ -88,6 +90,28 @@ func TestSignIn_SavesTheBrowsersTokenAndReportsTheAccountAndWhereItWasKept(t *te
 	}
 	if server.savedToken != "tok-1" {
 		t.Errorf("saved token = %q, want tok-1", server.savedToken)
+	}
+	if result.Name != "Ada" || result.TokenKept != "file" {
+		t.Errorf("result = %+v, want name Ada and token kept in file", result)
+	}
+}
+
+// Creating an account goes through the browser's sign-up, then keeps the token
+// and reports the account as SignIn does.
+func TestSignUp_SignsUpThroughTheBrowserAndKeepsTheToken(t *testing.T) {
+	server := &fakeServer{name: "Ada", token: "tok-2", kept: "file"}
+	client := clientsignin.New(server, server, server, server)
+
+	result, err := client.SignUp(context.Background(), func(string) error { return nil })
+
+	if err != nil {
+		t.Fatalf("SignUp error = %v", err)
+	}
+	if !server.wasSignUp {
+		t.Error("SignUp did not ask the browser for sign-up")
+	}
+	if server.savedToken != "tok-2" {
+		t.Errorf("saved token = %q, want tok-2", server.savedToken)
 	}
 	if result.Name != "Ada" || result.TokenKept != "file" {
 		t.Errorf("result = %+v, want name Ada and token kept in file", result)

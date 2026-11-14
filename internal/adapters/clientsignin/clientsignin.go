@@ -52,10 +52,11 @@ type Result struct {
 	TokenKept string
 }
 
-// BrowserSignIn signs in through the browser, handing the address to open, and
+// BrowserSignIn signs in through the browser (or, with isSignUp, creates an
+// account there first), handing the address to open, and
 // returns the session token the server gave this client.
 type BrowserSignIn interface {
-	BrowserSignIn(ctx context.Context, open func(address string) error) (token string, err error)
+	BrowserSignIn(ctx context.Context, isSignUp bool, open func(address string) error) (token string, err error)
 }
 
 // TokenStore keeps the session token for the server.
@@ -88,6 +89,10 @@ func New(session SessionReader, ender SessionEnder, browser BrowserSignIn, store
 
 // SignIn signs in to the server, handing the browser's address to open.
 func (c *Client) SignIn(ctx context.Context, open func(address string) error) (Result, error) {
+	return c.signInThroughBrowser(ctx, false, open)
+}
+
+func (c *Client) signInThroughBrowser(ctx context.Context, isSignUp bool, open func(address string) error) (Result, error) {
 	session, err := c.session.CurrentSession(ctx)
 	if err != nil {
 		return Result{}, err
@@ -95,7 +100,7 @@ func (c *Client) SignIn(ctx context.Context, open func(address string) error) (R
 	if !session.IsSignInOn {
 		return Result{}, ErrServerDoesNotSignPeopleIn
 	}
-	token, err := c.browser.BrowserSignIn(ctx, open)
+	token, err := c.browser.BrowserSignIn(ctx, isSignUp, open)
 	if err != nil {
 		return Result{}, err
 	}
@@ -108,6 +113,11 @@ func (c *Client) SignIn(ctx context.Context, open func(address string) error) (R
 		return Result{}, err
 	}
 	return Result{Name: signedIn.Name, TokenKept: kept}, nil
+}
+
+// SignUp is SignIn, with the browser sending the person to create an account.
+func (c *Client) SignUp(ctx context.Context, open func(address string) error) (Result, error) {
+	return c.signInThroughBrowser(ctx, true, open)
 }
 
 // CurrentSession reads the server's current session: whether it signs people

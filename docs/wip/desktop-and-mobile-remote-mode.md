@@ -49,7 +49,8 @@ Creating an account through the browser:
   - Red: `TestStart_ForASignUpAsksTheNativeSignInAddressForSignUp` (no `sign-up` in the address). Green: `Start` takes `isSignUp` and adds `sign-up=1`; callers pass `false`. Refactor: nothing to change.
 - [x] 4. `httpapi`: `/auth/native` with `sign-up=1` sends a signed-out browser to `/auth/sign-up`, returning to `/auth/native/finish`.
   - Red: `TestANativeSignInRequestToSignUpWithNoSessionIsSentToSignUp` redirected to `/auth/sign-in`. Green: `startNativeSignIn` picks the page from `sign-up`. Refactor: nothing worth changing.
-- [ ] 5. `clientsignin.SignUp` signs in through the browser's sign-up, and keeps the token as `SignIn` does.
+- [x] 5. `clientsignin.SignUp` signs in through the browser's sign-up, and keeps the token as `SignIn` does.
+  - Red: `TestSignUp_SignsUpThroughTheBrowserAndKeepsTheToken` failed (stub). Green: `BrowserSignIn` takes `isSignUp`; `SignIn` and `SignUp` share one helper. Refactor: nothing more.
 
 Cancelling:
 - [ ] 6. `clientsignin`: cancelling the sign-in in progress makes it return a cancelled error and keeps no token; starting another sign-in cancels the first.
