@@ -45,7 +45,8 @@ Keeping the apps' tokens apart:
   - Red: `TestNewClientSignInFor_SendsTheProgramsOwnTokenFromASharedFolder` (both programs sent the command line's token). Green: `Program` (`CommandLine`, `DesktopOrMobileApp`), `NewClientSignInFor(cfg, folder, program)`, `NewRemote` takes the program, `tokenstore.NewAppSystem`. Refactor: nothing to change. `NewClientSignIn(cfg)` stays as the command line's wrapper, so the CLI and TUI factories and their tests are untouched.
 
 Creating an account through the browser:
-- [ ] 3. `browsersignin.Start` for a sign-up opens the `/auth/native` address with `sign-up=1`.
+- [x] 3. `browsersignin.Start` for a sign-up opens the `/auth/native` address with `sign-up=1`.
+  - Red: `TestStart_ForASignUpAsksTheNativeSignInAddressForSignUp` (no `sign-up` in the address). Green: `Start` takes `isSignUp` and adds `sign-up=1`; callers pass `false`. Refactor: nothing to change.
 - [ ] 4. `httpapi`: `/auth/native` with `sign-up=1` sends a signed-out browser to `/auth/sign-up`, returning to `/auth/native/finish`.
 - [ ] 5. `clientsignin.SignUp` signs in through the browser's sign-up, and keeps the token as `SignIn` does.
 

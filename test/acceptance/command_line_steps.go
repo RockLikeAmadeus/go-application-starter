@@ -59,7 +59,7 @@ func (r sessionReader) CurrentSession(ctx context.Context) (clientsignin.Session
 type browserSignIn struct{ serverURL string }
 
 func (b browserSignIn) BrowserSignIn(ctx context.Context, open func(address string) error) (string, error) {
-	attempt, err := browsersignin.Start(ctx, b.serverURL, open)
+	attempt, err := browsersignin.Start(ctx, b.serverURL, false, open)
 	if err != nil {
 		return "", err
 	}
