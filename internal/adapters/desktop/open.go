@@ -35,15 +35,17 @@ type App struct {
 // settings folder) and wires the core behind the server's HTTP handler.
 // getenv reads the environment (os.Getenv in production) and userConfigDir
 // finds the user's settings folder (os.UserConfigDir on the desktop).
-// webAssets is the built web app (web.Assets() in production).
-func Open(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS) (*App, error) {
+// webAssets is the built web app (web.Assets() in production). openBrowser
+// shows an address in the system browser, for signing in to the server in
+// remote mode (the Wails app's Browser.OpenURL in production).
+func Open(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS, openBrowser func(address string) error) (*App, error) {
 	config.CreateDefaultSettingsFile(config.Env{Getenv: getenv, UserConfigDir: userConfigDir})
-	return OpenWithoutDefaultSettingsFile(getenv, userConfigDir, webAssets)
+	return OpenWithoutDefaultSettingsFile(getenv, userConfigDir, webAssets, openBrowser)
 }
 
 // OpenWithoutDefaultSettingsFile opens the app as Open does, but creates no
 // settings file when there is none.
-func OpenWithoutDefaultSettingsFile(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS) (*App, error) {
+func OpenWithoutDefaultSettingsFile(getenv func(string) string, userConfigDir func() (string, error), webAssets fs.FS, openBrowser func(address string) error) (*App, error) {
 	env := config.Env{Getenv: getenv, UserConfigDir: userConfigDir}
 	settingsFile, err := config.LocalConfigFile(env)
 	if err != nil {
@@ -54,7 +56,7 @@ func OpenWithoutDefaultSettingsFile(getenv func(string) string, userConfigDir fu
 		return nil, err
 	}
 	if cfg.ServerURL != "" {
-		return openRemote(env, cfg, webAssets)
+		return openRemote(env, cfg, webAssets, openBrowser)
 	}
 	if cfg.Storage == config.StoragePostgres {
 		return nil, errors.New(`The storage setting is "postgres", but this application keeps its data on this device. Please use "jsonfile" or "sqlite".`)
@@ -90,12 +92,16 @@ func OpenWithoutDefaultSettingsFile(getenv func(string) string, userConfigDir fu
 // openRemote opens the app as a window on the server in cfg.ServerURL: no data
 // folder is opened, so nothing is locked, and IsDataLocal stays unset so the
 // web app waits for a connection.
-func openRemote(env config.Env, cfg config.Config, webAssets fs.FS) (*App, error) {
+func openRemote(env config.Env, cfg config.Config, webAssets fs.FS, openBrowser func(address string) error) (*App, error) {
 	folder, err := config.AppFolder(env)
 	if err != nil {
 		return nil, err
 	}
 	core, err := bootstrap.NewRemote(cfg, folder, bootstrap.DesktopOrMobileApp)
+	if err != nil {
+		return nil, err
+	}
+	signIn, err := bootstrap.NewAppClientSignIn(cfg, folder)
 	if err != nil {
 		return nil, err
 	}
@@ -105,6 +111,8 @@ func openRemote(env config.Env, cfg config.Config, webAssets fs.FS) (*App, error
 		// sample:end
 		Entitlements: core.Entitlements,
 		WebAssets:    webAssets,
+		ClientSignIn: signIn,
+		OpenBrowser:  openBrowser,
 	})
 	return &App{
 		Handler: withoutServiceWorker(api),

@@ -107,7 +107,7 @@ func TestOpenWithoutAnIconStillOpens(t *testing.T) {
 func TestOpenCreatesTheDataFolderUnderTheGivenSettingsFolder(t *testing.T) {
 	settings := t.TempDir()
 
-	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
+	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil, nil)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestOpenCreatesTheDataFolderUnderTheGivenSettingsFolder(t *testing.T) {
 func TestOpenCreatesTheDefaultSettingsFile(t *testing.T) {
 	settings := t.TempDir()
 
-	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
+	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil, nil)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -143,7 +143,7 @@ func TestOpenUsesTheSettingsFilesDataFolder(t *testing.T) {
 	data := filepath.Join(t.TempDir(), "work-data")
 	writeSettings(t, settings, "data_dir = "+strconv.Quote(data))
 
-	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
+	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil, nil)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -162,12 +162,12 @@ func TestOpenOnTheSettingsFilesSQLiteCanBeOpenedTwiceOnOneDataFolder(t *testing.
 	writeSettings(t, settings, `storage = "sqlite"`)
 	env := envOf(map[string]string{"STARTER_DATA_DIR": t.TempDir()})
 
-	first, err := desktop.Open(env, configDirAt(settings), nil)
+	first, err := desktop.Open(env, configDirAt(settings), nil, nil)
 	if err != nil {
 		t.Fatalf("first Open: %v", err)
 	}
 	t.Cleanup(func() { _ = first.Close() })
-	second, err := desktop.Open(env, configDirAt(settings), nil)
+	second, err := desktop.Open(env, configDirAt(settings), nil, nil)
 	if err != nil {
 		t.Fatalf("second Open on the same data folder: %v", err)
 	}
@@ -180,7 +180,7 @@ func TestOpenRefusesPostgresStorage(t *testing.T) {
 	settings := t.TempDir()
 	writeSettings(t, settings, `storage = "postgres"`)
 
-	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
+	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil, nil)
 	if err == nil {
 		_ = app.Close()
 		t.Fatal("Open succeeded, want it to refuse Postgres storage")
@@ -199,7 +199,7 @@ func TestOpenUsesTheSettingsFilesPlansFile(t *testing.T) {
 	}
 	writeSettings(t, settings, "plans_file = "+strconv.Quote(plans))
 
-	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil)
+	app, err := desktop.Open(envOf(nil), configDirAt(settings), nil, nil)
 	if err == nil {
 		_ = app.Close()
 		t.Fatal("Open succeeded, want it to refuse the settings file's broken plans file")
@@ -220,7 +220,7 @@ func openAt(t *testing.T, dataDir string) *desktop.App {
 // when the test ends.
 func openWith(t *testing.T, dataDir string, webApp fs.FS) *desktop.App {
 	t.Helper()
-	app, err := desktop.Open(envOf(map[string]string{"STARTER_DATA_DIR": dataDir}), configDirAt(t.TempDir()), webApp)
+	app, err := desktop.Open(envOf(map[string]string{"STARTER_DATA_DIR": dataDir}), configDirAt(t.TempDir()), webApp, nil)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestOpenServesTheCoresWarnings(t *testing.T) {
 	settings := t.TempDir()
 	writeSettings(t, settings, `storage = "sqlite"`)
 	env := envOf(map[string]string{"STARTER_DATA_DIR": filepath.Join(synced, "data")})
-	app, err := desktop.Open(env, configDirAt(settings), nil)
+	app, err := desktop.Open(env, configDirAt(settings), nil, nil)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -316,7 +316,7 @@ func TestOpenWithAServerOpensRemoteMode(t *testing.T) {
 		"STARTER_SERVER_URL": "http://127.0.0.1:1",
 		"STARTER_DATA_DIR":   dataDir,
 	})
-	app, err := desktop.Open(env, configDirAt(t.TempDir()), nil)
+	app, err := desktop.Open(env, configDirAt(t.TempDir()), nil, nil)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -327,5 +327,31 @@ func TestOpenWithAServerOpensRemoteMode(t *testing.T) {
 	}
 	if _, err := os.Stat(dataDir); !os.IsNotExist(err) {
 		t.Errorf("data folder: stat error = %v, want it not to exist", err)
+	}
+}
+
+// In remote mode the window signs in through the system browser, so the
+// session its handler answers says so, from the server's own session.
+func TestOpenInRemoteModeSignsInThroughTheBrowser(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"isSignInOn":true,"signInMethod":"page"}`))
+	}))
+	t.Cleanup(server.Close)
+	env := envOf(map[string]string{"STARTER_SERVER_URL": server.URL})
+	app, err := desktop.Open(env, configDirAt(t.TempDir()), nil, func(string) error { return nil })
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
+
+	var session struct {
+		IsSignInOn   bool   `json:"isSignInOn"`
+		SignInMethod string `json:"signInMethod"`
+	}
+	getJSON(t, app.Handler, "/api/v1/session", &session)
+
+	if !session.IsSignInOn || session.SignInMethod != "browser" {
+		t.Errorf("session = %+v, want sign-in on, signInMethod browser", session)
 	}
 }

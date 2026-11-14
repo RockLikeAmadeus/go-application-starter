@@ -21,7 +21,7 @@ func main() {
 }
 
 func run() error {
-	opened, err := desktop.Open(os.Getenv, os.UserConfigDir, web.Assets())
+	opened, err := desktop.Open(os.Getenv, os.UserConfigDir, web.Assets(), nil)
 	if err != nil {
 		return err
 	}

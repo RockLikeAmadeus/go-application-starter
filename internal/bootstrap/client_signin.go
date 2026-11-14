@@ -2,11 +2,13 @@ package bootstrap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/browsersignin"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpapi"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/tokenstore"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
@@ -109,4 +111,46 @@ func systemStore(folder string, program Program) *tokenstore.System {
 		return tokenstore.NewAppSystem(folder)
 	}
 	return tokenstore.NewSystem(folder)
+}
+
+// NewAppClientSignIn builds the sign-in the desktop and mobile apps' in-process
+// handler uses in remote mode, keeping the app's own token in the settings
+// folder given.
+func NewAppClientSignIn(cfg config.Config, folder string) (httpapi.ClientSignIn, error) {
+	client, _, err := NewClientSignInFor(cfg, folder, DesktopOrMobileApp)
+	if err != nil {
+		return nil, err
+	}
+	return appSignIn{client}, nil
+}
+
+// appSignIn adapts clientsignin's client to the interface httpapi declares.
+type appSignIn struct{ client *clientsignin.Client }
+
+func (a appSignIn) CurrentSession(ctx context.Context) (httpapi.ClientSession, error) {
+	session, err := a.client.CurrentSession(ctx)
+	return httpapi.ClientSession{IsSignInOn: session.IsSignInOn, Name: session.Name}, err
+}
+
+func (a appSignIn) SignInThroughBrowser(ctx context.Context, isSignUp bool, open func(address string) error) error {
+	signIn := a.client.SignIn
+	if isSignUp {
+		signIn = a.client.SignUp
+	}
+	_, err := signIn(ctx, open)
+	if errors.Is(err, clientsignin.ErrCancelled) {
+		return httpapi.ErrSignInCancelled
+	}
+	return err
+}
+
+func (a appSignIn) CancelBrowserSignIn() { a.client.Cancel() }
+
+func (a appSignIn) SignOut(ctx context.Context) error {
+	err := a.client.SignOut(ctx)
+	var notEnded *clientsignin.SessionNotEndedError
+	if errors.As(err, &notEnded) {
+		return fmt.Errorf("%w: %w", httpapi.ErrSessionNotEnded, err)
+	}
+	return err
 }
