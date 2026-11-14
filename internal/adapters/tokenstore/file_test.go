@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/zalando/go-keyring"
+
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/tokenstore"
 )
 
@@ -87,4 +89,40 @@ func TestFile_MakesAnExistingWiderFilePrivateWhenItSavesATokenInIt(t *testing.T)
 	if mode := info.Mode().Perm(); mode != 0o600 {
 		t.Errorf("file mode = %o; want 600", mode)
 	}
+}
+
+func TestAppStores_KeepTheirTokensApartFromTheCommandLines(t *testing.T) {
+	const server = "https://app.example.com"
+
+	t.Run("file", func(t *testing.T) {
+		folder := t.TempDir()
+		if err := tokenstore.NewFile(folder).Save(server, "command-line-token"); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
+		if _, err := tokenstore.NewAppFile(folder).Read(server); !errors.Is(err, tokenstore.ErrNoToken) {
+			t.Errorf("app Read = %v; want ErrNoToken", err)
+		}
+		if err := tokenstore.NewAppFile(folder).Save(server, "app-token"); err != nil {
+			t.Fatalf("app Save: %v", err)
+		}
+		if got, err := tokenstore.NewFile(folder).Read(server); err != nil || got != "command-line-token" {
+			t.Errorf("command line Read = %q, %v; want its own token", got, err)
+		}
+	})
+
+	t.Run("keyring", func(t *testing.T) {
+		keyring.MockInit()
+		if err := tokenstore.NewKeyring().Save(server, "command-line-token"); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
+		if _, err := tokenstore.NewAppKeyring().Read(server); !errors.Is(err, tokenstore.ErrNoToken) {
+			t.Errorf("app Read = %v; want ErrNoToken", err)
+		}
+		if err := tokenstore.NewAppKeyring().Save(server, "app-token"); err != nil {
+			t.Fatalf("app Save: %v", err)
+		}
+		if got, err := tokenstore.NewKeyring().Read(server); err != nil || got != "command-line-token" {
+			t.Errorf("command line Read = %q, %v; want its own token", got, err)
+		}
+	})
 }

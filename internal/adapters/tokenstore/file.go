@@ -15,16 +15,20 @@ import (
 // ErrNoToken is what Read returns when no token is kept for the server.
 var ErrNoToken = errors.New("no token kept for this server")
 
-const fileName = "tokens.json"
+const (
+	fileName    = "tokens.json"
+	appFileName = "app-tokens.json"
+)
 
 // File keeps tokens in a file in a folder, readable by its owner only.
 type File struct {
 	folder string
+	name   string
 	mu     sync.Mutex
 }
 
 // NewFile returns a File keeping its tokens in the folder.
-func NewFile(folder string) *File { return &File{folder: folder} }
+func NewFile(folder string) *File { return &File{folder: folder, name: fileName} }
 
 // Save keeps the token for the server.
 func (f *File) Save(serverURL, token string) error {
@@ -49,7 +53,7 @@ func (f *File) write(tokens map[string]string) error {
 	// Write a private temporary file and rename it over the real one, so a
 	// file that already exists with wider permissions is replaced, and a
 	// crash never leaves a half-written one.
-	temporary, err := os.CreateTemp(f.folder, fileName+".*")
+	temporary, err := os.CreateTemp(f.folder, f.name+".*")
 	if err != nil {
 		return err
 	}
@@ -61,7 +65,7 @@ func (f *File) write(tokens map[string]string) error {
 	if err := temporary.Close(); err != nil {
 		return err
 	}
-	return os.Rename(temporary.Name(), filepath.Join(f.folder, fileName))
+	return os.Rename(temporary.Name(), filepath.Join(f.folder, f.name))
 }
 
 // Read returns the token kept for the server, or ErrNoToken.
@@ -81,7 +85,7 @@ func (f *File) Read(serverURL string) (string, error) {
 
 func (f *File) load() (map[string]string, error) {
 	tokens := map[string]string{}
-	data, err := os.ReadFile(filepath.Join(f.folder, fileName))
+	data, err := os.ReadFile(filepath.Join(f.folder, f.name))
 	if errors.Is(err, os.ErrNotExist) {
 		return tokens, nil
 	}
@@ -121,3 +125,7 @@ func (f *File) Delete(serverURL string) error {
 	delete(tokens, key)
 	return f.write(tokens)
 }
+
+// NewAppFile returns a File for the desktop and Android apps, which keep their
+// own sessions apart from the command line's, in a file of their own.
+func NewAppFile(folder string) *File { return &File{folder: folder, name: appFileName} }

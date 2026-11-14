@@ -39,7 +39,8 @@ Decided in planning:
 Each is one `/red` → `/green` → `/refactor` cycle.
 
 Keeping the apps' tokens apart:
-- [ ] 1. `tokenstore`: a token saved under one program's name isn't read under another's, in both the file store and the system store (the keyring service name). The command line's name keeps today's keyring service and `tokens.json`. Pick the apps' names.
+- [x] 1. `tokenstore`: a token saved under one program's name isn't read under another's, in both the file store and the system store (the keyring service name). The command line's name keeps today's keyring service and `tokens.json`. Pick the apps' names.
+  - Red: `TestAppStores_KeepTheirTokensApartFromTheCommandLines` (app Read found the command line's token). Green: `File` takes a file name, `Keyring` a service name; `NewAppFile` (`app-tokens.json`) and `NewAppKeyring` (`go-application-starter-app`); the command line's names are unchanged. Refactor: nothing worth changing. Task 2 passes the apps' stores through bootstrap (`System` gains an app variant there).
 - [ ] 2. `bootstrap.NewClientSignIn` and `NewRemote` take the settings folder and the program: the apps' client keeps its token apart from the command line's. The CLI and TUI pass their folder and name, with no change in behaviour.
 
 Creating an account through the browser:
