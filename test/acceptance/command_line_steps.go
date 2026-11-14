@@ -156,6 +156,10 @@ func (w *world) iSignInFromTheCommandLine(ctx context.Context, name string) erro
 	if err != nil {
 		return err
 	}
+	return w.signInCommandLine(ctx, c, name)
+}
+
+func (w *world) signInCommandLine(ctx context.Context, c *commandLine, name string) error {
 	browser, ok := w.signIn.(nativeSignInBrowser)
 	if !ok {
 		return errors.New("this driver's sign-in can't finish the command line's: tag the scenario @command-line-sign-in")

@@ -17,6 +17,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/desktop"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/mobile"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/tokenstore"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 )
 
@@ -77,6 +78,7 @@ func (w *world) registerRemoteModeSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^I create an item named "([^"]*)" from the `+app+`$`, w.iCreateAnItemFromTheApp)
 	// sample:end
 	sc.Step(`^the `+app+` tells me to sign in$`, w.theAppTellsMeToSignIn)
+	sc.Step(`^I have signed in from the command line on this computer as "([^"]*)"$`, w.iSignInFromTheCommandLineOnThisComputer)
 }
 
 // theApp is the scenario's desktop or mobile app, named as the feature names
@@ -380,4 +382,25 @@ func (w *world) theAppTellsMeToSignIn(name string) error {
 		return fmt.Errorf("the %s answered status %d, want %d", name, a.status, http.StatusUnauthorized)
 	}
 	return nil
+}
+
+// iSignInFromTheCommandLineOnThisComputer signs in from a command line that
+// keeps its token in the desktop app's settings folder, as the real one does
+// on a computer that has the app. Unlike the other command line steps' memory
+// store, this shows whether the two programs' tokens are kept apart.
+func (w *world) iSignInFromTheCommandLineOnThisComputer(ctx context.Context, name string) error {
+	if w.signIn == nil {
+		return errNoSignIn
+	}
+	a, err := w.theApp("desktop app")
+	if err != nil {
+		return err
+	}
+	cfg := config.Config{ServerURL: w.apiURL, CredentialStore: config.CredentialStoreFile}
+	client, _, err := bootstrap.NewClientSignInFor(cfg, a.tokenFolder, bootstrap.CommandLine)
+	if err != nil {
+		return err
+	}
+	w.commandLine = &commandLine{client: client}
+	return w.signInCommandLine(ctx, w.commandLine, name)
 }
