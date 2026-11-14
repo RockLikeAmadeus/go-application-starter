@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -180,5 +181,41 @@ func TestTheSignInKeyShowsTheWaitingScreenWithTheAddressAndEscReturnsToTheSigned
 	}
 	if strings.Contains(got, "Signing in failed") {
 		t.Errorf("view after esc = %q, want no error", got)
+	}
+}
+
+func TestWhenTheBrowserCannotBeOpenedTheWaitingScreenSaysSoWithTheAddressAndKeepsWaiting(t *testing.T) {
+	m := firstScreen(Ports{
+		SignIn: fakeSignIn{
+			session: clientsignin.Session{IsSignInOn: true},
+			address: "https://app.example.com/auth/native?port=1",
+		},
+		ServerURL:   "https://app.example.com",
+		OpenBrowser: func(string) error { return errors.New("no browser") },
+	}, nil)
+	m = run(m, m.Init())
+	msgs := make(chan tea.Msg, 4)
+
+	m, cmd := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+	collectAsync(cmd, msgs)
+	m, _ = m.Update(next(t, msgs))
+
+	got := m.View().Content
+	for _, want := range []string{
+		"Could not open a browser. To sign in, open this address in a browser on this computer: " +
+			"https://app.example.com/auth/native?port=1. Waiting for you to finish signing in there.",
+		"esc cancel",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("waiting view = %q, want it to contain %q", got, want)
+		}
+	}
+	if strings.Contains(got, "Waiting for you to finish signing in, in your browser.") {
+		t.Errorf("waiting view = %q, want the could-not-open text instead", got)
+	}
+	select {
+	case msg := <-msgs:
+		t.Errorf("got %T, want the sign-in to keep waiting", msg)
+	case <-time.After(50 * time.Millisecond):
 	}
 }

@@ -166,7 +166,8 @@
 32. [x] TUI: the sign-in key starts the browser sign-in and shows the waiting screen with the address; Esc cancels and returns to the signed-out screen.
    - Agreed text: title "Signing in"; body "Waiting for you to finish signing in, in your browser." and "If no browser opened, open this address in a browser on this computer: <address>"; help "esc cancel". When the browser can't open, the first line becomes "Could not open a browser. To sign in, open this address in a browser on this computer: <address>. Waiting for you to finish signing in there."
    - Red: `TestTheSignInKeyShowsTheWaitingScreenWithTheAddressAndEscReturnsToTheSignedOutScreen` failed (the `l` key did nothing). Green: `signInGate.startSignIn` runs `SignInClient.SignIn` (new, with `Ports.OpenBrowser`) and shows `waitingView`; Esc cancels. Refactor: nothing worth changing. Not done: the "Could not open a browser" variant (task 32b, added); the done message is ignored until task 33.
-32b. [ ] TUI: when the browser can't be opened, the waiting screen says so, with the address (agreed text under task 32).
+32b. [x] TUI: when the browser can't be opened, the waiting screen says so, with the address (agreed text under task 32).
+   - Red: `TestWhenTheBrowserCannotBeOpenedTheWaitingScreenSaysSoWithTheAddressAndKeepsWaiting` failed (the normal waiting text showed). Green: `signInGate.startSignIn`'s `open` swallows the opener's error and `addressMsg` carries `openFailed`, so `waitingView` shows the could-not-open line and the sign-in keeps waiting. Refactor: nothing worth changing.
 33. [ ] TUI: a finished sign-in loads the workspace's screen on the new session, with no restart; a failed one shows the error on the signed-out screen.
    - Also wires `cli/tui.go` to pass `Ports.SignIn`, `ServerURL`, and the opener, from the `SignInFactory`, when `cfg.ServerURL` is set.
    - Agreed text: an error line on the signed-out screen, "Signing in failed: <error>." Esc shows no error.

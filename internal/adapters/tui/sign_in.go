@@ -13,7 +13,11 @@ import (
 type sessionMsg struct{ session clientsignin.Session }
 
 // addressMsg carries the address the browser sign-in opened.
-type addressMsg struct{ address string }
+type addressMsg struct {
+	address string
+	// openFailed is true when the browser could not be opened.
+	openFailed bool
+}
 
 // signInDoneMsg says the browser sign-in ended, and how.
 type signInDoneMsg struct{ err error }
@@ -32,7 +36,9 @@ type signInGate struct {
 	// known, and cancel ends it.
 	waiting bool
 	address string
-	cancel  context.CancelFunc
+	// openFailed is true when the browser could not be opened.
+	openFailed bool
+	cancel     context.CancelFunc
 	// name is who is signed in, empty when no one is or sign-in is off.
 	name string
 }
@@ -80,19 +86,19 @@ func (g signInGate) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // cancelled.
 func (g signInGate) startSignIn() (tea.Model, tea.Cmd) {
 	ctx, cancel := context.WithCancel(context.Background())
-	g.waiting, g.address, g.cancel = true, "", cancel
-	addresses := make(chan string, 1)
+	g.waiting, g.address, g.openFailed, g.cancel = true, "", false, cancel
+	addresses := make(chan addressMsg, 1)
+	// A browser that can't be opened doesn't end the sign-in: the user can
+	// open the address by hand, so open reports success either way.
 	open := func(address string) error {
-		addresses <- address
-		if g.openBrowser == nil {
-			return nil
-		}
-		return g.openBrowser(address)
+		failed := g.openBrowser != nil && g.openBrowser(address) != nil
+		addresses <- addressMsg{address, failed}
+		return nil
 	}
 	waitForAddress := func() tea.Msg {
 		select {
-		case address := <-addresses:
-			return addressMsg{address}
+		case m := <-addresses:
+			return m
 		case <-ctx.Done():
 			return nil
 		}
@@ -108,7 +114,7 @@ func (g signInGate) startSignIn() (tea.Model, tea.Cmd) {
 func (g signInGate) updateWaiting(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case addressMsg:
-		g.address = m.address
+		g.address, g.openFailed = m.address, m.openFailed
 	case tea.KeyPressMsg:
 		if m.String() == "esc" {
 			g.cancel()
@@ -138,8 +144,13 @@ func (g signInGate) View() tea.View {
 func (g signInGate) waitingView() tea.View {
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("Signing in") + "\n\n")
-	b.WriteString(itemStyle.Render("Waiting for you to finish signing in, in your browser.") + "\n")
-	if g.address != "" {
+	if g.openFailed {
+		b.WriteString(itemStyle.Render("Could not open a browser. To sign in, open this address in a browser on this computer: "+
+			g.address+". Waiting for you to finish signing in there.") + "\n")
+	} else {
+		b.WriteString(itemStyle.Render("Waiting for you to finish signing in, in your browser.") + "\n")
+	}
+	if g.address != "" && !g.openFailed {
 		b.WriteString(itemStyle.Render("If no browser opened, open this address in a browser on this computer: "+g.address) + "\n")
 	}
 	b.WriteString("\n" + helpStyle.Render(helpLine("esc cancel")))
