@@ -14,6 +14,7 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/httpclient/apiclient"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/oidc/oidctest"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/memory"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/system"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/workspace"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/app"
@@ -45,7 +46,7 @@ func devIdentity(name string) (domain.Identity, error) {
 // newSignInService builds the sign-in use cases on accounts and sessions,
 // driven by the harness's clock.
 func (h *harness) newSignInService(accounts ports.AccountRepository, sessions ports.SessionRepository) *app.SignInService {
-	return app.NewSignInService(accounts, sessions, nil, system.Tokens{}, testsupport.NewSequentialIDs("account"), h.clock)
+	return app.NewSignInService(accounts, sessions, memory.NewSignInCodeRepository(), system.Tokens{}, testsupport.NewSequentialIDs("account"), h.clock)
 }
 
 // useDirectSignIn signs scenarios in by calling the sign-in use cases on
@@ -363,4 +364,81 @@ func (o *oidcSignInOverHTTP) arrive(browser *http.Client, address string) error 
 		return err
 	}
 	return o.use(browser)
+}
+
+// nativeSignInBrowser is a browser that finishes the command line's sign-in
+// for a name, which only the ways of signing in over HTTP can do.
+type nativeSignInBrowser interface {
+	// finishNativeSignIn does what name does in the browser at the address the
+	// command line opened: signs in there, if not signed in already. It
+	// returns the address on the command line's loopback port that the
+	// server sent the browser back to.
+	finishNativeSignIn(name, address string) (callback string, err error)
+}
+
+// returnsToTheCommandLine is whether next is where the server sends the
+// browser back to the command line, rather than a page on the server.
+func (b *browsersOverHTTP) returnsToTheCommandLine(next *url.URL) bool {
+	server, err := url.Parse(b.baseURL)
+	return err == nil && next.Host != server.Host && next.Path == "/callback"
+}
+
+// reachCommandLine follows the answers from address, as the browser would,
+// until the server sends it back to the command line, and returns that address.
+func (b *browsersOverHTTP) reachCommandLine(browser *http.Client, address string) (answer, error) {
+	return followRedirectsUntil(browser, address, b.returnsToTheCommandLine)
+}
+
+// finishNativeSignIn signs in at the dev sign-in form, when the browser is
+// shown it.
+func (d *devSignInOverHTTP) finishNativeSignIn(name, address string) (string, error) {
+	browser, err := d.browserFor(name)
+	if err != nil {
+		return "", err
+	}
+	got, err := d.reachCommandLine(browser, address)
+	if err != nil {
+		return "", err
+	}
+	if got.status == http.StatusOK && strings.Contains(got.body, `<input name="name"`) {
+		resp, err := browser.PostForm(d.baseURL+"/auth/dev",
+			url.Values{"name": {name}, "return": {"/auth/native/finish"}})
+		if err != nil {
+			return "", err
+		}
+		resp.Body.Close()
+		next, err := resp.Location()
+		if err != nil {
+			return "", err
+		}
+		if got, err = d.reachCommandLine(browser, next.String()); err != nil {
+			return "", err
+		}
+	}
+	return callbackFrom(got)
+}
+
+// finishNativeSignIn signs in at the fake provider, when the browser is sent
+// there.
+func (o *oidcSignInOverHTTP) finishNativeSignIn(name, address string) (string, error) {
+	browser, err := o.browserFor(name)
+	if err != nil {
+		return "", err
+	}
+	o.provider.SetPerson(personNamed(name))
+	got, err := o.reachCommandLine(browser, address)
+	if err != nil {
+		return "", err
+	}
+	return callbackFrom(got)
+}
+
+// callbackFrom is the address on the command line's loopback port that got
+// stopped at, or an error when the browser ended on a page instead.
+func callbackFrom(got answer) (string, error) {
+	if got.status < 300 || got.status >= 400 {
+		return "", fmt.Errorf("the browser was not sent back to the command line: status %d: %.80q",
+			got.status, got.body)
+	}
+	return got.body, nil
 }

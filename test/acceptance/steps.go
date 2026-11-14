@@ -25,6 +25,11 @@ type world struct {
 	// commandLineOptions are given to every command the command line runs,
 	// before the command's own arguments.
 	commandLineOptions []string
+	// commandLine is the command line the scenario signs in from, made by
+	// the first step that uses it.
+	commandLine *commandLine
+	// codeReplay is the answer to the latest second use of a sign-in code.
+	codeReplay answer
 	// isSettingUp is whether the step running is a Given.
 	isSettingUp bool
 	// sample:start
@@ -77,6 +82,7 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		w.registerSyncedFolderSteps(sc)
 		w.registerSyncedPlainTextSteps(sc)
 		w.registerSignInSteps(sc)
+		w.registerCommandLineSignInSteps(sc)
 		// sample:start
 		w.registerItemSteps(sc)
 		w.registerPlanSteps(sc)
@@ -98,9 +104,11 @@ func (w *world) iAmToldTheFieldIsInvalid(field string) error {
 	return nil
 }
 
-// isSignInScenario is whether the scenario signs in (@sign-in).
+// isSignInScenario is whether the scenario signs in (@sign-in, or
+// @command-line-sign-in, which signs in from the command line).
 func isSignInScenario(scenario *godog.Scenario) bool {
-	return hasTag(scenario, "@sign-in") || hasTag(scenario, "@sign-in-provider")
+	return hasTag(scenario, "@sign-in") || hasTag(scenario, "@sign-in-provider") ||
+		hasTag(scenario, "@command-line-sign-in")
 }
 
 // hasTag is whether the scenario, or its feature, has the tag.

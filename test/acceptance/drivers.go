@@ -79,6 +79,9 @@ type harness struct {
 	// they sign in to. Only the drivers running the hosted edition set them.
 	signIn   signInDriver
 	accounts ports.AccountRepository
+	// nativeSwaps keeps the latest sign-in code the command line swapped for
+	// a session token. Only the drivers whose server signs people in set it.
+	nativeSwaps *nativeSwapRecorder
 }
 
 type driver struct {
@@ -122,7 +125,7 @@ func driversFor(t testing.TB, serverURL string) []driver {
 		name:        "postgres",
 		start:       func() (*harness, error) { return startPostgres(t, localEdition) },
 		startHosted: func() (*harness, error) { return startPostgres(t, hostedEdition) },
-		tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider",
+		tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider && ~@command-line-sign-in",
 	}
 	serverTags := "@server"
 	if serverURL == "" {
@@ -134,14 +137,19 @@ func driversFor(t testing.TB, serverURL string) []driver {
 			name:        "memory",
 			start:       func() (*harness, error) { return startMemory(localEdition) },
 			startHosted: func() (*harness, error) { return startMemory(hostedEdition) },
-			tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider",
+			tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider && ~@command-line-sign-in",
 		},
-		{name: "jsonfile", start: startJSONFile, tags: "~@desktop && ~@mobile && ~@server && ~@sign-in && ~@sign-in-provider"},
+		{
+			name:  "jsonfile",
+			start: startJSONFile,
+			tags: "~@desktop && ~@mobile && ~@server && ~@sign-in && ~@sign-in-provider" +
+				" && ~@command-line-sign-in",
+		},
 		{
 			name:        "sqlite",
 			start:       func() (*harness, error) { return startSQLite(localEdition) },
 			startHosted: func() (*harness, error) { return startSQLite(hostedEdition) },
-			tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider",
+			tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider && ~@command-line-sign-in",
 		},
 		postgresDriver,
 		{
@@ -154,10 +162,20 @@ func driversFor(t testing.TB, serverURL string) []driver {
 		{
 			name:        "oidc",
 			startHosted: func() (*harness, error) { return startHostedOIDC(t) },
-			tags:        "@sign-in,@sign-in-provider",
+			tags:        "@sign-in,@sign-in-provider,@command-line-sign-in",
 		},
-		{name: "desktop", start: startDesktop, tags: "~@mobile && ~@workspaces && ~@plans && ~@server && ~@sign-in && ~@sign-in-provider"},
-		{name: "mobile", start: startMobile, tags: "~@desktop && ~@workspaces && ~@plans && ~@server && ~@sign-in && ~@sign-in-provider"},
+		{
+			name:  "desktop",
+			start: startDesktop,
+			tags: "~@mobile && ~@workspaces && ~@plans && ~@server && ~@sign-in && ~@sign-in-provider" +
+				" && ~@command-line-sign-in",
+		},
+		{
+			name:  "mobile",
+			start: startMobile,
+			tags: "~@desktop && ~@workspaces && ~@plans && ~@server && ~@sign-in && ~@sign-in-provider" +
+				" && ~@command-line-sign-in",
+		},
 		{name: "server", start: func() (*harness, error) { return startServer(t) }, tags: serverTags},
 	}
 }
@@ -363,7 +381,8 @@ func startHostedHTTP() (*harness, error) {
 	// sample:start
 	opts.Items = h.newItemService(memory.NewItemRepository(), workspace.FromContext{})
 	// sample:end
-	srv := httptest.NewServer(httpapi.NewHandler(opts))
+	h.nativeSwaps = &nativeSwapRecorder{}
+	srv := httptest.NewServer(h.nativeSwaps.recording(httpapi.NewHandler(opts)))
 	h.cleanup = srv.Close
 	h.signIn = newDevSignInOverHTTP(h, srv.URL)
 	if err := h.driveOverHTTP(srv.URL); err != nil {
@@ -399,6 +418,7 @@ func startHostedOIDC(t testing.TB) (*harness, error) {
 	// sample:end
 	// The server discovers the provider when it starts, so a scenario that
 	// changes the provider starts the handler again.
+	h.nativeSwaps = &nativeSwapRecorder{}
 	var handler atomic.Pointer[http.Handler]
 	useProvider := func() error {
 		signInProvider, err := oidc.New(context.Background(), oidc.Settings{
@@ -420,7 +440,7 @@ func startHostedOIDC(t testing.TB) (*harness, error) {
 		return nil, err
 	}
 	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		(*handler.Load()).ServeHTTP(w, r)
+		h.nativeSwaps.recording(*handler.Load()).ServeHTTP(w, r)
 	})
 	srv.Start()
 	h.cleanup = func() {
