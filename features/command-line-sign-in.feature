@@ -10,7 +10,6 @@ Feature: Sign in from the command line
   # http driver and the fake sign-in provider on the oidc driver. The test
   # plans start new workspaces on "free".
 
-  @wip
   Scenario: Signing in from the command line works on my workspace
     Given "Ada" has signed in before
     And an admin has moved "Ada"'s workspace to the "pro" plan
@@ -18,12 +17,10 @@ Feature: Sign in from the command line
     Then the command line is signed in as "Ada"
     And the command line says my workspace's plan is "pro"
 
-  @wip
   Scenario: The command line can't see anything without signing in
     When the command line tries to see my workspace's plan without signing in
     Then the command line tells me to sign in
 
-  @wip
   Scenario: Signing out from the command line ends its session
     Given I have signed in from the command line as "Ada"
     When I sign out from the command line
@@ -31,21 +28,18 @@ Feature: Sign in from the command line
     Then the command line tells me to sign in
     And the command line keeps no session for the server
 
-  @wip
   Scenario: Signing out from the command line leaves my browser signed in
     Given I am signed in as "Ada" in the browser
     And I have signed in from the command line as "Ada"
     When I sign out from the command line
     Then I am still signed in as "Ada" in the browser
 
-  @wip
   Scenario: A sign-in code works only once
     Given I have signed in from the command line as "Ada"
     When someone tries to use the same sign-in code again
     Then they are not given a session
 
   # sample:start
-  @wip
   Scenario: What I add from the command line is in my workspace on the web
     Given I have signed in from the command line as "Ada"
     When I create an item named "Widget" from the command line

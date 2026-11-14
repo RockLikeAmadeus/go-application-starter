@@ -23,7 +23,7 @@ flowchart TD
 ```
 
 - **Local edition:** the CLI and TUI in embedded mode, the desktop and Android apps, and a self-hosted server.
-- **Hosted edition:** the web app on a hosted server with sign-in, through a sign-in provider (OIDC). Connecting the CLI, the TUI, and the desktop and Android apps to it is planned.
+- **Hosted edition:** the web app on a hosted server with sign-in, through a sign-in provider (OIDC), and the CLI and TUI with `--server`, after signing in with `starter login` or from the TUI ([docs/sign-in.md](docs/sign-in.md)). Connecting the desktop and Android apps to it is planned.
 
 ## Prerequisites
 

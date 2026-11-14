@@ -13,7 +13,7 @@ The sample domain is `Item`; replace it when starting a real product.
 
 The app comes in two **editions** (ADR 5), built step by step from `docs/plans/editions-and-accounts.md`. Most of it is still planned:
 - **Local edition:** one user, one workspace, no sign-in. This is the CLI and TUI (embedded), the desktop and Android apps, and a self-hosted single-user server. All of these work today.
-- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. The web app on a server with `sign_in` on works today, through a sign-in provider (`oidc`) or the dev sign-in (`dev`) (ADR 9, `docs/sign-in.md`). The CLI and TUI after `starter login`, and the desktop and Android apps in remote mode, are planned.
+- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. The web app on a server with `sign_in` on works today, through a sign-in provider (`oidc`) or the dev sign-in (`dev`) (ADR 9, `docs/sign-in.md`). So do the CLI and TUI with `--server`, after `starter login` or the TUI's own sign-in (browser and loopback port, token in the OS credential store; `docs/sign-in.md`). The desktop and Android apps in remote mode are planned.
 
 Each copy uses one edition, and nothing syncs between them. Outside `internal/bootstrap` and `desktop.Open`, never assume local storage or a single user.
 
@@ -80,8 +80,11 @@ cmd/mobile                       Wails v3 Android app around mobile.Open, plus t
 internal/core/domain             entities, value rules, domain errors (stdlib only)
 internal/core/ports              interfaces: driving (…Service) + driven (…Repository, Clock, IDGenerator)
 internal/core/app                use cases implementing driving ports (orchestration only)
-internal/adapters/httpapi        REST server (generated strict interface from OpenAPI), SPA serving, and sign-in under `/auth/` (session cookie, OIDC routes over its `SignInProvider` interface, dev sign-in in `devsignin` builds)
-internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --server mode (later, desktop and mobile remote mode too)
+internal/adapters/httpapi        REST server (generated strict interface from OpenAPI), SPA serving, and sign-in under `/auth/` (session cookie or bearer token, OIDC routes over its `SignInProvider` interface, dev sign-in in `devsignin` builds, `/auth/native` for the command line)
+internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --server mode (later, desktop and mobile remote mode too); sends a bearer token from a token source
+internal/adapters/clientsignin   a client's sign-in and sign-out, shared by CLI and TUI (later desktop); takes its pieces as interfaces, wired in bootstrap
+internal/adapters/browsersignin  RFC 8252 loopback sign-in with PKCE, and the browser opener (BROWSER, else the OS default)
+internal/adapters/tokenstore     session tokens per server: OS credential store (go-keyring), falling back to tokens.json; credential_store setting
 internal/adapters/cli, tui       Cobra / Bubble Tea + Lip Gloss
 internal/adapters/desktop        desktop app wiring with no Wails import: data folder, storage, in-process handler
 internal/adapters/mobile         Android wiring on top of desktop's, no Wails import: the page handler and Serve, the API bridge

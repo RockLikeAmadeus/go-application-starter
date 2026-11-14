@@ -1,6 +1,8 @@
 # Sign-in: accounts and sessions in the hosted edition
 
-This guide explains how people sign in to the hosted edition, how to connect a real sign-in provider, and how to try sign-in on your own computer. The decision behind it is [ADR 9](adr/0009-sign-in-and-sessions.md), and the editions themselves are [ADR 5](adr/0005-hosted-and-local-editions.md). The business rules are in `SPEC.md` §4.18, "Sign in to the hosted edition".
+This guide explains how people sign in to the hosted edition, how to connect a real sign-in provider, and how to try sign-in on your own computer. The decision behind it is [ADR 9](adr/0009-sign-in-and-sessions.md), and the editions themselves are [ADR 5](adr/0005-hosted-and-local-editions.md). The business rules are in `SPEC.md` §4.18, "Sign in to the hosted edition", and §4.19, "Sign in from the command line".
+
+The web app signs in with a cookie, which most of this guide describes. The command line and the terminal app aren't browsers, so they sign in through the browser and then send a token in a header instead. The section "Signing in from the command line and the terminal app" below explains how.
 
 There are two ways to sign in, and a server uses one of them at a time:
 
@@ -49,8 +51,8 @@ sequenceDiagram
 1. **A sign-in adapter finds out who someone is.** It turns that into a `domain.Identity`, with three parts. The issuer is who vouches for the person. The subject is the issuer's ID for them, which never changes. The name is what the app shows. The dev sign-in uses the issuer `dev`, and the typed name as both the subject and the name. The OIDC adapter uses the provider's issuer and subject, as "The identity" below explains.
 2. **The adapter calls the core's `ports.SignInService.SignIn`.** The first time an identity signs in, the core creates an account for it and a personal workspace. Later sign-ins find the same account by its issuer and subject, never by its name, because a name can change and two people can share one. If the identity's name has changed since the last sign-in, the core saves the new name on the account. The core returns a new session token.
 3. **The server puts the token in a cookie** named `session`. The browser sends it back with every request. The web app never sees the token.
-4. **The session middleware** looks the token up on every request (`CurrentAccount`), and puts the account's workspace in the request's context (`workspace.WithID`). The use cases then work in that workspace, as [docs/workspaces.md](workspaces.md) explains.
-5. **Signing out** (`POST /auth/sign-out`) deletes the session from storage and clears the cookie.
+4. **The session middleware** looks the token up on every request (`CurrentAccount`), and puts the account's workspace in the request's context (`workspace.WithID`). The use cases then work in that workspace, as [docs/workspaces.md](workspaces.md) explains. The middleware reads the token from an `Authorization: Bearer <token>` header first, which is how the command line sends it, and from the cookie otherwise. A request with a bearer token that isn't valid is signed out, even if it also carries a valid cookie.
+5. **Signing out** (`POST /auth/sign-out`) deletes the session from storage and clears the cookie. With a bearer token, it ends that token's session.
 
 ### Signed out means no workspace
 
@@ -275,7 +277,7 @@ Don't set an `https://` public URL for a server that people reach over plain HTT
 
 With sign-in on, the server refuses any request that changes something unless it comes from the server's own pages. A request that changes something is any request except `GET`, `HEAD`, and `OPTIONS`. This protects against cross-site request forgery (CSRF), where another site makes the browser send a request that carries this site's cookie.
 
-Go's [`http.CrossOriginProtection`](https://pkg.go.dev/net/http#CrossOriginProtection) does the check. It reads the `Sec-Fetch-Site` header, which modern browsers send with every request, or, without it, the `Origin` header. A refused request gets a 403 problem of type `cross_site`. Programs that aren't browsers, such as `curl` or the command line, send neither header, so they aren't refused.
+Go's [`http.CrossOriginProtection`](https://pkg.go.dev/net/http#CrossOriginProtection) does the check. It reads the `Sec-Fetch-Site` header, which modern browsers send with every request, or, without it, the `Origin` header. A refused request gets a 403 problem of type `cross_site`. Programs that aren't browsers, such as `curl` or the command line, send neither header, so they aren't refused. That is safe, because such a program carries no cookie that another site could ride on. The command line proves who it is with its bearer token, which no other site can make a browser send.
 
 `SameSite=Lax` already stops most of these requests. The check closes the cases it misses, such as a page on another origin of the same site. It covers the sign-in form too, which runs before any cookie exists.
 
@@ -294,9 +296,14 @@ Sign-in is redirects and HTML forms, not JSON, so its routes live under `/auth/`
 | `GET /auth/oidc/callback` | Where the provider sends the person back. Finishes the attempt, sets the session cookie, and redirects to `/`. A refused sign-in answers the "Sign-in failed" page, with status 400. |
 | `GET /auth/dev` | The dev sign-in's form, which asks for a name. |
 | `POST /auth/dev` | Signs in as the posted name, sets the cookie, and redirects to `/`. A blank name is a 422 `validation` problem. |
-| `POST /auth/sign-out` | Ends the session, clears the cookie, and redirects to `/`. |
+| `POST /auth/sign-out` | Ends the session, clears the cookie, and redirects to `/`. With a bearer token, it ends that token's session. |
+| `GET /auth/native` | Where the command line sends the browser to sign in. It checks the loopback `port`, the `state`, and the PKCE `challenge`, keeps them in the `native_sign_in` cookie, and sends the browser to sign in, or straight to `/auth/native/finish` when it already has a session. A bad value is a 400 problem that names each one. |
+| `GET /auth/native/finish` | Issues a one-time sign-in code for the browser's session, and redirects to `http://127.0.0.1:<port>/callback?code=…&state=…`. With no attempt cookie it answers 400, and with no session 401. |
+| `POST /auth/native/token` | Swaps a one-time code and its PKCE verifier, sent as JSON, for a new session token, answered as JSON. A refused swap is a bare 400 that doesn't say why. |
 
-The OIDC routes exist only with `sign_in = "oidc"`, and the dev routes only with `sign_in = "dev"`.
+The OIDC routes exist only with `sign_in = "oidc"`, and the dev routes only with `sign_in = "dev"`. The native routes exist with either.
+
+The sign-in routes accept a `return` parameter, which says where to send the browser after signing in. The native sign-in uses it to come back to `/auth/native/finish`. The server follows it only when it is a path on this server, such as `/auth/native/finish`, and goes to `/` otherwise. That stops another site from using the sign-in to send people to an address of its choosing, which is called an open redirect.
 
 The web app's service worker leaves `/auth/` alone (`navigateFallbackDenylist` in `web/vite.config.ts`), so these routes always reach the server.
 
@@ -363,6 +370,131 @@ task dev
 
 Most providers allow `http://localhost` redirect URLs for development, but some insist on HTTPS. Use a separate registration, or a separate tenant, for development, so that its redirect URLs and test accounts stay apart from the real ones.
 
+## Signing in from the command line and the terminal app
+
+The command line (`starter`) and the terminal app (`starter tui`) can work on a hosted server's data, with `--server <url>`, the `STARTER_SERVER_URL` environment variable, or `server_url` in the settings file. On a server with sign-in on, they need a session too. They can't use the web app's cookie, because their requests come from the program's own Go code, not from a browser. So they sign in through the browser once, receive a session token, keep it on the computer, and send it with every request in an `Authorization: Bearer <token>` header. A bearer token is a token that grants access to whoever presents it, as a cinema ticket does.
+
+```sh
+$ starter login --server https://app.example.com
+Signed in to https://app.example.com as Ada. The session token is kept in the operating system's credential store, and has a fixed lifetime for security purposes. Run starter logout to end the session before it expires.
+
+$ starter info --server https://app.example.com
+...
+Signed in to https://app.example.com as Ada.
+Plan: free
+
+$ starter logout --server https://app.example.com
+Signed out of https://app.example.com. The server ended the session, and the session token was removed from this computer. Run starter login to sign in again.
+```
+
+**Signing in stores a token only.** It never changes which server or data the command line uses. The server still comes from `--server`, `STARTER_SERVER_URL`, or `server_url`, and nothing writes to the settings file. So `starter login` and `starter logout` without a server are refused, and every later command needs the same server set. Signing in to a server whose sign-in is off is refused too, as there is nothing to sign in to.
+
+### The browser and a loopback port (RFC 8252)
+
+The command line signs in the way [RFC 8252, "OAuth 2.0 for Native Apps"](https://datatracker.ietf.org/doc/html/rfc8252) recommends for programs that run on someone's own computer. The program opens the person's usual browser, and the browser signs in exactly as it does for the web app. When it's done, the server sends the browser to a small web server that the program runs for a moment on `127.0.0.1`, the computer's own loopback address. That address can only be reached from the same computer. So the person signs in where they already are signed in, with their password manager and their provider's two-factor sign-in, and the command line never sees a password or talks to the provider.
+
+```mermaid
+sequenceDiagram
+    participant C as Command line
+    participant B as Browser
+    participant S as Server
+    Note over C: listen on 127.0.0.1, a free port<br/>new state and PKCE verifier
+    C->>B: open /auth/native (port, state, challenge)
+    B->>S: GET /auth/native
+    S-->>B: Set-Cookie: native_sign_in, redirect to sign in
+    Note over B,S: the usual sign-in (dev or provider), skipped if already signed in
+    B->>S: GET /auth/native/finish
+    S-->>B: redirect to http://127.0.0.1:port/callback (code, state)
+    B->>C: GET /callback (code, state)
+    Note over C: check the state
+    C->>S: POST /auth/native/token (code, verifier)
+    S-->>C: a new session token
+    C-->>B: "Sign-in complete" page
+    Note over C: keep the token
+```
+
+1. **The command line listens on `127.0.0.1`,** on a free port that the operating system picks. It makes a random state and a random PKCE verifier, as the OIDC adapter does (see "The words you will meet" above).
+2. **It opens the browser at the server's `/auth/native`,** with the port, the state, and the PKCE challenge, which is the SHA-256 hash of the verifier. The server checks them and keeps them for 10 minutes in a cookie, `native_sign_in`, on `Path=/auth/native`.
+3. **The browser signs in as usual,** through the dev sign-in or the provider. If the browser already has a session on this server, this step is skipped.
+4. **`/auth/native/finish` issues a one-time code** for the browser's account, and sends the browser to `http://127.0.0.1:<port>/callback` with the code and the state. The server builds that address itself from the port, so it never sends the browser anywhere but the loopback address.
+5. **The command line checks the state.** A callback with any other state is refused, and the command line keeps waiting. This stops another page from feeding it a sign-in it didn't start.
+6. **It swaps the code and its verifier** at `POST /auth/native/token`. The server checks that the verifier matches the challenge, and answers a **new session token**. This session belongs to the command line, apart from the browser's own. The browser shows a page saying that sign-in is complete, and the command line keeps the token.
+
+**The one-time codes are kept in storage,** in the `sign_in_codes` table, through `ports.SignInCodeRepository`. As with sessions, storage keeps only the code's SHA-256 hash, with its account, its PKCE challenge, and its expiry. Keeping them in storage means that any copy of the server can redeem a code that another copy issued. A code lasts 5 minutes (`domain.SignInCodeLifetime`). It works once, because redeeming it takes it out of storage and deletes it in one step. It works only with the verifier behind its challenge. So someone who sees the code in the browser's history or address bar can't use it.
+
+**The token is an ordinary session token.** It is looked up just as the cookie's is. It lasts 30 days from signing in, and isn't renewed by use. `starter logout` ends it on the server with `POST /auth/sign-out`, and then forgets it, even when the server can't be reached or has already ended the session.
+
+Not chosen:
+- **The device code flow** ([RFC 8628](https://datatracker.ietf.org/doc/html/rfc8628)), where the program shows a short code that the person types into a browser on any device. It suits a computer with no browser, such as one reached over SSH, and is a follow-up. The loopback address works only in a browser on the same computer as the command line, so over SSH today the person needs a browser on the remote computer.
+- **Pasting a token** copied from the web app. It is clumsy, and it teaches people to copy secrets around.
+
+### Where the token is kept
+
+The `credential_store` setting (`STARTER_CREDENTIAL_STORE`) chooses where:
+
+- **`system`,** the default, keeps the token in the operating system's credential store. That is the Keychain on macOS, the Credential Manager on Windows, and the Secret Service on Linux, which GNOME Keyring and KWallet provide over D-Bus. The [`zalando/go-keyring`](https://github.com/zalando/go-keyring) library talks to all three, in pure Go. The credential store encrypts the token and unlocks it with the person's login. Where there is no credential store, as on a server or in a container with no desktop session, the token goes to the file below instead, and `starter login` says so.
+- **`file`** keeps the token only in `tokens.json`, in the app's folder in the user's settings folder (`~/.config/starter/tokens.json` on Linux). The file is readable only by its owner (mode `0600`). This suits CI, the terminal journeys, and people who don't want the credential store to prompt them. It also means a test never touches the developer's own credential store.
+
+Tokens are keyed by the server's address, with its scheme and host in lower case and no trailing slash. So the command line can be signed in to several servers at once, and `https://App.example.com/` and `https://app.example.com` share one token. In the credential store, the tokens are filed under the service name `go-application-starter`, which `task rename` changes with the rest of the project's names. [docs/configuration.md](configuration.md) has the setting's full rules.
+
+### Opening the browser
+
+The command line opens the browser with the program that the `BROWSER` environment variable names, as `gh` and `git` do, followed by the address. `BROWSER` may carry arguments of its own, such as `BROWSER="firefox --new-window"`. With `BROWSER` unset or blank, it uses the operating system's default: `xdg-open` on Linux, `open` on macOS, and `rundll32` on Windows. Its output is discarded, so a chatty browser can't draw over the terminal app. The command line doesn't wait for the browser to close, only a moment to see whether it failed to start.
+
+When no browser can open, the command line prints the address and keeps waiting:
+
+```
+Could not open a browser. To sign in, open this address in a browser on this computer: <address>. Waiting for you to finish signing in there. Press Ctrl+C to cancel.
+```
+
+The terminal journeys set `BROWSER` to a small script that completes the dev sign-in with `curl`, so no real browser opens in a test.
+
+### When a session is missing or has expired
+
+When a server refuses a request because there is no valid session, every command says to sign in, rather than showing the server's own message:
+
+```
+Error: The server at https://app.example.com refused this request, because there is no valid session for it: you are not signed in, or the session token has expired or been ended. Please run starter login to sign in, then run this command again.
+```
+
+`starter login` and `starter logout` report such a refusal as it is, since advising someone to run `starter login` while they run it would make no sense.
+
+### The terminal app
+
+The terminal app signs in and out by itself, and shares the command line's stored session for the server, as it is the same program. On a server with sign-in on and no session, it opens on a "Signed out" screen:
+
+```
+Signed out
+
+Not signed in to https://app.example.com.
+Sign in to see your data.
+
+l sign in • q quit
+```
+
+- **`l` signs in.** The terminal app runs the same browser sign-in as `starter login`, and shows a "Signing in" screen with the address, in case no browser opened. Esc cancels. When the sign-in finishes, the app loads the workspace's screen on the new session, with no restart.
+- **`o` signs out,** from any screen with no text input in focus. Signed in, the app shows "Signed in to <url> as <name>." above the screen, and "o sign out" in the help line.
+- **A request refused mid-use** for want of a session, because the session expired or was ended elsewhere, brings back the "Signed out" screen with a note saying so.
+
+With local data, or on a server with sign-in off, the app shows no sign-in keys and no sign-in text. Like `j` and `k`, the `l` and `o` keys work only where no text input has focus, so people can still type those letters.
+
+### Where the code lives
+
+```mermaid
+flowchart LR
+    cli["cli: login, logout, info"] --> clientsignin
+    tui["tui: the signed-out screen"] --> clientsignin
+    clientsignin["clientsignin: sign in, sign out"] -->|"interfaces"| pieces["httpclient, browsersignin, tokenstore"]
+    bootstrap["bootstrap.NewClientSignIn"] -->|"wires"| clientsignin
+```
+
+- **`internal/adapters/clientsignin`** holds the steps that every client shares. `SignIn` checks that the server signs people in, runs the browser sign-in, keeps the token, and reads back who is signed in. `SignOut` ends the server's session and forgets the token. It imports no other adapter. It takes its pieces as small interfaces, which `internal/bootstrap` (`NewClientSignIn`) fills with the real ones. So its tests use fakes, and the command line and the terminal app call the same code.
+- **`internal/adapters/browsersignin`** is the loopback half of the flow above: `Start` listens and opens the browser, and `Attempt.Wait` takes the callback and swaps the code. `Open` is the browser opener.
+- **`internal/adapters/tokenstore`** keeps tokens: `Keyring`, `File`, and `System`, which tries the keyring and falls back to the file.
+- **`internal/adapters/httpclient`** asks a token source for the token on each request (`WithTokenSource`), rather than holding a fixed token. So the terminal app picks up a new or forgotten session without reconnecting. `bootstrap.NewRemote` gives it a source that reads the server's token from the configured store.
+
+The desktop and Android apps will sign in to a hosted server the same way, through `clientsignin`, when they gain a remote mode (step 10 of the [editions plan](plans/editions-and-accounts.md)).
+
 ## How it's tested
 
 No test talks to a real provider. Instead, `internal/adapters/oidc/oidctest` is a fake one: a small web server started inside the test, with its own signing key, that speaks the parts of OIDC the adapter uses. It can be told to misbehave, for example to sign a token with the wrong key, or to leave `create` out of its discovery. Only tests may import it, which a depguard rule in `.golangci.yml` enforces.
@@ -373,9 +505,11 @@ No test talks to a real provider. Instead, `internal/adapters/oidc/oidctest` is 
 - **Storage:** `storagetest` has contract suites for `AccountRepository` and `SessionRepository`, which memory, SQLite, and Postgres pass. jsonfile has neither.
 - **The server:** `httpapi`'s tests cover the cookies, `Secure` behind an `https://` public URL, the `/auth/` routes, every cause of the "Sign-in failed" page, the 401 and 403 problems, and the session endpoint. The OIDC routes are tested with a fake `SignInProvider`.
 - **Acceptance:** `features/sign-in.feature` (`@sign-in`) runs on the memory, sqlite, postgres, http, and oidc drivers. The http driver signs in through `/auth/dev`, with one cookie jar per account. The oidc driver is the hosted edition over HTTP with the real OIDC adapter against `oidctest`. It follows the redirects with a cookie jar, as a browser does. `features/sign-in-provider.feature` (`@sign-in-provider`) runs on the oidc driver only, and covers a changed name, two people with the same name, creating an account with and without `prompt=create`, cancelling at the provider, and coming back without starting. `features/workspaces.feature` also runs on http, where each workspace is a signed-in account's.
+- **The command line's sign-in:** `domain` and `app` have unit tests for the codes' PKCE check, their expiry, issuing them, and redeeming them once. `storagetest` has a contract suite for `SignInCodeRepository`, which memory, SQLite, and Postgres pass. `httpapi` tests the bearer token, the native routes, and the `return` path. `browsersignin` runs against a fake server, with a fake `BROWSER` script so no real browser opens. `tokenstore` tests the keyring with go-keyring's `MockInit`, which swaps the real credential store for one in memory, and the file in a temporary folder. `clientsignin`, `cli`, and `tui` use fakes. `features/command-line-sign-in.feature` (`@command-line-sign-in`) runs on the http and oidc drivers. Its command line is the real `clientsignin` and `browsersignin` with a token store in memory, and its opener drives the harness's browser through the dev sign-in or `oidctest`. The terminal journeys in `test/terminal/features/command-line-sign-in.feature` run the built `starter` against a built server with the dev sign-in, with `STARTER_CREDENTIAL_STORE=file` and a `BROWSER` script that completes the sign-in with `curl`.
 - **The browser:** `web/e2e/features/sign-in.feature` signs in with the dev sign-in, creates an account through the "Create an account" link, and signs out. It runs in its own Playwright project, against its own server with sign-in on, so the other journeys keep a server without it.
 
 ## Not built yet
 
-- **The command line and terminal app signing in (step 9).** They will send a bearer token in a header instead of a cookie, since they aren't browsers, and the middleware will accept both.
+- **The desktop and Android apps signing in to a hosted server (step 10).** They will reuse `clientsignin` and the native routes, as the command line does.
+- **Signing in from a computer with no browser,** such as one reached over SSH, with the device code flow.
 - **Roles,** such as an admin who changes plans from the web app. They wait for teams. Until then, an admin changes a plan with `starter admin set-plan`, beside the server's storage ([docs/billing.md](billing.md)).
