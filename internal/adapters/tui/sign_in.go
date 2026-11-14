@@ -42,6 +42,8 @@ type signInGate struct {
 	// openFailed is true when the browser could not be opened.
 	openFailed bool
 	cancel     context.CancelFunc
+	// err is why the last sign-in failed, shown on the signed-out screen.
+	err error
 	// name is who is signed in, empty when no one is or sign-in is off.
 	name string
 }
@@ -66,8 +68,13 @@ func (g signInGate) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return g, g.screen.Init()
 	}
-	if m, ok := msg.(signInDoneMsg); ok && g.waiting && m.err == nil {
-		g.waiting, g.signedOut, g.name = false, false, m.name
+	if m, ok := msg.(signInDoneMsg); ok && g.waiting {
+		g.waiting = false
+		if m.err != nil {
+			g.err = m.err
+			return g, nil
+		}
+		g.signedOut, g.name = false, m.name
 		return g, g.screen.Init()
 	}
 	if g.waiting {
@@ -93,7 +100,7 @@ func (g signInGate) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // cancelled.
 func (g signInGate) startSignIn() (tea.Model, tea.Cmd) {
 	ctx, cancel := context.WithCancel(context.Background())
-	g.waiting, g.address, g.openFailed, g.cancel = true, "", false, cancel
+	g.waiting, g.address, g.openFailed, g.cancel, g.err = true, "", false, cancel, nil
 	addresses := make(chan addressMsg, 1)
 	// A browser that can't be opened doesn't end the sign-in: the user can
 	// open the address by hand, so open reports success either way.
@@ -141,7 +148,11 @@ func (g signInGate) View() tea.View {
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("Signed out") + "\n\n")
 	b.WriteString(itemStyle.Render("Not signed in to "+g.serverURL+".") + "\n")
-	b.WriteString(itemStyle.Render("Sign in to see your data.") + "\n\n")
+	b.WriteString(itemStyle.Render("Sign in to see your data.") + "\n")
+	if g.err != nil {
+		b.WriteString(errorStyle.Render("Signing in failed: "+g.err.Error()+".") + "\n")
+	}
+	b.WriteString("\n")
 	b.WriteString(helpStyle.Render("l sign in • q quit"))
 	v := tea.NewView(frameStyle.Render(b.String()))
 	v.AltScreen = true

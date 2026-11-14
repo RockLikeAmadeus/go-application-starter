@@ -19,11 +19,16 @@ type fakeSignIn struct {
 	address string
 	// signsInAs, when set, ends the sign-in at once, with this name.
 	signsInAs string
+	// failsWith, when set, ends the sign-in at once, with this error.
+	failsWith error
 }
 
 // SignIn opens the address, then waits for the sign-in to be cancelled.
 func (f fakeSignIn) SignIn(ctx context.Context, open func(address string) error) (clientsignin.Result, error) {
 	_ = open(f.address)
+	if f.failsWith != nil {
+		return clientsignin.Result{}, f.failsWith
+	}
 	if f.signsInAs != "" {
 		return clientsignin.Result{Name: f.signsInAs}, nil
 	}
@@ -260,5 +265,91 @@ func TestAFinishedSignInShowsTheWorkspacesScreenOnTheNewSessionWithNoRestart(t *
 		if strings.Contains(got, unwanted) {
 			t.Errorf("view = %q, want no %q", got, unwanted)
 		}
+	}
+}
+
+func TestAFailedSignInShowsTheErrorOnTheSignedOutScreen(t *testing.T) {
+	m := firstScreen(Ports{
+		SignIn: fakeSignIn{
+			session:   clientsignin.Session{IsSignInOn: true},
+			address:   "https://app.example.com/auth/native?port=1",
+			failsWith: errors.New("the server is unreachable"),
+		},
+		ServerURL:   "https://app.example.com",
+		OpenBrowser: func(string) error { return nil },
+	}, nil)
+	m = run(m, m.Init())
+	msgs := make(chan tea.Msg, 4)
+
+	m, cmd := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+	collectAsync(cmd, msgs)
+	for range 2 {
+		var more tea.Cmd
+		m, more = m.Update(next(t, msgs))
+		collectAsync(more, msgs)
+	}
+
+	got := m.View().Content
+	for _, want := range []string{
+		"Signed out",
+		"Signing in failed: the server is unreachable.",
+		"l sign in • q quit",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("view = %q, want it to contain %q", got, want)
+		}
+	}
+}
+
+// failsOnce fails its first sign-in, then waits to be cancelled.
+type failsOnce struct {
+	fakeSignIn
+	calls *int
+}
+
+func (f failsOnce) SignIn(ctx context.Context, open func(address string) error) (clientsignin.Result, error) {
+	*f.calls++
+	if *f.calls == 1 {
+		_ = open(f.address)
+		return clientsignin.Result{}, errors.New("the server is unreachable")
+	}
+	return f.fakeSignIn.SignIn(ctx, open)
+}
+
+func TestStartingANewSignInForgetsTheLastFailureSoCancellingShowsNoError(t *testing.T) {
+	calls := 0
+	m := firstScreen(Ports{
+		SignIn: failsOnce{
+			fakeSignIn: fakeSignIn{
+				session: clientsignin.Session{IsSignInOn: true},
+				address: "https://app.example.com/auth/native?port=1",
+			},
+			calls: &calls,
+		},
+		ServerURL:   "https://app.example.com",
+		OpenBrowser: func(string) error { return nil },
+	}, nil)
+	m = run(m, m.Init())
+	msgs := make(chan tea.Msg, 4)
+
+	m, cmd := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+	collectAsync(cmd, msgs)
+	for range 2 {
+		var more tea.Cmd
+		m, more = m.Update(next(t, msgs))
+		collectAsync(more, msgs)
+	}
+	if got := m.View().Content; !strings.Contains(got, "Signing in failed") {
+		t.Fatalf("view = %q, want the first failure shown", got)
+	}
+
+	m, cmd = m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+	collectAsync(cmd, msgs)
+	m, _ = m.Update(next(t, msgs))
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+
+	got := m.View().Content
+	if !strings.Contains(got, "Signed out") || strings.Contains(got, "Signing in failed") {
+		t.Errorf("view after esc = %q, want the signed-out screen with no error", got)
 	}
 }

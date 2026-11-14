@@ -170,7 +170,8 @@
    - Red: `TestWhenTheBrowserCannotBeOpenedTheWaitingScreenSaysSoWithTheAddressAndKeepsWaiting` failed (the normal waiting text showed). Green: `signInGate.startSignIn`'s `open` swallows the opener's error and `addressMsg` carries `openFailed`, so `waitingView` shows the could-not-open line and the sign-in keeps waiting. Refactor: nothing worth changing.
 33. [x] TUI: a finished sign-in loads the workspace's screen on the new session, with no restart.
    - Red: `TestAFinishedSignInShowsTheWorkspacesScreenOnTheNewSessionWithNoRestart` failed (the waiting screen stayed). Green: `signInGate.Update` handles a successful `signInDoneMsg` (name from the result, runs the screen's `Init`); a failed or cancelled one is left to 33b. Refactor: nothing worth changing. Task 33 was split (see "Changes to the plan").
-33b. [ ] TUI: a failed sign-in shows the error on the signed-out screen.
+33b. [x] TUI: a failed sign-in shows the error on the signed-out screen.
+   - Red: `TestAFailedSignInShowsTheErrorOnTheSignedOutScreen` failed (the waiting screen stayed). Green: `signInGate` keeps `err` from a failed `signInDoneMsg` and shows "Signing in failed: <error>." in `errorStyle` on the signed-out screen; Esc clears `waiting` first, so its cancel shows nothing. Refactor: nothing worth changing.
    - Agreed text: an error line on the signed-out screen, "Signing in failed: <error>." Esc shows no error (task 32's test already pins that half).
 33c. [ ] CLI: `starter tui` with a server passes `Ports.SignIn`, `ServerURL`, and `OpenBrowser` from the `SignInFactory`, so the signed-out screen shows for a server with sign-in on and no session.
    - Check how `cli` tests stub `tui.Run`; if they can't, add a small test seam in the same cycle.
