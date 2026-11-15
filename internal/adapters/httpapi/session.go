@@ -138,3 +138,9 @@ func (h *Handlers) CancelBrowserSignIn(context.Context, openapi.CancelBrowserSig
 	h.clientSignIn.CancelBrowserSignIn()
 	return openapi.CancelBrowserSignIn204Response{}, nil
 }
+
+// EndSession belongs to the apps' in-process handler. A server, which has no
+// client sign-in, answers as if it didn't exist.
+func (h *Handlers) EndSession(context.Context, openapi.EndSessionRequestObject) (openapi.EndSessionResponseObject, error) {
+	return nil, domain.ErrNotFound
+}

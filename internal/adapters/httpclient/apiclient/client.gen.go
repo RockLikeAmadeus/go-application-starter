@@ -367,6 +367,13 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	RenameItem(ctx context.Context, id string, body RenameItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// EndSession performs a DELETE /api/v1/session (the `EndSession` operationId) request.
+	//
+	// Signs the app out: ends the session and forgets its token, so the
+	// window can show the sign-in screen without a page load. Only the
+	// desktop and mobile apps in remote mode serve it; a server answers 404.
+	EndSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetSession performs a GET /api/v1/session (the `GetSession` operationId) request.
 	GetSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -555,6 +562,23 @@ func (c *Client) RenameItemWithBody(ctx context.Context, id string, contentType 
 // Takes a body of the `application/json` content type.
 func (c *Client) RenameItem(ctx context.Context, id string, body RenameItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRenameItemRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EndSession performs a DELETE /api/v1/session (the `EndSession` operationId) request.
+//
+// Signs the app out: ends the session and forgets its token, so the
+// window can show the sign-in screen without a page load. Only the
+// desktop and mobile apps in remote mode serve it; a server answers 404.
+func (c *Client) EndSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEndSessionRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -921,6 +945,33 @@ func NewRenameItemRequestWithBody(server string, id string, contentType string, 
 	return req, nil
 }
 
+// NewEndSessionRequest constructs an http.Request for the EndSession method
+func NewEndSessionRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/session")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetSessionRequest constructs an http.Request for the GetSession method
 func NewGetSessionRequest(server string) (*http.Request, error) {
 	var err error
@@ -1099,6 +1150,15 @@ type ClientWithResponsesInterface interface {
 	// RenameItemWithResponse performs a PATCH /api/v1/items/{id} (the `RenameItem` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	RenameItemWithResponse(ctx context.Context, id string, body RenameItemJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameItemResponse, error)
+
+	// EndSessionWithResponse performs a DELETE /api/v1/session (the `EndSession` operationId) request.
+	//
+	// Signs the app out: ends the session and forgets its token, so the
+	// window can show the sign-in screen without a page load. Only the
+	// desktop and mobile apps in remote mode serve it; a server answers 404.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	EndSessionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*EndSessionResponse, error)
 
 	// GetSessionWithResponse performs a GET /api/v1/session (the `GetSession` operationId) request.
 	//
@@ -1570,6 +1630,47 @@ func (r RenameItemResponse) ContentType() string {
 	return ""
 }
 
+type EndSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r EndSessionResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EndSessionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EndSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EndSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EndSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetSessionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1823,6 +1924,21 @@ func (c *ClientWithResponses) RenameItemWithResponse(ctx context.Context, id str
 		return nil, err
 	}
 	return ParseRenameItemResponse(rsp)
+}
+
+// EndSessionWithResponse performs a DELETE /api/v1/session (the `EndSession` operationId) request.
+//
+// Signs the app out: ends the session and forgets its token, so the
+// window can show the sign-in screen without a page load. Only the
+// desktop and mobile apps in remote mode serve it; a server answers 404.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) EndSessionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*EndSessionResponse, error) {
+	rsp, err := c.EndSession(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEndSessionResponse(rsp)
 }
 
 // GetSessionWithResponse performs a GET /api/v1/session (the `GetSession` operationId) request.
@@ -2149,6 +2265,35 @@ func ParseRenameItemResponse(rsp *http.Response) (*RenameItemResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEndSessionResponse parses an HTTP response from a EndSessionWithResponse call
+func ParseEndSessionResponse(rsp *http.Response) (*EndSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EndSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem

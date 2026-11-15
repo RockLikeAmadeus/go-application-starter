@@ -62,7 +62,12 @@ export interface paths {
         get: operations["getSession"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * @description Signs the app out: ends the session and forgets its token, so the
+         *     window can show the sign-in screen without a page load. Only the
+         *     desktop and mobile apps in remote mode serve it; a server answers 404.
+         */
+        delete: operations["endSession"];
         options?: never;
         head?: never;
         patch?: never;
@@ -379,6 +384,25 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Session"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    endSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed out. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };

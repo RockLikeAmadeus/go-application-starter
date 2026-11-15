@@ -265,6 +265,9 @@ type ServerInterface interface {
 	// (PATCH /api/v1/items/{id})
 	RenameItem(w http.ResponseWriter, r *http.Request, id string)
 
+	// (DELETE /api/v1/session)
+	EndSession(w http.ResponseWriter, r *http.Request)
+
 	// (GET /api/v1/session)
 	GetSession(w http.ResponseWriter, r *http.Request)
 
@@ -457,6 +460,20 @@ func (siw *ServerInterfaceWrapper) RenameItem(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
+// EndSession operation middleware
+func (siw *ServerInterfaceWrapper) EndSession(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EndSession(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSession operation middleware
 func (siw *ServerInterfaceWrapper) GetSession(w http.ResponseWriter, r *http.Request) {
 
@@ -608,6 +625,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/connection", wrapper.GetConnection)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/entitlements", wrapper.GetEntitlements)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/warnings", wrapper.GetWarnings)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/session", wrapper.EndSession)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/session", wrapper.GetSession)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/browser-sign-in", wrapper.CancelBrowserSignIn)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/browser-sign-in", wrapper.StartBrowserSignIn)
@@ -1003,6 +1021,38 @@ func (response RenameItemdefaultApplicationProblemPlusJSONResponse) VisitRenameI
 	return err
 }
 
+type EndSessionRequestObject struct {
+}
+
+type EndSessionResponseObject interface {
+	VisitEndSessionResponse(w http.ResponseWriter) error
+}
+
+type EndSession204Response struct {
+}
+
+func (response EndSession204Response) VisitEndSessionResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type EndSessiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response EndSessiondefaultApplicationProblemPlusJSONResponse) VisitEndSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetSessionRequestObject struct {
 }
 
@@ -1111,6 +1161,9 @@ type StrictServerInterface interface {
 
 	// (PATCH /api/v1/items/{id})
 	RenameItem(ctx context.Context, request RenameItemRequestObject) (RenameItemResponseObject, error)
+
+	// (DELETE /api/v1/session)
+	EndSession(ctx context.Context, request EndSessionRequestObject) (EndSessionResponseObject, error)
 
 	// (GET /api/v1/session)
 	GetSession(ctx context.Context, request GetSessionRequestObject) (GetSessionResponseObject, error)
@@ -1418,6 +1471,30 @@ func (sh *strictHandler) RenameItem(w http.ResponseWriter, r *http.Request, id s
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RenameItemResponseObject); ok {
 		if err := validResponse.VisitRenameItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EndSession operation middleware
+func (sh *strictHandler) EndSession(w http.ResponseWriter, r *http.Request) {
+	var request EndSessionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EndSession(ctx, request.(EndSessionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EndSession")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EndSessionResponseObject); ok {
+		if err := validResponse.VisitEndSessionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

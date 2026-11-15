@@ -216,3 +216,18 @@ func TestCancellingABrowserSignInAnswersNoContentAndTheWaitingStartAProblem(t *t
 		t.Errorf("body type = %q (err %v), want %q", body.Type, err, httpapi.ProblemCancelled)
 	}
 }
+
+func TestAServerWithNoClientSignInAnswersDeletingTheSessionNotFound(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/session", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", rec.Code)
+	}
+	var body struct{ Type string }
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil || body.Type != httpapi.ProblemNotFound {
+		t.Errorf("body type = %q (err %v), want %q", body.Type, err, httpapi.ProblemNotFound)
+	}
+}
