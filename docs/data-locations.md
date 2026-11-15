@@ -31,6 +31,7 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 | Desktop app, Windows | `%AppData%\starter` (`C:\Users\<you>\AppData\Roaming\starter`) | the settings file, `STARTER_DATA_DIR` |
 | Desktop app, macOS (not tried yet) | `~/Library/Application Support/starter` | the settings file, `STARTER_DATA_DIR` |
 | Android app | `/data/data/com.example.starter/files/starter`, the app's private storage | fixed |
+| Desktop and Android apps in remote mode | On that server: nothing is stored locally, and no data folder is opened | `server_url`, `STARTER_SERVER_URL`, or an address built into the program ([docs/configuration.md](configuration.md)) |
 | Web app in a browser | On the server it was loaded from | — |
 | Browser e2e tests (`task e2e`) | In memory, never on disk | `STARTER_STORAGE=memory` in `web/playwright.config.ts` |
 | Acceptance tests (`task accept`) | In memory, or a throwaway temp folder per scenario | `test/acceptance` |
@@ -47,7 +48,7 @@ Names on this page are the project's own: the slug `starter`, the `STARTER_` env
 
 **On Fly.io**, both apps mount the Fly volume `app_data` at `/data`. A Fly volume belongs to one machine, so run one machine per app, on `jsonfile` (because of the lock) or `sqlite` (which can't be shared between machines) alike. On `postgres`, several machines can share one database.
 
-**Hosted edition (planned):** the servers hold every workspace's data in one Postgres database, in the same tables, each record tagged with its workspace. The data folder gives way to `database_url`. The desktop and mobile apps refuse `postgres`: they keep their data on the device, and will reach hosted data through a server (remote mode, planned).
+**Hosted edition:** the servers hold every workspace's data in one Postgres database, in the same tables, each record tagged with its workspace. The data folder gives way to `database_url`. The desktop and mobile apps refuse `postgres`, because they never connect to the database itself. They keep their data on the device, or reach hosted data through a server in remote mode. In remote mode they open no data folder and ignore the `storage` setting.
 
 ## The CLI and the TUI
 
@@ -120,4 +121,5 @@ The browser keeps two settings per site in local storage: `theme` and `style`. T
 
 - **The settings file.** Optional: `config.toml` in the app's folder in the user's settings folder, beside the default data folder (`~/.config/starter/config.toml` on Linux), for the CLI, TUI, and desktop app. `STARTER_CONFIG_FILE` names another, and the server reads one only then. Nothing writes to it. See [docs/configuration.md](configuration.md).
 - **The plans file.** The plans are built into the binary (`internal/adapters/plans/plans.jsonc`). `STARTER_PLANS_FILE` names a file to read instead. Nothing writes to it. Which plan a workspace is on is kept with its data (a file per workspace in `workspace_plans/`, or a table in `data.db`), but only the hosted edition will use that: the local edition's plan is set when the app is built.
+- **Session tokens.** A program signed in to a hosted server keeps its session token, one for each server. The command line and the terminal app keep theirs in the operating system's credential store, or in `tokens.json` in the settings folder. The desktop app keeps a session of its own, in the credential store or in `app-tokens.json` beside it. The Android app keeps its token in `app-tokens.json` in its private storage. Both files are readable only by their owner (mode `0600`), and the `credential_store` setting chooses between the credential store and the file. See [docs/sign-in.md](sign-in.md).
 - **Logs** go to standard output (`STARTER_LOG_FORMAT`), never to a file. In Docker or on Fly.io, the platform keeps them.

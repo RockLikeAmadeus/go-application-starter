@@ -12,7 +12,7 @@ The web UI needs an API. Options considered: REST + OpenAPI, ConnectRPC/gRPC, Gr
 Spec-first REST, with `api/openapi.yaml` as the single source of truth:
 
 - Go server interface: `oapi-codegen` strict server on `net/http`.
-- Go client (used by the CLI/TUI remote mode): `oapi-codegen` client.
+- Go client (used by the CLI and TUI with `--server`, and by the desktop and mobile apps in remote mode): `oapi-codegen` client.
 - TypeScript types: `openapi-typescript`, called through `openapi-fetch`.
 - Errors: RFC 9457 problem documents with a machine-readable `type`.
 

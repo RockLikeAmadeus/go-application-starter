@@ -1,6 +1,6 @@
 # 5. Hosted and local editions share one core
 
-- Status: accepted. Workspaces (step 1), plan limits (step 2), plan features (step 3), plan changes (step 4), plain text in a synced folder (step 5), SQLite (step 6), Postgres (step 7, ADR 8), and sign-in with the dev sign-in (step 8a, ADR 9) are built; the rest is planned. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
+- Status: accepted. Workspaces (step 1), plan limits (step 2), plan features (step 3), plan changes (step 4), plain text in a synced folder (step 5), SQLite (step 6), Postgres (step 7, ADR 8), sign-in with the dev sign-in and a sign-in provider (steps 8a and 8b, ADR 9), signing in from the command line (step 9), and the desktop and mobile apps' remote mode (step 10, ADR 4) are built. See [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md).
 - Date: 2026-10-31
 
 ## Context

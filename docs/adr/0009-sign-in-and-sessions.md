@@ -1,7 +1,7 @@
 # 9. Sign-in and sessions: a session cookie, sessions in storage
 
-- Status: accepted. The dev sign-in (step 8a of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md)), the OIDC adapter (step 8b), and signing in from the command line and the terminal app (step 9) are built. [`docs/sign-in.md`](../sign-in.md) explains them.
-- Date: 2026-11-11, updated 2026-11-12 for the OIDC adapter, and 2026-11-13 for the command line
+- Status: accepted. The dev sign-in (step 8a of [`docs/plans/editions-and-accounts.md`](../plans/editions-and-accounts.md)), the OIDC adapter (step 8b), signing in from the command line and the terminal app (step 9), and signing in from the desktop and mobile apps in remote mode (step 10) are built. [`docs/sign-in.md`](../sign-in.md) explains them.
+- Date: 2026-11-11, updated 2026-11-12 for the OIDC adapter, 2026-11-13 for the command line, and 2026-11-14 for the desktop and mobile apps
 
 ## Context
 
@@ -29,7 +29,7 @@ The template also needs to test all of this, in CI and on a developer's computer
 - The server gives the browser a cookie named `session`, holding the session's token. The cookie is `HttpOnly`, so page scripts can't read it. It is `SameSite=Lax`, so the browser leaves it off most requests that other sites start. It is `Secure`, so it never travels unencrypted, when the request came over HTTPS or the `public_url` setting starts with `https://` (see "The OIDC adapter" below). It lasts as long as the session, so it outlives the browser being closed.
 - The web app holds no tokens at all. It learns whether someone is signed in from `GET /api/v1/session`.
 - This is the "backend for frontend" pattern, which the IETF's draft on [OAuth for browser-based apps](https://datatracker.ietf.org/doc/draft-ietf-oauth-browser-based-apps/) ranks the most secure for browsers. A script injected into the page (cross-site scripting) can't steal a token it can't read.
-- The command line and the terminal app send a bearer token in a header instead, since their requests don't come from a browser, and the desktop and mobile apps in remote mode (step 10) will too. The middleware accepts both, as "Clients that aren't browsers" below explains.
+- The command line and the terminal app send a bearer token in a header instead, since their requests don't come from a browser, and so do the desktop and mobile apps in remote mode (step 10). The middleware accepts both, as "Clients that aren't browsers" below explains.
 
 ### Sessions are kept in the app's storage
 
@@ -80,7 +80,17 @@ The template also needs to test all of this, in CI and on a developer's computer
 - **The token is kept in the operating system's credential store,** through [`zalando/go-keyring`](https://github.com/zalando/go-keyring), falling back to `tokens.json` in the settings folder (mode `0600`) where there is none. The `credential_store` setting (`system` or `file`) lets CI, tests, and people who don't want the credential store's prompts use the file only. Tokens are keyed by the normalised server address, so the command line can be signed in to several servers.
 - **Signing in stores a token only.** It never chooses the server or the data, which still come from `--server`, `STARTER_SERVER_URL`, or `server_url`. Nothing writes the settings file (SPEC.md §4.12).
 - **The terminal app signs in and out by itself,** with a signed-out screen and the `l` and `o` keys, and shares the command line's stored session.
-- **The client side is one package, `clientsignin`,** which the command line and the terminal app call, and the desktop and mobile apps will call in step 10. It imports no other adapter. `internal/bootstrap` passes in `httpclient`, `browsersignin`, and `tokenstore` through small interfaces. `httpclient` asks a token source on each request, so a new or forgotten session takes effect without reconnecting.
+- **The client side is one package, `clientsignin`,** which the command line, the terminal app, and the desktop and mobile apps in remote mode call. It imports no other adapter. `internal/bootstrap` passes in `httpclient`, `browsersignin`, and `tokenstore` through small interfaces. `httpclient` asks a token source on each request, so a new or forgotten session takes effect without reconnecting.
+
+### The desktop and mobile apps in remote mode (step 10)
+
+- **The apps sign in as the command line does, through the system browser and a loopback port.** In remote mode, the requests to the server come from the app's Go code (`httpclient`), not from its window, so a cookie in the window would sign nothing in. The apps reuse `clientsignin`, `browsersignin`, the `/auth/native` routes, and the bearer token, so the server needed only one change, for creating an account (below).
+- **The apps keep a session of their own, apart from the command line's.** This follows GitHub Desktop and `gh`, which each sign in. So `starter login` doesn't sign the desktop app in, and signing out of one leaves the other signed in. The apps keep their token under the keyring service `go-application-starter-app`, or in `app-tokens.json`, in the same settings folder as the command line's `tokens.json`. `bootstrap.NewClientSignInFor` and `NewRemote` take the program (`CommandLine` or `DesktopOrMobileApp`), which picks the store. The Android app always keeps its token in a file in its private storage, as Android has no Secret Service.
+- **The session says how to sign in.** `Session` in `api/openapi.yaml` has `signInMethod`. The server answers `page`, so the web app goes to `/auth/sign-in`. The app's in-process handler answers `browser`, so the web app starts the browser sign-in instead.
+- **The in-process handler signs in through an interface.** `httpapi.Options.ClientSignIn` is declared in `httpapi` and satisfied by a small adapter over `*clientsignin.Client` in bootstrap, so `httpapi` imports no client adapter. With it set, `GET /api/v1/session` answers the server's session, and `POST /auth/sign-out` signs out through it, forgetting the token even when the server can't be reached.
+- **The browser sign-in is two API operations.** `POST /api/v1/browser-sign-in` (with `isSignUp`) opens the system browser, waits until the sign-in finishes, and answers the session. `DELETE /api/v1/browser-sign-in` cancels the sign-in in progress, and the waiting `POST` then answers a 409 problem of type `cancelled`. The `POST` blocks rather than being polled, and cancelling is its own call, because the Android bridge can't cancel a request. One sign-in runs at a time, so starting another cancels the first. The server, which has no client sign-in, answers both with 404.
+- **Creating an account goes through `/auth/native` too.** `browsersignin.Start` adds `sign-up=1` to the `/auth/native` address when asked, and `/auth/native` then sends a signed-out browser to `/auth/sign-up` instead of `/auth/sign-in`. `clientsignin` has `SignUp` beside `SignIn`.
+- **The opener is passed in.** `desktop.Open` and `mobile.Open` take the function that opens the browser. `cmd/desktop` and `cmd/mobile` pass Wails' `Browser.OpenURL`, which works on Android too, where `browsersignin.Open` doesn't.
 
 Rejected:
 - **Tokens in the browser** (the web app holds the OIDC tokens, in memory or local storage): any script injected into the page could read and send them.
@@ -95,7 +105,7 @@ Rejected:
 
 ## Consequences
 
-- Every new front end that reaches the hosted server from a browser gets sign-in for free, from the cookie. A client that isn't a browser signs in through `clientsignin`, as the command line and the terminal app do.
+- Every new front end that reaches the hosted server from a browser gets sign-in for free, from the cookie. A client that isn't a browser signs in through `clientsignin`, as the command line, the terminal app, and the desktop and mobile apps do.
 - Each request with a cookie or a bearer token costs one session lookup and one account lookup in storage.
 - The command line can sign in only where a browser runs on the same computer, as the loopback address is reachable from that computer only. Over SSH, that needs a browser on the remote computer until the device code flow is added.
 - A one-time code that nobody redeems stays in storage after it expires, until a sweep removes it, as an expired session does. The sweep for both is a follow-up in the editions plan.

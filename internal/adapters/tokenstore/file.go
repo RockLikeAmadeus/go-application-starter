@@ -1,5 +1,6 @@
 // Package tokenstore keeps the session tokens a client application (the
-// command line, the terminal app) was given by servers, one per server.
+// command line, the terminal app, the desktop and mobile apps) was given by
+// servers, one per server.
 package tokenstore
 
 import (

@@ -32,8 +32,9 @@ const (
 // override it.
 var BuiltInServerURL = ""
 
-// CredentialStore says where the command line and the terminal application
-// keep the session token they receive when you sign in to a server.
+// CredentialStore says where the command line, the terminal application, and
+// the desktop app keep the session token they receive when you sign in to a
+// server. The Android app always uses a file.
 type CredentialStore string
 
 const (
@@ -74,11 +75,11 @@ type Config struct {
 	DatabaseURL string
 	// Port is the HTTP listen port (port; PORT, the de-facto cloud convention).
 	Port int
-	// ServerURL, when set, makes CLI/TUI use a remote server (server_url;
-	// STARTER_SERVER_URL).
+	// ServerURL, when set, makes the CLI, TUI, and desktop and mobile apps use
+	// a remote server (server_url; STARTER_SERVER_URL, else BuiltInServerURL).
 	ServerURL string
-	// CredentialStore says where the CLI and TUI keep their session tokens
-	// (credential_store; STARTER_CREDENTIAL_STORE).
+	// CredentialStore says where the CLI, TUI, and desktop app keep their
+	// session tokens (credential_store; STARTER_CREDENTIAL_STORE).
 	CredentialStore CredentialStore
 	// LogFormat is "json" or "text" (log_format; STARTER_LOG_FORMAT).
 	LogFormat string
