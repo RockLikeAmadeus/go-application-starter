@@ -231,3 +231,40 @@ func TestAServerWithNoClientSignInAnswersDeletingTheSessionNotFound(t *testing.T
 		t.Errorf("body type = %q (err %v), want %q", body.Type, err, httpapi.ProblemNotFound)
 	}
 }
+
+func TestDeletingTheSessionOfAHandlerWithAClientSignInSignsOutThroughItAndAnswersNoContent(t *testing.T) {
+	cases := map[string]error{
+		"the server ends the session":      nil,
+		"the server can't end the session": httpapi.ErrSessionNotEnded,
+	}
+	for name, signOutErr := range cases {
+		t.Run(name, func(t *testing.T) {
+			var signedOut int
+			handler := httpapi.NewHandler(httpapi.Options{
+				ClientSignIn: signOutRecorder{signOutErr: signOutErr, signedOut: &signedOut},
+			})
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, httptest.NewRequest(http.MethodDelete, "/api/v1/session", nil))
+
+			if rec.Code != http.StatusNoContent {
+				t.Errorf("status = %d, want 204", rec.Code)
+			}
+			if signedOut != 1 {
+				t.Errorf("signed out %d times, want 1", signedOut)
+			}
+		})
+	}
+}
+
+func TestDeletingTheSessionWhenSigningOutFailsAnswersAProblem(t *testing.T) {
+	var signedOut int
+	handler := httpapi.NewHandler(httpapi.Options{
+		ClientSignIn: signOutRecorder{signOutErr: errors.New("the token store is locked"), signedOut: &signedOut},
+	})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodDelete, "/api/v1/session", nil))
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", rec.Code)
+	}
+}

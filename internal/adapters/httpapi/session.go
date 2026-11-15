@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -140,7 +141,14 @@ func (h *Handlers) CancelBrowserSignIn(context.Context, openapi.CancelBrowserSig
 }
 
 // EndSession belongs to the apps' in-process handler. A server, which has no
-// client sign-in, answers as if it didn't exist.
-func (h *Handlers) EndSession(context.Context, openapi.EndSessionRequestObject) (openapi.EndSessionResponseObject, error) {
-	return nil, domain.ErrNotFound
+// client sign-in, answers as if it didn't exist. A session the server couldn't
+// end is still ended for the app, as the token is forgotten.
+func (h *Handlers) EndSession(ctx context.Context, _ openapi.EndSessionRequestObject) (openapi.EndSessionResponseObject, error) {
+	if h.clientSignIn == nil {
+		return nil, domain.ErrNotFound
+	}
+	if err := h.clientSignIn.SignOut(ctx); err != nil && !errors.Is(err, ErrSessionNotEnded) {
+		return nil, err
+	}
+	return openapi.EndSession204Response{}, nil
 }

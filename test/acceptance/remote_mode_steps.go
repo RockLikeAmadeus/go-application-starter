@@ -327,8 +327,8 @@ func (w *world) iSignOutFromTheApp(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	status, _ := a.request(ctx, http.MethodPost, "/auth/sign-out", "")
-	if status != http.StatusSeeOther && status != http.StatusFound {
+	status, _ := a.request(ctx, http.MethodDelete, "/api/v1/session", "")
+	if status != http.StatusNoContent {
 		return fmt.Errorf("signing out of the %s answered status %d", name, status)
 	}
 	return nil
