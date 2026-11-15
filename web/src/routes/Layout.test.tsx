@@ -246,6 +246,40 @@ describe("Layout", () => {
     expect(form).toHaveAttribute("action", "/auth/sign-out");
   });
 
+  it("signs out through DELETE /api/v1/session and shows the sign-in screen, with the browser method", async () => {
+    const user = userEvent.setup();
+    let isSignedIn = true;
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: Request) => {
+        calls.push(`${input.method} ${new URL(input.url).pathname}`);
+        if (input.method === "DELETE") {
+          isSignedIn = false;
+          return new Response(null, { status: 204 });
+        }
+        if (new URL(input.url).pathname !== "/api/v1/session") {
+          return new Promise<Response>(() => {});
+        }
+        return Response.json({
+          isSignInOn: true,
+          name: isSignedIn ? "Alpha" : undefined,
+          signInMethod: "browser",
+        });
+      }),
+    );
+    renderLayout();
+
+    const signOut = await within(screen.getByRole("complementary")).findByRole("button", {
+      name: "Sign out",
+    });
+    expect(signOut.closest("form")).toBeNull();
+    await user.click(signOut);
+
+    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    expect(calls).toContain("DELETE /api/v1/session");
+  });
+
   it("shows no signed-in name or Sign out button when sign-in is off", async () => {
     const fetch = sessionApi({ isSignInOn: false, signInMethod: "page" });
     vi.stubGlobal("fetch", fetch);

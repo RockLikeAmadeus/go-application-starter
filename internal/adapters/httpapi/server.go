@@ -140,10 +140,6 @@ func NewHandler(opts Options) http.Handler {
 		mux.HandleFunc("POST /auth/native/token", nativeToken(opts.SignIn))
 	}
 
-	if opts.ClientSignIn != nil {
-		mux.Handle("POST /auth/sign-out", clientSignOut(opts.ClientSignIn))
-	}
-
 	mux.Handle("/", spaHandler(opts.WebAssets))
 
 	var handler http.Handler = mux
