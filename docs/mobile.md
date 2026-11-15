@@ -73,6 +73,8 @@ The phone must be able to reach that address.
 
 In remote mode, `mobile.Open` opens no data folder or storage. The app's REST handler answers each request from the server, through `httpclient`. `GET /api/v1/connection` then says that a connection is required, so the web app's offline notice comes back. Signing in opens the phone's browser through Wails' `Browser.OpenURL`. The browser signs in on the server and hands a one-time code back to the app through a loopback port, as for the command line ([docs/sign-in.md](sign-in.md), "Signing in from the desktop and mobile apps"). The app keeps its session token in `app-tokens.json` in its private storage, whatever the `credential_store` setting says, because Android has no credential store that go-keyring can use. Only the app can read its private storage.
 
+Signing out goes through the API too. The Sign out button calls `DELETE /api/v1/session`, which ends the session on the server and forgets the token. The hosted web app's sign-out form isn't used, because it answers with a redirect, and the app's window can't follow a redirect. [docs/sign-in.md](sign-in.md) explains why, in "Signing in from the desktop and mobile apps". So nothing that the app's window loads may answer with a redirect.
+
 The acceptance tests cover this through the bridge, but signing in through the phone's browser, and the loopback reply coming back to the app, haven't yet been tried on a real phone or the emulator.
 
 ## Debug it

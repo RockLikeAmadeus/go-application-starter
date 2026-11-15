@@ -530,7 +530,22 @@ sequenceDiagram
 
 The `POST` waits rather than being asked again and again (polled), and cancelling is its own request, because the Android app's bridge can't cancel a request once sent. Only one sign-in runs at a time, so starting another cancels the first.
 
-**Signing out.** The sign-out button posts to `POST /auth/sign-out`, as on the web. The handler ends the server's session and forgets the token, and forgets it even when the server can't be reached. Then it redirects to `/`.
+**Signing out.** In the apps, "Sign out" is a button rather than a form. Pressing it calls `DELETE /api/v1/session`, the `endSession` operation in `api/openapi.yaml`. The handler ends the server's session and forgets the token. When the server can't be reached, or has already ended the session, the handler still forgets the token and answers 204 (No Content), because the app is signed out either way. Any other failure is a problem response. The web app then shows "Sign-out failed. You are still signed in." under the button, followed by the problem's detail, or by "Please try again." when there is none. After a 204, the web app asks for the session again, finds no one signed in, and shows the sign-in screen, without loading a new page. A server has no client sign-in, so it answers `DELETE /api/v1/session` with 404. The hosted web app keeps its sign-out form, which posts to `POST /auth/sign-out`.
+
+**Why the apps don't sign out with the form.** On the hosted web app, `POST /auth/sign-out` answers with a redirect: a `303 See Other` response, which tells the browser to load another address, here `/`. The apps' window can't follow one. The window is a webview, a browser engine inside the app, and Wails hands the webview's requests to the app's handler itself. Wails' own file server avoids redirects for this reason. A comment in its source (`internal/assetserver/asset_fileserver.go`) says that a redirect doesn't work in the WebKit webviews it uses on Linux and macOS. When the desktop app signed out through the form, its window was left blank. So the apps sign in and out through the API, and nothing that the apps' window loads may answer with a redirect.
+
+```mermaid
+sequenceDiagram
+    participant W as "The app's window (the web app)"
+    participant H as "The in-process handler"
+    participant S as "The hosted server"
+    W->>H: DELETE /api/v1/session
+    H->>S: POST /auth/sign-out (bearer token)
+    S-->>H: the session has ended
+    H-->>W: 204, and the token is forgotten
+    W->>H: GET /api/v1/session
+    H-->>W: no one is signed in
+```
 
 **A session of its own.** The apps keep their own session for a server, apart from the command line's, as GitHub Desktop and `gh` do. So `starter login` doesn't sign the desktop app in, and signing out of one leaves the other signed in. That keeps each program's sign-in simple to follow, at the cost of signing in twice on a computer that uses both.
 
@@ -545,11 +560,12 @@ The Android app always keeps its token in `app-tokens.json` in its private stora
 
 ### Where the code lives
 
-- **`internal/adapters/httpapi`** declares the `ClientSignIn` interface (`Options.ClientSignIn`), with the current session, signing in or up through the browser, cancelling, and signing out. With it set, the handler answers the session from the server, serves `POST` and `DELETE /api/v1/browser-sign-in`, and signs out through it. Without it, as on the server, both `browser-sign-in` operations answer 404. `httpapi` imports no client adapter.
+- **`internal/adapters/httpapi`** declares the `ClientSignIn` interface (`Options.ClientSignIn`), with the current session, signing in or up through the browser, cancelling, and signing out. With it set, the handler answers the session from the server, serves `POST` and `DELETE /api/v1/browser-sign-in`, and signs out through it on `DELETE /api/v1/session`. Without it, as on the server, both `browser-sign-in` operations and `DELETE /api/v1/session` answer 404. `httpapi` imports no client adapter.
 - **`internal/bootstrap`** fills that interface with a small adapter over `clientsignin.Client` (`NewAppClientSignIn`). `NewClientSignInFor` and `NewRemote` take the settings folder and the program (`CommandLine` or `DesktopOrMobileApp`), which picks the token store, so the app's requests send the app's own token.
 - **`internal/adapters/clientsignin`** gains `SignUp` beside `SignIn`, and `Cancel`, which cancels the sign-in in progress.
 - **`internal/adapters/desktop`** chooses remote mode in `desktop.Open`, and **`internal/adapters/mobile`** builds on it, with the file token store.
 - **`web/src/features/session/SignInScreen.tsx`** shows the browser sign-in and its waiting screen.
+- **`web/src/features/session/SignOut.tsx`** shows who is signed in and the Sign out button. With `signInMethod` set to `browser`, the button calls `DELETE /api/v1/session`. Otherwise it is the form that posts to `POST /auth/sign-out`.
 
 ## How it's tested
 
@@ -562,7 +578,7 @@ No test talks to a real provider. Instead, `internal/adapters/oidc/oidctest` is 
 - **The server:** `httpapi`'s tests cover the cookies, `Secure` behind an `https://` public URL, the `/auth/` routes, every cause of the "Sign-in failed" page, the 401 and 403 problems, and the session endpoint. The OIDC routes are tested with a fake `SignInProvider`.
 - **Acceptance:** `features/sign-in.feature` (`@sign-in`) runs on the memory, sqlite, postgres, http, and oidc drivers. The http driver signs in through `/auth/dev`, with one cookie jar per account. The oidc driver is the hosted edition over HTTP with the real OIDC adapter against `oidctest`. It follows the redirects with a cookie jar, as a browser does. `features/sign-in-provider.feature` (`@sign-in-provider`) runs on the oidc driver only, and covers a changed name, two people with the same name, creating an account with and without `prompt=create`, cancelling at the provider, and coming back without starting. `features/workspaces.feature` also runs on http, where each workspace is a signed-in account's.
 - **The command line's sign-in:** `domain` and `app` have unit tests for the codes' PKCE check, their expiry, issuing them, and redeeming them once. `storagetest` has a contract suite for `SignInCodeRepository`, which memory, SQLite, and Postgres pass. `httpapi` tests the bearer token, the native routes, and the `return` path. `browsersignin` runs against a fake server, with a fake `BROWSER` script so no real browser opens. `tokenstore` tests the keyring with go-keyring's `MockInit`, which swaps the real credential store for one in memory, and the file in a temporary folder. `clientsignin`, `cli`, and `tui` use fakes. `features/command-line-sign-in.feature` (`@command-line-sign-in`) runs on the http and oidc drivers. Its command line is the real `clientsignin` and `browsersignin` with a token store in memory, and its opener drives the harness's browser through the dev sign-in or `oidctest`. The terminal journeys in `test/terminal/features/command-line-sign-in.feature` run the built `starter` against a built server with the dev sign-in, with `STARTER_CREDENTIAL_STORE=file` and a `BROWSER` script that completes the sign-in with `curl`.
-- **The apps' sign-in:** `httpapi` tests the session's `signInMethod`, both `browser-sign-in` operations with a fake `ClientSignIn`, the `cancelled` problem, and signing out through it. `clientsignin` tests `SignUp` and cancelling, `tokenstore` tests that the apps' stores keep their tokens apart from the command line's, and `desktop` and `mobile` test opening in remote mode. Vitest covers the sign-in screen's browser buttons and its waiting screen. `features/remote-mode.feature` (`@remote-mode`) runs on the http and oidc drivers. Its apps are the real `desktop.Open` and `mobile.Open` on a temporary settings folder, with the file token store and an opener that drives the harness's browser. The mobile app's requests go over the bridge. No Playwright journey covers it, because Playwright runs the web app against the server, which always answers `page`.
+- **The apps' sign-in:** `httpapi` tests the session's `signInMethod`, both `browser-sign-in` operations with a fake `ClientSignIn`, the `cancelled` problem, and `DELETE /api/v1/session` signing out through it. `clientsignin` tests `SignUp` and cancelling, `tokenstore` tests that the apps' stores keep their tokens apart from the command line's, and `desktop` and `mobile` test opening in remote mode. Vitest covers the sign-in screen's browser buttons and its waiting screen, and the Sign out button in browser mode, with its failure message. `features/remote-mode.feature` (`@remote-mode`) runs on the http and oidc drivers. Its apps are the real `desktop.Open` and `mobile.Open` on a temporary settings folder, with the file token store and an opener that drives the harness's browser. The mobile app's requests go over the bridge. No Playwright journey covers it, because Playwright runs the web app against the server, which always answers `page`.
 - **The browser:** `web/e2e/features/sign-in.feature` signs in with the dev sign-in, creates an account through the "Create an account" link, and signs out. It runs in its own Playwright project, against its own server with sign-in on, so the other journeys keep a server without it.
 
 ## Not built yet

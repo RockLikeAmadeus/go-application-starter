@@ -22,7 +22,7 @@ In the local edition, the desktop app keeps its data on the computer (`httpapi.O
 
 ## Sign-in screen in remote mode
 
-`useSession` reads `signInMethod`. With `page` (the server), `SignInScreen`'s "Sign in" and "Create an account" are links to `/auth/sign-in` and `/auth/sign-up`. With `browser` (the desktop and mobile apps in remote mode), they are buttons that `POST /api/v1/browser-sign-in`, and `BrowserSignInScreen` shows the waiting screen with Cancel (`DELETE`), refetching the session on success. No Playwright journey covers `browser`, since the e2e server always answers `page`; Vitest covers it.
+`useSession` reads `signInMethod`. With `page` (the server), `SignInScreen`'s "Sign in" and "Create an account" are links to `/auth/sign-in` and `/auth/sign-up`. With `browser` (the desktop and mobile apps in remote mode), they are buttons that `POST /api/v1/browser-sign-in`, and `BrowserSignInScreen` shows the waiting screen with Cancel (`DELETE`), refetching the session on success. `SignOut` likewise: with `page`, a form posting to `/auth/sign-out`; with `browser`, a button that calls `DELETE /api/v1/session` and refetches the session, showing a failure under it, since the apps' webview can't follow the form's redirect. No Playwright journey covers `browser`, since the e2e server always answers `page`; Vitest covers it.
 
 ## Android bridge (`web/src/api/client.ts`)
 
