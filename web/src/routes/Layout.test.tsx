@@ -280,6 +280,37 @@ describe("Layout", () => {
     expect(calls).toContain("DELETE /api/v1/session");
   });
 
+  it("shows why signing out failed, under the Sign out button, in the apps' browser mode", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: Request) => {
+        if (input.method === "DELETE") {
+          return Response.json(
+            {
+              title: "Internal Server Error",
+              status: 500,
+              detail: "The session could not be ended.",
+            },
+            { status: 500, headers: { "Content-Type": "application/problem+json" } },
+          );
+        }
+        if (new URL(input.url).pathname !== "/api/v1/session") {
+          return new Promise<Response>(() => {});
+        }
+        return Response.json({ isSignInOn: true, name: "Alpha", signInMethod: "browser" });
+      }),
+    );
+    renderLayout();
+
+    const sidebar = within(screen.getByRole("complementary"));
+    await user.click(await sidebar.findByRole("button", { name: "Sign out" }));
+
+    expect(await sidebar.findByRole("alert")).toHaveTextContent(
+      "Sign-out failed. You are still signed in. The session could not be ended.",
+    );
+  });
+
   it("shows no signed-in name or Sign out button when sign-in is off", async () => {
     const fetch = sessionApi({ isSignInOn: false, signInMethod: "page" });
     vi.stubGlobal("fetch", fetch);
