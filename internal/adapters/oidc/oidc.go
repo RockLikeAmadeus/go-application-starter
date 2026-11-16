@@ -151,3 +151,10 @@ func (p *Provider) StartSignUp() (authURL, state, attempt string) {
 	}
 	return p.start(oauth2.SetAuthURLParam("prompt", "create"))
 }
+
+// StartAgain begins a sign-in that asks the provider to sign the person in
+// again (prompt=login), so a browser that already has a session at the
+// provider doesn't skip the sign-in.
+func (p *Provider) StartAgain() (authURL, state, attempt string) {
+	return p.start(oauth2.SetAuthURLParam("prompt", "login"))
+}
