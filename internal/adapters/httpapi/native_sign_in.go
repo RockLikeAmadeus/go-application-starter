@@ -34,8 +34,8 @@ var (
 // "state", and a PKCE S256 "challenge". A request with a bad value is refused
 // with a problem naming each one. A good one is kept in a short-lived cookie,
 // and the browser goes on to sign in and then back to /auth/native/finish,
-// or straight there when it already has a session. With "sign-up=1" a
-// browser with no session is sent to sign up instead of sign in.
+// even when it already has a session, so the person says who is signing in.
+// With "sign-up=1" the browser is sent to sign up instead of sign in.
 func nativeSignIn(publicURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		startNativeSignIn(w, r, publicURL)
@@ -162,10 +162,6 @@ func startNativeSignIn(w http.ResponseWriter, r *http.Request, publicURL string)
 		MaxAge:   int(nativeSignInLifetime.Seconds()),
 		Secure:   isSecure(r, publicURL),
 	})
-	if _, ok := accountFrom(r.Context()); ok {
-		http.Redirect(w, r, "/auth/native/finish", http.StatusFound)
-		return
-	}
 	page := "/auth/sign-in"
 	if r.FormValue("sign-up") == "1" {
 		page = "/auth/sign-up"

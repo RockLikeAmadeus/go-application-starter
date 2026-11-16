@@ -124,7 +124,7 @@ func TestANativeSignInRequestToSignUpWithNoSessionIsSentToSignUp(t *testing.T) {
 	}
 }
 
-func TestAGoodNativeSignInRequestWithASessionGoesStraightToFinish(t *testing.T) {
+func TestAGoodNativeSignInRequestWithASessionIsStillSentToSignIn(t *testing.T) {
 	handler := httpapi.NewHandler(httpapi.Options{
 		SignIn:        sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}},
 		IsDevSignInOn: true,
@@ -135,8 +135,12 @@ func TestAGoodNativeSignInRequestWithASessionGoesStraightToFinish(t *testing.T) 
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/native/finish" {
-		t.Errorf("status = %d, location = %q; want %d, /auth/native/finish",
+	location, err := url.Parse(rec.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("parse location: %v", err)
+	}
+	if rec.Code != http.StatusFound || location.Path != "/auth/sign-in" || location.Query().Get("return") != "/auth/native/finish" {
+		t.Errorf("status = %d, location = %q; want %d, /auth/sign-in?return=/auth/native/finish",
 			rec.Code, rec.Header().Get("Location"), http.StatusFound)
 	}
 }
