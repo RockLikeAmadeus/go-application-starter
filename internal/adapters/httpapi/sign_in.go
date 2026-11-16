@@ -10,14 +10,22 @@ import (
 
 // signInGoesTo answers GET /auth/sign-in by sending the browser to the
 // configured sign-in adapter's own page, such as the dev sign-in's form. A
-// local "return" path goes along, so the adapter can return to it afterwards.
+// local "return" path goes along, so the adapter can return to it afterwards,
+// and so does again=1, which asks the adapter to make the person sign in again.
 func signInGoesTo(adapterPath string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		target := adapterPath
+		query := url.Values{}
 		if r.FormValue("return") != "" {
 			if path := returnPath(r); path != "/" {
-				target += "?return=" + url.QueryEscape(path)
+				query.Set("return", path)
 			}
+		}
+		if r.FormValue("again") == "1" {
+			query.Set("again", "1")
+		}
+		target := adapterPath
+		if len(query) > 0 {
+			target += "?" + query.Encode()
 		}
 		http.Redirect(w, r, target, http.StatusFound)
 	}

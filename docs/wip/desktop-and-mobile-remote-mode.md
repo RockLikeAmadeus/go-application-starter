@@ -108,7 +108,7 @@ Signing in always asks who you are (found by hand in task 22: after signing out 
   - Red: `TestAGoodNativeSignInRequestWithASessionIsStillSentToSignIn` (renamed shortcut test) failed with Location `/auth/native/finish`. Green: removed the shortcut in `startNativeSignIn`. No refactor.
 - [x] 21i. OIDC adapter: `Provider.StartAgain` asks the provider to sign in again (`prompt=login`). Red: `TestStartAgainAsksTheProviderToSignThePersonInAgain` (prompt was empty). Green: `start` with that parameter. Refactor: nothing worth changing.
 - [x] 21i2. `httpapi`: `SignInProvider` gains `StartAgain`, and `GET /auth/oidc?again=1` begins with it (the plain route is unchanged). Red: `TestStartingAnOIDCSignInWithAgainGoesToTheProviderAskingToSignInAgain` (went to the plain `Start` URL). Green: `oidcStart` takes an optional `again` start, chosen by `?again=1`. Refactor: nothing worth changing.
-- [ ] 21i2b. `httpapi`: the sign-in page redirect (`/auth/sign-in` to `/auth/oidc`) keeps `again`.
+- [x] 21i2b. `httpapi`: the sign-in page redirect (`/auth/sign-in` to `/auth/oidc`) keeps `again`. Red: `TestSigningInWithAnOIDCProviderKeepsAskingToSignInAgain` (went to `/auth/oidc` with no query). Green: `signInGoesTo` builds the query from `return` and `again`. Refactor: nothing worth changing.
 - [ ] 21i3. `/auth/native` sends the browser to the sign-in page with `again=1`; a web sign-in doesn't. Remove the `@wip` tag of "Signing in again after signing out asks who to sign in as" once it passes on both drivers.
 - [ ] 21j. Docs: `docs/sign-in.md` (the RFC 8252 steps and diagram, which say the sign-in is skipped for a signed-in browser; the routes table), ADR 9, and `.claude/rules/server.md` if it says so. Run `task test:init`.
 

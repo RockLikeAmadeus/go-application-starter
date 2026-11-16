@@ -131,6 +131,16 @@ func TestSigningInWithAnOIDCProviderGoesToTheOIDCStart(t *testing.T) {
 	}
 }
 
+func TestSigningInWithAnOIDCProviderKeepsAskingToSignInAgain(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, SignInProvider: fakeSignInProvider{}})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/sign-in?again=1", nil))
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/oidc?again=1" {
+		t.Errorf("status = %d, Location = %q; want %d to /auth/oidc?again=1", rec.Code, rec.Header().Get("Location"), http.StatusFound)
+	}
+}
+
 func TestTheProviderSendingTheBrowserBackSignsInSetsTheSessionCookieAndGoesToTheWebApp(t *testing.T) {
 	identity, _ := domain.NewIdentity("https://provider.example", "sub-ada", "Ada")
 	provider := fakeSignInProvider{state: "s1", attempt: "opaque-attempt", identity: identity}
