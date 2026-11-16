@@ -145,6 +145,21 @@ func TestAGoodNativeSignInRequestWithASessionIsStillSentToSignIn(t *testing.T) {
 	}
 }
 
+func TestAGoodNativeSignInRequestAsksTheSignInPageToSignInAgain(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	query := url.Values{"port": {"4000"}, "state": {validState}, "challenge": {validChallenge}}
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/native?"+query.Encode(), nil))
+
+	location, err := url.Parse(rec.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("parse location: %v", err)
+	}
+	if location.Path != "/auth/sign-in" || location.Query().Get("again") != "1" {
+		t.Errorf("location = %q, want /auth/sign-in with again=1", rec.Header().Get("Location"))
+	}
+}
+
 func TestNativeFinishIssuesACodeForTheBrowsersSessionAndGoesToTheCommandLinesLoopbackPort(t *testing.T) {
 	handler := httpapi.NewHandler(httpapi.Options{
 		SignIn:        sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}},

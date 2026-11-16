@@ -75,7 +75,6 @@ Feature: Use the desktop and mobile apps on a hosted server
       | desktop app |
       | mobile app  |
 
-  @wip
   Scenario Outline: Signing in again after signing out asks who to sign in as
     Given I have signed in from the <app> as "Ada"
     When I sign out from the <app>

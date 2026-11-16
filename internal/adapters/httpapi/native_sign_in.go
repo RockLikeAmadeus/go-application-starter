@@ -163,8 +163,13 @@ func startNativeSignIn(w http.ResponseWriter, r *http.Request, publicURL string)
 		Secure:   isSecure(r, publicURL),
 	})
 	page := "/auth/sign-in"
+	// again=1 makes the sign-in ask who is signing in, even of a browser that
+	// already has a session. Sign-up carries no again: a provider's sign-up page
+	// always asks, and task 21i4 handles a provider without one.
+	extra := "&again=1"
 	if r.FormValue("sign-up") == "1" {
 		page = "/auth/sign-up"
+		extra = ""
 	}
-	http.Redirect(w, r, page+"?return="+url.QueryEscape("/auth/native/finish"), http.StatusFound)
+	http.Redirect(w, r, page+"?return="+url.QueryEscape("/auth/native/finish")+extra, http.StatusFound)
 }
