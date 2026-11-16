@@ -32,6 +32,10 @@ type SignInProvider interface {
 	// StartAgain is Start for someone who must prove who they are again, even
 	// when the provider still has a session for them.
 	StartAgain() (authURL, state, attempt string)
+	// StartSignUpAgain is StartSignUp for someone who must prove who they are
+	// again, or create an account again, even when the provider still has a
+	// session for them.
+	StartSignUpAgain() (authURL, state, attempt string)
 	Finish(ctx context.Context, attempt, code string) (domain.Identity, error)
 }
 

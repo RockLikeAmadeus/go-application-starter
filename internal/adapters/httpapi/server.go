@@ -130,7 +130,7 @@ func NewHandler(opts Options) http.Handler {
 		mux.HandleFunc("GET /auth/sign-in", signInGoesTo("/auth/oidc"))
 		mux.HandleFunc("GET /auth/sign-up", signInGoesTo("/auth/oidc/sign-up"))
 		mux.HandleFunc("GET /auth/oidc", oidcStart(opts.SignInProvider.Start, opts.SignInProvider.StartAgain, opts.PublicURL))
-		mux.HandleFunc("GET /auth/oidc/sign-up", oidcStart(opts.SignInProvider.StartSignUp, nil, opts.PublicURL))
+		mux.HandleFunc("GET /auth/oidc/sign-up", oidcStart(opts.SignInProvider.StartSignUp, opts.SignInProvider.StartSignUpAgain, opts.PublicURL))
 		mux.HandleFunc("GET /auth/oidc/callback", oidcCallback(log, opts.SignInProvider, opts.SignIn, opts.PublicURL))
 	}
 	if opts.SignIn != nil {
