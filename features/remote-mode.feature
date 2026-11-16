@@ -75,6 +75,18 @@ Feature: Use the desktop and mobile apps on a hosted server
       | desktop app |
       | mobile app  |
 
+  @wip
+  Scenario Outline: Signing in again after signing out asks who to sign in as
+    Given I have signed in from the <app> as "Ada"
+    When I sign out from the <app>
+    And I start signing in again from the <app>
+    Then the browser, still signed in as "Ada", is shown the server's sign-in page
+
+    Examples:
+      | app         |
+      | desktop app |
+      | mobile app  |
+
   Scenario: Signing in from the command line doesn't sign the desktop app in
     Given I have signed in from the command line on this computer as "Ada"
     When the desktop app tries to see my workspace's plan

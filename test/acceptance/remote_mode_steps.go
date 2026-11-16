@@ -44,6 +44,8 @@ type remoteApp struct {
 	waits bool
 	// opened is told when the app has opened the sign-in address.
 	opened chan struct{}
+	// address is the sign-in address the app opened last.
+	address string
 	// pending gets the answer to the sign-in the app is waiting on.
 	pending chan int
 }
@@ -74,6 +76,8 @@ func (w *world) registerRemoteModeSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^the `+app+` offers to sign in through the browser$`, w.theAppOffersToSignInThroughTheBrowser)
 	sc.Step(`^I create an account from the `+app+` as "([^"]*)"$`, w.iCreateAnAccountFromTheApp)
 	sc.Step(`^the `+app+` is waiting for me to sign in in the browser$`, w.theAppIsWaitingForTheBrowser)
+	sc.Step(`^I start signing in again from the `+app+`$`, w.iStartSigningInAgainFromTheApp)
+	sc.Step(`^the browser, still signed in as "([^"]*)", is shown the server's sign-in page$`, w.theBrowserIsShownTheSignInPage)
 	sc.Step(`^I cancel signing in from the `+app+`$`, w.iCancelSigningInFromTheApp)
 	sc.Step(`^the `+app+` is not signed in$`, w.theAppIsNotSignedIn)
 	sc.Step(`^I sign out from the `+app+`$`, w.iSignOutFromTheApp)
@@ -145,6 +149,7 @@ func (w *world) openInTheBrowser(a *remoteApp, address string) error {
 	if !ok {
 		return errors.New("this driver's sign-in can't finish an app's: tag the scenario @remote-mode")
 	}
+	a.address = address
 	a.opened <- struct{}{}
 	if a.waits {
 		return nil
@@ -234,6 +239,40 @@ func (w *world) theAppIsWaitingForTheBrowser(name string) error {
 	case <-time.After(signInTimeout):
 		return fmt.Errorf("the %s never opened the browser", name)
 	}
+}
+
+// iStartSigningInAgainFromTheApp starts a sign-in whose browser the next step
+// drives, and returns once the app has opened the sign-in address.
+func (w *world) iStartSigningInAgainFromTheApp(name string) error {
+	return w.theAppIsWaitingForTheBrowser(name)
+}
+
+// theBrowserIsShownTheSignInPage opens, in the browser kept for name (which
+// still holds its session from signing in before), the address the app
+// opened, and checks that it is shown the sign-in page rather than sent
+// straight back to the app. It then cancels the app's sign-in.
+func (w *world) theBrowserIsShownTheSignInPage(ctx context.Context, name string) error {
+	browser, ok := w.signIn.(nativeSignInBrowser)
+	if !ok {
+		return errors.New("this driver's sign-in can't show an app's: tag the scenario @remote-mode")
+	}
+	for appName, a := range w.remoteApps {
+		if a.pending == nil {
+			continue
+		}
+		isShown, err := browser.showsSignInPage(name, a.address)
+		if err != nil {
+			return err
+		}
+		if status, body := a.request(ctx, http.MethodDelete, "/api/v1/browser-sign-in", ""); status >= 300 {
+			return fmt.Errorf("cancelling the sign-in from the %s answered status %d: %.120s", appName, status, body)
+		}
+		if !isShown {
+			return fmt.Errorf("the browser, signed in as %q, was sent back to the %s without being shown the sign-in page", name, appName)
+		}
+		return nil
+	}
+	return errors.New("no app is waiting for the browser")
 }
 
 func (w *world) iCancelSigningInFromTheApp(ctx context.Context, name string) error {

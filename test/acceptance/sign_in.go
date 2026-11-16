@@ -374,6 +374,11 @@ type nativeSignInBrowser interface {
 	// returns the address on the command line's loopback port that the
 	// server sent the browser back to.
 	finishNativeSignIn(name, address string) (callback string, err error)
+	// showsSignInPage opens address in the browser kept for name, which keeps
+	// the session from signing in before, and says whether it is shown the
+	// sign-in page (the dev form, or the provider's page) instead of being
+	// sent straight back to the command line. It signs no one in.
+	showsSignInPage(name, address string) (isShown bool, err error)
 }
 
 // returnsToTheCommandLine is whether next is where the server sends the
@@ -416,6 +421,32 @@ func (d *devSignInOverHTTP) finishNativeSignIn(name, address string) (string, er
 		}
 	}
 	return callbackFrom(got)
+}
+
+func (d *devSignInOverHTTP) showsSignInPage(name, address string) (bool, error) {
+	browser, err := d.browserFor(name)
+	if err != nil {
+		return false, err
+	}
+	got, err := d.reachCommandLine(browser, address)
+	if err != nil {
+		return false, err
+	}
+	return got.status == http.StatusOK && strings.Contains(got.body, `<input name="name"`), nil
+}
+
+func (o *oidcSignInOverHTTP) showsSignInPage(name, address string) (bool, error) {
+	browser, err := o.browserFor(name)
+	if err != nil {
+		return false, err
+	}
+	got, err := followRedirectsUntil(browser, address, func(next *url.URL) bool {
+		return o.returnsToTheCommandLine(next) || strings.HasPrefix(next.String(), o.provider.Issuer())
+	})
+	if err != nil {
+		return false, err
+	}
+	return strings.HasPrefix(got.body, o.provider.Issuer()), nil
 }
 
 // finishNativeSignIn signs in at the fake provider, when the browser is sent
