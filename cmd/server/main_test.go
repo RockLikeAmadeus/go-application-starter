@@ -222,6 +222,7 @@ type fakeProvider struct{ authURL string }
 
 func (p fakeProvider) Start() (string, string, string)       { return p.authURL, "state", "attempt" }
 func (p fakeProvider) StartSignUp() (string, string, string) { return p.authURL, "state", "attempt" }
+func (p fakeProvider) StartAgain() (string, string, string)  { return p.authURL, "state", "attempt" }
 func (fakeProvider) Finish(context.Context, string, string) (domain.Identity, error) {
 	return domain.Identity{}, domain.ErrNoWorkspace
 }

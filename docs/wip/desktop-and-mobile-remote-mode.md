@@ -107,7 +107,8 @@ Signing in always asks who you are (found by hand in task 22: after signing out 
 - [x] 21h. `httpapi`: `/auth/native` sends a browser that has a session to the sign-in page too, as it does a signed-out one (the shortcut straight to `/auth/native/finish` goes). The existing shortcut test changes to expect it.
   - Red: `TestAGoodNativeSignInRequestWithASessionIsStillSentToSignIn` (renamed shortcut test) failed with Location `/auth/native/finish`. Green: removed the shortcut in `startNativeSignIn`. No refactor.
 - [x] 21i. OIDC adapter: `Provider.StartAgain` asks the provider to sign in again (`prompt=login`). Red: `TestStartAgainAsksTheProviderToSignThePersonInAgain` (prompt was empty). Green: `start` with that parameter. Refactor: nothing worth changing.
-- [ ] 21i2. `httpapi`: `SignInProvider` gains `StartAgain`, and `GET /auth/oidc?again=1` begins with it (the plain route is unchanged); the sign-in page redirect keeps `again`.
+- [x] 21i2. `httpapi`: `SignInProvider` gains `StartAgain`, and `GET /auth/oidc?again=1` begins with it (the plain route is unchanged). Red: `TestStartingAnOIDCSignInWithAgainGoesToTheProviderAskingToSignInAgain` (went to the plain `Start` URL). Green: `oidcStart` takes an optional `again` start, chosen by `?again=1`. Refactor: nothing worth changing.
+- [ ] 21i2b. `httpapi`: the sign-in page redirect (`/auth/sign-in` to `/auth/oidc`) keeps `again`.
 - [ ] 21i3. `/auth/native` sends the browser to the sign-in page with `again=1`; a web sign-in doesn't. Remove the `@wip` tag of "Signing in again after signing out asks who to sign in as" once it passes on both drivers.
 - [ ] 21j. Docs: `docs/sign-in.md` (the RFC 8252 steps and diagram, which say the sign-in is skipped for a signed-in browser; the routes table), ADR 9, and `.claude/rules/server.md` if it says so. Run `task test:init`.
 
@@ -118,6 +119,7 @@ Finish:
 
 ## Changes to the plan
 
+- 21i2 split in two (one test each): 21i2 the `/auth/oidc?again=1` route, 21i2b the sign-in page redirect keeping `again`.
 - Task 6 split: 6 (cancel) and 6b (a new sign-in cancels the first), one test each.
 - Task 23 ran before task 22's check by hand (the user's choice): this file stays, with task 22 open, until that check is done. Step 10 isn't marked done in the plan, which notes that it waits on the check, and the plan's finishing (follow-ups into `TODO.md`, ticking the TODO items, deleting the plan) waits too. The `server_url` note in the default settings file was also changed to name the desktop app (agreed with the user).
 - Tasks 21b to 21f added (agreed with the user), from task 22's check by hand: signing out in the desktop app showed a blank page, because Wails' webview doesn't follow redirects (WebKit on Linux and macOS, per Wails' `internal/assetserver/asset_fileserver.go`), and the Android app very likely the same. The apps now sign out through the API, as they sign in.
