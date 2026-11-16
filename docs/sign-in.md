@@ -184,9 +184,32 @@ With the dev sign-in, `/auth/sign-up` goes to the same form as `/auth/sign-in`, 
 
 ### Signing out is local only
 
-`POST /auth/sign-out` ends the session on this server only. The person stays signed in at the provider. So if they choose "Sign in" again, the provider may sign them straight back in without asking for their password.
+`POST /auth/sign-out` ends the session on this server only. The person stays signed in at the provider. So if they choose "Sign in" again in the web app, the provider may sign them straight back in without asking for their password. The command line and the apps ask the provider to sign the person in again instead, as the next section explains.
 
 OIDC has a way for the server to sign the person out at the provider too, called RP-initiated logout. The template doesn't use it. Signing someone out of their provider would also sign them out of every other app that uses it, which is rarely what they want from "Sign out" in one product. A product that needs it can add it to the sign-out route.
+
+### Asking the person to sign in again
+
+A provider remembers who is signed in to it, with a session of its own in the browser. When a browser that is signed in at the provider comes to sign in, most providers send it straight back to the server, signed in, without showing a page. That is usually convenient. It is wrong when the person has just signed out of the command line or an app and wants to choose who to sign in as. "Why the sign-in always asks", under the command line's sign-in, explains when that happens.
+
+OIDC lets the server ask the provider not to do this, with the `prompt` parameter of the request it sends the browser to the provider with. The [OpenID Connect Core specification](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest) defines it. The template uses two of its values:
+
+- **`prompt=login`** asks the provider to show its sign-in page and have the person sign in again, even when it already has a session for them. On that page the person can sign in as someone else.
+- **`prompt=create`** asks the provider to open at its sign-up page, as "Creating an account" above explains. A sign-up page always asks, whatever session the provider has.
+
+A request that should ask again carries `again=1`:
+
+```
+GET /auth/sign-in?return=/auth/native/finish&again=1
+  -> /auth/oidc?return=/auth/native/finish&again=1
+  -> the provider's sign-in page, with prompt=login
+```
+
+- **`/auth/sign-in` and `/auth/sign-up` pass `again=1` on** to the sign-in adapter, beside the `return` path.
+- **`/auth/oidc?again=1`** begins the attempt with `prompt=login`, through the `SignInProvider`'s `StartAgain`.
+- **`/auth/oidc/sign-up?again=1`** begins it through `StartSignUpAgain`. That sends `prompt=create` when the provider's discovery lists `create`, as the sign-up page always asks. With any other provider it sends `prompt=login`, so the provider's sign-in page shows, with its own link to sign up.
+
+Only `/auth/native` sends `again=1`, for the command line and the apps. The web app's own sign-in and sign-up don't. The dev sign-in ignores it, because its form always asks for a name.
 
 ### Setting up a provider
 
@@ -289,15 +312,15 @@ Sign-in is redirects and HTML forms, not JSON, so its routes live under `/auth/`
 
 | Route | What it does |
 |---|---|
-| `GET /auth/sign-in` | Redirects to the configured sign-in adapter: `/auth/oidc`, or `/auth/dev` with the dev sign-in. The web app's "Sign in" link goes here, so it doesn't need to know which adapter is on. |
-| `GET /auth/sign-up` | Redirects to `/auth/oidc/sign-up`, or `/auth/dev` with the dev sign-in. The web app's "Create an account" link goes here. |
-| `GET /auth/oidc` | Starts an attempt, sets the `oidc_sign_in` cookie, and redirects to the provider's sign-in page. |
-| `GET /auth/oidc/sign-up` | The same, but asks the provider for its sign-up page when it supports `prompt=create`. |
+| `GET /auth/sign-in` | Redirects to the configured sign-in adapter: `/auth/oidc`, or `/auth/dev` with the dev sign-in. The web app's "Sign in" link goes here, so it doesn't need to know which adapter is on. It passes `return` and `again=1` on to the adapter. |
+| `GET /auth/sign-up` | Redirects to `/auth/oidc/sign-up`, or `/auth/dev` with the dev sign-in. The web app's "Create an account" link goes here. It passes `return` and `again=1` on, as `/auth/sign-in` does. |
+| `GET /auth/oidc` | Starts an attempt, sets the `oidc_sign_in` cookie, and redirects to the provider's sign-in page. With `again=1`, it asks the provider to sign the person in again (`prompt=login`). |
+| `GET /auth/oidc/sign-up` | The same, but asks the provider for its sign-up page when it supports `prompt=create`. With `again=1`, a provider without `prompt=create` is asked to sign the person in again (`prompt=login`). |
 | `GET /auth/oidc/callback` | Where the provider sends the person back. Finishes the attempt, sets the session cookie, and redirects to `/`. A refused sign-in answers the "Sign-in failed" page, with status 400. |
-| `GET /auth/dev` | The dev sign-in's form, which asks for a name. |
+| `GET /auth/dev` | The dev sign-in's form, which asks for a name. It ignores `again`, because the form always asks. |
 | `POST /auth/dev` | Signs in as the posted name, sets the cookie, and redirects to `/`. A blank name is a 422 `validation` problem. |
 | `POST /auth/sign-out` | Ends the session, clears the cookie, and redirects to `/`. With a bearer token, it ends that token's session. |
-| `GET /auth/native` | Where the command line and the apps send the browser to sign in. It checks the loopback `port`, the `state`, and the PKCE `challenge`, keeps them in the `native_sign_in` cookie, and sends the browser to sign in, even when it already has a session, so the person always says who is signing in. With `sign-up=1`, the browser goes to `/auth/sign-up` instead of `/auth/sign-in`, so the person creates an account. A bad value is a 400 problem that names each one. |
+| `GET /auth/native` | Where the command line and the apps send the browser to sign in. It checks the loopback `port`, the `state`, and the PKCE `challenge`, keeps them in the `native_sign_in` cookie, and sends the browser to `/auth/sign-in` with `again=1`. It does so even when the browser already has a session, so the person always says who is signing in. With `sign-up=1`, the browser goes to `/auth/sign-up` instead, also with `again=1`, so the person creates an account. A bad value is a 400 problem that names each one. |
 | `GET /auth/native/finish` | Issues a one-time sign-in code for the browser's session, and redirects to `http://127.0.0.1:<port>/callback?code=…&state=…`. With no attempt cookie it answers 400, and with no session 401. |
 | `POST /auth/native/token` | Swaps a one-time code and its PKCE verifier, sent as JSON, for a new session token, answered as JSON. A refused swap is a bare 400 that doesn't say why. |
 
@@ -327,8 +350,8 @@ flowchart LR
     bootstrap["bootstrap"] -->|"oidc.New, at start"| oidc
 ```
 
-- **`internal/adapters/oidc`** speaks the protocol, using [`go-oidc`](https://pkg.go.dev/github.com/coreos/go-oidc/v3/oidc) to check ID tokens and [`golang.org/x/oauth2`](https://pkg.go.dev/golang.org/x/oauth2) to swap the code. It has no routes or cookies. `New` runs discovery. `Start` and `StartSignUp` return the provider's URL, the state, and the attempt as a string that only `oidc` reads. `Finish` takes the attempt and the code back, and returns the identity.
-- **`internal/adapters/httpapi`** owns the routes and the cookies. It defines a small `SignInProvider` interface with those three methods, in standard types only, and never imports `oidc`. So its tests use a fake that needs no provider at all.
+- **`internal/adapters/oidc`** speaks the protocol, using [`go-oidc`](https://pkg.go.dev/github.com/coreos/go-oidc/v3/oidc) to check ID tokens and [`golang.org/x/oauth2`](https://pkg.go.dev/golang.org/x/oauth2) to swap the code. It has no routes or cookies. `New` runs discovery. `Start` and `StartSignUp` return the provider's URL, the state, and the attempt as a string that only `oidc` reads. `StartAgain` and `StartSignUpAgain` do the same with `prompt=login` or `prompt=create`, as "Asking the person to sign in again" explains. `Finish` takes the attempt and the code back, and returns the identity.
+- **`internal/adapters/httpapi`** owns the routes and the cookies. It defines a small `SignInProvider` interface with those five methods, in standard types only, and never imports `oidc`. So its tests use a fake that needs no provider at all.
 - **`internal/bootstrap`** calls `oidc.New` with the settings, and passes the result to `httpapi`.
 
 ## The dev sign-in
@@ -403,8 +426,8 @@ sequenceDiagram
     Note over C: listen on 127.0.0.1, a free port<br/>new state and PKCE verifier
     C->>B: open /auth/native (port, state, challenge)
     B->>S: GET /auth/native
-    S-->>B: Set-Cookie: native_sign_in, redirect to sign in
-    Note over B,S: the usual sign-in (dev or provider), skipped if already signed in
+    S-->>B: Set-Cookie: native_sign_in, redirect to /auth/sign-in?again=1
+    Note over B,S: the usual sign-in (dev or provider), even if the browser is already signed in
     B->>S: GET /auth/native/finish
     S-->>B: redirect to http://127.0.0.1:port/callback (code, state)
     B->>C: GET /callback (code, state)
@@ -417,10 +440,16 @@ sequenceDiagram
 
 1. **The command line listens on `127.0.0.1`,** on a free port that the operating system picks. It makes a random state and a random PKCE verifier, as the OIDC adapter does (see "The words you will meet" above).
 2. **It opens the browser at the server's `/auth/native`,** with the port, the state, and the PKCE challenge, which is the SHA-256 hash of the verifier. The server checks them and keeps them for 10 minutes in a cookie, `native_sign_in`, on `Path=/auth/native`.
-3. **The browser signs in as usual,** through the dev sign-in or the provider. If the browser already has a session on this server, this step is skipped.
+3. **The browser signs in as usual,** through the dev sign-in or the provider. This step happens even when the browser already has a session on this server. `/auth/native` sends the browser to `/auth/sign-in` with `again=1`, which asks the sign-in to find out who is signing in, as "Why the sign-in always asks" below explains.
 4. **`/auth/native/finish` issues a one-time code** for the browser's account, and sends the browser to `http://127.0.0.1:<port>/callback` with the code and the state. The server builds that address itself from the port, so it never sends the browser anywhere but the loopback address.
 5. **The command line checks the state.** A callback with any other state is refused, and the command line keeps waiting. This stops another page from feeding it a sign-in it didn't start.
 6. **It swaps the code and its verifier** at `POST /auth/native/token`. The server checks that the verifier matches the challenge, and answers a **new session token**. This session belongs to the command line, apart from the browser's own. The browser shows a page saying that sign-in is complete, and the command line keeps the token.
+
+**Why the sign-in always asks.** A browser keeps its own session on the server, apart from the command line's or an app's. Signing out of the command line or an app ends only that program's session, so the browser stays signed in. Suppose someone signs out of the desktop app, perhaps to sign in as someone else. If the sign-in skipped a browser that already had a session, pressing "Sign in" would sign the app straight back in as the same person, without showing them anything. So `/auth/native` always sends the browser to the sign-in page, and the person chooses who to sign in as. The same goes for the provider. A provider also keeps its own session in the browser, so `again=1` asks it to show its sign-in page rather than sign the person straight back in. "Asking the person to sign in again" above explains how.
+
+With `sign-up=1`, `/auth/native` sends the browser to `/auth/sign-up?again=1` instead, so the person creates an account.
+
+The web app's own "Sign in" and "Create an account" never send `again`. Someone using the web app has no session in that browser when they see the sign-in screen, so there is nothing to skip on the server. Letting the provider sign them straight back in is also what most people expect from a website.
 
 **The one-time codes are kept in storage,** in the `sign_in_codes` table, through `ports.SignInCodeRepository`. As with sessions, storage keeps only the code's SHA-256 hash, with its account, its PKCE challenge, and its expiry. Keeping them in storage means that any copy of the server can redeem a code that another copy issued. A code lasts 5 minutes (`domain.SignInCodeLifetime`). It works once, because redeeming it takes it out of storage and deletes it in one step. It works only with the verifier behind its challenge. So someone who sees the code in the browser's history or address bar can't use it.
 
@@ -572,13 +601,13 @@ The Android app always keeps its token in `app-tokens.json` in its private stora
 No test talks to a real provider. Instead, `internal/adapters/oidc/oidctest` is a fake one: a small web server started inside the test, with its own signing key, that speaks the parts of OIDC the adapter uses. It can be told to misbehave, for example to sign a token with the wrong key, or to leave `create` out of its discovery. Only tests may import it, which a depguard rule in `.golangci.yml` enforces.
 
 - **The core:** `app.SignInService`'s unit tests cover new and returning identities, a name changed at the provider, unknown and expired tokens, and signing out, with the `testsupport` fakes for time, IDs, and tokens.
-- **The OIDC adapter:** `oidc`'s tests run against `oidctest`. They cover discovery and an unreachable issuer, the authorization URL with its state, nonce, and PKCE challenge, `prompt=create`, the name's fallbacks, and every ID token check: the signature, the audience, the expiry, the issuer, and the nonce. They also cover a code the provider refuses, such as one used twice or sent with the wrong verifier.
+- **The OIDC adapter:** `oidc`'s tests run against `oidctest`. They cover discovery and an unreachable issuer, the authorization URL with its state, nonce, and PKCE challenge, `prompt=create` and `prompt=login`, the name's fallbacks, and every ID token check: the signature, the audience, the expiry, the issuer, and the nonce. They also cover a code the provider refuses, such as one used twice or sent with the wrong verifier.
 - **Settings:** `config`'s tests cover the four OIDC settings, the messages for a missing one, and a bad `public_url`. `bootstrap`'s tests cover building the adapter and the message for an unreachable issuer.
 - **Storage:** `storagetest` has contract suites for `AccountRepository` and `SessionRepository`, which memory, SQLite, and Postgres pass. jsonfile has neither.
 - **The server:** `httpapi`'s tests cover the cookies, `Secure` behind an `https://` public URL, the `/auth/` routes, every cause of the "Sign-in failed" page, the 401 and 403 problems, and the session endpoint. The OIDC routes are tested with a fake `SignInProvider`.
 - **Acceptance:** `features/sign-in.feature` (`@sign-in`) runs on the memory, sqlite, postgres, http, and oidc drivers. The http driver signs in through `/auth/dev`, with one cookie jar per account. The oidc driver is the hosted edition over HTTP with the real OIDC adapter against `oidctest`. It follows the redirects with a cookie jar, as a browser does. `features/sign-in-provider.feature` (`@sign-in-provider`) runs on the oidc driver only, and covers a changed name, two people with the same name, creating an account with and without `prompt=create`, cancelling at the provider, and coming back without starting. `features/workspaces.feature` also runs on http, where each workspace is a signed-in account's.
-- **The command line's sign-in:** `domain` and `app` have unit tests for the codes' PKCE check, their expiry, issuing them, and redeeming them once. `storagetest` has a contract suite for `SignInCodeRepository`, which memory, SQLite, and Postgres pass. `httpapi` tests the bearer token, the native routes, and the `return` path. `browsersignin` runs against a fake server, with a fake `BROWSER` script so no real browser opens. `tokenstore` tests the keyring with go-keyring's `MockInit`, which swaps the real credential store for one in memory, and the file in a temporary folder. `clientsignin`, `cli`, and `tui` use fakes. `features/command-line-sign-in.feature` (`@command-line-sign-in`) runs on the http and oidc drivers. Its command line is the real `clientsignin` and `browsersignin` with a token store in memory, and its opener drives the harness's browser through the dev sign-in or `oidctest`. The terminal journeys in `test/terminal/features/command-line-sign-in.feature` run the built `starter` against a built server with the dev sign-in, with `STARTER_CREDENTIAL_STORE=file` and a `BROWSER` script that completes the sign-in with `curl`.
-- **The apps' sign-in:** `httpapi` tests the session's `signInMethod`, both `browser-sign-in` operations with a fake `ClientSignIn`, the `cancelled` problem, and `DELETE /api/v1/session` signing out through it. `clientsignin` tests `SignUp` and cancelling, `tokenstore` tests that the apps' stores keep their tokens apart from the command line's, and `desktop` and `mobile` test opening in remote mode. Vitest covers the sign-in screen's browser buttons and its waiting screen, and the Sign out button in browser mode, with its failure message. `features/remote-mode.feature` (`@remote-mode`) runs on the http and oidc drivers. Its apps are the real `desktop.Open` and `mobile.Open` on a temporary settings folder, with the file token store and an opener that drives the harness's browser. The mobile app's requests go over the bridge. No Playwright journey covers it, because Playwright runs the web app against the server, which always answers `page`.
+- **The command line's sign-in:** `domain` and `app` have unit tests for the codes' PKCE check, their expiry, issuing them, and redeeming them once. `storagetest` has a contract suite for `SignInCodeRepository`, which memory, SQLite, and Postgres pass. `httpapi` tests the bearer token, the native routes, the `return` path, and `again=1` from `/auth/native` through to the OIDC routes. `browsersignin` runs against a fake server, with a fake `BROWSER` script so no real browser opens. `tokenstore` tests the keyring with go-keyring's `MockInit`, which swaps the real credential store for one in memory, and the file in a temporary folder. `clientsignin`, `cli`, and `tui` use fakes. `features/command-line-sign-in.feature` (`@command-line-sign-in`) runs on the http and oidc drivers. Its command line is the real `clientsignin` and `browsersignin` with a token store in memory, and its opener drives the harness's browser through the dev sign-in or `oidctest`. The terminal journeys in `test/terminal/features/command-line-sign-in.feature` run the built `starter` against a built server with the dev sign-in, with `STARTER_CREDENTIAL_STORE=file` and a `BROWSER` script that completes the sign-in with `curl`.
+- **The apps' sign-in:** `httpapi` tests the session's `signInMethod`, both `browser-sign-in` operations with a fake `ClientSignIn`, the `cancelled` problem, and `DELETE /api/v1/session` signing out through it. `clientsignin` tests `SignUp` and cancelling, `tokenstore` tests that the apps' stores keep their tokens apart from the command line's, and `desktop` and `mobile` test opening in remote mode. Vitest covers the sign-in screen's browser buttons and its waiting screen, and the Sign out button in browser mode, with its failure message. `features/remote-mode.feature` (`@remote-mode`) runs on the http and oidc drivers. Its apps are the real `desktop.Open` and `mobile.Open` on a temporary settings folder, with the file token store and an opener that drives the harness's browser. The mobile app's requests go over the bridge. One scenario signs out of an app and starts signing in again, and checks that the browser, still signed in, is shown the sign-in page: the dev sign-in's form, or the provider's page. No Playwright journey covers it, because Playwright runs the web app against the server, which always answers `page`.
 - **The browser:** `web/e2e/features/sign-in.feature` signs in with the dev sign-in, creates an account through the "Create an account" link, and signs out. It runs in its own Playwright project, against its own server with sign-in on, so the other journeys keep a server without it.
 
 ## Not built yet
