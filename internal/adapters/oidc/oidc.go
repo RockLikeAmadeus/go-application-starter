@@ -158,3 +158,13 @@ func (p *Provider) StartSignUp() (authURL, state, attempt string) {
 func (p *Provider) StartAgain() (authURL, state, attempt string) {
 	return p.start(oauth2.SetAuthURLParam("prompt", "login"))
 }
+
+// StartSignUpAgain is StartSignUp for a sign-up that must not be skipped by a
+// provider session: the sign-up page always asks, so a provider that has one
+// gets prompt=create, and any other provider gets prompt=login.
+func (p *Provider) StartSignUpAgain() (authURL, state, attempt string) {
+	if p.canPromptCreate {
+		return p.StartSignUp()
+	}
+	return p.StartAgain()
+}
