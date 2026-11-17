@@ -82,6 +82,15 @@ tasks:
     cmds:
       - go tool -modfile=tools/go.mod air
 
+  dev:server:signin:
+    desc: Run the API server with the dev sign-in on memory storage, rebuilding on changes, for the desktop app, CLI, and TUI to sign in to
+    env:
+      # Set either one in the environment to override it.
+      STARTER_SIGN_IN: '{{.STARTER_SIGN_IN | default "dev"}}'
+      STARTER_STORAGE: '{{.STARTER_STORAGE | default "memory"}}'
+    cmds:
+      - go tool -modfile=tools/go.mod air
+
   run:server:
     desc: Run the API server (API-only; the UI comes from Vite in dev)
     cmds:
