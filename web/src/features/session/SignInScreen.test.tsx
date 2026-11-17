@@ -170,7 +170,7 @@ describe("SignInScreen in browser mode", () => {
     api.finish(new Response(null, { status: 500 }));
 
     expect(
-      await screen.findByText("Creating your account failed. Please try again."),
+      await screen.findByText("Account creation failed. Please try again."),
     ).toBeInTheDocument();
   });
 });
