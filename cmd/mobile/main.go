@@ -33,18 +33,19 @@ func main() {
 }
 
 func run() error {
-	// The sign-in opens the system browser through Wails, which works on every
-	// operating system. The app exists only after Open, so the opener reaches it
-	// through this variable, and is called only once the app is running.
-	var app *application.App
-	openBrowser := func(address string) error { return app.Browser.OpenURL(address) }
+	// The sign-in opens the phone's browser through Android (an ACTION_VIEW
+	// intent). Wails' app.Browser.OpenURL runs xdg-open, which Android lacks.
+	openBrowser := func(address string) error {
+		application.Android.OpenURL(address)
+		return nil
+	}
 	opened, err := mobile.Open(os.Getenv, application.Android.StoragePath(), web.Assets(), openBrowser)
 	if err != nil {
 		return err
 	}
 	defer opened.Close()
 
-	app = application.New(application.Options{
+	app := application.New(application.Options{
 		Name:     "Starter",
 		Assets:   application.AssetOptions{Handler: opened.Handler},
 		Services: []application.Service{application.NewService(&Bridge{opened})},
