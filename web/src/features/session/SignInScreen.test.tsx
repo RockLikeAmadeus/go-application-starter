@@ -156,7 +156,7 @@ describe("SignInScreen in browser mode", () => {
     api.finish(problem(500, "internal", "An unexpected error occurred on the server."));
 
     expect(
-      await screen.findByText("Signing in failed. An unexpected error occurred on the server."),
+      await screen.findByText("Sign-in failed. An unexpected error occurred on the server."),
     ).toBeInTheDocument();
   });
 

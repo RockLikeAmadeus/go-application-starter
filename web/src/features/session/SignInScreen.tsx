@@ -67,7 +67,7 @@ function BrowserSignInScreen() {
         setMessage({ text: `${action} was cancelled.`, isFailure: false });
         return;
       }
-      const failed = isSignUp ? "Creating your account failed." : "Signing in failed.";
+      const failed = isSignUp ? "Creating your account failed." : "Sign-in failed.";
       const detail = error instanceof ApiError ? error.problem.detail : undefined;
       setMessage({ text: `${failed} ${detail ?? "Please try again."}`, isFailure: true });
     },

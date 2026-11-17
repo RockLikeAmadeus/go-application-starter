@@ -121,7 +121,9 @@ Signing in always asks who you are (found by hand in task 22: after signing out 
 Found on the phone in task 22 (agreed with the user):
 - [x] 21k. `cmd/mobile`: open the browser with `application.Android.OpenURL` instead of `app.Browser.OpenURL`, which runs `xdg-open` and fails on Android, so Sign in failed at once. No automated test (agreed with the user): `cmd/mobile` is Android-only Wails glue that the acceptance tests don't build; check it compiles with `task mobile:android:build` and the Android lint, and B5 on the phone is the check. Update `docs/mobile.md` and `.claude/rules/mobile.md`, which name `Browser.OpenURL`.
   - No test (agreed). `task mobile:android:build` passes; the Android lint stops on the host cgo typecheck error in `net/cgo_resold.go`, as before this change.
-- [ ] 21l. SPA: the sign-in failure message reads "Sign-in failed." (then the detail or "Please try again."), and the account one "Account creation failed." (wording agreed with the user).
+- [x] 21l. SPA: the sign-in failure message reads "Sign-in failed." (then the detail or "Please try again."; wording agreed with the user).
+  - Red: "shows a failure with the server's detail after the sentence" expected "Sign-in failed." and found "Signing in failed.". Green: the text in `SignInScreen.tsx`. Refactor: nothing worth changing.
+- [ ] 21l2. SPA: the account failure message reads "Account creation failed." (then the detail or "Please try again."; wording agreed with the user).
 - [ ] 21m. SPA: the cancelled message for creating an account reads "Account creation was cancelled." (wording agreed with the user; "Sign-in was cancelled." is unchanged).
 
 Finish:
@@ -131,6 +133,7 @@ Finish:
 
 ## Changes to the plan
 
+- Task 21l split (one test each): 21l the sign-in failure message, 21l2 the account one.
 - Tasks 21k to 21m added (agreed with the user), from task 22 on a real phone: Sign in failed at once because `cmd/mobile` opened the browser with the desktop opener (`xdg-open`); and the failure and cancelled wording changed to "Sign-in failed.", "Account creation failed.", and "Account creation was cancelled.".
 - 21i2 split in two (one test each): 21i2 the `/auth/oidc?again=1` route, 21i2b the sign-in page redirect keeping `again`.
 - Task 6 split: 6 (cancel) and 6b (a new sign-in cancels the first), one test each.
