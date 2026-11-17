@@ -143,7 +143,7 @@ describe("SignInScreen in browser mode", () => {
     await user.click(await screen.findByRole("button", { name: "Cancel" }));
     api.finish(problem(409, "cancelled", "the sign-in was cancelled"));
 
-    expect(await screen.findByText("Creating your account was cancelled.")).toBeInTheDocument();
+    expect(await screen.findByText("Account creation was cancelled.")).toBeInTheDocument();
   });
 
   it("shows a failure with the server's detail after the sentence", async () => {

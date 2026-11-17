@@ -125,7 +125,7 @@ Found on the phone in task 22 (agreed with the user):
   - Red: "shows a failure with the server's detail after the sentence" expected "Sign-in failed." and found "Signing in failed.". Green: the text in `SignInScreen.tsx`. Refactor: nothing worth changing.
 - [x] 21l2. SPA: the account failure message reads "Account creation failed." (then the detail or "Please try again."; wording agreed with the user).
   - Red: "ends a failure with no detail with Please try again" expected "Account creation failed. Please try again." and found "Creating your account failed. ...". Green: the text in `SignInScreen.tsx`. Refactor: nothing worth changing.
-- [ ] 21m. SPA: the cancelled message for creating an account reads "Account creation was cancelled." (wording agreed with the user; "Sign-in was cancelled." is unchanged).
+- [x] 21m. SPA: the cancelled message for creating an account reads "Account creation was cancelled." (wording agreed with the user; "Sign-in was cancelled." is unchanged).
 
 Finish:
 - [ ] 22. By hand: the desktop app against `task dev` (dev sign-in), signing in, cancelling, creating an account, and signing out, and the offline notice with the server stopped; the Android app built with the built-in address of a server the phone reaches, signing in through the phone's browser and coming back to the app (the loopback reply on Android is the risk to check).

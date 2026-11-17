@@ -62,9 +62,9 @@ function BrowserSignInScreen() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["session"] }),
     onError: (error, isSignUp) => {
-      const action = isSignUp ? "Creating your account" : "Sign-in";
       if (error instanceof ApiError && error.problem.type === "cancelled") {
-        setMessage({ text: `${action} was cancelled.`, isFailure: false });
+        const cancelled = isSignUp ? "Account creation was cancelled." : "Sign-in was cancelled.";
+        setMessage({ text: cancelled, isFailure: false });
         return;
       }
       const failed = isSignUp ? "Account creation failed." : "Sign-in failed.";
