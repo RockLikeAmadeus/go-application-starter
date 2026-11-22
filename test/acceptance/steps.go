@@ -28,6 +28,13 @@ type world struct {
 	// commandLine is the command line the scenario signs in from, made by
 	// the first step that uses it.
 	commandLine *commandLine
+	// remoteApps are the apps opened on the server, by the name the feature
+	// gives them, each made by the first step that uses it.
+	remoteApps map[string]*remoteApp
+	// isBuiltForServer is whether the scenario set config.BuiltInServerURL,
+	// which previousBuiltInServerURL restores.
+	isBuiltForServer         bool
+	previousBuiltInServerURL string
 	// codeReplay is the answer to the latest second use of a sign-in code.
 	codeReplay answer
 	// isSettingUp is whether the step running is a Given.
@@ -83,6 +90,7 @@ func initializeScenario(d driver) func(*godog.ScenarioContext) {
 		w.registerSyncedPlainTextSteps(sc)
 		w.registerSignInSteps(sc)
 		w.registerCommandLineSignInSteps(sc)
+		w.registerRemoteModeSteps(sc)
 		// sample:start
 		w.registerItemSteps(sc)
 		w.registerPlanSteps(sc)
@@ -104,11 +112,12 @@ func (w *world) iAmToldTheFieldIsInvalid(field string) error {
 	return nil
 }
 
-// isSignInScenario is whether the scenario signs in (@sign-in, or
-// @command-line-sign-in, which signs in from the command line).
+// isSignInScenario is whether the scenario signs in (@sign-in,
+// @command-line-sign-in, which signs in from the command line, or
+// @remote-mode, which signs in from the desktop and mobile apps).
 func isSignInScenario(scenario *godog.Scenario) bool {
 	return hasTag(scenario, "@sign-in") || hasTag(scenario, "@sign-in-provider") ||
-		hasTag(scenario, "@command-line-sign-in")
+		hasTag(scenario, "@command-line-sign-in") || hasTag(scenario, "@remote-mode")
 }
 
 // hasTag is whether the scenario, or its feature, has the tag.

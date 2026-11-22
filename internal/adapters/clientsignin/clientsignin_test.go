@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/clientsignin"
 )
@@ -25,6 +26,7 @@ type fakeServer struct {
 	endError     error
 	wasEnded     bool
 	wasForgotten bool
+	wasSignUp    bool
 	forgetError  error
 }
 
@@ -45,7 +47,8 @@ func (f *fakeServer) CurrentSession(context.Context) (clientsignin.Session, erro
 	return clientsignin.Session{IsSignInOn: true, Name: f.name}, nil
 }
 
-func (f *fakeServer) BrowserSignIn(context.Context, func(string) error) (string, error) {
+func (f *fakeServer) BrowserSignIn(_ context.Context, isSignUp bool, _ func(string) error) (string, error) {
+	f.wasSignUp = isSignUp
 	return f.token, nil
 }
 
@@ -88,6 +91,28 @@ func TestSignIn_SavesTheBrowsersTokenAndReportsTheAccountAndWhereItWasKept(t *te
 	}
 	if server.savedToken != "tok-1" {
 		t.Errorf("saved token = %q, want tok-1", server.savedToken)
+	}
+	if result.Name != "Ada" || result.TokenKept != "file" {
+		t.Errorf("result = %+v, want name Ada and token kept in file", result)
+	}
+}
+
+// Creating an account goes through the browser's sign-up, then keeps the token
+// and reports the account as SignIn does.
+func TestSignUp_SignsUpThroughTheBrowserAndKeepsTheToken(t *testing.T) {
+	server := &fakeServer{name: "Ada", token: "tok-2", kept: "file"}
+	client := clientsignin.New(server, server, server, server)
+
+	result, err := client.SignUp(context.Background(), func(string) error { return nil })
+
+	if err != nil {
+		t.Fatalf("SignUp error = %v", err)
+	}
+	if !server.wasSignUp {
+		t.Error("SignUp did not ask the browser for sign-up")
+	}
+	if server.savedToken != "tok-2" {
+		t.Errorf("saved token = %q, want tok-2", server.savedToken)
 	}
 	if result.Name != "Ada" || result.TokenKept != "file" {
 		t.Errorf("result = %+v, want name Ada and token kept in file", result)
@@ -147,5 +172,91 @@ func TestSignOut_TellsAServerFailureWithTheTokenForgottenFromAForgetFailure(t *t
 				t.Errorf("SignOut error = %v, want it to wrap the server's error", err)
 			}
 		})
+	}
+}
+
+// waitingBrowser is a browser sign-in that waits for the person, until its
+// context is cancelled.
+type waitingBrowser struct{ started chan struct{} }
+
+func (w waitingBrowser) BrowserSignIn(ctx context.Context, _ bool, _ func(string) error) (string, error) {
+	close(w.started)
+	<-ctx.Done()
+	return "", ctx.Err()
+}
+
+// Cancelling a sign-in that is waiting for the browser ends it with a named
+// cancelled error and keeps no token.
+func TestCancel_EndsTheSignInInProgressAndKeepsNoToken(t *testing.T) {
+	server := &fakeServer{name: "Ada", kept: "file"}
+	browser := waitingBrowser{started: make(chan struct{})}
+	client := clientsignin.New(server, server, browser, server)
+	errs := make(chan error, 1)
+	go func() {
+		_, err := client.SignIn(context.Background(), func(string) error { return nil })
+		errs <- err
+	}()
+	<-browser.started
+
+	client.Cancel()
+
+	select {
+	case err := <-errs:
+		if !errors.Is(err, clientsignin.ErrCancelled) {
+			t.Errorf("SignIn error = %v, want ErrCancelled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("SignIn was still waiting 2s after Cancel")
+	}
+	if server.savedToken != "" {
+		t.Errorf("saved token = %q, want none", server.savedToken)
+	}
+}
+
+// manyWaitingBrowser is a browser sign-in that waits for the person, until its
+// context is cancelled, and says each time one starts waiting.
+type manyWaitingBrowser struct{ started chan struct{} }
+
+func (w manyWaitingBrowser) BrowserSignIn(ctx context.Context, _ bool, _ func(string) error) (string, error) {
+	w.started <- struct{}{}
+	<-ctx.Done()
+	return "", ctx.Err()
+}
+
+// One sign-in at a time: starting another cancels the first, which ends with
+// ErrCancelled, while the new one carries on waiting.
+func TestSignIn_StartingAnotherCancelsTheFirst(t *testing.T) {
+	server := &fakeServer{name: "Ada", kept: "file"}
+	browser := manyWaitingBrowser{started: make(chan struct{}, 2)}
+	client := clientsignin.New(server, server, browser, server)
+	first := make(chan error, 1)
+	go func() {
+		_, err := client.SignIn(context.Background(), func(string) error { return nil })
+		first <- err
+	}()
+	<-browser.started
+	second := make(chan error, 1)
+	go func() {
+		_, err := client.SignIn(context.Background(), func(string) error { return nil })
+		second <- err
+	}()
+	<-browser.started
+
+	select {
+	case err := <-first:
+		if !errors.Is(err, clientsignin.ErrCancelled) {
+			t.Errorf("first SignIn error = %v, want ErrCancelled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("the first SignIn was still waiting 2s after another started")
+	}
+	select {
+	case err := <-second:
+		t.Fatalf("the second SignIn ended with %v, want it still waiting", err)
+	default:
+	}
+	client.Cancel()
+	if err := <-second; !errors.Is(err, clientsignin.ErrCancelled) {
+		t.Errorf("second SignIn error = %v, want ErrCancelled after Cancel", err)
 	}
 }

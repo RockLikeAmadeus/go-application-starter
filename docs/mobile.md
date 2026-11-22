@@ -1,8 +1,8 @@
 # The Android app
 
-The mobile app (SPEC.md §4.7) is the web app as an Android app, with the core and its data on the phone. It needs no server and works offline. It uses Wails v3, like the desktop app; ADR 4 explains why. This page covers setting up the Android tools, running the app on the emulator or a phone, debugging it, and how it works inside.
+The mobile app (SPEC.md §4.7) is the web app as an Android app, with the core and its data on the phone. It needs no server and works offline. Built with a server's address, it works on that server's data instead, in remote mode (SPEC.md §4.20), as the section "Remote mode" below explains. It uses Wails v3, like the desktop app; ADR 4 explains why. This page covers setting up the Android tools, running the app on the emulator or a phone, debugging it, and how it works inside.
 
-iPhone, remote mode, release signing, and an app icon aren't done yet: see `TODO.md`.
+iPhone, release signing, and an app icon aren't done yet: see `TODO.md`.
 
 ## Set up the Android tools (once)
 
@@ -61,6 +61,22 @@ task mobile:android:build    # just build bin/starter.apk
 
 The data folder is in the app's private storage: `/data/data/com.example.starter/files/starter`. A debug build can read it with `adb shell run-as com.example.starter ls files/starter`.
 
+## Remote mode
+
+The app works on a hosted server's data when it is built with that server's address. Nobody can edit the app's settings on a phone, so the address is built into the program, as [docs/configuration.md](configuration.md), "A server address built into the program", explains:
+
+```sh
+BUILT_IN_SERVER_URL=https://app.example.com task mobile:android:build
+```
+
+The phone must be able to reach that address.
+
+In remote mode, `mobile.Open` opens no data folder or storage. The app's REST handler answers each request from the server, through `httpclient`. `GET /api/v1/connection` then says that a connection is required, so the web app's offline notice comes back. Signing in opens the phone's browser through Wails' Android opener, `application.Android.OpenURL`, which asks Android to open the address in the phone's browser. Wails' general `Browser.OpenURL` doesn't work there, because it runs `xdg-open`, a Linux desktop program that Android doesn't have. The browser signs in on the server and hands a one-time code back to the app through a loopback port, as for the command line ([docs/sign-in.md](sign-in.md), "Signing in from the desktop and mobile apps"). The app keeps its session token in `app-tokens.json` in its private storage, whatever the `credential_store` setting says, because Android has no credential store that go-keyring can use. Only the app can read its private storage.
+
+Signing out goes through the API too. The Sign out button calls `DELETE /api/v1/session`, which ends the session on the server and forgets the token. The hosted web app's sign-out form isn't used, because it answers with a redirect, and the app's window can't follow a redirect. [docs/sign-in.md](sign-in.md) explains why, in "Signing in from the desktop and mobile apps". So nothing that the app's window loads may answer with a redirect.
+
+The acceptance tests cover this through the bridge, but signing in through the phone's browser, and the loopback reply coming back to the app, haven't yet been tried on a real phone or the emulator.
+
 ## Debug it
 
 - **The web app:** open `chrome://inspect` in Chrome on your computer. The app's WebView appears under the device, with the usual DevTools (console, network, elements). This works because the APK is a debug build.
@@ -69,7 +85,7 @@ The data folder is in the app's private storage: `/data/data/com.example.starter
 
 ## How it works
 
-The phone runs the desktop app's wiring. `mobile.Open` (in `internal/adapters/mobile`) calls `desktop.Open` with the app's private storage as the settings folder, so the core, jsonfile storage, and the REST handler are the same as on the desktop. `cmd/mobile/main.go` (build tag `android`) only wraps it in Wails. Five things differ from the desktop.
+The phone runs the desktop app's wiring. `mobile.Open` (in `internal/adapters/mobile`) calls `desktop.Open` with the app's private storage as the settings folder, so the core, jsonfile storage, and the REST handler are the same as on the desktop. With a server address built in, `desktop.Open` opens remote mode instead, with no storage (above). `cmd/mobile/main.go` (build tag `android`) only wraps it in Wails. Five things differ from the desktop.
 
 **The API goes over the Wails bridge.** On Android, Wails hands every page request to Go as a `GET` with no body, and treats any status but 200 as "not found". So the web app can't reach the REST API the normal way: a `POST` would arrive as a `GET`, and a 404 or 422 would be lost. Instead:
 

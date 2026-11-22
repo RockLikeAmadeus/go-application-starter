@@ -8,7 +8,8 @@ import { afterTransition } from "../lib/afterTransition";
 import { entitlementsQuery } from "../features/entitlements/useFeature";
 import { OfflineNotice } from "../features/offline/OfflineNotice";
 import { SignInScreen } from "../features/session/SignInScreen";
-import { SignOutForm } from "../features/session/SignOutForm";
+import type { components } from "../api/schema.gen";
+import { SignOut } from "../features/session/SignOut";
 import { useSession } from "../features/session/useSession";
 import { useLocalDataOnline } from "../features/offline/useLocalDataOnline";
 import type { Style } from "../features/style/style";
@@ -19,6 +20,8 @@ import { ThemeToggle } from "../features/theme/ThemeToggle";
 import { useTheme } from "../features/theme/useTheme";
 import { WarningsNotice } from "../features/warnings/WarningsNotice";
 
+type SignInMethod = components["schemas"]["SignInMethod"];
+
 export function Layout() {
   useLocalDataOnline();
   usePrefetchQuery(entitlementsQuery);
@@ -26,7 +29,7 @@ export function Layout() {
   const [style, setStyle] = useStyle();
   const session = useSession();
   if (session?.isSignInOn && session.name === undefined) {
-    return <SignInScreen />;
+    return <SignInScreen signInMethod={session.signInMethod} />;
   }
   const content = (
     <SidebarContent
@@ -35,6 +38,7 @@ export function Layout() {
       style={style}
       onStyleChange={setStyle}
       signedInName={session?.name}
+      signInMethod={session?.signInMethod}
     />
   );
   return (
@@ -144,6 +148,7 @@ type SidebarContentProps = {
   style: Style;
   onStyleChange: (style: Style) => void;
   signedInName?: string;
+  signInMethod?: SignInMethod;
 };
 
 /**
@@ -158,6 +163,7 @@ function SidebarContent({
   style,
   onStyleChange,
   signedInName,
+  signInMethod,
 }: SidebarContentProps) {
   return (
     <div className="flex h-full flex-col px-3 py-4 soft:px-4 soft:py-5">
@@ -182,7 +188,9 @@ function SidebarContent({
         {/* sample:end */}
       </nav>
       <div className="mt-auto flex flex-col gap-4">
-        {signedInName !== undefined && <SignOutForm name={signedInName} />}
+        {signedInName !== undefined && signInMethod !== undefined && (
+          <SignOut name={signedInName} signInMethod={signInMethod} />
+        )}
         <fieldset className="flex flex-col gap-3 border-t border-sidebar-line px-2 pt-4 soft:border-t-0">
           <legend className="sr-only">Appearance</legend>
           <StylePicker style={style} onChange={onStyleChange} />

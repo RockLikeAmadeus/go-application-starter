@@ -59,6 +59,55 @@ paths:
                 $ref: "#/components/schemas/Session"
         default:
           $ref: "#/components/responses/Problem"
+    delete:
+      operationId: endSession
+      tags: [session]
+      description: |
+        Signs the app out: ends the session and forgets its token, so the
+        window can show the sign-in screen without a page load. Only the
+        desktop and mobile apps in remote mode serve it; a server answers 404.
+      responses:
+        "204":
+          description: Signed out.
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/browser-sign-in:
+    post:
+      operationId: startBrowserSignIn
+      tags: [session]
+      description: |
+        Opens the system browser to sign in (or up), waits until the sign-in
+        finishes, and answers the session. Only the desktop and mobile apps in
+        remote mode serve it; a server answers 404. It blocks rather than being
+        polled, so the Android bridge, which can't cancel a request, needs no
+        more than this call and the DELETE below.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowserSignInInput"
+      responses:
+        "200":
+          description: Signed in. The session, as GET /api/v1/session answers it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: cancelBrowserSignIn
+      tags: [session]
+      description: |
+        Cancels the sign-in in progress, so its waiting POST answers a problem.
+        Only the desktop and mobile apps in remote mode serve it; a server
+        answers 404.
+      responses:
+        "204":
+          description: Cancelled, or there was nothing to cancel.
+        default:
+          $ref: "#/components/responses/Problem"
   # sample:start
   /api/v1/items:
     get:
@@ -171,7 +220,7 @@ components:
             mode), so a lost connection doesn't matter.
     Session:
       type: object
-      required: [isSignInOn]
+      required: [isSignInOn, signInMethod]
       properties:
         isSignInOn:
           type: boolean
@@ -182,6 +231,22 @@ components:
         name:
           type: string
           description: The signed-in account's name. Missing when no one is signed in.
+        signInMethod:
+          $ref: "#/components/schemas/SignInMethod"
+    BrowserSignInInput:
+      type: object
+      required: [isSignUp]
+      properties:
+        isSignUp:
+          type: boolean
+          description: True to create an account in the browser, false to sign in.
+    SignInMethod:
+      type: string
+      enum: [page, browser]
+      description: |
+        How someone signs in. page: the window goes to /auth/sign-in, as on the
+        hosted web app. browser: the app opens the system browser and waits for
+        the sign-in to finish (the desktop and mobile apps in remote mode).
     Entitlements:
       type: object
       required: [plan, limits, features]

@@ -23,7 +23,7 @@ flowchart TD
 ```
 
 - **Local edition:** the CLI and TUI in embedded mode, the desktop and Android apps, and a self-hosted server.
-- **Hosted edition:** the web app on a hosted server with sign-in, through a sign-in provider (OIDC), and the CLI and TUI with `--server`, after signing in with `starter login` or from the TUI ([docs/sign-in.md](docs/sign-in.md)). Connecting the desktop and Android apps to it is planned.
+- **Hosted edition:** the web app on a hosted server with sign-in, through a sign-in provider (OIDC), and the CLI and TUI with `--server`, after signing in with `starter login` or from the TUI ([docs/sign-in.md](docs/sign-in.md)). The desktop and Android apps reach it in remote mode, when a server address is set or built into the program. Their in-process handler then calls the server over HTTP, and they sign in through the system browser ([docs/sign-in.md](docs/sign-in.md), [docs/configuration.md](docs/configuration.md)).
 
 ## Prerequisites
 
@@ -54,6 +54,9 @@ task check     # codegen drift, lint, unit, acceptance, e2e: everything CI runs
 ```sh
 task dev                         # API on :8080 + Vite on :5173, opened in your browser; both reload on save
                                  # (STARTER_SIGN_IN=dev STARTER_STORAGE=memory task dev signs people in: see docs/sign-in.md)
+task dev:server                  # just the API on :8080, rebuilt and restarted on save, for the desktop app, CLI, and TUI (sign-in off)
+task dev:server:signin           # the same, with the dev sign-in on memory storage (STARTER_SIGN_IN=dev, STARTER_STORAGE=memory)
+task run:server                  # just the API on :8080, built once, with no reloading (sign-in off unless STARTER_SIGN_IN=dev)
 task run:cli -- --help           # CLI, embedded core, data in the desktop app's folder (task run:cli -- info names it; add --server http://localhost:8080 to use a running server)
 task run:tui                     # terminal UI, on the same data as the CLI (also accepts --server)
 task run:desktop                 # desktop app in a native window, data in your settings folder (needs the desktop build deps)

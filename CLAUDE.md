@@ -11,9 +11,9 @@ The sample domain is `Item`; replace it when starting a real product.
 
 <!-- sample:end -->
 
-The app comes in two **editions** (ADR 5), built step by step from `docs/plans/editions-and-accounts.md`. Most of it is still planned:
+The app comes in two **editions** (ADR 5), built step by step from `docs/plans/editions-and-accounts.md`. Every step is built, apart from one check by hand that is still open (step 5 of the plan):
 - **Local edition:** one user, one workspace, no sign-in. This is the CLI and TUI (embedded), the desktop and Android apps, and a self-hosted single-user server. All of these work today.
-- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. The web app on a server with `sign_in` on works today, through a sign-in provider (`oidc`) or the dev sign-in (`dev`) (ADR 9, `docs/sign-in.md`). So do the CLI and TUI with `--server`, after `starter login` or the TUI's own sign-in (browser and loopback port, token in the OS credential store; `docs/sign-in.md`). The desktop and Android apps in remote mode are planned.
+- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. The web app on a server with `sign_in` on works today, through a sign-in provider (`oidc`) or the dev sign-in (`dev`) (ADR 9, `docs/sign-in.md`). So do the CLI and TUI with `--server`, after `starter login` or the TUI's own sign-in (browser and loopback port, token in the OS credential store; `docs/sign-in.md`). So do the desktop and Android apps in remote mode, when a server is set or built in: they sign in through the system browser in the same way, with a session of their own (ADR 4, `docs/sign-in.md`). The tests cover both, and both were checked by hand, the Android app on a phone.
 
 Each copy uses one edition, and nothing syncs between them. Outside `internal/bootstrap` and `desktop.Open`, never assume local storage or a single user.
 
@@ -81,8 +81,8 @@ internal/core/domain             entities, value rules, domain errors (stdlib on
 internal/core/ports              interfaces: driving (…Service) + driven (…Repository, Clock, IDGenerator)
 internal/core/app                use cases implementing driving ports (orchestration only)
 internal/adapters/httpapi        REST server (generated strict interface from OpenAPI), SPA serving, and sign-in under `/auth/` (session cookie or bearer token, OIDC routes over its `SignInProvider` interface, dev sign-in in `devsignin` builds, `/auth/native` for the command line)
-internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --server mode (later, desktop and mobile remote mode too); sends a bearer token from a token source
-internal/adapters/clientsignin   a client's sign-in and sign-out, shared by CLI and TUI (later desktop); takes its pieces as interfaces, wired in bootstrap
+internal/adapters/httpclient     driving ports over HTTP, used by CLI/TUI in --server mode and by the desktop and mobile apps in remote mode; sends a bearer token from a token source
+internal/adapters/clientsignin   a client's sign-in and sign-out, shared by CLI, TUI, and the desktop and mobile apps in remote mode (through `httpapi.Options.ClientSignIn`); cancels a sign-in in progress; takes its pieces as interfaces, wired in bootstrap
 internal/adapters/browsersignin  RFC 8252 loopback sign-in with PKCE, and the browser opener (BROWSER, else the OS default)
 internal/adapters/tokenstore     session tokens per server: OS credential store (go-keyring), falling back to tokens.json; credential_store setting
 internal/adapters/cli, tui       Cobra / Bubble Tea + Lip Gloss

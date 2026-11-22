@@ -23,8 +23,18 @@ const (
 	StoragePostgres StorageBackend = "postgres"
 )
 
-// CredentialStore says where the command line and the terminal application
-// keep the session token they receive when you sign in to a server.
+// BuiltInServerURL is the server address a build sets, as server_url's lowest
+// layer: a settings file or STARTER_SERVER_URL still wins. Set it with
+//
+//	go build -ldflags "-X github.com/RockLikeAmadeus/go-application-starter/internal/config.BuiltInServerURL=<address>"
+//
+// A program built with one has no local mode, as an empty setting doesn't
+// override it.
+var BuiltInServerURL = ""
+
+// CredentialStore says where the command line, the terminal application, and
+// the desktop app keep the session token they receive when you sign in to a
+// server. The Android app always uses a file.
 type CredentialStore string
 
 const (
@@ -65,11 +75,11 @@ type Config struct {
 	DatabaseURL string
 	// Port is the HTTP listen port (port; PORT, the de-facto cloud convention).
 	Port int
-	// ServerURL, when set, makes CLI/TUI use a remote server (server_url;
-	// STARTER_SERVER_URL).
+	// ServerURL, when set, makes the CLI, TUI, and desktop and mobile apps use
+	// a remote server (server_url; STARTER_SERVER_URL, else BuiltInServerURL).
 	ServerURL string
-	// CredentialStore says where the CLI and TUI keep their session tokens
-	// (credential_store; STARTER_CREDENTIAL_STORE).
+	// CredentialStore says where the CLI, TUI, and desktop app keep their
+	// session tokens (credential_store; STARTER_CREDENTIAL_STORE).
 	CredentialStore CredentialStore
 	// LogFormat is "json" or "text" (log_format; STARTER_LOG_FORMAT).
 	LogFormat string
@@ -137,7 +147,7 @@ func Load(env Env, settingsFile string) (Config, error) {
 		Storage:          StorageBackend(setting("storage", string(StorageJSONFile))),
 		DataDir:          setting("data_dir", "./data"),
 		DatabaseURL:      setting("database_url", ""),
-		ServerURL:        setting("server_url", ""),
+		ServerURL:        setting("server_url", BuiltInServerURL),
 		CredentialStore:  CredentialStore(setting("credential_store", string(CredentialStoreSystem))),
 		LogFormat:        setting("log_format", "text"),
 		PlansFile:        setting("plans_file", ""),

@@ -18,7 +18,11 @@ The SPA is an installable web app (`VitePWA` in `web/vite.config.ts`). Its servi
 
 ## Local data and offline behaviour
 
-In the local edition, the desktop app keeps its data on the computer (`httpapi.Options.IsDataLocal`; remote mode, which is planned, will leave it unset), so `GET /api/v1/connection` answers `{"isRequired": false}`. The SPA then hides the offline notice and keeps TanStack Query online (`useIsConnectionRequired`, `useLocalDataOnline`). New offline behaviour in the SPA must respect that answer. The desktop handler answers `/sw.js` with 404, so the service worker never runs there.
+In the local edition, the desktop app keeps its data on the computer (`httpapi.Options.IsDataLocal`), so `GET /api/v1/connection` answers `{"isRequired": false}`. The SPA then hides the offline notice and keeps TanStack Query online (`useIsConnectionRequired`, `useLocalDataOnline`). New offline behaviour in the SPA must respect that answer. Remote mode leaves `IsDataLocal` unset, so the answer is `true` and the offline notice comes back. The desktop handler answers `/sw.js` with 404, so the service worker never runs there.
+
+## Sign-in screen in remote mode
+
+`useSession` reads `signInMethod`. With `page` (the server), `SignInScreen`'s "Sign in" and "Create an account" are links to `/auth/sign-in` and `/auth/sign-up`. With `browser` (the desktop and mobile apps in remote mode), they are buttons that `POST /api/v1/browser-sign-in`, and `BrowserSignInScreen` shows the waiting screen with Cancel (`DELETE`), refetching the session on success. `SignOut` likewise: with `page`, a form posting to `/auth/sign-out`; with `browser`, a button that calls `DELETE /api/v1/session` and refetches the session, showing a failure under it, since the apps' webview can't follow the form's redirect. No Playwright journey covers `browser`, since the e2e server always answers `page`; Vitest covers it.
 
 ## Android bridge (`web/src/api/client.ts`)
 

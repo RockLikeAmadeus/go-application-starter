@@ -20,6 +20,12 @@ func NewSystem(folder string) *System {
 	return &System{keyring: NewKeyring(), file: NewFile(folder)}
 }
 
+// NewAppSystem is NewSystem for the desktop and Android apps, whose sessions
+// are kept apart from the command line's.
+func NewAppSystem(folder string) *System {
+	return &System{keyring: NewAppKeyring(), file: NewAppFile(folder)}
+}
+
 // Save keeps the token for the server and says where.
 func (s *System) Save(serverURL, token string) (Kept, error) {
 	if err := s.keyring.Save(serverURL, token); err == nil {

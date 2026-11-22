@@ -278,3 +278,62 @@ func TestStartSignUpAsksForTheProvidersSignUpPageOnlyWhenItListsPromptCreate(t *
 		})
 	}
 }
+
+func TestStartAgainAsksTheProviderToSignThePersonInAgain(t *testing.T) {
+	fake := oidctest.New(t)
+	p, err := oidc.New(context.Background(), oidc.Settings{
+		Issuer:       fake.Issuer(),
+		ClientID:     oidctest.ClientID,
+		ClientSecret: oidctest.ClientSecret,
+		RedirectURL:  "https://app.example.com/auth/oidc/callback",
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	rawURL, _, _ := p.StartAgain()
+
+	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	resp, err := client.Get(rawURL)
+	if err != nil {
+		t.Fatalf("following %q: %v", rawURL, err)
+	}
+	_ = resp.Body.Close()
+	if got := fake.LastPrompt(); got != "login" {
+		t.Errorf("prompt sent = %q, want %q", got, "login")
+	}
+}
+
+func TestStartSignUpAgainOpensTheSignUpPageOrElseAsksToSignInAgain(t *testing.T) {
+	for name, supported := range map[string]bool{"listed": true, "not listed": false} {
+		t.Run(name, func(t *testing.T) {
+			fake := oidctest.New(t)
+			fake.SetPromptCreateSupported(supported)
+			p, err := oidc.New(context.Background(), oidc.Settings{
+				Issuer:       fake.Issuer(),
+				ClientID:     oidctest.ClientID,
+				ClientSecret: oidctest.ClientSecret,
+				RedirectURL:  "https://app.example.com/auth/oidc/callback",
+			})
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+
+			rawURL, _, _ := p.StartSignUpAgain()
+
+			client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+			resp, err := client.Get(rawURL)
+			if err != nil {
+				t.Fatalf("following %q: %v", rawURL, err)
+			}
+			_ = resp.Body.Close()
+			want := "login"
+			if supported {
+				want = "create"
+			}
+			if got := fake.LastPrompt(); got != want {
+				t.Errorf("prompt sent = %q, want %q", got, want)
+			}
+		})
+	}
+}

@@ -31,7 +31,7 @@ func TestOpenKeepsItemsAfterClosingAndReopening(t *testing.T) {
 	env := envOf(map[string]string{"STARTER_DATA_DIR": t.TempDir()})
 	settings := configDirAt(t.TempDir())
 
-	first, err := desktop.Open(env, settings, nil)
+	first, err := desktop.Open(env, settings, nil, nil)
 	if err != nil {
 		t.Fatalf("first Open: %v", err)
 	}
@@ -40,7 +40,7 @@ func TestOpenKeepsItemsAfterClosingAndReopening(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 
-	second, err := desktop.Open(env, settings, nil)
+	second, err := desktop.Open(env, settings, nil, nil)
 	if err != nil {
 		t.Fatalf("second Open: %v", err)
 	}

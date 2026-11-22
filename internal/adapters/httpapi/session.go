@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -89,9 +90,65 @@ func accountFrom(ctx context.Context) (domain.Account, bool) {
 // The Session endpoint.
 
 func (h *Handlers) GetSession(ctx context.Context, _ openapi.GetSessionRequestObject) (openapi.GetSessionResponseObject, error) {
-	session := openapi.GetSession200JSONResponse{IsSignInOn: h.isSignInOn}
+	if h.clientSignIn != nil {
+		hosted, err := h.hostedSession(ctx)
+		return openapi.GetSession200JSONResponse(hosted), err
+	}
+	session := openapi.GetSession200JSONResponse{IsSignInOn: h.isSignInOn, SignInMethod: openapi.Page}
 	if account, ok := accountFrom(ctx); ok {
 		session.Name = &account.Identity.Name
 	}
 	return session, nil
+}
+
+// hostedSession answers the session of the hosted server this handler is the
+// app's window to. The app signs in through the browser.
+func (h *Handlers) hostedSession(ctx context.Context) (openapi.Session, error) {
+	hosted, err := h.clientSignIn.CurrentSession(ctx)
+	if err != nil {
+		return openapi.Session{}, err
+	}
+	session := openapi.Session{IsSignInOn: hosted.IsSignInOn, SignInMethod: openapi.Browser}
+	if hosted.Name != "" {
+		session.Name = &hosted.Name
+	}
+	return session, nil
+}
+
+// The browser sign-in endpoints belong to the apps' in-process handler. A
+// server, which has no client sign-in, answers both as if they didn't exist.
+
+func (h *Handlers) StartBrowserSignIn(ctx context.Context, request openapi.StartBrowserSignInRequestObject) (openapi.StartBrowserSignInResponseObject, error) {
+	if h.clientSignIn == nil {
+		return nil, domain.ErrNotFound
+	}
+	if err := h.clientSignIn.SignInThroughBrowser(ctx, request.Body.IsSignUp, h.openBrowser); err != nil {
+		return nil, err
+	}
+	session, err := h.hostedSession(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.StartBrowserSignIn200JSONResponse(session), nil
+}
+
+func (h *Handlers) CancelBrowserSignIn(context.Context, openapi.CancelBrowserSignInRequestObject) (openapi.CancelBrowserSignInResponseObject, error) {
+	if h.clientSignIn == nil {
+		return nil, domain.ErrNotFound
+	}
+	h.clientSignIn.CancelBrowserSignIn()
+	return openapi.CancelBrowserSignIn204Response{}, nil
+}
+
+// EndSession belongs to the apps' in-process handler. A server, which has no
+// client sign-in, answers as if it didn't exist. A session the server couldn't
+// end is still ended for the app, as the token is forgotten.
+func (h *Handlers) EndSession(ctx context.Context, _ openapi.EndSessionRequestObject) (openapi.EndSessionResponseObject, error) {
+	if h.clientSignIn == nil {
+		return nil, domain.ErrNotFound
+	}
+	if err := h.clientSignIn.SignOut(ctx); err != nil && !errors.Is(err, ErrSessionNotEnded) {
+		return nil, err
+	}
+	return openapi.EndSession204Response{}, nil
 }

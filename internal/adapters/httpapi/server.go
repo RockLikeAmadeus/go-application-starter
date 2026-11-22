@@ -44,6 +44,41 @@ type Options struct {
 	// PublicURL is the address people reach the server at. When it starts with
 	// https://, cookies are Secure even over plain HTTP (a proxy ended TLS).
 	PublicURL string
+	// ClientSignIn is set by the apps' in-process handler in remote mode,
+	// where the session is the hosted server's, not this handler's.
+	ClientSignIn ClientSignIn
+	// OpenBrowser opens an address in the system browser, for ClientSignIn.
+	OpenBrowser func(address string) error
+}
+
+// ClientSession is what a hosted server says about the current session.
+type ClientSession struct {
+	IsSignInOn bool
+	Name       string
+}
+
+// ErrSignInCancelled is what a ClientSignIn returns from SignInThroughBrowser
+// when CancelBrowserSignIn ended it.
+var ErrSignInCancelled = errors.New("the sign-in was cancelled")
+
+// ErrSessionNotEnded is what a ClientSignIn returns from SignOut (possibly
+// wrapped) when the token was forgotten but the server couldn't end the
+// session.
+var ErrSessionNotEnded = errors.New("the server could not end the session")
+
+// ClientSignIn signs an app in to a hosted server.
+type ClientSignIn interface {
+	CurrentSession(ctx context.Context) (ClientSession, error)
+	// SignInThroughBrowser signs in, or with isSignUp creates an account,
+	// handing the address to open, and returns when it finishes.
+	SignInThroughBrowser(ctx context.Context, isSignUp bool, open func(address string) error) error
+	// CancelBrowserSignIn ends the sign-in in progress, if any, so that
+	// SignInThroughBrowser returns ErrSignInCancelled.
+	CancelBrowserSignIn()
+	// SignOut ends the session and forgets the token. It returns
+	// ErrSessionNotEnded when only the server couldn't end the session, and
+	// any other error when the token wasn't forgotten.
+	SignOut(ctx context.Context) error
 }
 
 // NewHandler builds the full HTTP surface: the REST API, health probes and
@@ -94,8 +129,8 @@ func NewHandler(opts Options) http.Handler {
 	if opts.SignInProvider != nil {
 		mux.HandleFunc("GET /auth/sign-in", signInGoesTo("/auth/oidc"))
 		mux.HandleFunc("GET /auth/sign-up", signInGoesTo("/auth/oidc/sign-up"))
-		mux.HandleFunc("GET /auth/oidc", oidcStart(opts.SignInProvider.Start, opts.PublicURL))
-		mux.HandleFunc("GET /auth/oidc/sign-up", oidcStart(opts.SignInProvider.StartSignUp, opts.PublicURL))
+		mux.HandleFunc("GET /auth/oidc", oidcStart(opts.SignInProvider.Start, opts.SignInProvider.StartAgain, opts.PublicURL))
+		mux.HandleFunc("GET /auth/oidc/sign-up", oidcStart(opts.SignInProvider.StartSignUp, opts.SignInProvider.StartSignUpAgain, opts.PublicURL))
 		mux.HandleFunc("GET /auth/oidc/callback", oidcCallback(log, opts.SignInProvider, opts.SignIn, opts.PublicURL))
 	}
 	if opts.SignIn != nil {

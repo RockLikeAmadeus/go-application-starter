@@ -33,7 +33,13 @@ func main() {
 }
 
 func run() error {
-	opened, err := mobile.Open(os.Getenv, application.Android.StoragePath(), web.Assets())
+	// The sign-in opens the phone's browser through Android (an ACTION_VIEW
+	// intent). Wails' app.Browser.OpenURL runs xdg-open, which Android lacks.
+	openBrowser := func(address string) error {
+		application.Android.OpenURL(address)
+		return nil
+	}
+	opened, err := mobile.Open(os.Getenv, application.Android.StoragePath(), web.Assets(), openBrowser)
 	if err != nil {
 		return err
 	}

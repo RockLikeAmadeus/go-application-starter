@@ -421,3 +421,36 @@ func TestPublicURLThatIsNotAnHTTPAddressIsRefused(t *testing.T) {
 		})
 	}
 }
+
+func TestTheBuiltInServerURLIsTheLowestLayerOfServerURL(t *testing.T) {
+	previous := config.BuiltInServerURL
+	config.BuiltInServerURL = "https://built-in.example.com"
+	t.Cleanup(func() { config.BuiltInServerURL = previous })
+
+	tests := []struct {
+		name, settings string
+		env            map[string]string
+		wantURL        string
+		wantSource     string
+	}{
+		{"nothing else set", "", nil, "https://built-in.example.com", "built in"},
+		{"an empty setting", `server_url = ""`, nil, "https://built-in.example.com", "built in"},
+		{"the settings file", `server_url = "https://file.example.com"`, nil, "https://file.example.com", "settings file"},
+		{"the environment", `server_url = "https://file.example.com"`, map[string]string{"STARTER_SERVER_URL": "https://env.example.com"}, "https://env.example.com", "environment (STARTER_SERVER_URL)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			file := ""
+			if tt.settings != "" {
+				file = writeSettings(t, tt.settings)
+			}
+			cfg, err := config.Load(config.Env{Getenv: envOf(tt.env)}, file)
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if cfg.ServerURL != tt.wantURL || cfg.Sources["server_url"] != tt.wantSource {
+				t.Errorf("ServerURL, source = %q, %q, want %q, %q", cfg.ServerURL, cfg.Sources["server_url"], tt.wantURL, tt.wantSource)
+			}
+		})
+	}
+}

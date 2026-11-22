@@ -35,8 +35,8 @@ type Attempt struct {
 }
 
 // Start listens on a free loopback port and hands the address of the
-// server's native sign-in page to open.
-func Start(ctx context.Context, serverURL string, open func(address string) error) (*Attempt, error) {
+// server's native sign-in page to open, or its sign-up page when isSignUp.
+func Start(ctx context.Context, serverURL string, isSignUp bool, open func(address string) error) (*Attempt, error) {
 	var listenConfig net.ListenConfig
 	listener, err := listenConfig.Listen(ctx, "tcp", "127.0.0.1:0")
 	if err != nil {
@@ -52,11 +52,15 @@ func Start(ctx context.Context, serverURL string, open func(address string) erro
 		return nil, err
 	}
 	challenge := sha256.Sum256([]byte(attempt.verifier))
-	address := attempt.serverURL + "/auth/native?" + url.Values{
+	query := url.Values{
 		"port":      {strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)},
 		"state":     {attempt.state},
 		"challenge": {base64.RawURLEncoding.EncodeToString(challenge[:])},
-	}.Encode()
+	}
+	if isSignUp {
+		query.Set("sign-up", "1")
+	}
+	address := attempt.serverURL + "/auth/native?" + query.Encode()
 	if err := open(address); err != nil {
 		listener.Close()
 		return nil, err

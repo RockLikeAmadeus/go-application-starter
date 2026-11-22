@@ -49,16 +49,18 @@ data_dir = "/home/ann/.config/starter"
 # mark the folder as in use on this computer.
 ignore_synced_folder = false
 
-# To make the command line and the terminal application use a server instead
-# of the data on this computer, please remove the "#" below and give the
-# server's address.
+# To make the command line, the terminal application, and the desktop
+# application use a server instead of the data on this computer, please remove
+# the "#" below and give the server's address.
 # server_url = "https://example.com"
 
-# Where the command line and the terminal application keep the session token
-# they receive when you sign in to a server, one for each server. "system"
-# uses the operating system's credential store, and falls back to tokens.json
-# in the settings folder when that store is not available. "file" always uses
-# tokens.json, which only you can read (mode 0600).
+# Where the command line, the terminal application, and the desktop
+# application keep the session token they receive when you sign in to a
+# server, one for each server. "system" uses the operating system's credential
+# store, and falls back to a file in the settings folder when that store is not
+# available. "file" always uses the file, which only you can read (mode 0600).
+# The command line and the terminal application use tokens.json, and the
+# desktop application keeps a session of its own in app-tokens.json.
 credential_store = "system"
 
 # To use a plans file of your own instead of the one built into the

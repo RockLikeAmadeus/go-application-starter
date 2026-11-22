@@ -29,15 +29,27 @@ type SignInProvider interface {
 	// StartSignUp is Start for someone who is new: it opens at the provider's
 	// sign-up page when the provider has one.
 	StartSignUp() (authURL, state, attempt string)
+	// StartAgain is Start for someone who must prove who they are again, even
+	// when the provider still has a session for them.
+	StartAgain() (authURL, state, attempt string)
+	// StartSignUpAgain is StartSignUp for someone who must prove who they are
+	// again, or create an account again, even when the provider still has a
+	// session for them.
+	StartSignUpAgain() (authURL, state, attempt string)
 	Finish(ctx context.Context, attempt, code string) (domain.Identity, error)
 }
 
 // oidcStart answers GET /auth/oidc and GET /auth/oidc/sign-up: it begins an
 // attempt with start (the provider's Start or StartSignUp), keeps it in a
-// cookie, and sends the browser to the provider.
-func oidcStart(start func() (authURL, state, attempt string), publicURL string) http.HandlerFunc {
+// cookie, and sends the browser to the provider. A request with again=1 begins
+// with again instead, when it isn't nil.
+func oidcStart(start, again func() (authURL, state, attempt string), publicURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authURL, state, attempt := start()
+		begin := start
+		if again != nil && r.URL.Query().Get("again") == "1" {
+			begin = again
+		}
+		authURL, state, attempt := begin()
 		// Lax still sends the cookie on the provider's top-level redirect back.
 		http.SetCookie(w, &http.Cookie{
 			Name:     AttemptCookie,

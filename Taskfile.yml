@@ -6,6 +6,13 @@ vars:
   VERSION:
     sh: git describe --tags --always --dirty 2>/dev/null || echo dev
   LDFLAGS: -s -w -X github.com/RockLikeAmadeus/go-application-starter/internal/adapters/cli.Version={{.VERSION}}
+  # The server address built into the desktop and Android apps (the lowest
+  # layer of server_url, see docs/configuration.md): set it in the environment
+  # or as `task build:desktop BUILT_IN_SERVER_URL=https://...`. Empty builds the
+  # local edition. A program built with one has no local mode.
+  BUILT_IN_SERVER_URL:
+    sh: echo "${BUILT_IN_SERVER_URL:-}"
+  APP_LDFLAGS: -s -w{{if .BUILT_IN_SERVER_URL}} -X github.com/RockLikeAmadeus/go-application-starter/internal/config.BuiltInServerURL={{.BUILT_IN_SERVER_URL}}{{end}}
   # The Android SDK: $ANDROID_HOME, or Android Studio's default on Linux.
   ANDROID_HOME:
     sh: echo "${ANDROID_HOME:-$HOME/Android/Sdk}"
@@ -75,6 +82,15 @@ tasks:
     cmds:
       - go tool -modfile=tools/go.mod air
 
+  dev:server:signin:
+    desc: Run the API server with the dev sign-in on memory storage, rebuilding on changes, for the desktop app, CLI, and TUI to sign in to
+    env:
+      # Set either one in the environment to override it.
+      STARTER_SIGN_IN: '{{.STARTER_SIGN_IN | default "dev"}}'
+      STARTER_STORAGE: '{{.STARTER_STORAGE | default "memory"}}'
+    cmds:
+      - go tool -modfile=tools/go.mod air
+
   run:server:
     desc: Run the API server (API-only; the UI comes from Vite in dev)
     cmds:
@@ -113,7 +129,7 @@ tasks:
     desc: Build the desktop app, with the web UI built in, into ./bin (needs the desktop build deps, see README)
     deps: [web:build]
     cmds:
-      - go build -tags desktop,embedweb -ldflags "-s -w" -o {{.BIN}}/starter-desktop{{exeExt}} ./cmd/desktop
+      - go build -tags desktop,embedweb -ldflags "{{.APP_LDFLAGS}}" -o {{.BIN}}/starter-desktop{{exeExt}} ./cmd/desktop
 
   build:desktop:windows:
     desc: Cross-compile the desktop app for Windows, with the web UI built in, into ./bin
@@ -137,7 +153,7 @@ tasks:
       - defer: rm -f {{.SYSO}}
       # Only go build targets Windows, so go tool wails3 above runs here.
       # windowsgui: a GUI program, so Windows opens no console window beside it.
-      - GOOS=windows GOARCH=amd64 go build -tags desktop,embedweb -ldflags "-s -w -H windowsgui" -o {{.BIN}}/starter-desktop.exe ./cmd/desktop
+      - GOOS=windows GOARCH=amd64 go build -tags desktop,embedweb -ldflags "{{.APP_LDFLAGS}} -H windowsgui" -o {{.BIN}}/starter-desktop.exe ./cmd/desktop
 
   # ---------------------------------------------------------------- package
   # Each format has its own task, so one can be built alone (the package
@@ -254,7 +270,7 @@ tasks:
         if [ ! -d "$NDK" ]; then echo "Android NDK not found: install it (see docs/mobile.md) or set ANDROID_NDK_HOME"; exit 1; fi
         CGO_ENABLED=1 GOOS=android GOARCH={{.GOARCH}} \
           CC="$NDK/toolchains/llvm/prebuilt/$(uname -s | tr '[:upper:]' '[:lower:]')-x86_64/bin/{{.CLANG}}" \
-          go build -buildmode=c-shared -tags embedweb -ldflags "-s -w" \
+          go build -buildmode=c-shared -tags embedweb -ldflags "{{.APP_LDFLAGS}}" \
           -o mobile/android/app/src/main/jniLibs/{{.ABI}}/libwails.so ./cmd/mobile
       # go build also writes a C header the app doesn't use.
       - rm -f mobile/android/app/src/main/jniLibs/{{.ABI}}/libwails.h

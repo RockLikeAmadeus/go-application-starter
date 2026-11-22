@@ -19,6 +19,7 @@ const (
 	ProblemFeature     = "feature"
 	ProblemBadRequest  = "bad_request"
 	ProblemCrossSite   = "cross_site"
+	ProblemCancelled   = "cancelled"
 	ProblemInternal    = "internal"
 )
 
@@ -39,6 +40,8 @@ func problemFor(err error) openapi.Problem {
 		availableOn := availableOnDTO(featureErr.AvailableOn)
 		p.Feature, p.Name, p.AvailableOn = &featureErr.Feature, &featureErr.Name, &availableOn
 		return p
+	case errors.Is(err, ErrSignInCancelled):
+		return problem(http.StatusConflict, ProblemCancelled, err.Error(), nil)
 	case errors.Is(err, domain.ErrNotFound):
 		return problem(http.StatusNotFound, ProblemNotFound, err.Error(), nil)
 	case errors.Is(err, domain.ErrNoWorkspace):

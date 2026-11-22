@@ -22,6 +22,8 @@ type fakeSignInProvider struct {
 	url, state, attempt string
 	identity            domain.Identity
 	signUpURL           string
+	againURL            string
+	signUpAgainURL      string
 }
 
 func (f fakeSignInProvider) Finish(_ context.Context, attempt, code string) (domain.Identity, error) {
@@ -35,6 +37,14 @@ func (f fakeSignInProvider) Start() (string, string, string) { return f.url, f.s
 
 func (f fakeSignInProvider) StartSignUp() (string, string, string) {
 	return f.signUpURL, f.state, f.attempt
+}
+
+func (f fakeSignInProvider) StartAgain() (string, string, string) {
+	return f.againURL, f.state, f.attempt
+}
+
+func (f fakeSignInProvider) StartSignUpAgain() (string, string, string) {
+	return f.signUpAgainURL, f.state, f.attempt
 }
 
 func TestSigningUpWithAnOIDCProviderGoesToTheOIDCSignUp(t *testing.T) {
@@ -69,6 +79,38 @@ func TestStartingAnOIDCSignUpKeepsTheAttemptInACookieAndGoesToTheProvidersSignUp
 	}
 	if cookie == nil || cookie.Value != "s1.opaque-attempt" || cookie.Path != "/auth/oidc" {
 		t.Errorf("cookie = %+v, want %s at /auth/oidc holding s1.opaque-attempt", cookie, httpapi.AttemptCookie)
+	}
+}
+
+func TestStartingAnOIDCSignInWithAgainGoesToTheProviderAskingToSignInAgain(t *testing.T) {
+	provider := fakeSignInProvider{
+		url:      "https://provider.example/authorize?state=s1",
+		againURL: "https://provider.example/authorize?state=s1&prompt=login",
+		state:    "s1",
+		attempt:  "opaque-attempt",
+	}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, SignInProvider: provider})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/oidc?again=1", nil))
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != provider.againURL {
+		t.Errorf("status = %d, Location = %q; want %d to %q", rec.Code, rec.Header().Get("Location"), http.StatusFound, provider.againURL)
+	}
+}
+
+func TestStartingAnOIDCSignUpWithAgainGoesToTheProviderAskingToSignUpAgain(t *testing.T) {
+	provider := fakeSignInProvider{
+		signUpURL:      "https://provider.example/authorize?state=s1&prompt=create",
+		signUpAgainURL: "https://provider.example/authorize?state=s1&prompt=login",
+		state:          "s1",
+		attempt:        "opaque-attempt",
+	}
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, SignInProvider: provider})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/oidc/sign-up?again=1", nil))
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != provider.signUpAgainURL {
+		t.Errorf("status = %d, Location = %q; want %d to %q", rec.Code, rec.Header().Get("Location"), http.StatusFound, provider.signUpAgainURL)
 	}
 }
 
@@ -107,6 +149,16 @@ func TestSigningInWithAnOIDCProviderGoesToTheOIDCStart(t *testing.T) {
 
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/oidc" {
 		t.Errorf("status = %d, Location = %q; want %d to /auth/oidc", rec.Code, rec.Header().Get("Location"), http.StatusFound)
+	}
+}
+
+func TestSigningInWithAnOIDCProviderKeepsAskingToSignInAgain(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, SignInProvider: fakeSignInProvider{}})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/sign-in?again=1", nil))
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/oidc?again=1" {
+		t.Errorf("status = %d, Location = %q; want %d to /auth/oidc?again=1", rec.Code, rec.Header().Get("Location"), http.StatusFound)
 	}
 }
 

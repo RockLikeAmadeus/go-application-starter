@@ -58,8 +58,8 @@ func (r sessionReader) CurrentSession(ctx context.Context) (clientsignin.Session
 // browserSignIn signs in to one server through browsersignin.
 type browserSignIn struct{ serverURL string }
 
-func (b browserSignIn) BrowserSignIn(ctx context.Context, open func(address string) error) (string, error) {
-	attempt, err := browsersignin.Start(ctx, b.serverURL, open)
+func (b browserSignIn) BrowserSignIn(ctx context.Context, isSignUp bool, open func(address string) error) (string, error) {
+	attempt, err := browsersignin.Start(ctx, b.serverURL, isSignUp, open)
 	if err != nil {
 		return "", err
 	}
@@ -156,6 +156,10 @@ func (w *world) iSignInFromTheCommandLine(ctx context.Context, name string) erro
 	if err != nil {
 		return err
 	}
+	return w.signInCommandLine(ctx, c, name)
+}
+
+func (w *world) signInCommandLine(ctx context.Context, c *commandLine, name string) error {
 	browser, ok := w.signIn.(nativeSignInBrowser)
 	if !ok {
 		return errors.New("this driver's sign-in can't finish the command line's: tag the scenario @command-line-sign-in")

@@ -327,7 +327,7 @@ func TestNewRemote_IsOnTheServersPlan(t *testing.T) {
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Options{Entitlements: core}))
 	t.Cleanup(srv.Close)
 
-	a, err := bootstrap.NewRemote(config.Config{ServerURL: srv.URL}, t.TempDir())
+	a, err := bootstrap.NewRemote(config.Config{ServerURL: srv.URL}, t.TempDir(), bootstrap.CommandLine)
 	if err != nil {
 		t.Fatalf("NewRemote: %v", err)
 	}
@@ -356,7 +356,7 @@ func TestNewRemote_SendsTheStoredSessionTokenForItsServerAndNoneWhenThereIsNone(
 	folder := t.TempDir()
 	cfg := config.Config{ServerURL: srv.URL, CredentialStore: config.CredentialStoreFile}
 
-	a, err := bootstrap.NewRemote(cfg, folder)
+	a, err := bootstrap.NewRemote(cfg, folder, bootstrap.CommandLine)
 	if err != nil {
 		t.Fatalf("NewRemote: %v", err)
 	}
@@ -367,6 +367,39 @@ func TestNewRemote_SendsTheStoredSessionTokenForItsServerAndNoneWhenThereIsNone(
 	_, _ = a.Entitlements.CurrentEntitlements(context.Background())
 
 	want := []string{"", "Bearer tok-1"}
+	if !slices.Equal(header, want) {
+		t.Errorf("Authorization headers = %q, want %q", header, want)
+	}
+}
+
+// The apps keep their own session token for a server, apart from the command
+// line's, in the same settings folder: each program's client sends its own.
+func TestNewClientSignInFor_SendsTheProgramsOwnTokenFromASharedFolder(t *testing.T) {
+	var header []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		header = append(header, r.Header.Get("Authorization"))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	folder := t.TempDir()
+	if err := tokenstore.NewFile(folder).Save(srv.URL, "tok-cli"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tokenstore.NewAppFile(folder).Save(srv.URL, "tok-app"); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Config{ServerURL: srv.URL, CredentialStore: config.CredentialStoreFile}
+
+	for _, program := range []bootstrap.Program{bootstrap.CommandLine, bootstrap.DesktopOrMobileApp} {
+		client, _, err := bootstrap.NewClientSignInFor(cfg, folder, program)
+		if err != nil {
+			t.Fatalf("NewClientSignInFor: %v", err)
+		}
+		_, _ = client.CurrentSession(context.Background())
+	}
+
+	want := []string{"Bearer tok-cli", "Bearer tok-app"}
 	if !slices.Equal(header, want) {
 		t.Errorf("Authorization headers = %q, want %q", header, want)
 	}

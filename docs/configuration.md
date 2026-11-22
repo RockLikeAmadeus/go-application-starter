@@ -17,8 +17,8 @@ So the settings file holds what you want every time, and an environment variable
 | `data_dir` | `STARTER_DATA_DIR` | `--data-dir` | see below | The data folder for `jsonfile` and `sqlite`. |
 | `database_url` | `STARTER_DATABASE_URL` | | none | The database that `postgres` storage connects to, for example `postgres://user:password@host:5432/starter`. It usually holds a password, so set it in the environment, as a secret, rather than in a settings file. |
 | `port` | `PORT` | | `8080` | The port the server listens on. `PORT` has no prefix: it's the name cloud platforms set. |
-| `server_url` | `STARTER_SERVER_URL` | `--server` | none | Makes the CLI and TUI use a server at this URL instead of their own data. |
-| `credential_store` | `STARTER_CREDENTIAL_STORE` | | `system` | Where the command line and the terminal application keep the session token they receive when you sign in to a server: `system` (the operating system's credential store, falling back to `tokens.json` in the settings folder when it is not available) or `file` (`tokens.json` only, readable only by you). [docs/sign-in.md](sign-in.md), "Where the token is kept", explains both. |
+| `server_url` | `STARTER_SERVER_URL` | `--server` | none (a build can set one: see "A server address built into the program" below) | Makes the CLI, the TUI, and the desktop and Android apps use a server at this URL instead of their own data. The apps call this remote mode ([docs/sign-in.md](sign-in.md), "Signing in from the desktop and mobile apps"). The desktop app reads it when it opens, so a change takes effect the next time it opens. |
+| `credential_store` | `STARTER_CREDENTIAL_STORE` | | `system` | Where the command line, the terminal application, and the desktop app keep the session token they receive when you sign in to a server: `system` (the operating system's credential store, falling back to a file in the settings folder when it is not available) or `file` (the file only, readable only by you). The command line and the terminal application use `tokens.json`, and the desktop app keeps a session of its own in `app-tokens.json`. The Android app always uses `app-tokens.json` in its private storage, whatever this says. [docs/sign-in.md](sign-in.md), "Where the token is kept" and "Signing in from the desktop and mobile apps", explains both. |
 | `log_format` | `STARTER_LOG_FORMAT` | | `text` | The server's log format: `text` or `json`. |
 | `plans_file` | `STARTER_PLANS_FILE` | | none | A plans file to use instead of the one built in (`internal/adapters/plans/plans.jsonc`). |
 | `sign_in` | `STARTER_SIGN_IN` | | `off` | How people sign in to the server. `off` makes the server a self-hosted local edition, with one workspace and no sign-in. `oidc` turns on the hosted edition with a sign-in provider (OpenID Connect), set up with the four settings below. `dev` turns on the hosted edition with the dev sign-in, which signs in whoever types a name, so it is only for development and tests. Only a program built with the `devsignin` build tag accepts `dev`, and `task build` leaves the tag out, so a release build refuses it at start. Sign-in needs `memory`, `sqlite`, or `postgres` storage, so a program with sign-in on refuses `jsonfile` at start. Set it for the server, and for `starter admin set-plan` when an admin changes a plan beside a hosted server's data. With sign-in on, `set-plan` changes the stored plan, and with it off, `set-plan` refuses, as the local edition's plan is fixed. Set it in the environment, as the server reads no settings file unless `STARTER_CONFIG_FILE` names one. Any other value stops the program at start. [docs/sign-in.md](sign-in.md) explains sign-in. |
@@ -56,16 +56,18 @@ data_dir = "/home/you/.config/starter"
 # mark the folder as in use on this computer.
 ignore_synced_folder = false
 
-# To make the command line and the terminal application use a server instead
-# of the data on this computer, please remove the "#" below and give the
-# server's address.
+# To make the command line, the terminal application, and the desktop
+# application use a server instead of the data on this computer, please remove
+# the "#" below and give the server's address.
 # server_url = "https://example.com"
 
-# Where the command line and the terminal application keep the session token
-# they receive when you sign in to a server, one for each server. "system"
-# uses the operating system's credential store, and falls back to tokens.json
-# in the settings folder when that store is not available. "file" always uses
-# tokens.json, which only you can read (mode 0600).
+# Where the command line, the terminal application, and the desktop
+# application keep the session token they receive when you sign in to a
+# server, one for each server. "system" uses the operating system's credential
+# store, and falls back to a file in the settings folder when that store is not
+# available. "file" always uses the file, which only you can read (mode 0600).
+# The command line and the terminal application use tokens.json, and the
+# desktop application keeps a session of its own in app-tokens.json.
 credential_store = "system"
 
 # To use a plans file of your own instead of the one built into the
@@ -95,6 +97,23 @@ credential_store = "system"
 - a setting it doesn't know (a typo such as `datadir`) names the file and the setting;
 - a file that isn't valid TOML names the file;
 - a file that `STARTER_CONFIG_FILE` or `--config` names, but that doesn't exist, is a mistake too. The default file may be missing: then the program creates it (above), or, if it can't, runs with no settings file.
+
+## A server address built into the program
+
+A product that is only hosted can build its server's address into its programs, so that nobody has to set `server_url`. The address is `config.BuiltInServerURL`, a Go variable that is empty unless a build sets it with the linker's `-X` flag, which replaces a string variable's value when the program is built:
+
+```sh
+go build -ldflags "-X github.com/RockLikeAmadeus/go-application-starter/internal/config.BuiltInServerURL=https://app.example.com" ./cmd/desktop
+```
+
+The Taskfile does this for the desktop and Android builds when `BUILT_IN_SERVER_URL` is set:
+
+```sh
+BUILT_IN_SERVER_URL=https://app.example.com task build:desktop
+BUILT_IN_SERVER_URL=https://app.example.com task mobile:android:build
+```
+
+The built-in address is the lowest layer of `server_url`, below the settings file and `STARTER_SERVER_URL`. So a setting still wins, which lets a developer point a built app at a test server. An empty setting doesn't override it, so a program built with an address has no local mode. This is how the Android app reaches a server: nobody can edit its settings, because its settings folder is the app's private storage. `starter info` shows the built-in address as `server_url = "https://app.example.com"  # built in`.
 
 ## Where did a setting come from?
 

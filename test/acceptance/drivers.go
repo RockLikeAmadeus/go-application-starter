@@ -120,12 +120,16 @@ type driver struct {
 // need its data folder, and the http driver covers the API. Scenarios that
 // sign in (@sign-in) run only on the drivers whose storage keeps accounts and
 // sessions, as the hosted edition: memory, sqlite, postgres, and http.
+// Scenarios that open the desktop and mobile apps on a hosted server
+// (@remote-mode) run only on the http and oidc drivers, whose servers sign
+// people in, as the command line's sign-in (@command-line-sign-in) does.
 func driversFor(t testing.TB, serverURL string) []driver {
 	postgresDriver := driver{
 		name:        "postgres",
 		start:       func() (*harness, error) { return startPostgres(t, localEdition) },
 		startHosted: func() (*harness, error) { return startPostgres(t, hostedEdition) },
-		tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider && ~@command-line-sign-in",
+		tags: "~@desktop && ~@mobile && ~@server && ~@sign-in-provider && ~@command-line-sign-in" +
+			" && ~@remote-mode",
 	}
 	serverTags := "@server"
 	if serverURL == "" {
@@ -137,19 +141,21 @@ func driversFor(t testing.TB, serverURL string) []driver {
 			name:        "memory",
 			start:       func() (*harness, error) { return startMemory(localEdition) },
 			startHosted: func() (*harness, error) { return startMemory(hostedEdition) },
-			tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider && ~@command-line-sign-in",
+			tags: "~@desktop && ~@mobile && ~@server && ~@sign-in-provider && ~@command-line-sign-in" +
+				" && ~@remote-mode",
 		},
 		{
 			name:  "jsonfile",
 			start: startJSONFile,
 			tags: "~@desktop && ~@mobile && ~@server && ~@sign-in && ~@sign-in-provider" +
-				" && ~@command-line-sign-in",
+				" && ~@command-line-sign-in && ~@remote-mode",
 		},
 		{
 			name:        "sqlite",
 			start:       func() (*harness, error) { return startSQLite(localEdition) },
 			startHosted: func() (*harness, error) { return startSQLite(hostedEdition) },
-			tags:        "~@desktop && ~@mobile && ~@server && ~@sign-in-provider && ~@command-line-sign-in",
+			tags: "~@desktop && ~@mobile && ~@server && ~@sign-in-provider && ~@command-line-sign-in" +
+				" && ~@remote-mode",
 		},
 		postgresDriver,
 		{
@@ -162,19 +168,19 @@ func driversFor(t testing.TB, serverURL string) []driver {
 		{
 			name:        "oidc",
 			startHosted: func() (*harness, error) { return startHostedOIDC(t) },
-			tags:        "@sign-in,@sign-in-provider,@command-line-sign-in",
+			tags:        "@sign-in,@sign-in-provider,@command-line-sign-in,@remote-mode",
 		},
 		{
 			name:  "desktop",
 			start: startDesktop,
 			tags: "~@mobile && ~@workspaces && ~@plans && ~@server && ~@sign-in && ~@sign-in-provider" +
-				" && ~@command-line-sign-in",
+				" && ~@command-line-sign-in && ~@remote-mode",
 		},
 		{
 			name:  "mobile",
 			start: startMobile,
 			tags: "~@desktop && ~@workspaces && ~@plans && ~@server && ~@sign-in && ~@sign-in-provider" +
-				" && ~@command-line-sign-in",
+				" && ~@command-line-sign-in && ~@remote-mode",
 		},
 		{name: "server", start: func() (*harness, error) { return startServer(t) }, tags: serverTags},
 	}
@@ -583,7 +589,7 @@ func startDesktop() (*harness, error) {
 		return app.open(h)
 	}
 	h.openCopy = func() error {
-		second, err := desktop.Open(app.getenv, app.userConfigDir, nil)
+		second, err := desktop.Open(app.getenv, app.userConfigDir, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -627,7 +633,7 @@ func (c *localComputer) configEnv() config.Env {
 // open opens the app and points h's driving ports at it. The scenarios drive
 // the API only, so the app is opened without the web app.
 func (d *desktopApp) open(h *harness) error {
-	app, err := desktop.Open(d.getenv, d.userConfigDir, nil)
+	app, err := desktop.Open(d.getenv, d.userConfigDir, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -680,7 +686,7 @@ type mobileApp struct {
 // open opens the app and points h's driving ports at its bridge. The
 // scenarios drive the API only, so the app is opened without the web app.
 func (m *mobileApp) open(h *harness) error {
-	app, err := mobile.Open(func(string) string { return "" }, m.storagePath, nil)
+	app, err := mobile.Open(func(string) string { return "" }, m.storagePath, nil, nil)
 	if err != nil {
 		return err
 	}

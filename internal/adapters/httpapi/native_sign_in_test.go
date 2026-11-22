@@ -108,7 +108,23 @@ func TestAGoodNativeSignInRequestWithNoSessionIsKeptInACookieAndSentToSignIn(t *
 	}
 }
 
-func TestAGoodNativeSignInRequestWithASessionGoesStraightToFinish(t *testing.T) {
+func TestANativeSignInRequestToSignUpWithNoSessionIsSentToSignUp(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	query := url.Values{"port": {"4000"}, "state": {validState}, "challenge": {validChallenge}, "sign-up": {"1"}}
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/native?"+query.Encode(), nil))
+
+	location, err := url.Parse(rec.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("parse location: %v", err)
+	}
+	if rec.Code != http.StatusFound || location.Path != "/auth/sign-up" || location.Query().Get("return") != "/auth/native/finish" {
+		t.Errorf("status = %d, location = %q; want %d, /auth/sign-up?return=/auth/native/finish",
+			rec.Code, rec.Header().Get("Location"), http.StatusFound)
+	}
+}
+
+func TestAGoodNativeSignInRequestWithASessionIsStillSentToSignIn(t *testing.T) {
 	handler := httpapi.NewHandler(httpapi.Options{
 		SignIn:        sessions{"token-a": {ID: "account-a", WorkspaceID: "ws-a"}},
 		IsDevSignInOn: true,
@@ -119,9 +135,28 @@ func TestAGoodNativeSignInRequestWithASessionGoesStraightToFinish(t *testing.T) 
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/auth/native/finish" {
-		t.Errorf("status = %d, location = %q; want %d, /auth/native/finish",
+	location, err := url.Parse(rec.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("parse location: %v", err)
+	}
+	if rec.Code != http.StatusFound || location.Path != "/auth/sign-in" || location.Query().Get("return") != "/auth/native/finish" {
+		t.Errorf("status = %d, location = %q; want %d, /auth/sign-in?return=/auth/native/finish",
 			rec.Code, rec.Header().Get("Location"), http.StatusFound)
+	}
+}
+
+func TestAGoodNativeSignInRequestAsksTheSignInPageToSignInAgain(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	query := url.Values{"port": {"4000"}, "state": {validState}, "challenge": {validChallenge}}
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/native?"+query.Encode(), nil))
+
+	location, err := url.Parse(rec.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("parse location: %v", err)
+	}
+	if location.Path != "/auth/sign-in" || location.Query().Get("again") != "1" {
+		t.Errorf("location = %q, want /auth/sign-in with again=1", rec.Header().Get("Location"))
 	}
 }
 
@@ -316,5 +351,20 @@ func TestNativeTokenSwapsACodeAndVerifierForASessionTokenAndRefusesAnyOtherWitho
 					rec.Code, rec.Body.String(), http.StatusBadRequest)
 			}
 		})
+	}
+}
+
+func TestANativeSignUpRequestAsksTheSignUpPageToSignUpAgain(t *testing.T) {
+	handler := httpapi.NewHandler(httpapi.Options{SignIn: &signInRecorder{}, IsDevSignInOn: true})
+	query := url.Values{"port": {"4000"}, "state": {validState}, "challenge": {validChallenge}, "sign-up": {"1"}}
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/auth/native?"+query.Encode(), nil))
+
+	location, err := url.Parse(rec.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("parse location: %v", err)
+	}
+	if location.Path != "/auth/sign-up" || location.Query().Get("again") != "1" {
+		t.Errorf("location = %q, want /auth/sign-up with again=1", rec.Header().Get("Location"))
 	}
 }

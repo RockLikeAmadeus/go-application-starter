@@ -21,6 +21,28 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/browsersignin"
 )
 
+func TestStart_ForASignUpAsksTheNativeSignInAddressForSignUp(t *testing.T) {
+	var opened string
+	open := func(address string) error {
+		opened = address
+		return nil
+	}
+
+	attempt, err := browsersignin.Start(context.Background(), "https://app.example.com", true, open)
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer attempt.Close()
+
+	address, err := url.Parse(opened)
+	if err != nil {
+		t.Fatalf("opened address %q: %v", opened, err)
+	}
+	if got := address.Query().Get("sign-up"); got != "1" {
+		t.Errorf("sign-up = %q in %q, want 1", got, opened)
+	}
+}
+
 func TestStart_ListensOnALoopbackPortAndHandsTheNativeSignInAddressToTheOpener(t *testing.T) {
 	var opened string
 	open := func(address string) error {
@@ -28,7 +50,7 @@ func TestStart_ListensOnALoopbackPortAndHandsTheNativeSignInAddressToTheOpener(t
 		return nil
 	}
 
-	attempt, err := browsersignin.Start(context.Background(), "https://app.example.com", open)
+	attempt, err := browsersignin.Start(context.Background(), "https://app.example.com", false, open)
 	if err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -80,7 +102,7 @@ func TestWait_SwapsTheCodeOfACallbackWithTheRightStateForATokenAndAnswersTheSucc
 	defer server.Close()
 
 	var opened string
-	attempt, err := browsersignin.Start(context.Background(), server.URL, func(address string) error {
+	attempt, err := browsersignin.Start(context.Background(), server.URL, false, func(address string) error {
 		opened = address
 		return nil
 	})
@@ -135,7 +157,7 @@ func TestWait_RefusesACallbackWithAWrongOrMissingStateSwapsNothingAndKeepsWaitin
 	defer server.Close()
 
 	var opened string
-	attempt, err := browsersignin.Start(context.Background(), server.URL, func(address string) error {
+	attempt, err := browsersignin.Start(context.Background(), server.URL, false, func(address string) error {
 		opened = address
 		return nil
 	})
@@ -191,7 +213,7 @@ func TestWait_RefusesACallbackWithAWrongOrMissingStateSwapsNothingAndKeepsWaitin
 }
 
 func TestWait_ReturnsTheContextsErrorWhenTheContextEndsBeforeAnyCallback(t *testing.T) {
-	attempt, err := browsersignin.Start(context.Background(), "https://app.example.com", func(string) error { return nil })
+	attempt, err := browsersignin.Start(context.Background(), "https://app.example.com", false, func(string) error { return nil })
 	if err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -222,7 +244,7 @@ func TestWait_AnswersTheFailurePageAndEndsWithErrCodeRefusedWhenTheServerRefuses
 	defer server.Close()
 
 	var opened string
-	attempt, err := browsersignin.Start(context.Background(), server.URL, func(address string) error {
+	attempt, err := browsersignin.Start(context.Background(), server.URL, false, func(address string) error {
 		opened = address
 		return nil
 	})
