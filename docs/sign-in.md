@@ -585,7 +585,7 @@ sequenceDiagram
 
 The Android app always keeps its token in `app-tokens.json` in its private storage, whatever the setting says. Android has no Secret Service for go-keyring to talk to, and only the app itself can read its private storage.
 
-**Opening the browser.** `desktop.Open` and `mobile.Open` take the function that opens the browser. The desktop and Android apps pass Wails' [`Browser.OpenURL`](https://v3alpha.wails.io/), which opens the system's default browser on each operating system, including Android, where `xdg-open` and the other programs that `browsersignin.Open` tries don't exist. The Android app's sign-in through the phone's browser, and the loopback reply coming back to the app, are still to be tried on a phone.
+**Opening the browser.** `desktop.Open` and `mobile.Open` take the function that opens the browser. The desktop app passes Wails' [`Browser.OpenURL`](https://v3alpha.wails.io/), which opens the system's default browser. The Android app passes Wails' `application.Android.OpenURL` instead, which asks Android to open the address: `Browser.OpenURL` runs `xdg-open` there, which, like the other programs that `browsersignin.Open` tries, doesn't exist on Android. Signing in through the phone's browser, and the loopback reply coming back to the app, were checked by hand on a phone (step 10 of the editions plan); Android didn't pause the app while the browser was in front.
 
 ### Where the code lives
 

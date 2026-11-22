@@ -11,9 +11,9 @@ The sample domain is `Item`; replace it when starting a real product.
 
 <!-- sample:end -->
 
-The app comes in two **editions** (ADR 5), built step by step from `docs/plans/editions-and-accounts.md`. Every step is built, apart from two checks by hand that are still open (steps 5 and 10 of the plan):
+The app comes in two **editions** (ADR 5), built step by step from `docs/plans/editions-and-accounts.md`. Every step is built, apart from one check by hand that is still open (step 5 of the plan):
 - **Local edition:** one user, one workspace, no sign-in. This is the CLI and TUI (embedded), the desktop and Android apps, and a self-hosted single-user server. All of these work today.
-- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. The web app on a server with `sign_in` on works today, through a sign-in provider (`oidc`) or the dev sign-in (`dev`) (ADR 9, `docs/sign-in.md`). So do the CLI and TUI with `--server`, after `starter login` or the TUI's own sign-in (browser and loopback port, token in the OS credential store; `docs/sign-in.md`). So do the desktop and Android apps in remote mode, when a server is set or built in: they sign in through the system browser in the same way, with a session of their own (ADR 4, `docs/sign-in.md`). The tests cover both, but the Android app's sign-in is still to be tried on a phone.
+- **Hosted edition:** many users, each signing in to their own workspace, with plans gating features. The web app on a server with `sign_in` on works today, through a sign-in provider (`oidc`) or the dev sign-in (`dev`) (ADR 9, `docs/sign-in.md`). So do the CLI and TUI with `--server`, after `starter login` or the TUI's own sign-in (browser and loopback port, token in the OS credential store; `docs/sign-in.md`). So do the desktop and Android apps in remote mode, when a server is set or built in: they sign in through the system browser in the same way, with a session of their own (ADR 4, `docs/sign-in.md`). The tests cover both, and both were checked by hand, the Android app on a phone.
 
 Each copy uses one edition, and nothing syncs between them. Outside `internal/bootstrap` and `desktop.Open`, never assume local storage or a single user.
 

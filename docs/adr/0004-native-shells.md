@@ -47,4 +47,4 @@ Wails mobile is experimental (outside its stability promise), and the bridge dep
 - The desktop app locks its data folder like the server does, so a second copy, or the CLI against the same folder, fails fast, saying the data folder is in use.
 - Wails upgrades need care on Android: the Go module and the `@wailsio/runtime` npm package must move together, and the generated Gradle project may need regenerating.
 - Packaging (AppImage, .deb, .dmg, .msi), iOS, and Play Store signing are follow-ups in `TODO.md`.
-- In remote mode the app needs a connection, and `GET /api/v1/connection` says so, so the offline notice comes back. Signing in through the phone's browser on Android, and coming back to the app, is still to be tried on a phone.
+- In remote mode the app needs a connection, and `GET /api/v1/connection` says so, so the offline notice comes back. Signing in through the phone's browser, and coming back to the app, was checked by hand on a phone.
