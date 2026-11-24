@@ -125,11 +125,7 @@ SPEC.md §4.20 · [`features/remote-mode.feature`](../../features/remote-mode.fe
 - **Done 2026-11-21:** the desktop and Android apps work on a server's data in remote mode, signing in through the system browser with a session of their own, and the Android app reaches its server through a built-in address. Every `@remote-mode` scenario passes on the http and oidc drivers. The check by hand (the desktop app against `task dev`, and the Android app on a Samsung phone through Firefox) found three problems, fixed before finishing: signing out showed a blank page, signing in again skipped the sign-in page, and the phone opened the browser with the desktop's opener. The failure and cancel messages were reworded too. Three follow-ups went to `TODO.md`. [ADR 4](../adr/0004-native-shells.md), [ADR 9](../adr/0009-sign-in-and-sessions.md), [`docs/sign-in.md`](../sign-in.md), SPEC.md §4.20.
 
 ## Follow-ups for TODO.md (when this plan finishes)
-- Synced folders on Android (Storage Access Framework).
-- Teams: workspace members and roles.
-- A paid local licence key, behind the entitlements port.
-- Sweeping expired sessions that nobody looks up again (step 8a deletes one only when it's found expired), and one-time sign-in codes that nobody redeemed (step 9).
-- Signing in from the command line on a computer with no browser, such as one reached over SSH, with the device code flow (RFC 8628). Step 9 chose the browser and a loopback port, which needs a browser on the same computer.
+- Moved to TODO.md, tier 1, on 2026-11-24: synced folders on Android, teams, a paid local licence key, sweeping expired sessions and unused sign-in codes, and signing in from the command line with no browser (device code flow).
 - (Taken into step 10, 2026-11-13.) A server address built into the program, like `bootstrap.LocalPlan` (`-ldflags -X`), so a hosted-only product's CLI, TUI, and desktop app reach its server without anyone setting `server_url`. The desktop app then opens in remote mode (step 10) with no local mode to choose. The Android app would follow, as `mobile.Open` builds on `desktop.Open`. Raised in step 9 instead of a server picker in the TUI, which would need a second place deciding local or hosted, since the app never writes an existing settings file (SPEC §4.12).
 
 ## Loose ends (from step 8a)
