@@ -6,91 +6,157 @@ Work through them one at a time (each usually starts with `/feature`), tick them
 
 **Before starting work on any feature below, discuss whether it's actually a valuable feature and what are the tradeoffs of including it or not including it. Many of these are Claude's ideas and probably very sensible, but some of them I've thought of myself and I want to be wary of template bloat.**
 
-## Do first
-- [ ] Start a **"What This Template Includes" guide** which describes the features we've included so far, broken down into appropriate sections and subsections, with links to further information about specific features where available/appropriate. Keep this document updated as we implement new features for the template. This will be very valuable so template users know both _what_ is already included and therefore doesn't need to be done from scratch, as well as _how_ to work with those features, add to them, change them, etc. The guide should also discuss at a high level the technologies involved and a very high-level description of the application architecture.
-- [ ] **Consider how distributed workloads would function for projects using this template**. The hosted edition serving multiple users and relying on computationally intensive background tasks, for instance, is a future we haven't considered, if it even can be planned for ahead of deciding on a specific problem space. Even if the problem domain is relatively simplistic, a single server serving the web application to a theoretical large number of concurrent users isn't scalable, nor is a single database instance. Need to determine how much of this problem is worth considering at the template-level, if any.
-- [x] **Desktop and mobile remote mode:** let the desktop and Android apps work on cloud data instead of local data: `desktop.Open` (and so `mobile.Open`) chooses `bootstrap.NewRemote` behind the same in-process handler, and leaves `IsDataLocal` unset so the offline notice comes back. Choose the mode with an env var first (on the phone, a setting). Needs the accounts and authentication items (forwarding the user's session). No sync: see [ADR 4](docs/adr/0004-native-shells.md). This is step 10 of the [editions plan](docs/plans/editions-and-accounts.md).
-  - Done 2026-11-21: remote mode for the desktop and Android apps, signing in through the system browser with their own sessions, and a built-in server address. Checked by hand on the desktop and on an Android phone. [ADR 4](docs/adr/0004-native-shells.md), [docs/sign-in.md](docs/sign-in.md), SPEC.md §4.20.
-- [ ] **Say when the server can't be reached:** the offline notice follows only the browser's own online signal (`navigator.onLine`, `useIsOnline`), so when the server stops, the web app and the desktop and Android apps in remote mode show the general "An error occurred" message instead (found in remote mode's check by hand, task 22, step A7). Tell a request that never reached the server apart from one the server refused, show a notice for it (agree the wording first), and retry once the server answers again. Respect `GET /api/v1/connection` as the offline notice does. Also: when the session lookup itself can't reach the server (for example an app built with a wrong `BUILT_IN_SERVER_URL`), the web app shows the items page as if sign-in were off, with only the general error; it should show the same notice instead.
-- [ ] **Say why a browser sign-in failed:** the loopback page in `internal/adapters/browsersignin` shows "The server refused to exchange the sign-in code…" (`swapRefusedPage`) for every error from `swap`, including a request that never reached the server, and nothing logs the error. In remote mode's check by hand (task 22), creating an account on an Android phone failed twice with that page, and worked after the server was restarted, so the cause is unknown. Tell a connection failure apart from a refused code (`ErrCodeRefused`), show each its own page (agree the wording first), and log the underlying error so the next failure can be diagnosed (on Android it should reach `adb logcat`).
-- [ ] **Bring the app forward after a browser sign-in:** when the desktop or Android app in remote mode signs in through the browser, the browser stays in front on "Sign-in complete", and the person has to switch back themselves (found in remote mode's check by hand, task 22).
-  - Desktop: when the loopback port receives the code, call Wails' `Restore()` and `Focus()` on the window. Windows and many Linux desktops prevent focus stealing, so expect the app to flash in the taskbar or show a "ready" notice rather than take the screen; try it on both.
-  - Android: since Android 10, an app in the background can't bring itself forward. Register a custom scheme (for example `starter://signed-in`) with an intent filter in `mobile/android/app/src/main/AndroidManifest.xml`, and give the "Sign-in complete" page a **Return to the app** button that opens it. The code still comes back through `127.0.0.1`, so the scheme carries nothing secret. Agree the wording first, cover the scheme in `task rename`, and try it on a phone, as Chrome may ask before opening the app.
-- [ ] **Desktop packaging:** installers for the desktop app (AppImage or .deb, .dmg, .msi), probably with the `wails3` CLI in `tools/go.mod`, plus an app icon from `web/public/icon.svg`. Try the macOS and Windows builds for real; so far only Linux has been run.
-  - Plan: [docs/plans/desktop-packaging.md](docs/plans/desktop-packaging.md). Linux AppImage, .deb and .rpm; Windows NSIS setup .exe instead of .msi; macOS .dmg built and tried on a Mac, and built in CI for releases; unsigned for now.
-  - Linux and Windows done 2026-11-04: packages built and tried by hand, and attached to the GitHub Release by `release.yml` (tried with a throwaway `v0.0.1` tag). Left: the macOS `.dmg` (step 4, on the Mac) and the rest of step 5.
-- [ ] **iOS app:** the Wails v3 mobile app on iPhone. It needs a Mac with full Xcode, and ideally a real iPhone. Its custom-scheme handler should pass request methods and bodies through, so it may not need the Android bridge (`docs/mobile.md`), but that's unverified. Add the generated Xcode project beside `mobile/android`, and cover the app ID in `task rename`.
-- [ ] **Android release builds and Play Store signing:** a `mobile:android:release` task (release APK or AAB, `production` build tag), signing with a keystore from environment variables (the generated `app/build.gradle` already reads `ANDROID_KEYSTORE_*`), and a reversed-domain app ID instead of `com.example.<slug>` (see `docs/mobile.md`, "The app ID"). Consider building the APK in CI (it needs the NDK).
-- [ ] **Android app icon:** the launcher icon is still Wails' default. Generate the `mipmap-*` icons (including round and adaptive ones) from `web/public/icon.svg`, alongside `pnpm --dir web icons`.
-- [ ] **Android system bars follow dark mode:** the status and gesture bars always use the light background (`mobile/android/.../res/values/colors.xml`). In the app's dark mode they should go dark with light icons. The web app would tell Android its theme, through the bridge or a Java hook.
-- [ ] **Android app on a real phone:** so far only the emulator has run it. Check the keyboard pushes the page up instead of covering the field (not checked on the emulator: its keyboard was stuck in stylus mode), and the layout on a phone with a notch or cut-out.
-- [ ] **Desktop app command-line flags:** `starter-desktop` reads no arguments, so `--data-dir` (which `bin/starter` takes) is silently ignored and the app opens its default folder. Give it the same `--data-dir`, `--storage`, and `--config` flags as the CLI, layered as in ADR 6, and have it refuse a flag it doesn't know instead of ignoring it (agree the message's wording first).
-- [ ] **Expand `~` in folder settings:** `data_dir` and the other paths are used as given, so `~/Dropbox/starter` from the settings file, `STARTER_DATA_DIR`, or a quoted `--data-dir` becomes a folder literally named `~`. Expand a leading `~` (and `~\` on Windows) to the user's home folder wherever a setting names a path, in `internal/config`, and say so in `docs/configuration.md`.
-- [ ] Change the web app so that collapsing the sidebar (including the animation) is still possible even for wide displays. In those cases, rather than completely hiding the sidebar, it should be collapsed down to a narrow vertical strip with icons in place of the full text for each sidebar tab.
-- [x] **Authentication behind a port.** An `Authenticator` port with a simple session or OIDC adapter, wired through the REST API, the SPA, and the CLI's `--server` mode. This is step 8 of the [editions plan](docs/plans/editions-and-accounts.md): OIDC plus a dev-only fake login, with CLI and TUI login in step 9.
-  - Part 8a done 2026-11-11: the sign-in seam (`ports.SignInService`), accounts and personal workspaces, sessions in an `HttpOnly` cookie and in storage (memory, SQLite, and Postgres), the dev sign-in in `devsignin` builds only, the web app's sign-in screen and Sign out button, and stored plans in the hosted edition. [ADR 9](docs/adr/0009-sign-in-and-sessions.md), [docs/sign-in.md](docs/sign-in.md), SPEC.md §4.18.
-  - Part 8b done 2026-11-12: sign-in through any OIDC provider (`sign_in = "oidc"`), with PKCE, `state`, and `nonce`, the `public_url` setting (which also marks the cookies `Secure` behind an HTTPS proxy), "Create an account" with `prompt=create`, the name following the provider, and the fake provider `oidctest` with an `oidc` acceptance driver. [ADR 9](docs/adr/0009-sign-in-and-sessions.md), [docs/sign-in.md](docs/sign-in.md). CLI and TUI login (step 9) is left.
-  - Done 2026-11-13 with step 9: `starter login` and `starter logout`, and the TUI's own sign-in, through the browser and a loopback port (RFC 8252) with PKCE, a bearer session token kept in the OS credential store (or `tokens.json`, by the `credential_store` setting), and `httpclient` sending it. [ADR 9](docs/adr/0009-sign-in-and-sessions.md), [docs/sign-in.md](docs/sign-in.md), SPEC.md §4.19.
-- [ ] **Universal application user stories that should survive `--remove-sample`** (each a separate /feature and should be designed such that template users can expand on them easily).  The idea is to have to do as little as possible from scratch for features that are common to utilities or consumer-focused software, so that template users can focus development primarily on their respective problem space. Each should be well-documented, and this documentation should be pointed to by a top-level guide for template users.
-  - [ ] **Change application settings (e.g. theme, style, other domain-specific settings) from a settings menu in all clients**
-  - [ ] **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the for template users, that potentially could themselves link to documentation pages?
-  - [ ] **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable. This could be in-app notifications as well as boilerplate for email/mobile/etc. notifications.
-  - [ ] If possible, **basic record searching, sorting, and filtering functionality** that can be reused for as-yet-unimplemented and domain-specific data models in the application.
-  - [ ] **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version, or possibly for the data backups task under `## Operability`.
-  - [ ] **Form validation helpers**
-  - [ ] **Multi-provider auth** for traditional email/password and standard OAuth providers.
-  - [ ] **Session management**: secure token refresh cycles, automatic logout on expiration, and multi-device session invalidation?
-  - [ ] **User account** flows for common tasks like password changes, account deletion, etc. **ONLY FOR HOSTED EDITIONS**.
-  - [ ] **Functional feature-flagging support** to toggle unreleased features or modify runtime behavior dynamically without redeploying.
-  - [ ] **A sample/placeholder home page** for the hosted edition SPA that provides feature info, pricing details, etc., along with a login button, unless this is more appropriate as a separate hosted site).
-  - [ ] **Report a bug or suggest a feature** feature
-  - [ ] **Other features along these same lines likely to be required by template users** that we brainstorm.
+## How to read this list
 
-  
+Everything here is done before the template is "version 1 complete" and products are built on it, so that no work is done twice. The list is ordered by impact: the items whose outcome most other items depend on come first.
 
-## Operability
-- [ ] **Logging, metrics, and traces:**
+The items sit in four tiers. Work through the tiers in order. Within a tier, the order is a suggestion, not a rule.
+1. **Decisions:** whether something belongs in the template at all. Each one is discussed when we reach it (see the note above). A "yes" moves the item, with a size, into the tier where its work belongs; a "no" moves it to the history with a line on why.
+2. **Foundations:** work that later items build on, or conventions they follow.
+3. **Independent work:** items that nothing else waits on.
+4. **Finishing:** items that describe or tidy everything else, so they come last.
+
+Tags at the start of each item:
+- **Size.** `S`: a few TDD cycles or a docs change, no `/feature` of its own. `M`: one `/feature`. `L`: several `/feature`s, so it needs a plan in `docs/plans/`. `?`: can't be sized until it's been discussed.
+- **`waits on hardware`:** needs a Mac or an iPhone. It still counts towards version 1, but it doesn't hold up the other items while the hardware isn't there.
+
+Lines under an item:
+- **Shapes:** what the item's outcome changes (on decisions).
+- **Depends on:** what should be settled or built first. Only real dependencies are listed.
+
+A new idea goes into the tier that fits: a decision if it's not yet agreed, otherwise the earliest tier whose items it needs, and before anything that needs it.
+
+## 1. Decisions
+
+- [ ] `?` **Other features along these same lines likely to be required by template users** that we brainstorm.
+  - Shapes: the rest of this list, so it comes first. New ideas join it here until they're agreed.
+- [ ] `?` **Consider how distributed workloads would function for projects using this template**. The hosted edition serving multiple users and relying on computationally intensive background tasks, for instance, is a future we haven't considered, if it even can be planned for ahead of deciding on a specific problem space. Even if the problem domain is relatively simplistic, a single server serving the web application to a theoretical large number of concurrent users isn't scalable, nor is a single database instance. Need to determine how much of this problem is worth considering at the template-level, if any.
+  - Related: background jobs or domain events (outbox pattern) - (this very likely will be relevant for my first intended use of the template). Probably part of the same decision.
+  - Shapes: the server and storage design, notifications, backups, the audit log, logging and metrics, and load testing.
+- [ ] `L` **Translations (i18n)**
+  - Shapes: every piece of user-facing text in all five clients, so a "yes" is far cheaper before the shared features add more text.
+- [ ] `M` **Functional feature-flagging support** to toggle unreleased features or modify runtime behavior dynamically without redeploying. (Plans already turn features on per workspace, `docs/features.md`; flags would be a separate, run-time switch.)
+  - Shapes: how every later feature is turned on and off.
+- [ ] `M` **Crash & Error Reporting**: pre-integrated boundaries (like Global Exception Handlers or React Error Boundaries) that intercept crashes and prepare them for upstream analytics.
+- [ ] `M` **Telemetry & Analytics**: a unified tracking hook or service layer to measure core user events, app launch performance, and page/view transitions.
+  - Shapes (both of the above): logging, metrics, and traces, and the shared feedback patterns' error boundary.
+- [ ] `M` **Audit log** (who changed what, and when)
+  - Shapes: storage and the domain (every change is recorded). Depends on: the distributed workloads decision (domain events).
+- [ ] `L` **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable. This could be in-app notifications as well as boilerplate for email/mobile/etc. notifications.
+  - Depends on: the distributed workloads decision (sending runs in the background). Shapes: the settings menu (notification preferences).
+- [ ] `M` **Change application settings (e.g. theme, style, other domain-specific settings) from a settings menu in all clients**
+  - Shapes: any later feature with a preference of its own.
+- [ ] `?` **Multi-provider auth** for traditional email/password and standard OAuth providers. Mostly covered already: with `sign_in = "oidc"`, email and password and "Sign in with Google" and the like come from the sign-in provider, and the product never stores passwords (`docs/sign-in.md`, "Email and password"). Decide whether anything is left.
+- [ ] `?` **Session management**: secure token refresh cycles, automatic logout on expiration, and multi-device session invalidation? Partly covered: sessions already expire and can be signed out (ADR 9). What's left would be "sign out everywhere" and listing sessions.
+  - Shapes: "Make session expiration configurable" (tier 3).
+- [ ] `M` **User account** flows for common tasks like password changes, account deletion, etc. **ONLY FOR HOSTED EDITIONS**. (Password changes belong to the sign-in provider; account deletion and its data are the product's.)
+- [ ] `M`–`L` **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version, or possibly for the data backups item below.
+- [ ] `M` **Automatic periodic and manual data backups?**
+  - Depends on: the export and import decision above, and the distributed workloads decision (periodic backups run in the background).
+- [ ] `M` **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the for template users, that potentially could themselves link to documentation pages?
+- [ ] `M` **A sample/placeholder home page** for the hosted edition SPA that provides feature info, pricing details, etc., along with a login button, unless this is more appropriate as a separate hosted site).
+- [ ] `S`–`M` **Report a bug or suggest a feature** feature
+- [ ] `S`–`M` **Form validation helpers**
+- [ ] `M` **Dockerized Mocking Infrastructure** such as a docker-compose stack to spin up auxiliary local services like mock authentication, testing databases, or local S3 object buckets seamlessly. (`task db:up` already starts a test Postgres, and `oidctest` fakes the sign-in provider in tests.)
+- [ ] `?` **Load testing infrastructure**
+  - Depends on: the distributed workloads decision.
+
+## 2. Foundations
+
+- [ ] `S` Notate in CLAUDE.md that all bugfixes and new features should be functional for all clients: web, desktop, mobile, cli, and tui.
+  - First, as it changes how every later item is built.
+- [ ] `M` **Make `task check` pass on Windows.** With a 64-bit C compiler in place, the remaining failures come from tests and a task that assume Unix:
+  - `task e2e:terminal` is Unix only (`test/terminal` has `//go:build unix`), but `task check` always runs it, so `task check` stops there on Windows.
+  - Tests that delete files the app still has open, which Windows refuses (`.lock`, `data.db`): `TestServerIsNotReadyOnceItsDataFolderIsRemoved`, `TestOpenIsNotReadyOnceTheDataFolderIsRemoved`, `TestStoreIsReadyUntilItsDataFolderIsRemoved`, `TestNewEmbedded_IsNotReadyOnceTheDataFolderIsRemoved`, and the three `server` acceptance scenarios about data that is gone or comes back. Decide what these should prove on Windows, since the behaviour is currently unchecked there.
+  - `TestOpenUsesTheSettingsFilesPlansFile` leaves `.lock` open when its temporary folder is removed.
+  - `TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt` is a false alarm: on Windows, `os.SameFile` reads a file's identity when it is called, so both `os.Stat` results point at the new file. `WriteMark` does replace the file.
+  - `TestRenameFileRewritesAndMovesAFile` expects a Unix executable permission.
+  - `TestMainRunsInAGitRepository` builds `initproject` without the `.exe` extension, so it cannot start it, and `task init` is untested on Windows.
+  - Early, because every later cycle runs these checks, and they're developed on Windows.
+- [ ] `S`–`M` **Fix the occasional failures of `task test:init`.** During the cli-login feature it failed twice (in tasks 26b and 37) and passed when run again straight after, with no change in between. Find what makes it fail now and then, such as shared temporary folders, a port or file another run still holds, or tests running in parallel, and make it pass every time. Save the output of the next failing run, since the cause wasn't recorded.
+  - Early, for the same reason.
+- [ ] `S` **Release notes and a changelog** (two items merged):
+  - Add release notes and update ./.claude/ commands to write them automatically
+  - **Release automation:** GoReleaser (or similar), a changelog convention, and Renovate or Dependabot. Partly done: `.goreleaser.yaml` and `release.yml` build releases, and `.github/dependabot.yml` exists. Left: the changelog convention.
+  - Early, so that every later feature gets its notes as it's built.
+- [ ] `M` Template-wide sweep to ensure developers using this template will be able to add domain-specific features while touching as few places as possible (Core, API, Docs, Storage adapters, CLI, TUI, and Web I think covers it but I could be missing some). Also make sure `/feature` commands prompt for decisions about the web, TUI, and CLI interfaces, since these cannot all be identical. The intention is that shared code is maximized with reason so that new feature development requires as little work as is feasible.
+  - Before the shared features, so that they're built the way it settles. Depends on: the decisions in tier 1 (to know which features it must make easy).
+- [ ] `S` **Finish the hosted and local editions plan:** let web, desktop, and mobile be commercial products, with data kept separate per account and features gated by paid plans, while the local edition (the CLI and TUI by default, the desktop and mobile apps in local mode, and a self-hosted server with sign-in off) stays a set of single-user tools on local data (plain text or SQLite, in a folder the user chooses, which can be a cloud-synced one), on the same core and data structures. The CLI and TUI can also log in to the hosted edition.
+  - Plan: [docs/plans/editions-and-accounts.md](docs/plans/editions-and-accounts.md). Decisions: [ADR 5](docs/adr/0005-hosted-and-local-editions.md). Data belongs to a workspace; plans in config grant features and limits; billing is a driving adapter; OIDC authentication; synced folders are used from one device at a time, with no merging; no sync between local and cloud data.
+  - Left: step 5's check by hand with two machines (the plan's "Verification after every step"), the plan's "Loose ends", and moving its "Follow-ups for TODO.md" into this file when the plan is deleted.
+  - Early, because its follow-ups (such as teams, with workspace members and roles) join this list, and some are large.
+- [ ] `M` **Logging, metrics, and traces:**
   - structured `slog` logs with a request ID on every request;
   - a `/metrics` endpoint;
   - optional OpenTelemetry tracing.
-- [ ] **Automatic periodic and manual data backups?**
-- [ ] **Crash & Error Reporting**: pre-integrated boundaries (like Global Exception Handlers or React Error Boundaries) that intercept crashes and prepare them for upstream analytics.
-- [ ] **Telemetry & Analytics**: a unified tracking hook or service layer to measure core user events, app launch performance, and page/view transitions.
-- [ ] **Security basics:**
+  - Depends on: the distributed workloads, crash reporting, and telemetry decisions. Used by: "Say why a browser sign-in failed" (tier 3), and anything else that logs.
+- [ ] `M` **Security basics:**
   - security headers and a CSP on the server;
   - request size limits and rate limiting on the API;
   - `govulncheck` and `pnpm audit` in CI.
-- [ ] **Browser smoke runs against a deployment start no sign-in server.** With `E2E_BASE_URL` set, `web/playwright.config.ts` starts no server, but the `sign-in` project still runs `web/e2e/features/sign-in.feature` against its own base URL (`localhost`, the port after `PORT`), so it fails there. Skip that project when `E2E_BASE_URL` is set, or point it at a deployment with sign-in on.
-- [x] **Mark the session cookie `Secure` behind an HTTPS proxy.** The server marks the cookie `Secure` only when its own connection is TLS (`r.TLS != nil` in `internal/adapters/httpapi/session.go`). Behind a proxy that handles HTTPS (Fly.io, a load balancer), it sees plain HTTP, so the cookie is never `Secure`. Trust `X-Forwarded-Proto` from a configured proxy only, or add a setting that always marks it `Secure`. Settle it in step 8b of the [editions plan](docs/plans/editions-and-accounts.md), before the first hosted deployment.
-  - Done 2026-11-12 (step 8b): an `https://` `public_url` setting marks the session and attempt cookies `Secure` even over plain HTTP. `X-Forwarded-Proto` isn't read. [ADR 9](docs/adr/0009-sign-in-and-sessions.md), [docs/sign-in.md](docs/sign-in.md), "The cookie".
-- [ ] **Release automation:** GoReleaser (or similar), a changelog convention, and Renovate or Dependabot.
-- [ ] **Pre-release tags for the desktop packages.** The Taskfile's `PACKAGE_VERSION` accepts only `vX.Y.Z`, so a tag like `v0.1.0-rc.1` builds installers numbered `0.0.0` (GoReleaser's CLI downloads get the right version). Each format writes a pre-release its own way: `.deb` and `.rpm` want `0.1.0~rc.1` (so it sorts before `0.1.0`), while Windows' version info takes only numbers. Then mark such a Release as a pre-release (GoReleaser's `release.prerelease: auto`), and update docs/ci-cd.md's "Making a release".
-- [ ] **Dockerized Mocking Infrastructure** such as a docker-compose stack to spin up auxiliary local services like mock authentication, testing databases, or local S3 object buckets seamlessly.
-- [ ] **Load testing infrastructure** 
-- [ ] **SQL injection and other security checks**
-- [ ] **Create a Claude command to review open Dependabot PRs and branches on provide guidance on which to merge, or if any should be deleted.
+  - **SQL injection and other security checks** (merged in: decide which checks, such as `gosec` in golangci-lint).
+  - Shapes: "No flash of the wrong theme or style" (tier 3), whose inline script the CSP must allow, and any page that loads outside scripts.
+- [ ] `M` **Shared feedback patterns:** toasts, an error boundary, and a proper 404 page.
+  - Depends on: the crash reporting decision (the error boundary). Used by: "Say when the server can't be reached" (tier 3), form validation, and any later screen.
+- [ ] `M`–`L` **Searching, sorting, filtering, and pagination of records** (two items merged):
+  - If possible, **basic record searching, sorting, and filtering functionality** that can be reused for as-yet-unimplemented and domain-specific data models in the application.
+  - **Pagination, sorting, and filtering on list endpoints**, cursor-based. `GET /items` currently returns everything.
+  - A convention every list endpoint and list screen follows, so it comes before more of them exist.
+- [ ] `M` **Concurrent-edit protection:** a `version` field or ETag on updates, so concurrent edits don't silently overwrite each other.
+  - A convention every update follows, in the API and storage.
+- [ ] `M` **Automated accessibility checks:** axe in the Playwright e2e tests, across every style × theme.
+  - Early, so that every later screen is checked as it's built.
 
-## API and data conventions
-- [ ] **Pagination, sorting, and filtering on list endpoints**, cursor-based. `GET /items` currently returns everything.
-- [ ] **Concurrent-edit protection:** a `version` field or ETag on updates, so concurrent edits don't silently overwrite each other.
-- [ ] **Seed data:** `task dev:seed` for realistic local data.
+## 3. Independent work
 
-## Front-end polish
-- [ ] **No flash of the wrong theme or style:** a tiny inline script in `web/index.html` that applies both before React loads.
-- [ ] **Shared feedback patterns:** toasts, an error boundary, and a proper 404 page.
-- [ ] **Installed-app polish** (follow-ups from SPEC.md §4.5):
+### Fixes found in the remote-mode check by hand
+- [ ] `M` **Say when the server can't be reached:** the offline notice follows only the browser's own online signal (`navigator.onLine`, `useIsOnline`), so when the server stops, the web app and the desktop and Android apps in remote mode show the general "An error occurred" message instead (found in remote mode's check by hand, task 22, step A7). Tell a request that never reached the server apart from one the server refused, show a notice for it (agree the wording first), and retry once the server answers again. Respect `GET /api/v1/connection` as the offline notice does. Also: when the session lookup itself can't reach the server (for example an app built with a wrong `BUILT_IN_SERVER_URL`), the web app shows the items page as if sign-in were off, with only the general error; it should show the same notice instead.
+  - Depends on: shared feedback patterns.
+- [ ] `S` **Say why a browser sign-in failed:** the loopback page in `internal/adapters/browsersignin` shows "The server refused to exchange the sign-in code…" (`swapRefusedPage`) for every error from `swap`, including a request that never reached the server, and nothing logs the error. In remote mode's check by hand (task 22), creating an account on an Android phone failed twice with that page, and worked after the server was restarted, so the cause is unknown. Tell a connection failure apart from a refused code (`ErrCodeRefused`), show each its own page (agree the wording first), and log the underlying error so the next failure can be diagnosed (on Android it should reach `adb logcat`).
+  - Depends on: logging, metrics, and traces.
+- [ ] `M` **Bring the app forward after a browser sign-in:** when the desktop or Android app in remote mode signs in through the browser, the browser stays in front on "Sign-in complete", and the person has to switch back themselves (found in remote mode's check by hand, task 22).
+  - Desktop: when the loopback port receives the code, call Wails' `Restore()` and `Focus()` on the window. Windows and many Linux desktops prevent focus stealing, so expect the app to flash in the taskbar or show a "ready" notice rather than take the screen; try it on both.
+  - Android: since Android 10, an app in the background can't bring itself forward. Register a custom scheme (for example `starter://signed-in`) with an intent filter in `mobile/android/app/src/main/AndroidManifest.xml`, and give the "Sign-in complete" page a **Return to the app** button that opens it. The code still comes back through `127.0.0.1`, so the scheme carries nothing secret. Agree the wording first, cover the scheme in `task rename`, and try it on a phone, as Chrome may ask before opening the app.
+
+### Settings and sessions
+- [ ] `S` **Desktop app command-line flags:** `starter-desktop` reads no arguments, so `--data-dir` (which `bin/starter` takes) is silently ignored and the app opens its default folder. Give it the same `--data-dir`, `--storage`, and `--config` flags as the CLI, layered as in ADR 6, and have it refuse a flag it doesn't know instead of ignoring it (agree the message's wording first).
+- [ ] `S` **Expand `~` in folder settings:** `data_dir` and the other paths are used as given, so `~/Dropbox/starter` from the settings file, `STARTER_DATA_DIR`, or a quoted `--data-dir` becomes a folder literally named `~`. Expand a leading `~` (and `~\` on Windows) to the user's home folder wherever a setting names a path, in `internal/config`, and say so in `docs/configuration.md`.
+- [ ] `S` Make session expiration configurable (by admins only). Currently it's hardcoded to 30 days, which seems too long.
+  - Depends on: the session management decision.
+
+### Front end
+- [ ] `S` **No flash of the wrong theme or style:** a tiny inline script in `web/index.html` that applies both before React loads.
+  - Depends on: security basics (the CSP).
+- [ ] `S` **Installed-app polish** (follow-ups from SPEC.md §4.5):
   - precache the fonts and icons too (the service worker's default `globPatterns` cover only JS, CSS, and HTML, so offline the app falls back to system fonts until they're cached);
   - a dark-theme `theme-color` meta, so the browser bar matches the dark theme;
   - offline, the Items page shows "Loading…" under the offline notice, because TanStack Query pauses its requests. Show nothing, or a quieter placeholder.
-- [ ] **Automated accessibility checks:** axe in the Playwright e2e tests, across every style × theme.
+- [ ] `M` Change the web app so that collapsing the sidebar (including the animation) is still possible even for wide displays. In those cases, rather than completely hiding the sidebar, it should be collapsed down to a narrow vertical strip with icons in place of the full text for each sidebar tab.
 
-## Maybe (depends on the products built from it)
-- [ ] Translations (i18n)
-- [ ] Background jobs or domain events (outbox pattern) - (this very likely will be relevant for my first intended use of the template)
-- [ ] Audit log (who changed what, and when)
+### Testing and tools
+- [ ] `S` **Browser smoke runs against a deployment start no sign-in server.** With `E2E_BASE_URL` set, `web/playwright.config.ts` starts no server, but the `sign-in` project still runs `web/e2e/features/sign-in.feature` against its own base URL (`localhost`, the port after `PORT`), so it fails there. Skip that project when `E2E_BASE_URL` is set, or point it at a deployment with sign-in on.
+- [ ] `S` **Seed data:** `task dev:seed` for realistic local data.
+- [ ] `S` **Create a Claude command to review open Dependabot PRs and branches and provide guidance on which to merge, or if any should be deleted.**
 
-## Other
-- [ ] **Generate a new TODO.md file that lives in the template permanently.** It's purpose is to list out tasks for a new project that a developer should start with when using this template, including things like running the `init` script, defining the vision and the definition of MVP in an appropriate place for Claude to reference, and swapping out the mockups for new styles, among others. It should link to referenced files where appropriate. Once these initial tasks are complete, the TODO.md file can stick around as a place to keep new ideas for the application that have yet to be implemented. Add a note to CLAUDE.md that feature and bugfix ideas live here. Its setup tasks should point to the README's Prerequisites (tools, plus system packages such as the desktop app's GTK/WebKit libraries and the Linux and Windows packaging tools) rather than repeat them.
+### Desktop and mobile
+- [ ] `M` `waits on hardware` **Desktop packaging:** installers for the desktop app (AppImage or .deb, .dmg, .msi), probably with the `wails3` CLI in `tools/go.mod`, plus an app icon from `web/public/icon.svg`. Try the macOS and Windows builds for real; so far only Linux has been run.
+  - Plan: [docs/plans/desktop-packaging.md](docs/plans/desktop-packaging.md). Linux AppImage, .deb and .rpm; Windows NSIS setup .exe instead of .msi; macOS .dmg built and tried on a Mac, and built in CI for releases; unsigned for now.
+  - Linux and Windows done 2026-11-04: packages built and tried by hand, and attached to the GitHub Release by `release.yml` (tried with a throwaway `v0.0.1` tag). Left: the macOS `.dmg` (step 4, on the Mac) and the rest of step 5.
+- [ ] `S` **Pre-release tags for the desktop packages.** The Taskfile's `PACKAGE_VERSION` accepts only `vX.Y.Z`, so a tag like `v0.1.0-rc.1` builds installers numbered `0.0.0` (GoReleaser's CLI downloads get the right version). Each format writes a pre-release its own way: `.deb` and `.rpm` want `0.1.0~rc.1` (so it sorts before `0.1.0`), while Windows' version info takes only numbers. Then mark such a Release as a pre-release (GoReleaser's `release.prerelease: auto`), and update docs/ci-cd.md's "Making a release".
+- [ ] `S` **Android app on a real phone:** so far only the emulator has run it. Check the keyboard pushes the page up instead of covering the field (not checked on the emulator: its keyboard was stuck in stylus mode), and the layout on a phone with a notch or cut-out. (Remote mode was checked on a phone on 2026-11-21; these two checks may still be open.)
+- [ ] `S` **Android app icon:** the launcher icon is still Wails' default. Generate the `mipmap-*` icons (including round and adaptive ones) from `web/public/icon.svg`, alongside `pnpm --dir web icons`.
+- [ ] `S` **Android system bars follow dark mode:** the status and gesture bars always use the light background (`mobile/android/.../res/values/colors.xml`). In the app's dark mode they should go dark with light icons. The web app would tell Android its theme, through the bridge or a Java hook.
+- [ ] `M` **Android release builds and Play Store signing:** a `mobile:android:release` task (release APK or AAB, `production` build tag), signing with a keystore from environment variables (the generated `app/build.gradle` already reads `ANDROID_KEYSTORE_*`), and a reversed-domain app ID instead of `com.example.<slug>` (see `docs/mobile.md`, "The app ID"). Consider building the APK in CI (it needs the NDK).
+- [ ] `L` `waits on hardware` **iOS app:** the Wails v3 mobile app on iPhone. It needs a Mac with full Xcode, and ideally a real iPhone. Its custom-scheme handler should pass request methods and bodies through, so it may not need the Android bridge (`docs/mobile.md`), but that's unverified. Add the generated Xcode project beside `mobile/android`, and cover the app ID in `task rename`.
+
+## 4. Finishing
+
+- [ ] `M` Project cleanup: go through the project and look for potential opportunities to pair down unnecessary files and leave a clean-as-possible slate for users of the template.
+  - [ ] `S` Merge existing SQL migrations into a single one - backwards compatibility is not a consideration for this task. After every item that adds a migration, and before the first product starts, since after that each product's databases depend on the migrations.
+- [ ] `M` **A guide to the template: what it includes, and how it's built.** Two ideas that overlap, so probably one guide with an architecture part (or two documents that link to each other). It describes everything above, so it's written once they're done:
+  - Start a **"What This Template Includes" guide** which describes the features we've included so far, broken down into appropriate sections and subsections, with links to further information about specific features where available/appropriate. Keep this document updated as we implement new features for the template. This will be very valuable so template users know both _what_ is already included and therefore doesn't need to be done from scratch, as well as _how_ to work with those features, add to them, change them, etc. The guide should also discuss at a high level the technologies involved and a very high-level description of the application architecture.
+  - Generate an architecture document, with diagrams, that explains the project directory structure and the purposes of each directory to give users of this template a foothold for starting new development. Also create a similar document with diagrams for each of the supported front-ends in place in their corresponding directory under `docs`, as well as the core Go library itself (just a stub for the template to be filled in later), and the REST API (also a stub).
+- [ ] `M` **Generate a new TODO.md file that lives in the template permanently.** Last, as most items above add steps to it. Its purpose is to list out tasks for a new project that a developer should start with when using this template, including things like running the `init` script, defining the vision and the definition of MVP in an appropriate place for Claude to reference, and swapping out the mockups for new styles, among others. It should link to referenced files where appropriate. Once these initial tasks are complete, the TODO.md file can stick around as a place to keep new ideas for the application that have yet to be implemented. Add a note to CLAUDE.md that feature and bugfix ideas live here. Its setup tasks should point to the README's Prerequisites (tools, plus system packages such as the desktop app's GTK/WebKit libraries and the Linux and Windows packaging tools) rather than repeat them.
   - Steps the new file must give **the developer using the template** (the template deliberately leaves these unset; they are not tasks for us):
     - Install dependencies:
       - Install [Task](https://taskfile.dev), which runs the project's commands. It is installed with Go, so first install Go 1.27 or newer from <https://go.dev/dl>. Then run `go install github.com/go-task/task/v3/cmd/task@v3.54.0`, which is the same on Linux, macOS, and Windows and matches the version CI uses. Check it with `task --version`. If the command is not found, add the `bin` folder inside the path printed by `go env GOPATH` to your `PATH`, then open a new terminal.
@@ -106,7 +172,7 @@ Work through them one at a time (each usually starts with `/feature`), tick them
         - Linux: `sudo apt install build-essential`. macOS: `xcode-select --install`.
         - Windows: install [MSYS2](https://www.msys2.org), then in its terminal run `pacman -S mingw-w64-x86_64-gcc`. In PowerShell, run `go env -w CC=C:\msys64\mingw64\bin\gcc.exe`, so that Go uses this compiler even if an older `gcc` comes first on your `PATH`.
       - From the project folder, run `task setup`. It downloads the Go modules, installs the web packages, downloads the Playwright browsers (a few hundred megabytes), and sets up the git hooks. On Linux it may ask for your password, to install the system libraries the browsers need. Run it once after cloning.
-      - Run `task check` to confirm that everything works. It does not yet pass on Windows (see "Make `task check` pass on Windows" below).
+      - Run `task check` to confirm that everything works. It does not yet pass on Windows (see "Make `task check` pass on Windows" above).
     - Replace the placeholder `Categories=Utility;` in the Linux desktop file (the `.desktop` file in `build/desktop/linux/`) with the app's own (from the [freedesktop menu spec](https://specifications.freedesktop.org/menu-spec/latest/category-registry.html)). The template needs some category, because the AppImage tool refuses a desktop file without one.
     - Choose where the server is hosted: follow the README's "One-time Fly.io setup" (or replace `deploy.yml` for another host), then set the repository variable `DEPLOY_ENABLED` to `true`. Until then, deploys are skipped.
     - For a hosted deployment, create a Postgres database (Fly Postgres or any other), and give the server `STARTER_STORAGE=postgres` and the database's connection URL as the secret `STARTER_DATABASE_URL` (on Fly.io, with `fly secrets set`).
@@ -114,20 +180,3 @@ Work through them one at a time (each usually starts with `/feature`), tick them
     - Define the product's plans in `internal/adapters/plans/plans.jsonc`: its limits, its features (each with a lasting key, a display `name`, and `whenOff`; see `docs/features.md`), and the plans hosted workspaces will be on, with `newWorkspacePlan` naming the one a new account's workspace starts on (`docs/features.md`, "The starting plan"). The template ships `local` (no limits) and the examples `free` and `pro`, and its only feature is the sample's `item-export`. The local edition's plan is `local` unless a build picks another with `-ldflags "-X <module>/internal/bootstrap.LocalPlan=<plan>"`; `STARTER_PLANS_FILE` replaces the file at run time.
     - Decide how customers will pay: by hand, Stripe, or a merchant of record such as Paddle. `docs/billing.md` walks through each, and says what to do about tax, failed payments and a paid local licence. The template takes no payments, and needs an account with whichever provider is chosen, its keys and its webhook signing secret.
     - Choose a sign-in provider for the hosted edition, such as Auth0, Clerk, Keycloak, or Zitadel (`docs/sign-in.md`, "Choosing a provider": email and password accounts come from the provider, and moving them to another provider later can cost users a password reset). Register the app with it as a server-side web application, register `<public_url>/auth/oidc/callback` as its redirect URL, and turn on its sign-up. Then give the server `STARTER_SIGN_IN=oidc`, `STARTER_PUBLIC_URL`, `STARTER_OIDC_ISSUER`, and `STARTER_OIDC_CLIENT_ID`, and the client secret as the secret `STARTER_OIDC_CLIENT_SECRET` (on Fly.io, with `fly secrets set`). The template ships with no provider, so a server with `sign_in = "oidc"` stops at start until these are set (`docs/sign-in.md`, "Setting up a provider").
-- [ ] **Make `task check` pass on Windows.** With a 64-bit C compiler in place, the remaining failures come from tests and a task that assume Unix:
-  - `task e2e:terminal` is Unix only (`test/terminal` has `//go:build unix`), but `task check` always runs it, so `task check` stops there on Windows.
-  - Tests that delete files the app still has open, which Windows refuses (`.lock`, `data.db`): `TestServerIsNotReadyOnceItsDataFolderIsRemoved`, `TestOpenIsNotReadyOnceTheDataFolderIsRemoved`, `TestStoreIsReadyUntilItsDataFolderIsRemoved`, `TestNewEmbedded_IsNotReadyOnceTheDataFolderIsRemoved`, and the three `server` acceptance scenarios about data that is gone or comes back. Decide what these should prove on Windows, since the behaviour is currently unchecked there.
-  - `TestOpenUsesTheSettingsFilesPlansFile` leaves `.lock` open when its temporary folder is removed.
-  - `TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt` is a false alarm: on Windows, `os.SameFile` reads a file's identity when it is called, so both `os.Stat` results point at the new file. `WriteMark` does replace the file.
-  - `TestRenameFileRewritesAndMovesAFile` expects a Unix executable permission.
-  - `TestMainRunsInAGitRepository` builds `initproject` without the `.exe` extension, so it cannot start it, and `task init` is untested on Windows.
-- [ ] **Fix the occasional failures of `task test:init`.** During the cli-login feature it failed twice (in tasks 26b and 37) and passed when run again straight after, with no change in between. Find what makes it fail now and then, such as shared temporary folders, a port or file another run still holds, or tests running in parallel, and make it pass every time. Save the output of the next failing run, since the cause wasn't recorded.
-- [ ] Notate in CLAUDE.md that all bugfixes and new features should be functional for all clients: web, desktop, mobile, cli, and tui.
-- [ ] Generate an architecture document, with diagrams, that explains the project directory structure and the purposes of each directory to give users of this template a foothold for starting new development. Also create a similar document with diagrams for each of the supported front-ends in place in their corresponding directory under `docs`, as well as the core Go library itself (just a stub for the template to be filled in later), and the REST API (also a stub).
-- [ ] **Hosted and local editions:** let web, desktop, and mobile be commercial products, with data kept separate per account and features gated by paid plans, while the local edition (the CLI and TUI by default, the desktop and mobile apps in local mode, and a self-hosted server with sign-in off) stays a set of single-user tools on local data (plain text or SQLite, in a folder the user chooses, which can be a cloud-synced one), on the same core and data structures. The CLI and TUI can also log in to the hosted edition.
-  - Plan: [docs/plans/editions-and-accounts.md](docs/plans/editions-and-accounts.md). Decisions: [ADR 5](docs/adr/0005-hosted-and-local-editions.md). Data belongs to a workspace; plans in config grant features and limits; billing is a driving adapter; OIDC authentication; synced folders are used from one device at a time, with no merging; no sync between local and cloud data.
-- [ ] Make session expiration configurable (by admins only). Currently it's hardcoded to 30 days, which seems too long.
-- [ ] Add release notes and update ./.claude/ commands to write them automatically
-- [ ] Template-wide sweep to ensure developers using this template will be able to add domain-specific features while touching as few places as possible (Core, API, Docs, Storage adapters, CLI, TUI, and Web I think covers it but I could be missing some). Also make sure `/feature` commands prompt for decisions about the web, TUI, and CLI interfaces, since these cannot all be identical. The intention is that shared code is maximized with reason so that new feature development requires as little work as is feasible.
-- [ ] Project cleanup: go through the project and look for potential opportunities to pair down unnecessary files and leave a clean-as-possible slate for users of the template.
-  - [ ] Merge existing SQL migrations into a single one - backwards compatibility is not a consideration for this task.
