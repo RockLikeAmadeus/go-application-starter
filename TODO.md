@@ -138,7 +138,7 @@ A new idea goes into the tier that fits: a decision if it's not yet agreed, othe
 ### Settings and sessions
 - [ ] `S` **Desktop app command-line flags:** `starter-desktop` reads no arguments, so `--data-dir` (which `bin/starter` takes) is silently ignored and the app opens its default folder. Give it the same `--data-dir`, `--storage`, and `--config` flags as the CLI, layered as in ADR 6, and have it refuse a flag it doesn't know instead of ignoring it (agree the message's wording first).
 - [ ] `S` **Expand `~` in folder settings:** `data_dir` and the other paths are used as given, so `~/Dropbox/starter` from the settings file, `STARTER_DATA_DIR`, or a quoted `--data-dir` becomes a folder literally named `~`. Expand a leading `~` (and `~\` on Windows) to the user's home folder wherever a setting names a path, in `internal/config`, and say so in `docs/configuration.md`.
-- [ ] `S` Make session expiration configurable (by admins only). Currently it's hardcoded to 30 days, which seems too long.
+- [ ] `S` **Make the session lifetime a server setting.** A session lasts a fixed 30 days from sign-in (`domain.SessionLifetime` in `internal/core/domain/session.go`), which seems too long, and only a code change alters it. Make it a server setting (for example `session_lifetime`, and `STARTER_SESSION_LIFETIME`), layered as in ADR 6, so whoever runs the server chooses it and people using the app can't. It sets the cookie's `MaxAge` and the command line's and apps' bearer tokens alike. Refuse a value that isn't a positive length of time at start (agree the message's wording first), pick a shorter default, and document it in `docs/configuration.md` and `docs/sign-in.md`.
   - Depends on: the session management decision.
 
 ### Front end
