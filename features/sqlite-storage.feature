@@ -36,7 +36,7 @@ Feature: Keep data in SQLite
     Given the server keeps its data in SQLite
     Then the server says it is ready
 
-  @server
+  @server @removes-data-folder
   Scenario: A server whose SQLite data is gone isn't ready
     Given the server keeps its data in SQLite
     When the server's data folder is removed

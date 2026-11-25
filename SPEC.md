@@ -254,7 +254,7 @@ The server says whether it is **ready**: whether it can reach its data and so se
 - The data folder is removed while the server runs → not ready: the data is unavailable.
 - The data folder is put back → ready again.
 
-**Specification:** [`features/readiness.feature`](features/readiness.feature). These scenarios run only on the server driver, which wires the server as `cmd/server` does, on a data folder the tests can remove.
+**Specification:** [`features/readiness.feature`](features/readiness.feature). These scenarios run only on the server driver, which wires the server as `cmd/server` does, on a data folder the tests can remove. The scenarios that remove the data folder (`@removes-data-folder`, also in `features/sqlite-storage.feature`) don't run on Windows. Windows refuses to delete a file a program still has open, so the folder can't be removed while the server runs, and the data can't go missing that way. They run on Linux in CI.
 
 ### 4.11 Share local data between the desktop app and the command line
 
