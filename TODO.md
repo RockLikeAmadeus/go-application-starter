@@ -8,77 +8,30 @@ Work through them one at a time (each usually starts with `/feature`), tick them
 
 ## How to read this list
 
-Everything here is done before the template is "version 1 complete" and products are built on it, so that no work is done twice. The list is ordered by impact: the items whose outcome most other items depend on come first.
+Everything here is done before the template is "version 1 complete" and products are built on it, so that no work is done twice. The list is ordered by what depends on what: an item comes after the items and decisions it needs, and before the ones that need it.
 
-The items sit in four tiers. Work through the tiers in order. Within a tier, the order is a suggestion, not a rule.
-1. **Decisions:** whether something belongs in the template at all. Each one is discussed when we reach it (see the note above). A "yes" moves the item, with a size, into the tier where its work belongs; a "no" moves it to the history with a line on why.
-2. **Foundations:** work that later items build on, or conventions they follow.
-3. **Independent work:** items that nothing else waits on.
-4. **Finishing:** items that describe or tidy everything else, so they come last.
+Some items are still undecided: whether they belong in the template at all. Each one sits just before the first item its outcome shapes, rather than all at the start, so it's discussed when there's enough built to judge it (see the note above). A "yes" gives it a size, and it's built where it stands. A "no" moves it to the history with a line on why.
+
+The items sit in five sections. Work through them in order. Within a section, the order is a suggestion, apart from the dependencies listed.
+1. **Foundations with no open decisions:** work that later items build on, or conventions they follow, which can start straight away.
+2. **Decisions that shape foundations, then the foundations they shape.**
+3. **Decide, then build:** the remaining undecided items, mostly features shared by most products.
+4. **Independent work:** items that nothing else waits on.
+5. **Finishing:** items that describe or tidy everything else, so they come last.
 
 Tags at the start of each item:
 - **Size.** `S`: a few TDD cycles or a docs change, no `/feature` of its own. `M`: one `/feature`. `L`: several `/feature`s, so it needs a plan in `docs/plans/`. `?`: can't be sized until it's been discussed.
+- **`decide`:** whether it belongs in the template is still open.
 - **`waits on hardware`:** needs a Mac or an iPhone. It still counts towards version 1, but it doesn't hold up the other items while the hardware isn't there.
 
 Lines under an item:
-- **Shapes:** what the item's outcome changes (on decisions).
+- **Shapes:** what the item's outcome changes.
 - **Depends on:** what should be settled or built first. Only real dependencies are listed.
 
-A new idea goes into the tier that fits: a decision if it's not yet agreed, otherwise the earliest tier whose items it needs, and before anything that needs it.
+A new idea goes just before the first item that needs it, and after everything it needs. If it's not yet agreed, it's tagged `decide`.
 
-## 1. Decisions
+## 1. Foundations with no open decisions
 
-- [ ] `?` **Other features along these same lines likely to be required by template users** that we brainstorm.
-  - Shapes: the rest of this list, so it comes first. New ideas join it here until they're agreed.
-- [ ] `?` **Consider how distributed workloads would function for projects using this template**. The hosted edition serving multiple users and relying on computationally intensive background tasks, for instance, is a future we haven't considered, if it even can be planned for ahead of deciding on a specific problem space. Even if the problem domain is relatively simplistic, a single server serving the web application to a theoretical large number of concurrent users isn't scalable, nor is a single database instance. Need to determine how much of this problem is worth considering at the template-level, if any.
-  - Related: background jobs or domain events (outbox pattern) - (this very likely will be relevant for my first intended use of the template). Probably part of the same decision.
-  - Shapes: the server and storage design, notifications, backups, the audit log, logging and metrics, and load testing.
-- [ ] `L` **Teams: workspace members and roles.** Today each account has one personal workspace. Teams would let several accounts share a workspace, each with a role that sets what they may do. (A follow-up from the [editions plan](docs/plans/editions-and-accounts.md).)
-  - Shapes: workspace scoping, plans and limits (per workspace or per member), account flows, the audit log, and notifications.
-- [ ] `L` **Translations (i18n)**
-  - Shapes: every piece of user-facing text in all five clients, so a "yes" is far cheaper before the shared features add more text.
-- [ ] `M` **Functional feature-flagging support** to toggle unreleased features or modify runtime behavior dynamically without redeploying. (Plans already turn features on per workspace, `docs/features.md`; flags would be a separate, run-time switch.)
-  - Shapes: how every later feature is turned on and off.
-- [ ] `M` **Crash & Error Reporting**: pre-integrated boundaries (like Global Exception Handlers or React Error Boundaries) that intercept crashes and prepare them for upstream analytics.
-- [ ] `M` **Telemetry & Analytics**: a unified tracking hook or service layer to measure core user events, app launch performance, and page/view transitions.
-  - Shapes (both of the above): logging, metrics, and traces, and the shared feedback patterns' error boundary.
-- [ ] `M` **Audit log** (who changed what, and when)
-  - Shapes: storage and the domain (every change is recorded). Depends on: the distributed workloads decision (domain events).
-- [ ] `L` **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable. This could be in-app notifications as well as boilerplate for email/mobile/etc. notifications.
-  - Depends on: the distributed workloads decision (sending runs in the background). Shapes: the settings menu (notification preferences).
-- [ ] `M` **Change application settings (e.g. theme, style, other domain-specific settings) from a settings menu in all clients**
-  - Shapes: any later feature with a preference of its own.
-- [ ] `?` **Multi-provider auth** for traditional email/password and standard OAuth providers. Mostly covered already: with `sign_in = "oidc"`, email and password and "Sign in with Google" and the like come from the sign-in provider, and the product never stores passwords (`docs/sign-in.md`, "Email and password"). Decide whether anything is left.
-- [ ] `?` **Session management**: secure token refresh cycles, automatic logout on expiration, and multi-device session invalidation? Partly covered: sessions already expire and can be signed out (ADR 9). What's left would be "sign out everywhere" and listing sessions.
-  - Shapes: "Make session expiration configurable" (tier 3).
-- [ ] `S` **Sweep away expired sessions and unused sign-in codes.** A session is deleted only when it's looked up and found expired, so one nobody looks up again stays in storage for good, and so does a one-time sign-in code nobody redeemed. (A follow-up from the editions plan, steps 8a and 9.)
-  - Depends on: the distributed workloads decision (a sweep runs in the background), and the session management decision.
-- [ ] `M` **Sign in from the command line on a computer with no browser,** such as one reached over SSH, with the device code flow ([RFC 8628](https://www.rfc-editor.org/rfc/rfc8628)): the CLI shows a short code, and the person enters it in a browser on any other device. Today `starter login` needs a browser on the same computer. (A follow-up from the editions plan, step 9.)
-- [ ] `M` **A paid licence key for the local edition,** behind the entitlements port, so a local copy can unlock a paid plan without an account. `docs/billing.md` already describes the idea. (A follow-up from the editions plan.)
-  - Depends on: the teams decision (whether a licence is per person or per team).
-- [ ] `M` **User account** flows for common tasks like password changes, account deletion, etc. **ONLY FOR HOSTED EDITIONS**. (Password changes belong to the sign-in provider; account deletion and its data are the product's.)
-- [ ] `M`–`L` **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version, or possibly for the data backups item below.
-- [ ] `M` **Automatic periodic and manual data backups?**
-  - Depends on: the export and import decision above, and the distributed workloads decision (periodic backups run in the background).
-- [ ] `M` **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the for template users, that potentially could themselves link to documentation pages?
-- [ ] `M` **A sample/placeholder home page** for the hosted edition SPA that provides feature info, pricing details, etc., along with a login button, unless this is more appropriate as a separate hosted site).
-- [ ] `S`–`M` **Report a bug or suggest a feature** feature
-- [ ] `S`–`M` **Form validation helpers**
-- [ ] `M` **Dockerized Mocking Infrastructure** such as a docker-compose stack to spin up auxiliary local services like mock authentication, testing databases, or local S3 object buckets seamlessly. (`task db:up` already starts a test Postgres, and `oidctest` fakes the sign-in provider in tests.)
-- [ ] `?` **Load testing infrastructure**
-  - Depends on: the distributed workloads decision.
-- [ ] `M`–`L` **Synced data folders on Android,** through Android's Storage Access Framework, which lets an app use a folder another app (such as a cloud-sync app) provides. Today the Android app keeps its data in its own private folder. (A follow-up from the editions plan.)
-
-## 2. Foundations
-
-- [ ] `M` **Split the core into `platform` and `product`.** Keep the general application machinery (accounts, sessions, sign-in codes, workspaces, plans and entitlements, billing, and domain errors) apart from the code for the problem the product exists to solve (today, the sample's items), so that each can be thought about without the other. Domain-driven design calls these the generic subdomains and the core domain.
-  - Today `internal/core` is split by layer only, and each layer mixes both. Split it by kind first, then by layer: `internal/core/platform/{domain,ports,app}` and `internal/core/product/{domain,ports,app}`.
-  - `product` may import `platform`, and `platform` never imports `product`. Enforce it with depguard in `.golangci.yml`, beside the layer rules, so it's checked on every lint run rather than only by `task test:init`.
-  - Anything both use, such as the domain errors and workspaces, lives in `platform`. There's no third, shared tier: `product` depends on `platform` anyway, and a `common` package tends to fill with whatever is hard to place. If `platform` grows large, split it inside itself (for example `platform/accounts`).
-  - Update CLAUDE.md's architecture and rules, `.claude/rules/`, `docs/workspaces.md`'s checklist for adding an entity, and the `--remove-sample` manifest (which could then empty `product/`). Run `task test:init`.
-  - First in this tier, as it decides where nearly all later code lives.
-- [ ] `M`–`L` **Take the `platform` and `product` split out from the core** to the adapters and the web app: the REST API's handlers (sign-in routes and item handlers sit side by side in `httpapi`), the storage repositories, the CLI commands, the TUI, and the web app's screens. Decide for each how the split shows (packages, folders, or file names), as Go packages and the web app's folders work differently.
-  - Depends on: splitting the core. Straight after it, and before the template-wide sweep, which builds on both.
 - [ ] `S` Notate in CLAUDE.md that all bugfixes and new features should be functional for all clients: web, desktop, mobile, cli, and tui.
   - First, as it changes how every later item is built.
 - [ ] `M` **Make `task check` pass on Windows.** With a 64-bit C compiler in place, the remaining failures come from tests and a task that assume Unix:
@@ -91,40 +44,96 @@ A new idea goes into the tier that fits: a decision if it's not yet agreed, othe
   - Early, because every later cycle runs these checks, and they're developed on Windows.
 - [ ] `S`–`M` **Fix the occasional failures of `task test:init`.** During the cli-login feature it failed twice (in tasks 26b and 37) and passed when run again straight after, with no change in between. Find what makes it fail now and then, such as shared temporary folders, a port or file another run still holds, or tests running in parallel, and make it pass every time. Save the output of the next failing run, since the cause wasn't recorded.
   - Early, for the same reason.
+- [ ] `M` **Split the core into `platform` and `product`.** Keep the general application machinery (accounts, sessions, sign-in codes, workspaces, plans and entitlements, billing, and domain errors) apart from the code for the problem the product exists to solve (today, the sample's items), so that each can be thought about without the other. Domain-driven design calls these the generic subdomains and the core domain.
+  - Today `internal/core` is split by layer only, and each layer mixes both. Split it by kind first, then by layer: `internal/core/platform/{domain,ports,app}` and `internal/core/product/{domain,ports,app}`.
+  - `product` may import `platform`, and `platform` never imports `product`. Enforce it with depguard in `.golangci.yml`, beside the layer rules, so it's checked on every lint run rather than only by `task test:init`.
+  - Anything both use, such as the domain errors and workspaces, lives in `platform`. There's no third, shared tier: `product` depends on `platform` anyway, and a `common` package tends to fill with whatever is hard to place. If `platform` grows large, split it inside itself (for example `platform/accounts`).
+  - Update CLAUDE.md's architecture and rules, `.claude/rules/`, `docs/workspaces.md`'s checklist for adding an entity, and the `--remove-sample` manifest (which could then empty `product/`). Run `task test:init`.
+  - Early, as it decides where nearly all later code lives.
+- [ ] `M`–`L` **Take the `platform` and `product` split out from the core** to the adapters and the web app: the REST API's handlers (sign-in routes and item handlers sit side by side in `httpapi`), the storage repositories, the CLI commands, the TUI, and the web app's screens. Decide for each how the split shows (packages, folders, or file names), as Go packages and the web app's folders work differently.
+  - Depends on: splitting the core. Straight after it, and before the template-wide sweep, which builds on both.
+- [ ] `M` **Give the TUI the product's plain name.** Someone who only uses the TUI (from a terminal, and the desktop app otherwise) should see it as an application of its own, not as a sub-command of the CLI (`starter tui` today). Make `starter` open the TUI, and rename the CLI to `starter-cli`, following `starter-desktop`. Both stay one set of code: add a small entry point beside `cmd/starter` that calls the same `cli` and `tui` code, so the TUI keeps every option the CLI gives it (`--server`, `--data-dir`, and so on), and its `--help` and messages use its own name. They stay separate from the desktop app, which needs GTK and WebKit on Linux, and is a window program rather than a console one on Windows; the three share the product's display name (`Starter`) but each has its own command name. Cover the new name in `task rename`, the Taskfile's `run:` tasks, GoReleaser's builds and archives, the terminal journeys, and the docs.
+  - Early, as every later item that writes docs or messages names the CLI's command.
 - [ ] `S` **Release notes and a changelog** (two items merged):
   - Add release notes and update ./.claude/ commands to write them automatically
   - **Release automation:** GoReleaser (or similar), a changelog convention, and Renovate or Dependabot. Partly done: `.goreleaser.yaml` and `release.yml` build releases, and `.github/dependabot.yml` exists. Left: the changelog convention.
   - Early, so that every later feature gets its notes as it's built.
-- [ ] `M` **Give the TUI the product's plain name.** Someone who only uses the TUI (from a terminal, and the desktop app otherwise) should see it as an application of its own, not as a sub-command of the CLI (`starter tui` today). Make `starter` open the TUI, and rename the CLI to `starter-cli`, following `starter-desktop`. Both stay one set of code: add a small entry point beside `cmd/starter` that calls the same `cli` and `tui` code, so the TUI keeps every option the CLI gives it (`--server`, `--data-dir`, and so on), and its `--help` and messages use its own name. They stay separate from the desktop app, which needs GTK and WebKit on Linux, and is a window program rather than a console one on Windows; the three share the product's display name (`Starter`) but each has its own command name. Cover the new name in `task rename`, the Taskfile's `run:` tasks, GoReleaser's builds and archives, the terminal journeys, and the docs.
-  - Early, as every later item that writes docs or messages names the CLI's command.
-- [ ] `M` Template-wide sweep to ensure developers using this template will be able to add domain-specific features while touching as few places as possible (Core, API, Docs, Storage adapters, CLI, TUI, and Web I think covers it but I could be missing some). Also make sure `/feature` commands prompt for decisions about the web, TUI, and CLI interfaces, since these cannot all be identical. The intention is that shared code is maximized with reason so that new feature development requires as little work as is feasible.
-  - Before the shared features, so that they're built the way it settles. Depends on: the decisions in tier 1 (to know which features it must make easy), and the `platform` and `product` split, in the core and beyond.
+- [ ] `M`–`L` **Searching, sorting, filtering, and pagination of records** (two items merged):
+  - If possible, **basic record searching, sorting, and filtering functionality** that can be reused for as-yet-unimplemented and domain-specific data models in the application.
+  - **Pagination, sorting, and filtering on list endpoints**, cursor-based. `GET /items` currently returns everything.
+  - A convention every list endpoint and list screen follows, so it comes before more of them exist.
 - [ ] `S` **Finish the hosted and local editions plan:** let web, desktop, and mobile be commercial products, with data kept separate per account and features gated by paid plans, while the local edition (the CLI and TUI by default, the desktop and mobile apps in local mode, and a self-hosted server with sign-in off) stays a set of single-user tools on local data (plain text or SQLite, in a folder the user chooses, which can be a cloud-synced one), on the same core and data structures. The CLI and TUI can also log in to the hosted edition.
   - Plan: [docs/plans/editions-and-accounts.md](docs/plans/editions-and-accounts.md). Decisions: [ADR 5](docs/adr/0005-hosted-and-local-editions.md). Data belongs to a workspace; plans in config grant features and limits; billing is a driving adapter; OIDC authentication; synced folders are used from one device at a time, with no merging; no sync between local and cloud data.
-  - Left: step 5's check by hand with two machines (the plan's "Verification after every step"), the plan's "Loose ends", and deleting the plan. Its follow-ups are already in tier 1.
-- [ ] `M` **Logging, metrics, and traces:**
-  - structured `slog` logs with a request ID on every request;
-  - a `/metrics` endpoint;
-  - optional OpenTelemetry tracing.
-  - Depends on: the distributed workloads, crash reporting, and telemetry decisions. Used by: "Say why a browser sign-in failed" (tier 3), and anything else that logs.
+  - Left: step 5's check by hand with two machines (the plan's "Verification after every step"), the plan's "Loose ends", and deleting the plan. Its follow-ups are already in this list.
 - [ ] `M` **Security basics:**
   - security headers and a CSP on the server;
   - request size limits and rate limiting on the API;
   - `govulncheck` and `pnpm audit` in CI.
   - **SQL injection and other security checks** (merged in: decide which checks, such as `gosec` in golangci-lint).
-  - Shapes: "No flash of the wrong theme or style" (tier 3), whose inline script the CSP must allow, and any page that loads outside scripts.
-- [ ] `M` **Shared feedback patterns:** toasts, an error boundary, and a proper 404 page.
-  - Depends on: the crash reporting decision (the error boundary). Used by: "Say when the server can't be reached" (tier 3), form validation, and any later screen.
-- [ ] `M`–`L` **Searching, sorting, filtering, and pagination of records** (two items merged):
-  - If possible, **basic record searching, sorting, and filtering functionality** that can be reused for as-yet-unimplemented and domain-specific data models in the application.
-  - **Pagination, sorting, and filtering on list endpoints**, cursor-based. `GET /items` currently returns everything.
-  - A convention every list endpoint and list screen follows, so it comes before more of them exist.
-- [ ] `M` **Concurrent-edit protection:** a `version` field or ETag on updates, so concurrent edits don't silently overwrite each other.
-  - A convention every update follows, in the API and storage.
+  - Shapes: "No flash of the wrong theme or style" (section 4), whose inline script the CSP must allow, and any page that loads outside scripts.
 - [ ] `M` **Automated accessibility checks:** axe in the Playwright e2e tests, across every style × theme.
   - Early, so that every later screen is checked as it's built.
 
-## 3. Independent work
+## 2. Decisions that shape foundations, then the foundations they shape
+
+- [ ] `?` **Other features along these same lines likely to be required by template users** that we brainstorm.
+  - Shapes: the template-wide sweep (which features it must make easy), and the rest of this list, so it comes first in this section.
+- [ ] `?` `decide` **Consider how distributed workloads would function for projects using this template**. The hosted edition serving multiple users and relying on computationally intensive background tasks, for instance, is a future we haven't considered, if it even can be planned for ahead of deciding on a specific problem space. Even if the problem domain is relatively simplistic, a single server serving the web application to a theoretical large number of concurrent users isn't scalable, nor is a single database instance. Need to determine how much of this problem is worth considering at the template-level, if any.
+  - Related: background jobs or domain events (outbox pattern) - (this very likely will be relevant for my first intended use of the template). Probably part of the same decision.
+  - Shapes: logging, metrics, and traces (tracing matters once there's more than one server), concurrent-edit protection, the server and storage design, notifications, backups, the audit log, and load testing.
+- [ ] `L` `decide` **Teams: workspace members and roles.** Today each account has one personal workspace. Teams would let several accounts share a workspace, each with a role that sets what they may do. (A follow-up from the [editions plan](docs/plans/editions-and-accounts.md).)
+  - Shapes: concurrent-edit protection (teams are what make two people edit the same record), workspace scoping, plans and limits (per workspace or per member), account flows, the audit log, and notifications.
+- [ ] `M` `decide` **Crash & Error Reporting**: pre-integrated boundaries (like Global Exception Handlers or React Error Boundaries) that intercept crashes and prepare them for upstream analytics.
+- [ ] `M` `decide` **Telemetry & Analytics**: a unified tracking hook or service layer to measure core user events, app launch performance, and page/view transitions.
+  - Shapes (both of the above): logging, metrics, and traces, and the shared feedback patterns' error boundary.
+- [ ] `M` **Logging, metrics, and traces:**
+  - structured `slog` logs with a request ID on every request;
+  - a `/metrics` endpoint;
+  - optional OpenTelemetry tracing.
+  - Depends on: the distributed workloads, crash reporting, and telemetry decisions. Used by: "Say why a browser sign-in failed" (section 4), and anything else that logs.
+- [ ] `M` **Shared feedback patterns:** toasts, an error boundary, and a proper 404 page.
+  - Depends on: the crash reporting decision (the error boundary). Used by: "Say when the server can't be reached" (section 4), form validation, and any later screen.
+- [ ] `M` **Concurrent-edit protection:** a `version` field or ETag on updates, so concurrent edits don't silently overwrite each other.
+  - A convention every update follows, in the API and storage. Depends on: the distributed workloads and teams decisions.
+- [ ] `M` Template-wide sweep to ensure developers using this template will be able to add domain-specific features while touching as few places as possible (Core, API, Docs, Storage adapters, CLI, TUI, and Web I think covers it but I could be missing some). Also make sure `/feature` commands prompt for decisions about the web, TUI, and CLI interfaces, since these cannot all be identical. The intention is that shared code is maximized with reason so that new feature development requires as little work as is feasible.
+  - Before the shared features, so that they're built the way it settles. Depends on: the brainstorm above (to know which features it must make easy), and the `platform` and `product` split, in the core and beyond.
+
+## 3. Decide, then build
+
+Each item here is decided just before it's built, in the order of what depends on what.
+
+- [ ] `L` `decide` **Translations (i18n)**
+  - Shapes: every piece of user-facing text in all five clients, so it comes first in this section: a "yes" is far cheaper before the features below add more text.
+- [ ] `M` `decide` **Functional feature-flagging support** to toggle unreleased features or modify runtime behavior dynamically without redeploying. (Plans already turn features on per workspace, `docs/features.md`; flags would be a separate, run-time switch.)
+  - Shapes: how every later feature is turned on and off.
+- [ ] `M` `decide` **Audit log** (who changed what, and when)
+  - Shapes: storage and the domain (every change is recorded). Depends on: the distributed workloads decision (domain events).
+- [ ] `L` `decide` **Notifications feature**. This might not be relevant for all applications based on this template, but likely common enough to build in, and template users can remove if it's not applicable. This could be in-app notifications as well as boilerplate for email/mobile/etc. notifications.
+  - Depends on: the distributed workloads decision (sending runs in the background). Shapes: the settings menu (notification preferences).
+- [ ] `M` `decide` **Change application settings (e.g. theme, style, other domain-specific settings) from a settings menu in all clients**
+  - Shapes: any later feature with a preference of its own.
+- [ ] `?` `decide` **Multi-provider auth** for traditional email/password and standard OAuth providers. Mostly covered already: with `sign_in = "oidc"`, email and password and "Sign in with Google" and the like come from the sign-in provider, and the product never stores passwords (`docs/sign-in.md`, "Email and password"). Decide whether anything is left.
+- [ ] `?` `decide` **Session management**: secure token refresh cycles, automatic logout on expiration, and multi-device session invalidation? Partly covered: sessions already expire and can be signed out (ADR 9). What's left would be "sign out everywhere" and listing sessions.
+  - Shapes: "Make the session lifetime a server setting" (section 4).
+- [ ] `S` `decide` **Sweep away expired sessions and unused sign-in codes.** A session is deleted only when it's looked up and found expired, so one nobody looks up again stays in storage for good, and so does a one-time sign-in code nobody redeemed. (A follow-up from the editions plan, steps 8a and 9.)
+  - Depends on: the distributed workloads decision (a sweep runs in the background), and the session management decision.
+- [ ] `M` `decide` **Sign in from the command line on a computer with no browser,** such as one reached over SSH, with the device code flow ([RFC 8628](https://www.rfc-editor.org/rfc/rfc8628)): the CLI shows a short code, and the person enters it in a browser on any other device. Today `starter login` needs a browser on the same computer. (A follow-up from the editions plan, step 9.)
+- [ ] `M` `decide` **A paid licence key for the local edition,** behind the entitlements port, so a local copy can unlock a paid plan without an account. `docs/billing.md` already describes the idea. (A follow-up from the editions plan.)
+  - Depends on: the teams decision (whether a licence is per person or per team).
+- [ ] `M` `decide` **User account** flows for common tasks like password changes, account deletion, etc. **ONLY FOR HOSTED EDITIONS**. (Password changes belong to the sign-in provider; account deletion and its data are the product's.)
+- [ ] `M`–`L` `decide` **Placeholder functionality for exporting workspace data to a file, importing workspace data from a file**--especially useful for converting from the local only version to the hosted version, or possibly for the data backups item below.
+- [ ] `M` `decide` **Automatic periodic and manual data backups?**
+  - Depends on: the export and import decision above, and the distributed workloads decision (periodic backups run in the background).
+- [ ] `M` `decide` **Stub for application documentation/help section.** Could also lay the groundwork for easy tooltips the for template users, that potentially could themselves link to documentation pages?
+- [ ] `M` `decide` **A sample/placeholder home page** for the hosted edition SPA that provides feature info, pricing details, etc., along with a login button, unless this is more appropriate as a separate hosted site).
+- [ ] `S`–`M` `decide` **Report a bug or suggest a feature** feature
+- [ ] `S`–`M` `decide` **Form validation helpers**
+- [ ] `M` `decide` **Dockerized Mocking Infrastructure** such as a docker-compose stack to spin up auxiliary local services like mock authentication, testing databases, or local S3 object buckets seamlessly. (`task db:up` already starts a test Postgres, and `oidctest` fakes the sign-in provider in tests.)
+- [ ] `?` `decide` **Load testing infrastructure**
+  - Depends on: the distributed workloads decision.
+- [ ] `M`–`L` `decide` **Synced data folders on Android,** through Android's Storage Access Framework, which lets an app use a folder another app (such as a cloud-sync app) provides. Today the Android app keeps its data in its own private folder. (A follow-up from the editions plan.)
+
+## 4. Independent work
 
 ### Fixes found in the remote-mode check by hand
 - [ ] `M` **Say when the server can't be reached:** the offline notice follows only the browser's own online signal (`navigator.onLine`, `useIsOnline`), so when the server stops, the web app and the desktop and Android apps in remote mode show the general "An error occurred" message instead (found in remote mode's check by hand, task 22, step A7). Tell a request that never reached the server apart from one the server refused, show a notice for it (agree the wording first), and retry once the server answers again. Respect `GET /api/v1/connection` as the offline notice does. Also: when the session lookup itself can't reach the server (for example an app built with a wrong `BUILT_IN_SERVER_URL`), the web app shows the items page as if sign-in were off, with only the general error; it should show the same notice instead.
@@ -139,6 +148,7 @@ A new idea goes into the tier that fits: a decision if it's not yet agreed, othe
 - [ ] `S` **Desktop app command-line flags:** `starter-desktop` reads no arguments, so `--data-dir` (which `bin/starter` takes) is silently ignored and the app opens its default folder. Give it the same `--data-dir`, `--storage`, and `--config` flags as the CLI, layered as in ADR 6, and have it refuse a flag it doesn't know instead of ignoring it (agree the message's wording first).
 - [ ] `S` **Expand `~` in folder settings:** `data_dir` and the other paths are used as given, so `~/Dropbox/starter` from the settings file, `STARTER_DATA_DIR`, or a quoted `--data-dir` becomes a folder literally named `~`. Expand a leading `~` (and `~\` on Windows) to the user's home folder wherever a setting names a path, in `internal/config`, and say so in `docs/configuration.md`.
 - [ ] `S` **Make the session lifetime a server setting.** A session lasts a fixed 30 days from sign-in (`domain.SessionLifetime` in `internal/core/domain/session.go`), which seems too long, and only a code change alters it. Make it a server setting (for example `session_lifetime`, and `STARTER_SESSION_LIFETIME`), layered as in ADR 6, so whoever runs the server chooses it and people using the app can't. It sets the cookie's `MaxAge` and the command line's and apps' bearer tokens alike. Refuse a value that isn't a positive length of time at start (agree the message's wording first), pick a shorter default, and document it in `docs/configuration.md` and `docs/sign-in.md`.
+  - Depends on: the session management decision (section 3), which may change what the lifetime counts from.
   - Depends on: the session management decision.
 
 ### Front end
@@ -166,7 +176,7 @@ A new idea goes into the tier that fits: a decision if it's not yet agreed, othe
 - [ ] `M` **Android release builds and Play Store signing:** a `mobile:android:release` task (release APK or AAB, `production` build tag), signing with a keystore from environment variables (the generated `app/build.gradle` already reads `ANDROID_KEYSTORE_*`), and a reversed-domain app ID instead of `com.example.<slug>` (see `docs/mobile.md`, "The app ID"). Consider building the APK in CI (it needs the NDK).
 - [ ] `L` `waits on hardware` **iOS app:** the Wails v3 mobile app on iPhone. It needs a Mac with full Xcode, and ideally a real iPhone. Its custom-scheme handler should pass request methods and bodies through, so it may not need the Android bridge (`docs/mobile.md`), but that's unverified. Add the generated Xcode project beside `mobile/android`, and cover the app ID in `task rename`.
 
-## 4. Finishing
+## 5. Finishing
 
 - [ ] `M` Project cleanup: go through the project and look for potential opportunities to pair down unnecessary files and leave a clean-as-possible slate for users of the template.
 - [ ] `S` **Start the stored formats with no history.** The template's database schema should look as if it was designed all at once, so that a template user's own migrations clearly stand apart from it. How the schema grew while the template was built doesn't matter to them. Replace the SQL migrations in `internal/adapters/storage/sqlstore/migrations/` with two: one for the template's own tables, and one for the sample's table, which `--remove-sample` deletes. Start the JSON storage's record format again at version 1. Backwards compatibility isn't a concern.
