@@ -188,6 +188,9 @@ func NewEmbedded(cfg config.Config) (*App, error) {
 	}
 	entitlementsProvider, err := entitlementsProviderFor(cfg, workspacePlanRepo)
 	if err != nil {
+		// The storage is open by now; a failed start must not keep it (and
+		// its lock) for the rest of the program.
+		_ = a.Close()
 		return nil, err
 	}
 	a.Entitlements = app.NewEntitlementsService(entitlementsProvider, workspacesFor(cfg))

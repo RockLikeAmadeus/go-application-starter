@@ -23,8 +23,12 @@
    - Red: `TestSkipWhereOpenFilesCannotBeRemovedSkipsOnlyOnWindows` (`testsupport`) failed: skipped = false on windows, want true.
    - Green: `testsupport.SkipWhereOpenFilesCannotBeRemoved(t)` skips on Windows; the four tests call it first.
    - Refactor: nothing to change.
-3. [ ] Tests that leave storage open when their temporary folder is removed close it first: `TestOpenUsesTheSettingsFilesPlansFile` (`desktop`) and `TestNewBilling_WithSignInOnChangesAPlanThatTheAppsEntitlementsShow` (`bootstrap`, built only with `-tags devsignin`). Look for the cause in what each opens (an `App` or a billing service whose store isn't closed), not in the test's cleanup order alone.
-   - Failing: `TempDir RemoveAll cleanup: unlinkat …\starter\.lock` (desktop), and `…\002\data.db` (bootstrap).
+3. [x] A failed start of `NewEmbedded` closes the storage it opened: `TestOpenUsesTheSettingsFilesPlansFile` (`desktop`) left `.lock` open because `NewEmbedded` returned its plans-file error with the store still open (a real leak, hidden on Unix).
+   - Red: `TestNewEmbedded_ClosesItsStorageWhenTheStartFails` (`bootstrap`, jsonfile and sqlite) failed: `RemoveAll` of the data folder hit `.lock` / `data.db` in use.
+   - Green: `NewEmbedded` calls `a.Close()` when `entitlementsProviderFor` fails; the desktop test passes too.
+   - Refactor: nothing to change.
+3b. [ ] `TestNewBilling_WithSignInOnChangesAPlanThatTheAppsEntitlementsShow` (`bootstrap`, `-tags devsignin`) closes the storage `NewBilling` opened. The billing service it returns hides the `App`, so nothing can close it: look for a way (for example `NewBilling` also returning a close function, used by `starter admin set-plan`).
+   - Failing: `TempDir RemoveAll cleanup: unlinkat ……002data.db02data.db`.
 4. [ ] `TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt` (`syncedfolder`) proves the replacement in a way that holds on Windows too. `os.SameFile` reads identity when called there, so comparing two `os.Stat` results can't tell. For example, hold the old file open and check it still reads the old mark, if Windows allows the rename over it.
    - Failing: `devicemarks_test.go:162: the mark was written over in place…` (a false alarm).
 5. [ ] `tokenstore` file tests: the mode checks skip on Windows, with the reason, and the rest of each test still runs: `TestFile_KeepsEachServersTokenApartInAPrivateFileUnderItsNormalisedAddress` and `TestFile_MakesAnExistingWiderFilePrivateWhenItSavesATokenInIt`.
@@ -45,3 +49,4 @@
 
 ## Changes to the plan
 - 2026-11-25 (task 1): added 9b (the pre-commit `go-fmt` hook fails on Windows, found when committing task 1) and 9c (`task wip:next` needs `awk`, missing on Windows), as `task check` passing doesn't cover them but each cycle needs them.
+- 2026-11-25 (task 3): split 3b off (the billing test's store can't be closed through the returned service), as the two tests had different causes.

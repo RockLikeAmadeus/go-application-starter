@@ -175,6 +175,26 @@ func TestNewEmbedded_WithAPlansFile(t *testing.T) {
 	})
 }
 
+// A start that fails after the storage opened gives the storage back, so the
+// data folder is free for the next start (and can be removed on Windows).
+func TestNewEmbedded_ClosesItsStorageWhenTheStartFails(t *testing.T) {
+	for _, storage := range []config.StorageBackend{config.StorageJSONFile, config.StorageSQLite} {
+		t.Run(string(storage), func(t *testing.T) {
+			dataDir := t.TempDir()
+			badPlans := writePlansFile(t, `{"plans": `)
+			a, err := bootstrap.NewEmbedded(config.Config{Storage: storage, DataDir: dataDir, PlansFile: badPlans})
+			if err == nil {
+				_ = a.Close()
+				t.Fatal("NewEmbedded succeeded, want the plans file's error")
+			}
+
+			if err := os.RemoveAll(dataDir); err != nil {
+				t.Errorf("remove the data folder after the failed start: %v", err)
+			}
+		})
+	}
+}
+
 // The CLI's help reads only the local plan's entitlements: it opens no
 // storage, so it creates no data folder and isn't stopped by a locked one.
 // The local edition gives no upgrade hints, so a locked feature names no
