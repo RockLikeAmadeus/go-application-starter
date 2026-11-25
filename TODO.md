@@ -32,7 +32,10 @@ A new idea goes just before the first item that needs it, and after everything i
 
 ## 1. Foundations with no open decisions
 
-- [ ] `S` Notate in CLAUDE.md that all bugfixes and new features should be functional for all clients: web, desktop, mobile, cli, and tui.
+- [x] `S` **Every feature and bugfix reaches every client.** Done 2026-11-25: the rule is in CLAUDE.md's workflow section, and `/feature` settles each client's form in step 1, names exceptions in SPEC.md in step 2, and gives each client a task in step 5. Write in CLAUDE.md that a feature or bugfix isn't done until the web app (which the desktop and Android apps also show), the CLI, and the TUI all have it, as the sample's CSV export already does.
+  - Agreed 2026-11-25: it's the default, not an absolute rule. A client may leave a feature out only when SPEC.md names the client and says why (for example, the web app's themes mean nothing in a terminal), so no exception is silent.
+  - Add a step to `/feature` (`.claude/commands/feature.md`) that asks how the web app, the CLI, and the TUI each show the feature, or records an exception, and gives each client its own task in the task list. This takes the `/feature` part out of the template-wide sweep item in §2.
+  - Proof: the Godog scenarios prove the core, as now, and each client's wiring gets the tests that client already uses (Vitest for the web app, unit tests for CLI commands and TUI models), plus a thin browser or terminal journey only where those can't prove it, as `/feature` already says. No new test machinery.
   - First, as it changes how every later item is built.
 - [ ] `M` **Make `task check` pass on Windows.** With a 64-bit C compiler in place, the remaining failures come from tests and a task that assume Unix:
   - `task e2e:terminal` is Unix only (`test/terminal` has `//go:build unix`), but `task check` always runs it, so `task check` stops there on Windows.
@@ -95,7 +98,7 @@ A new idea goes just before the first item that needs it, and after everything i
   - Depends on: the crash reporting decision (the error boundary). Used by: "Say when the server can't be reached" (section 4), form validation, and any later screen.
 - [ ] `M` **Concurrent-edit protection:** a `version` field or ETag on updates, so concurrent edits don't silently overwrite each other.
   - A convention every update follows, in the API and storage. Depends on: the distributed workloads and teams decisions.
-- [ ] `M` Template-wide sweep to ensure developers using this template will be able to add domain-specific features while touching as few places as possible (Core, API, Docs, Storage adapters, CLI, TUI, and Web I think covers it but I could be missing some). Also make sure `/feature` commands prompt for decisions about the web, TUI, and CLI interfaces, since these cannot all be identical. The intention is that shared code is maximized with reason so that new feature development requires as little work as is feasible.
+- [ ] `M` Template-wide sweep to ensure developers using this template will be able to add domain-specific features while touching as few places as possible (Core, API, Docs, Storage adapters, CLI, TUI, and Web I think covers it but I could be missing some). (`/feature`'s prompt for how each client shows a feature comes from the "every client" item in §1.) The intention is that shared code is maximized with reason so that new feature development requires as little work as is feasible.
   - Before the shared features, so that they're built the way it settles. Depends on: the brainstorm above (to know which features it must make easy), and the `platform` and `product` split, in the core and beyond.
 
 ## 3. Decide, then build
