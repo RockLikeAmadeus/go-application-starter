@@ -17,11 +17,13 @@ import (
 	"github.com/RockLikeAmadeus/go-application-starter/internal/bootstrap"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/core/domain"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
 
 // The server's readiness probe asks its storage, so a server whose data
 // folder has gone isn't ready.
 func TestServerIsNotReadyOnceItsDataFolderIsRemoved(t *testing.T) {
+	testsupport.SkipWhereOpenFilesCannotBeRemoved(t)
 	dir := t.TempDir()
 	app, err := bootstrap.NewEmbedded(config.Config{Storage: config.StorageJSONFile, DataDir: dir})
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	_ "modernc.org/sqlite" // reads the database file the way another program would
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/storage/sqlite"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
 
 // openStore opens a store on dir, closed when the test ends.
@@ -56,6 +57,7 @@ func TestOpenCreatesAMigratedWALDatabaseThatSeveralStoresShare(t *testing.T) {
 }
 
 func TestStoreIsReadyUntilItsDataFolderIsRemoved(t *testing.T) {
+	testsupport.SkipWhereOpenFilesCannotBeRemoved(t)
 	dir := t.TempDir()
 	store, err := sqlite.Open(dir)
 	if err != nil {

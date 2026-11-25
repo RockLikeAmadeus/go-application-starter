@@ -50,6 +50,7 @@ func TestNewEmbedded_IsOnTheLocalPlan(t *testing.T) {
 
 // Storage on disk is ready only while its data folder can be used.
 func TestNewEmbedded_IsNotReadyOnceTheDataFolderIsRemoved(t *testing.T) {
+	testsupport.SkipWhereOpenFilesCannotBeRemoved(t)
 	for _, storage := range []config.StorageBackend{config.StorageJSONFile, config.StorageSQLite} {
 		t.Run(string(storage), func(t *testing.T) {
 			dir := t.TempDir()

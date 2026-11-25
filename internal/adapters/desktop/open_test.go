@@ -16,6 +16,7 @@ import (
 
 	"github.com/RockLikeAmadeus/go-application-starter/internal/adapters/desktop"
 	"github.com/RockLikeAmadeus/go-application-starter/internal/config"
+	"github.com/RockLikeAmadeus/go-application-starter/internal/testsupport"
 )
 
 // The desktop app's data is on this device, so the web app must not wait for
@@ -56,6 +57,7 @@ func TestOpenServesNoServiceWorker(t *testing.T) {
 // The desktop app serves the server's readiness probe too, and it asks the
 // data folder, so it isn't ready once that folder has gone.
 func TestOpenIsNotReadyOnceTheDataFolderIsRemoved(t *testing.T) {
+	testsupport.SkipWhereOpenFilesCannotBeRemoved(t)
 	dir := t.TempDir()
 	app := openAt(t, dir)
 	if err := os.RemoveAll(dir); err != nil {
