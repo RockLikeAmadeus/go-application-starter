@@ -107,6 +107,9 @@ type driver struct {
 // driversFor lists the drivers, for a test Postgres server at serverURL, which
 // is empty when there isn't one. Then the Postgres driver is left out with a
 // note, and the server driver leaves out the scenarios that need Postgres.
+// On goos "windows", the server driver also leaves out the scenarios that
+// remove its data folder (@removes-data-folder): Windows refuses to delete a
+// file the server holds open, so they can't be set up there.
 //
 // Desktop-only scenarios (@desktop) run only on the desktop driver, and
 // mobile-only ones (@mobile) only on the mobile driver. Each of those also
@@ -123,7 +126,7 @@ type driver struct {
 // Scenarios that open the desktop and mobile apps on a hosted server
 // (@remote-mode) run only on the http and oidc drivers, whose servers sign
 // people in, as the command line's sign-in (@command-line-sign-in) does.
-func driversFor(t testing.TB, serverURL string) []driver {
+func driversFor(t testing.TB, serverURL, goos string) []driver {
 	postgresDriver := driver{
 		name:        "postgres",
 		start:       func() (*harness, error) { return startPostgres(t, localEdition) },
@@ -135,6 +138,9 @@ func driversFor(t testing.TB, serverURL string) []driver {
 	if serverURL == "" {
 		postgresDriver.skipReason = postgrestest.ServerURLVariable + " is not set: leaving out the Postgres driver (task db:up starts a server)"
 		serverTags = "@server && ~@postgres"
+	}
+	if goos == "windows" {
+		serverTags += " && ~@removes-data-folder"
 	}
 	return []driver{
 		{

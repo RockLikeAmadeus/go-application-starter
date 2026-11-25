@@ -3,6 +3,7 @@ package acceptance
 import (
 	"flag"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -27,7 +28,7 @@ func init() {
 // TestFeatures runs every feature against every driver. Restrict drivers with
 // `-run 'TestFeatures/memory'`.
 func TestFeatures(t *testing.T) {
-	for _, d := range driversFor(t, os.Getenv(postgrestest.ServerURLVariable)) {
+	for _, d := range driversFor(t, os.Getenv(postgrestest.ServerURLVariable), runtime.GOOS) {
 		t.Run(d.name, func(t *testing.T) {
 			if d.skipReason != "" {
 				t.Skip(d.skipReason)

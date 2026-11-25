@@ -27,7 +27,7 @@ func TestPostgresScenariosRunOnlyWhenThereIsADatabaseServer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			drivers := driversFor(t, tt.serverURL)
+			drivers := driversFor(t, tt.serverURL, "linux")
 
 			postgresDriver := driverNamed(t, drivers, "postgres")
 			if isSkipped := postgresDriver.skipReason != ""; isSkipped != tt.wantPostgresSkipped {
@@ -59,7 +59,7 @@ func driverNamed(t *testing.T, drivers []driver, name string) driver {
 }
 
 func TestSignInProviderScenariosRunOnlyOnTheOIDCDriver(t *testing.T) {
-	drivers := driversFor(t, "")
+	drivers := driversFor(t, "", "linux")
 	oidc := driverNamed(t, drivers, "oidc")
 	if oidc.startHosted == nil {
 		t.Error("the oidc driver has no hosted edition")
@@ -78,7 +78,7 @@ func TestSignInProviderScenariosRunOnlyOnTheOIDCDriver(t *testing.T) {
 }
 
 func TestCommandLineSignInScenariosRunOnlyOnTheHTTPAndOIDCDrivers(t *testing.T) {
-	for _, d := range driversFor(t, "") {
+	for _, d := range driversFor(t, "", "linux") {
 		switch d.name {
 		case "http", "oidc":
 			if d.startHosted == nil {
@@ -94,13 +94,13 @@ func TestCommandLineSignInScenariosRunOnlyOnTheHTTPAndOIDCDrivers(t *testing.T) 
 			}
 		}
 	}
-	if oidc := driverNamed(t, driversFor(t, ""), "oidc"); !strings.Contains(oidc.tags, "@command-line-sign-in") {
+	if oidc := driverNamed(t, driversFor(t, "", "linux"), "oidc"); !strings.Contains(oidc.tags, "@command-line-sign-in") {
 		t.Errorf("oidc driver tags = %q, want it to include @command-line-sign-in", oidc.tags)
 	}
 }
 
 func TestRemoteModeScenariosRunOnlyOnTheHTTPAndOIDCDrivers(t *testing.T) {
-	for _, d := range driversFor(t, "") {
+	for _, d := range driversFor(t, "", "linux") {
 		switch d.name {
 		case "http", "oidc":
 			if d.startHosted == nil {
@@ -116,7 +116,27 @@ func TestRemoteModeScenariosRunOnlyOnTheHTTPAndOIDCDrivers(t *testing.T) {
 			}
 		}
 	}
-	if oidc := driverNamed(t, driversFor(t, ""), "oidc"); !strings.Contains(oidc.tags, "@remote-mode") {
+	if oidc := driverNamed(t, driversFor(t, "", "linux"), "oidc"); !strings.Contains(oidc.tags, "@remote-mode") {
 		t.Errorf("oidc driver tags = %q, want it to include @remote-mode", oidc.tags)
+	}
+}
+
+// Windows refuses to delete a file a process holds open, so the scenarios that
+// remove the server's data folder can't be set up there. Linux still runs them.
+func TestServerDriverLeavesOutScenariosThatRemoveTheDataFolderOnlyOnWindows(t *testing.T) {
+	tests := []struct {
+		goos     string
+		wantTags string
+	}{
+		{goos: "linux", wantTags: "@server"},
+		{goos: "darwin", wantTags: "@server"},
+		{goos: "windows", wantTags: "@server && ~@removes-data-folder"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.goos, func(t *testing.T) {
+			if got := driverNamed(t, driversFor(t, "postgres://localhost/test_server", tt.goos), "server").tags; got != tt.wantTags {
+				t.Errorf("server driver tags = %q, want %q", got, tt.wantTags)
+			}
+		})
 	}
 }

@@ -14,8 +14,11 @@
 - No client work: nothing a user sees changes.
 
 ## Tasks
-1. [ ] Acceptance drivers: on Windows, the server driver leaves out `@removes-data-folder` scenarios, and elsewhere it runs them. `driversFor` takes the OS, and a case in `drivers_test.go` covers each. Proof: `task accept` on Windows has no failing `server` scenario.
+1. [x] Acceptance drivers: on Windows, the server driver leaves out `@removes-data-folder` scenarios, and elsewhere it runs them. `driversFor` takes the OS, and a case in `drivers_test.go` covers each. Proof: `task accept` on Windows has no failing `server` scenario.
    - Failing on Windows: `TestFeatures/server`, 3 scenarios (`unlinkat …\.lock` or `data.db`: "The process cannot access the file because it is being used by another process").
+   - Red: `TestServerDriverLeavesOutScenariosThatRemoveTheDataFolderOnlyOnWindows` failed on `windows`: tags `@server`, want `@server && ~@removes-data-folder`.
+   - Green: `driversFor` takes the OS and adds `~@removes-data-folder` to the server driver's tags on Windows; `acceptance_test.go` passes `runtime.GOOS`.
+   - Refactor: `driversFor`'s comment and `.claude/rules/testing.md` say why; the code needed nothing more.
 2. [ ] Skip the Go tests that remove an open data folder on Windows, with the reason: `TestServerIsNotReadyOnceItsDataFolderIsRemoved` (`cmd/server`), `TestOpenIsNotReadyOnceTheDataFolderIsRemoved` (`desktop`), `TestStoreIsReadyUntilItsDataFolderIsRemoved` (`sqlite`), and `TestNewEmbedded_IsNotReadyOnceTheDataFolderIsRemoved` (`bootstrap`, both subtests). Consider one small test helper for the skip if four copies of the reason read badly.
 3. [ ] Tests that leave storage open when their temporary folder is removed close it first: `TestOpenUsesTheSettingsFilesPlansFile` (`desktop`) and `TestNewBilling_WithSignInOnChangesAPlanThatTheAppsEntitlementsShow` (`bootstrap`, built only with `-tags devsignin`). Look for the cause in what each opens (an `App` or a billing service whose store isn't closed), not in the test's cleanup order alone.
    - Failing: `TempDir RemoveAll cleanup: unlinkat …\starter\.lock` (desktop), and `…\002\data.db` (bootstrap).
@@ -30,9 +33,12 @@
 8. [ ] `TestInfoNamesTheSettingsFile` (`cli`), "none, when the default one can't be created": make the settings folder unusable in a way that holds on Windows, where `chmod 0o500` doesn't stop creating files. For example, a file where the folder should be.
    - Failing: the output names `…\starter\config.toml` instead of `Settings file: none`.
 9. [ ] `TestMainRunsInAGitRepository` (`scripts/initproject`) builds the tool with `.exe` on Windows, so it can start it.
+9b. [ ] The lefthook `go-fmt` pre-commit command runs on Windows. Today `gofmt -l {staged_files} | (! grep .) || (…)` stops with "syntax error: unexpected end of file" there, so every commit is refused (task 1 was committed with `--no-verify`, as agreed). For example, a `task` command the hook calls. Check the other hooks in `lefthook.yml` the same way.
+9c. [ ] `task wip:next` runs on Windows. Today it stops with `"awk": executable file not found in $PATH` from PowerShell, as Git for Windows keeps `awk` out of the PATH.
 10. [ ] Run `task test:go` on Windows from start to finish once tasks 2 to 9 are done, and fix anything they hid. The packages that timed out or stopped early may still hide failures: `cli` timed out at task 7, and `test:go` stopped after its first command. `gen:check`, `lint`, `test:web`, and `e2e` already pass on Windows (2026-11-25).
 11. [ ] Taskfile: `task check` on Windows skips `e2e:terminal` and says why, instead of stopping. Then `task check` passes on Windows from start to finish.
 12. [ ] CI: the `go-windows` job runs the Go unit tests (with `-race`, the `devsignin` tests, and the init tool's tests) and the acceptance tests, as `task test:go` and `task accept` do. Set up a C compiler only if `windows-latest` lacks one. Rename the job's display name. Check the job goes green on the branch.
 13. [ ] Docs and finish: `docs/ci-cd.md` (the workflows table says "five jobs" and leaves out `go-windows`; say what the Windows job runs and why, in the doc's style), README Prerequisites (the 64-bit C compiler `-race` needs on Windows, if not there already), the token file's privacy on Windows in `docs/sign-in.md`, and CLAUDE.md's Commands row for `task e2e:terminal` if needed. Tick the TODO.md item with a "Done" note, and delete this file. No `@wip` tags to remove.
 
 ## Changes to the plan
+- 2026-11-25 (task 1): added 9b (the pre-commit `go-fmt` hook fails on Windows, found when committing task 1) and 9c (`task wip:next` needs `awk`, missing on Windows), as `task check` passing doesn't cover them but each cycle needs them.
