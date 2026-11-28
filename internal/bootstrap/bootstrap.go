@@ -245,10 +245,10 @@ var ErrNoPlanChangesOverAServer = errors.New("A plan cannot be changed through a
 // NewBilling returns the billing service, for `starter admin set-plan`. With
 // sign-in on (the hosted edition), it opens the configured storage as
 // NewEmbedded does and changes the plans stored there, which the hosted
-// edition's entitlements read. The storage stays open until the command's
-// program ends. The local edition's plan is fixed, so otherwise it refuses with
-// ErrLocalPlanIsFixed, or ErrNoPlanChangesOverAServer with cfg.ServerURL set,
-// opening no storage.
+// edition's entitlements read. The returned service is also an io.Closer,
+// which closes that storage. The local edition's plan is fixed, so otherwise
+// it refuses with ErrLocalPlanIsFixed, or ErrNoPlanChangesOverAServer with
+// cfg.ServerURL set, opening no storage.
 func NewBilling(cfg config.Config) (ports.BillingService, error) {
 	if cfg.ServerURL != "" {
 		return nil, ErrNoPlanChangesOverAServer
@@ -258,10 +258,21 @@ func NewBilling(cfg config.Config) (ports.BillingService, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.billing, nil
+		return closableBilling{BillingService: a.billing, closeStorage: a.Close}, nil
 	}
 	return nil, ErrLocalPlanIsFixed
 }
+
+// closableBilling is a billing service that can also close the storage it
+// runs on, which a caller that outlives one command should do (it is an
+// io.Closer).
+type closableBilling struct {
+	ports.BillingService
+	closeStorage func() error
+}
+
+// Close closes the storage the billing service opened.
+func (b closableBilling) Close() error { return b.closeStorage() }
 
 // LockedFolderError returns the error for a locked data folder that also
 // offers the user alternative, a phrase that follows "or", or nil if err isn't

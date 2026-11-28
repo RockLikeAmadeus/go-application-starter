@@ -27,8 +27,12 @@
    - Red: `TestNewEmbedded_ClosesItsStorageWhenTheStartFails` (`bootstrap`, jsonfile and sqlite) failed: `RemoveAll` of the data folder hit `.lock` / `data.db` in use.
    - Green: `NewEmbedded` calls `a.Close()` when `entitlementsProviderFor` fails; the desktop test passes too.
    - Refactor: nothing to change.
-3b. [ ] `TestNewBilling_WithSignInOnChangesAPlanThatTheAppsEntitlementsShow` (`bootstrap`, `-tags devsignin`) closes the storage `NewBilling` opened. The billing service it returns hides the `App`, so nothing can close it: look for a way (for example `NewBilling` also returning a close function, used by `starter admin set-plan`).
+3b. [x] `TestNewBilling_WithSignInOnChangesAPlanThatTheAppsEntitlementsShow` (`bootstrap`, `-tags devsignin`) closes the storage `NewBilling` opened. The billing service it returns hides the `App`, so nothing can close it: look for a way (for example `NewBilling` also returning a close function, used by `starter admin set-plan`).
    - Failing: `TempDir RemoveAll cleanup: unlinkat ……002data.db02data.db`.
+   - Red: the test asserts the billing service is an `io.Closer` and closes it in cleanup; failed "has no Close" and TempDir RemoveAll on `data.db`.
+   - Green: `NewBilling` returns a `closableBilling` (an `io.Closer` closing the App). The CLI side is 3c.
+   - Refactor: nothing to change.
+3c. [ ] `starter admin set-plan` closes the billing service's storage when it is an `io.Closer`, with a cli unit test using a fake `BillingFactory` whose service records `Close`.
 4. [ ] `TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt` (`syncedfolder`) proves the replacement in a way that holds on Windows too. `os.SameFile` reads identity when called there, so comparing two `os.Stat` results can't tell. For example, hold the old file open and check it still reads the old mark, if Windows allows the rename over it.
    - Failing: `devicemarks_test.go:162: the mark was written over in place…` (a false alarm).
 5. [ ] `tokenstore` file tests: the mode checks skip on Windows, with the reason, and the rest of each test still runs: `TestFile_KeepsEachServersTokenApartInAPrivateFileUnderItsNormalisedAddress` and `TestFile_MakesAnExistingWiderFilePrivateWhenItSavesATokenInIt`.
@@ -50,3 +54,4 @@
 ## Changes to the plan
 - 2026-11-25 (task 1): added 9b (the pre-commit `go-fmt` hook fails on Windows, found when committing task 1) and 9c (`task wip:next` needs `awk`, missing on Windows), as `task check` passing doesn't cover them but each cycle needs them.
 - 2026-11-25 (task 3): split 3b off (the billing test's store can't be closed through the returned service), as the two tests had different causes.
+- 2026-11-25 (task 3b): split 3c off (`starter admin set-plan` closing the service), as no failing test demanded it in 3b.

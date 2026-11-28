@@ -9,6 +9,7 @@ package bootstrap_test
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -92,6 +93,11 @@ func TestNewBilling_WithSignInOnChangesAPlanThatTheAppsEntitlementsShow(t *testi
 	if err != nil {
 		t.Fatalf("NewBilling: %v", err)
 	}
+	closer, ok := billing.(io.Closer)
+	if !ok {
+		t.Fatal("the billing service has no Close, so nothing can close the storage it opened")
+	}
+	t.Cleanup(func() { _ = closer.Close() })
 	if err := billing.ChangePlan(t.Context(), "alpha", "team"); err != nil {
 		t.Fatalf("ChangePlan: %v", err)
 	}
