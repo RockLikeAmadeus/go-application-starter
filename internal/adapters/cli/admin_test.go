@@ -141,3 +141,25 @@ func TestAdminSetPlanOverAServerIsRefused(t *testing.T) {
 		t.Errorf("admin set-plan --server = %v, want ErrNoPlanChangesOverAServer", err)
 	}
 }
+
+// closableBilling is a recordingBilling that also records being closed.
+type closableBilling struct {
+	recordingBilling
+	closed bool
+}
+
+func (b *closableBilling) Close() error {
+	b.closed = true
+	return nil
+}
+
+func TestAdminSetPlanClosesTheBillingServiceWhenItCanBeClosed(t *testing.T) {
+	billing := &closableBilling{}
+
+	if err := runAdmin(t, usingBilling(billing), &bytes.Buffer{}, "set-plan", "ws-a", "pro"); err != nil {
+		t.Fatalf("admin set-plan: %v", err)
+	}
+	if !billing.closed {
+		t.Error("admin set-plan left the billing service open")
+	}
+}

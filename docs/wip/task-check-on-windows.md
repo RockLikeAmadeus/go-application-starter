@@ -32,7 +32,10 @@
    - Red: the test asserts the billing service is an `io.Closer` and closes it in cleanup; failed "has no Close" and TempDir RemoveAll on `data.db`.
    - Green: `NewBilling` returns a `closableBilling` (an `io.Closer` closing the App). The CLI side is 3c.
    - Refactor: nothing to change.
-3c. [ ] `starter admin set-plan` closes the billing service's storage when it is an `io.Closer`, with a cli unit test using a fake `BillingFactory` whose service records `Close`.
+3c. [x] `starter admin set-plan` closes the billing service's storage when it is an `io.Closer`, with a cli unit test using a fake `BillingFactory` whose service records `Close`.
+   - Red: `TestAdminSetPlanClosesTheBillingServiceWhenItCanBeClosed` (`cli`) failed: the billing service was left open.
+   - Green: `set-plan` defers `Close` when the billing service is an `io.Closer`.
+   - Refactor: nothing to change.
 4. [ ] `TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt` (`syncedfolder`) proves the replacement in a way that holds on Windows too. `os.SameFile` reads identity when called there, so comparing two `os.Stat` results can't tell. For example, hold the old file open and check it still reads the old mark, if Windows allows the rename over it.
    - Failing: `devicemarks_test.go:162: the mark was written over in place…` (a false alarm).
 5. [ ] `tokenstore` file tests: the mode checks skip on Windows, with the reason, and the rest of each test still runs: `TestFile_KeepsEachServersTokenApartInAPrivateFileUnderItsNormalisedAddress` and `TestFile_MakesAnExistingWiderFilePrivateWhenItSavesATokenInIt`.

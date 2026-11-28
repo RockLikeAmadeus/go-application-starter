@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 
@@ -27,6 +28,10 @@ func newAdminCmd(loadConfig func() (config.Config, error), newBilling BillingFac
 			billing, err := newBilling(cfg)
 			if err != nil {
 				return err
+			}
+			// The billing service may hold the storage it opened (bootstrap.NewBilling).
+			if closer, ok := billing.(io.Closer); ok {
+				defer closer.Close()
 			}
 			workspace, plan := args[0], args[1]
 			if err := billing.ChangePlan(cmd.Context(), domain.WorkspaceID(workspace), plan); err != nil {
