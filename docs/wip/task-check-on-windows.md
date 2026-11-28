@@ -36,8 +36,9 @@
    - Red: `TestAdminSetPlanClosesTheBillingServiceWhenItCanBeClosed` (`cli`) failed: the billing service was left open.
    - Green: `set-plan` defers `Close` when the billing service is an `io.Closer`.
    - Refactor: nothing to change.
-4. [ ] `TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt` (`syncedfolder`) proves the replacement in a way that holds on Windows too. `os.SameFile` reads identity when called there, so comparing two `os.Stat` results can't tell. For example, hold the old file open and check it still reads the old mark, if Windows allows the rename over it.
+4. [x] `TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt` (`syncedfolder`) proves the replacement in a way that holds on Windows too. `os.SameFile` reads identity when called there, so comparing two `os.Stat` results can't tell. For example, hold the old file open and check it still reads the old mark, if Windows allows the rename over it.
    - Failing: `devicemarks_test.go:162: the mark was written over in place…` (a false alarm).
+   - No red, no green: the test passes on Windows once its old file is statted through an open handle (`statThroughHandle`), which reads the file identity at once. Shown able to fail by making `WriteMark` write in place. Refactor: nothing to change.
 5. [ ] `tokenstore` file tests: the mode checks skip on Windows, with the reason, and the rest of each test still runs: `TestFile_KeepsEachServersTokenApartInAPrivateFileUnderItsNormalisedAddress` and `TestFile_MakesAnExistingWiderFilePrivateWhenItSavesATokenInIt`.
    - Failing: `file mode = 666; want 600`.
 6. [ ] `TestRenameFileRewritesAndMovesAFile` (`scripts/internal/project`): the executable-bit check skips on Windows, which has none, and the rest still runs.

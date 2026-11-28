@@ -139,16 +139,31 @@ func TestWriteMarkLeavesTheDevicesMarkInItsOwnFile(t *testing.T) {
 	}
 }
 
+// statThroughHandle describes the file at path as it is now. It stats an open
+// handle, so on Windows the file's identity is read at once: os.Stat on a path
+// reads it only when os.SameFile compares, by which time the path leads to the
+// new file.
+func statThroughHandle(t *testing.T, path string) os.FileInfo {
+	t.Helper()
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return info
+}
+
 func TestWriteMarkReplacesTheOldFileRatherThanWritingOverIt(t *testing.T) {
 	dir := t.TempDir()
 	if err := syncedfolder.WriteMark(dir, "desktop", markTestNow); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, ".devices", "desktop.json")
-	old, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
+	old := statThroughHandle(t, path)
 
 	if err := syncedfolder.WriteMark(dir, "desktop", markTestNow.Add(time.Minute)); err != nil {
 		t.Fatal(err)
